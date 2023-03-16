@@ -29,4 +29,13 @@ Inclusive tagging measurement of R(D) and R(D*) at Belle II
 |Continue from step 2|Continue from step 2|
 |3. python3 7_LightGBM_tuner.py<br>or 8_XGBoost_tuner.py|Tune hyperparameters with optuna of multiclass models.|
 |4. python3 7_LightGBM_training.py<br>or 8_XGBoost_training.py|Train multiclass models.|
+
+## Required libraries
+ 1. `plotly`
+ 2. `mplhep`-0.3.23
+ 3. `pyarrow`-10.0.0
+ 4. `iminuit`-2.18.0
+ 5. `cabinetry`
+ 6. `optuna`-3.1.0
+ 7. `h2o`-3.40.0.1
 <!-- #endregion -->

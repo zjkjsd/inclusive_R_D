@@ -272,15 +272,15 @@ class mpl:
         std=df.std()
         return f'''counts = %d \nmean = %5.3f \nstd = %5.3f''' %(counts,mean,std)
 
-    def plot_all_signals(self, cut, variable):
-        fig,axs =plt.subplots(2,3,figsize=(16,10), sharex=True, sharey=False)
-        fig.suptitle(f'All signals with {cut}')
-        fig.supylabel('# of candidates per bin',x=0.06)
-        fig.supxlabel(f'{variable}', y=0.06)
+    def plot_separately(self, variable, cut=None, xlim=None):
+        fig,axs =plt.subplots(4,3,figsize=(16,10), sharex=True, sharey=False)
+        fig.suptitle(f'All signals with {cut}',fontsize=16)
+        fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
+        fig.supxlabel(f'{variable}', y=0.06,fontsize=16)
         i=0
         j=0
         for sample_name, sample in self.samples.items():
-            (counts, bins) = np.histogram(sample.query(cut)[variable], bins=50)
+            (counts, bins) = np.histogram(sample.query(cut)[variable] if cut else sample[variable], bins=50)
             if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
                 factor = 1
             elif sample_name in [r'$D\ell\nu$',r'$D^\ast\ell\nu$',r'$D^{\ast\ast}\ell\nu$']:
@@ -290,51 +290,57 @@ class mpl:
             #plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
             axs[i,j].grid()
             axs[i,j].set_title(sample_name)
+            if xlim:
+                axs[i,j].set_xlim(xlim)
             j+=1
             if j==3:
                 i+=1
                 j=0
 
-    def plot_all_signals_2d(self, cut):
+    def plot_hist_2d(self, cut=None):
         variable_x = 'B0_CMS3_weMissM2'
         variable_y = 'p_D_l'
         xedges = np.linspace(-2, 10, 48)
         yedges = np.linspace(0.4, 4.6, 42)
 
-        n_rows,n_cols = [2,3]
-        fig,axs=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(16,8),sharex=True, sharey='all')
-        fig.suptitle('Signal MC')
-        fig.supylabel('$|p_D|\ +\ |p_l|\ [GeV]$', x=0.05)
-        fig.supxlabel('$M_{miss}^2\ [GeV^2/c^4]$')
+        n_rows,n_cols = [3,3]
+        fig,axs=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(16,12),sharex=True, sharey='all')
+        fig.suptitle(f'Signal MC ({cut})',fontsize=18)
+        fig.supylabel('$|p_D|\ +\ |p_l|\ \ \ [GeV]$', x=0.05,fontsize=18)
+        fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$',fontsize=18)
         i=0
         j=0
         for name, sample in self.samples.items():
-            (counts, xedges, yedges) = np.histogram2d(sample.query(cut)[variable_x], 
-                                                  sample.query(cut)[variable_y],
-                                                  bins=[xedges, yedges])
+            if len(sample)==0:
+                continue
+            (counts, xedges, yedges) = np.histogram2d(
+                            sample.query(cut)[variable_x] if cut else sample[variable_x], 
+                            sample.query(cut)[variable_y] if cut else sample[variable_y],
+                            bins=[xedges, yedges])
             counts = counts.T
             X, Y = np.meshgrid(xedges, yedges)
             im=axs[i,j].pcolormesh(X, Y, counts, cmap='rainbow', norm=colors.LogNorm())
             axs[i,j].grid()
             axs[i,j].set_xlim(xedges.min(),xedges.max())
             axs[i,j].set_ylim(yedges.min(),yedges.max())
-            axs[i,j].set_title(name,fontsize=12)
+            axs[i,j].set_title(name,fontsize=14)
             fig.colorbar(im,ax=axs[i,j])
             j+=1
             if j==3:
                 i+=1
                 j=0
 
-    def plot_overlaid_signals(self, cut, variable):
+    def plot_overlaid_signals(self, variable, cut=None):
         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
-        fig.suptitle(f'Overlaid signals with pre-selection', y=1)
-        fig.supylabel('# of candidates per bin',x=0.06)
+        fig.suptitle(f'Overlaid signals with pre-selection', y=1,fontsize=16)
+        fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
-        fig.supxlabel(f'{variable}')
+        fig.supxlabel(f'{variable}',fontsize=16)
 
         for sample_name, sample in self.samples.items():
-            (counts, bins) = np.histogram(sample.query(cut)[variable], bins=50)
+            (counts, bins) = np.histogram(
+                sample.query(cut)[variable] if cut else sample[variable], bins=50)
             factor=1
             if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
                 axs[0].hist(bins[:-1], bins, weights=factor*counts,label=sample_name,**self.kwarg)
@@ -348,20 +354,22 @@ class mpl:
         axs[0].grid()
         axs[1].grid()
 
-    def plot_projection(self, cut,variable):
+    def plot_overlaid_all(self,variable,cut=None):
         fig,axs =plt.subplots(sharex=True, sharey=False)
         for sample_name, sample in self.samples.items():
-            (counts, bins) = np.histogram(sample.query(cut)[variable], bins=50)
+            var_col= sample.query(cut)[variable] if cut else sample[variable]
+            (counts, bins) = np.histogram(var_col, bins=50)
             factor=1
             if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
                 axs.hist(bins[:-1], bins, weights=factor*counts,
-                         label=f'{sample_name} \n{self.statistics(sample.query(cut)[variable])}',**self.kwarg)
+                         label=f'{sample_name} \n{self.statistics(var_col)}',**self.kwarg)
+                
             elif sample_name in [r'$D\ell\nu$',r'$D^\ast\ell\nu$',r'$D^{\ast\ast}\ell\nu$']:
                 axs.hist(bins[:-1], bins, weights=factor*counts,
-                         label=f'{sample_name} \n{self.statistics(sample.query(cut)[variable])}',**self.kwarg)
+                         label=f'{sample_name} \n{self.statistics(var_col)}',**self.kwarg)
             else:
                 axs.hist(bins[:-1], bins, weights=factor*counts,
-                         label=f'{sample_name} \n{self.statistics(sample.query(cut)[variable])}',**self.kwarg)
+                         label=f'{sample_name} \n{self.statistics(var_col)}',**self.kwarg)
 
         axs.set_title('Overlaid signals with pre-selection')
         axs.set_xlabel(f'{variable}')
@@ -369,19 +377,20 @@ class mpl:
         axs.grid()
         plt.legend(bbox_to_anchor=(1,1.1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
 
-    def plot_correlation(self, cut, df, target='B0_CMS3_weMissM2', variables=variables):
+    def plot_correlation(self, df, cut=None, target='B0_CMS3_weMissM2', variables=variables):
         fig = plt.figure(figsize=[50,300])
         for i in range(len(variables)):
             ax = fig.add_subplot(17,4,i+1)
-            ax.hist2d(x=df.query(cut)[variables[i]], y=df.query(cut)[target], 
+            ax.hist2d(x=df.query(cut)[variables[i]] if cut else df[variables[i]], 
+                      y=df.query(cut)[target] if cut else df[target], 
                       bins=30,cmap='rainbow', norm=colors.LogNorm())
             ax.set_ylabel(target,fontsize=30)
             ax.set_xlabel(variables[i],fontsize=30)
             ax.grid()
 
-    def plot_FOM(self, sig_data, bkg_data, variable, test_points):
-        sig = pd.concat(sig_data)
-        bkg = pd.concat(bkg_data)
+    def plot_FOM(self, sigModes, bkgModes, variable, test_points, cut=None):
+        sig = pd.concat([self[i] for i in sigModes])
+        bkg = pd.concat([self[i] for i in bkgModes])
         sig_tot = len(sig)
         bkg_tot = len(bkg)
         BDT_FOM = []
@@ -391,8 +400,8 @@ class mpl:
         BDT_bkgEff = []
         BDT_bkgEff_err = []
         for i in test_points:
-            nsig = len(sig.query(f"{variable}>{i}"))
-            nbkg = len(bkg.query(f"{variable}>{i}"))
+            nsig = len(sig.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
+            nbkg = len(bkg.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
             tot = nsig+nbkg
             tot_err = np.sqrt(tot)
             FOM = nsig / tot_err # s / √(s+b)
@@ -409,15 +418,6 @@ class mpl:
             BDT_sigEff_err.append(sigEff_err)
             BDT_bkgEff.append(bkgEff)
             BDT_bkgEff_err.append(bkgEff_err)
-
-        #plt.errorbar(x=cut, y=BDT2_FOM, yerr=BDT2_FOM_err,marker='o',label='BDT2')
-        #plt.errorbar(x=cut, y=efficiency_2, yerr=efficiency_2_err,marker='v',label='$\Gamma=m_N$')
-        #plt.grid()
-        #plt.legend()
-        #plt.yscale('log')
-        #plt.xlim(0,1)
-        #plt.ylim(bottom=0)
-
 
         fig, ax1 = plt.subplots()
 
@@ -444,23 +444,27 @@ class mpl:
         plt.ylim(bottom=0)
         plt.show()
 
+
 # +
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 class plyex:
     def __init__(self, df):
         self.df = df
         
-    def hist(self, variable='B0_CMS3_weMissM2', facet=False):
+    def hist(self, variable='B0_CMS3_weMissM2', cut=None, facet=False):
         # Create a histogram
-        fig=px.histogram(self.df, x=variable, color='mode', nbins=60, 
+        fig=px.histogram(self.df.query(cut) if cut else self.df, 
+                         x=variable, color='mode', nbins=60, 
                          marginal='box', #opacity=0.5, barmode='overlay',
                          color_discrete_sequence=px.colors.qualitative.Plotly,
                          template='simple_white', title='Signal MC',
                          facet_col='p_D_l_region' if facet else None)
 
         # Manage the layout
-        fig.update_layout(font_family='Rockwell', hovermode='x',
+        fig.update_layout(font_family='Rockwell', hovermode='closest',
                           legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom'))
 
         # Manage the hover labels
@@ -496,7 +500,77 @@ class plyex:
         fig.update_yaxes(title_text="$|p_D|+|p_l|\ \ [GeV/c]$",row=1, col=1)
 
         fig.show()
+        
+    def plot_FOM(self, sigModes, bkgModes, variable, test_points,cut=None):
+        sig = self.df.loc[self.df['mode'].isin(sigModes)]
+        bkg = self.df.loc[self.df['mode'].isin(bkgModes)]
+        sig_tot = len(sig)
+        bkg_tot = len(bkg)
+        BDT_FOM = []
+        BDT_FOM_err = []
+        BDT_sigEff = []
+        BDT_sigEff_err = []
+        BDT_bkgEff = []
+        BDT_bkgEff_err = []
+        for i in test_points:
+            nsig = len(sig.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
+            nbkg = len(bkg.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
+            tot = nsig+nbkg
+            tot_err = np.sqrt(tot)
+            FOM = nsig / tot_err # s / √(s+b)
+            FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
 
+            BDT_FOM.append(FOM)
+            BDT_FOM_err.append(FOM_err)
+
+            sigEff = nsig / sig_tot
+            sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
+            bkgEff = nbkg / bkg_tot
+            bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
+            BDT_sigEff.append(sigEff)
+            BDT_sigEff_err.append(sigEff_err)
+            BDT_bkgEff.append(bkgEff)
+            BDT_bkgEff_err.append(bkgEff_err)
+        
+
+        # Create figure with secondary y-axis
+        fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+        # Add traces
+        fig.add_trace(
+            go.Scatter(x=test_points, y=BDT_FOM, name="FOM",
+                       error_y=dict(type='data',array=BDT_FOM_err,visible=True)),
+            secondary_y=True,
+        )
+
+        fig.add_trace(
+            go.Scatter(x=test_points, y=BDT_sigEff, name="sig_eff",
+                       error_y=dict(type='data',array=BDT_sigEff_err,visible=True)),
+            secondary_y=False,
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=test_points, y=BDT_bkgEff, name="bkg_eff",
+                       error_y=dict(type='data',array=BDT_bkgEff_err,visible=True)),
+            secondary_y=False,
+        )
+
+        # Add figure title
+        fig.update_layout(
+            title_text="MVA Performance",
+            template='simple_white',
+            hovermode='x',
+            legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom')
+        )
+
+        # Set x-axis title
+        fig.update_xaxes(title_text=variable)
+
+        # Set y-axes titles
+        fig.update_yaxes(title_text="<b>FOM</b>", secondary_y=True)
+        fig.update_yaxes(title_text="Efficiency", secondary_y=False)
+
+        fig.show()
 
 # +
 ## dataframe samples
@@ -572,7 +646,13 @@ def get_dataframe_samples(df):
                             bkg_continuum]).drop_duplicates(keep=False)
     samples[r'bkg_others'] = bkg_others
     
-    return samples
+    for name, df in samples.items():
+        df['mode']=name
+
+    df = pd.concat([df for df in samples.values()])
+    df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
+    
+    return df, samples
 
     # Weird! the bkg_others contains some events with
     # correct sig decay hash chain and correct B0_mcPDG, D_mcPDG, e_genMotherPDG,
