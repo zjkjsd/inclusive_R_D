@@ -127,6 +127,8 @@ if __name__ == "__main__":
         # with uproot.concatenate(args.input, library="np") as dict:
         #     data_dict = dict
         # df = pandas.DataFrame(data_dict)
+        # with uproot.open(file_location)['B0'] as file:
+        #     df = file.arrays(library="pd")
         file_path_list = [f'{args.dir}/{file}' for file in args.input]
         df = root_pandas.read_root(file_path_list)
         # Apply offline cuts

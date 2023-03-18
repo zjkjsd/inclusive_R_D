@@ -1,4 +1,6 @@
 <!-- #region -->
+<img src="https://www.belle2.org/common/logo.png" alt="Belle II Logo" width="20%">
+
 # inclusive_R_D
 Inclusive tagging measurement of R(D) and R(D*) at Belle II
 
