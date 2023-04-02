@@ -3,7 +3,7 @@
 # -*- coding: utf-8 -*-
 """
 A Script to save templates in a json file.
-Usage: python3 6_Save_Templates (-t 2d_2channels_workspace_3_0.json)
+Usage: python3 6_Save_Templates (-t 2d_2channels_workspace_3_0.json -f 0.8)
 """
 
 import argparse
@@ -28,6 +28,12 @@ def argparser():
                         default='2d_2channels_workspace_3_0.json',
                         required=False,
                         help="Location of the template json file")
+    parser.add_argument('-f', "--fraction",
+                        action="store",
+                        type=float,
+                        default=1.0,
+                        required=False,
+                        help="Fraction of data to be stored in the template json file")
     return parser
 
 
@@ -44,9 +50,10 @@ if __name__ == "__main__":
     for file_name in tqdm(files, desc=colored('Loading parquets', 'blue')):
         filename=f'./Samples/Signal_MC14ri/MC14ri_{file_name}_bengal_e_2/{file_name}_bengal_e_2_0.parquet'
         data = pd.read_parquet(filename, engine="pyarrow",
-                               columns=['D_mcPDG', 'e_mcPDG','DecayMode', 
-                                        'p_D_l', 'B_D_ReChi2','e_genMotherPDG','B0_mcPDG',
-                                        'B0_mcErrors','B0_isContinuumEvent']+variables)
+                               columns=['__experiment__','__run__','__event__','__production__',
+                                        'D_mcPDG', 'e_mcPDG','DecayMode', 'p_D_l', 'B_D_ReChi2',
+                                        'e_genMotherPDG','B0_mcPDG','B0_mcErrors','B0_isContinuumEvent']+variables
+                              )
         total.append(data)
     df = pd.concat(total,ignore_index=True).reset_index()
 
@@ -75,16 +82,20 @@ if __name__ == "__main__":
     variable_y = 'p_D_l'
 
     i = 0
-    for name, sample in samples.items():
+    for name, df in samples.items():
         if name in ['bkg_continuum','bkg_fakeDTC','bkg_fakeB','bkg_others']:
             continue
-        (counts, xedges, yedges) = np.histogram2d(sample.query(cut)[variable_x], 
-                                                  sample.query(cut)[variable_y],
+        sample = df.sample(frac=args.fraction, random_state=0)
+        df_cut=sample.query(cut)
+        df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__']).B_D_ReChi2.idxmin()]
+        (counts, xedges, yedges) = np.histogram2d(df_bestSelected[variable_x], 
+                                                  df_bestSelected[variable_y],
                                                   bins=[xedges, yedges])
         counts = counts.T
 
-        print(colored(f'BeforeMVA {name=}, size = {len(sample)}', 'blue'))
-        print(colored(f'After MVA {name=}, size = {np.sum(counts)}', 'magenta'))    
+        print(colored(f'Initially {name=}, size = {len(sample)}', 'blue'))
+        print(colored(f'After MVA {name=}, size = {len(sample.query(cut))}', 'magenta')) 
+        print(colored(f'After BCS {name=}, size = {np.sum(counts)}', 'magenta'))    
 
         with open(workspace_file, 'r+') as f:
             data = json.load(f)

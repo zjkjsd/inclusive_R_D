@@ -259,6 +259,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
+from matplotlib import gridspec
+import mplhep as hep
 plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors)
 
 class mpl:
@@ -272,9 +274,9 @@ class mpl:
         std=df.std()
         return f'''counts = %d \nmean = %5.3f \nstd = %5.3f''' %(counts,mean,std)
 
-    def plot_separately(self, variable, cut=None, xlim=None):
+    def plot_all_separately(self, variable, cut=None, xlim=None):
         fig,axs =plt.subplots(4,3,figsize=(16,10), sharex=True, sharey=False)
-        fig.suptitle(f'All signals with {cut}',fontsize=16)
+        fig.suptitle(f'All components with {cut}',fontsize=16)
         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
         fig.supxlabel(f'{variable}', y=0.06,fontsize=16)
         i=0
@@ -296,43 +298,10 @@ class mpl:
             if j==3:
                 i+=1
                 j=0
-
-    def plot_hist_2d(self, cut=None):
-        variable_x = 'B0_CMS3_weMissM2'
-        variable_y = 'p_D_l'
-        xedges = np.linspace(-2, 10, 48)
-        yedges = np.linspace(0.4, 4.6, 42)
-
-        n_rows,n_cols = [3,3]
-        fig,axs=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(16,12),sharex=True, sharey='all')
-        fig.suptitle(f'Signal MC ({cut})',fontsize=18)
-        fig.supylabel('$|p_D|\ +\ |p_l|\ \ \ [GeV]$', x=0.05,fontsize=18)
-        fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$',fontsize=18)
-        i=0
-        j=0
-        for name, sample in self.samples.items():
-            if len(sample)==0:
-                continue
-            (counts, xedges, yedges) = np.histogram2d(
-                            sample.query(cut)[variable_x] if cut else sample[variable_x], 
-                            sample.query(cut)[variable_y] if cut else sample[variable_y],
-                            bins=[xedges, yedges])
-            counts = counts.T
-            X, Y = np.meshgrid(xedges, yedges)
-            im=axs[i,j].pcolormesh(X, Y, counts, cmap='rainbow', norm=colors.LogNorm())
-            axs[i,j].grid()
-            axs[i,j].set_xlim(xedges.min(),xedges.max())
-            axs[i,j].set_ylim(yedges.min(),yedges.max())
-            axs[i,j].set_title(name,fontsize=14)
-            fig.colorbar(im,ax=axs[i,j])
-            j+=1
-            if j==3:
-                i+=1
-                j=0
-
-    def plot_overlaid_signals(self, variable, cut=None):
+                
+    def plot_signals_overlaid(self, variable, cut=None):
         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
-        fig.suptitle(f'Overlaid signals with pre-selection', y=1,fontsize=16)
+        fig.suptitle(f'Overlaid signals ({cut=})', y=1,fontsize=16)
         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
@@ -353,8 +322,8 @@ class mpl:
         axs[1].set_title('normalization')
         axs[0].grid()
         axs[1].grid()
-
-    def plot_overlaid_all(self,variable,cut=None):
+        
+    def plot_all_overlaid(self,variable,cut=None):
         fig,axs =plt.subplots(sharex=True, sharey=False)
         for sample_name, sample in self.samples.items():
             var_col= sample.query(cut)[variable] if cut else sample[variable]
@@ -371,11 +340,56 @@ class mpl:
                 axs.hist(bins[:-1], bins, weights=factor*counts,
                          label=f'{sample_name} \n{self.statistics(var_col)}',**self.kwarg)
 
-        axs.set_title('Overlaid signals with pre-selection')
+        axs.set_title(f'Overlaid signals ({cut=})')
         axs.set_xlabel(f'{variable}')
         axs.set_ylabel('# of candidates per bin')
         axs.grid()
         plt.legend(bbox_to_anchor=(1,1.1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
+        
+
+    def plot_hist_2d(self, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
+        variable_x, variable_y = variables
+        xedges = np.linspace(-2, 10, 48)
+        yedges = np.linspace(0.4, 4.6, 42)
+
+        n_rows,n_cols = [3,3]
+        fig,axs=plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(16,12),sharex=True, sharey='all')
+        fig.suptitle(f'Signal MC ({cut=})', y=0.95, fontsize=18)
+        fig.supylabel('$|p_D|\ +\ |p_l|\ \ \ [GeV]$', x=0.05,fontsize=18)
+        fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.05,fontsize=18)
+        i=0
+        j=0
+        for name, sample in self.samples.items():
+            if len(sample)==0:
+                continue
+            (counts, xedges, yedges) = np.histogram2d(
+                            sample.query(cut)[variable_x] if cut else sample[variable_x], 
+                            sample.query(cut)[variable_y] if cut else sample[variable_y],
+                            bins=[xedges, yedges])
+            counts = counts.T
+            
+            mask_arr = np.ones_like(counts)
+            if mask:
+                # apply mask at mm2<1.6 and p_D_l>1 
+                mm2_split = mask[0]
+                pDl_split = mask[1]
+                mm2_split_index, = np.asarray(np.isclose(xedges,mm2_split,atol=0.1)).nonzero()
+                pDl_split_index, = np.asarray(np.isclose(yedges,pDl_split,atol=0.1)).nonzero()
+                mask_arr[:,mm2_split_index[0]:] = mask[2] # select the small mm2
+                mask_arr[:pDl_split_index[0],:] = mask[2] # select the large pDl
+                
+
+            X, Y = np.meshgrid(xedges, yedges)
+            im=axs[i,j].pcolormesh(X, Y, counts, cmap='rainbow', norm=colors.LogNorm(), alpha=mask_arr)
+            axs[i,j].grid()
+            axs[i,j].set_xlim(xedges.min(),xedges.max())
+            axs[i,j].set_ylim(yedges.min(),yedges.max())
+            axs[i,j].set_title(name,fontsize=14)
+            fig.colorbar(im,ax=axs[i,j])
+            j+=1
+            if j==3:
+                i+=1
+                j=0
 
     def plot_correlation(self, df, cut=None, target='B0_CMS3_weMissM2', variables=variables):
         fig = plt.figure(figsize=[50,300])
@@ -444,6 +458,28 @@ class mpl:
         plt.ylim(bottom=0)
         plt.show()
         
+    def plot_cut_efficiency(self, cut, variable='B0_CMS3_weQ2lnuSimple',bins=15,xlim=[2,12],comp=[r'$D\tau\nu$',r'$D\ell\nu$']):
+        plt.title(f'Efficiency for {cut=}', y=1,fontsize=16);
+        plt.xlabel(f'{variable}',fontsize=16)
+        plt.ylabel('Efficiency',x=0.06,fontsize=16)
+        plt.grid()
+        plt.xlim(xlim);
+        plt.ylim(0,1);
+        #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
+        #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
+        
+        sub_samples={key:value for key, value in self.samples.items() if key in comp}
+        for name, df in sub_samples.items():
+            (bc, bins1) = np.histogram(df[variable], bins=bins)
+            (ac, bins1) = np.histogram(df.query(cut)[variable], bins=bins1)
+            bc+=1
+            ac+=1
+            efficiency = ac / bc
+            efficiency_err = efficiency * np.sqrt(1/ac + 1/bc)
+            bin_centers = (bins1[:-1] + bins1[1:]) /2
+            plt.errorbar(x=bin_centers, y=efficiency, yerr=efficiency_err, label=name)
+            plt.legend()
+        
     def plot_fitting_difference(self, yaml_file):
         fig,axs =plt.subplots(2,3,figsize=(16,10), sharex=True, sharey=False)
         fig.suptitle(f'fitted yield - true yield',fontsize=16)
@@ -466,14 +502,212 @@ class mpl:
                 j=0
             if j==3 and i==1:
                 break
+            
+            
+# plotting version: two residual plots, residual_signal = data - all_temp
+def mpl_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2', plot_with='pltbar'):
+    if direction not in ['mm2', 'p_D_l'] or plot_with not in ['mplhep', 'pltbar']:
+        raise ValueError('direction in [mm2, p_D_l] and plot_with in [mplhep, pltbar]')
+    fitted_components_names = list(Minuit.parameters)
+    #### fitted_templates_2d = templates / normalization * yields
+    fitted_templates_2d = [templates_2d[i]/templates_2d[i].sum() * Minuit.values[i] for i in range(len(templates_2d))]
+    # fitted_templates_err = templates_2d_err, yields_err in quadrature
+                         # = fitted_templates_2d x sqrt( (1/templates_2d) + (yield_err/yield)**2 ) if templates_2d[i,j]!=0
+                         # = 0 if yield ==0 or templates_2d[i,j]==0
+    fitted_templates_err = np.zeros_like(templates_2d)
+    non_zero_masks = [np.where(t!= 0) for t in templates_2d]
+    for i in range(len(templates_2d)):
+        if Minuit.values[i]==0:
+            continue
+        else:
+            fitted_templates_err[i][non_zero_masks[i]] = fitted_templates_2d[i][non_zero_masks[i]] * \
+            np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)
 
+    def extend(x):
+        return np.append(x, x[-1])
+
+    def errorband(bins, template_sum, template_err, ax):
+        fitted_sum = np.sum(template_sum, axis=0)
+        fitted_err = np.sqrt(np.sum(np.array(template_err)**2, axis=0)) # assuming the correlations between each template are 0
+        ax.fill_between(bins, extend(fitted_sum - fitted_err), extend(fitted_sum + fitted_err),
+        step="post", color="black", alpha=0.3, linewidth=0, zorder=100,)   
+
+    def plot_with_hep(bins, templates_project, templates_project_err, data, signal_name, ax1, ax2, ax3):
+        data_project = data.sum(axis=axis_to_be_summed_over)
+        # plot the templates and data
+        hep.histplot(templates_project, bin_edges, stack=True, histtype='fill', sort='yield_r', label=fitted_components_names, ax=ax1)
+        # errorband(bin_edges, templates_project, templates_project_err, ax1)
+        hep.histplot(data_project, bin_edges, histtype='errorbar', color='black', w2=data_project, ax=ax1)
+        # plot the residual
+        signal_index = fitted_components_names.index(signal_name)
+        residual = data_project - np.sum(templates_project, axis=0)
+        residual_signal = residual + templates_project[signal_index]
+        # Error assuming the correlations between data and templates, between each template, are 0
+        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+        residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
+
+        pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
+        pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
+        #hep.histplot(residual, bin_edges, histtype='errorbar', color='black', yerr=residual_err, ax=ax2)
+        hep.histplot(residual, bin_edges, histtype='errorbar', color='black', ax=ax2)
+        ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
+        #hep.histplot(residual_signal, bin_edges, histtype='errorbar', color='black', yerr=residual_err_signal, ax=ax3)
+        hep.histplot(pull, bin_edges, histtype='errorbar', color='black', ax=ax3)
+        ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')
+
+        ax1.grid()
+        ax1.set_ylabel('# of counts per bin',fontsize=16)
+        ax1.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.set_ylim(0, data_project.max()*1.2)
+        ax2.set_ylabel('pull',fontsize=14)
+        ax2.set_xlim(bin_edges.min(), bin_edges.max())
+        ax3.set_ylabel('pull + signal',fontsize=10)
+        ax3.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1)
+
+    def plot_with_bar(bins, templates_project, templates_project_err, data, ax1, ax2, ax3,signal_name=None):        
+        # calculate the arguments for plotting
+        bin_width = bins[1]-bins[0]
+        bin_centers = (bins[:-1] + bins[1:]) /2
+        data_project = data.sum(axis=axis_to_be_summed_over)
+        data_err = np.sqrt(data_project)
+
+        # plot the templates with defined colors
+        c = plt.cm.tab20.colors
+        # sort the components to plot in order of fitted templates_project size
+        sorted_indices = sorted(range(len(templates_2d)), key=lambda i: np.sum(templates_project[i]), reverse = True)
+        bottom_hist = np.zeros(data.shape[1-axis_to_be_summed_over])
+        for i in sorted_indices:
+            binned_counts = templates_project[i]
+            ax1.bar(x=bins[:-1], height=binned_counts, bottom=bottom_hist, color = c[i],
+                    width=bin_width, align='edge', label=fitted_components_names[i])
+            bottom_hist = bottom_hist + binned_counts
+        # errorband(bin_edges, templates_project, templates_project_err, ax1)
+
+        # plot the data
+        ax1.errorbar(x=bin_centers, y=data_project, yerr=data_err, fmt='ko')
+        # plot the residual
+        residual = data_project - np.sum(templates_project, axis=0)
+        # Error assuming the correlations between data and templates, between each template, are 0
+        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+                        
+        pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
+        ax2.errorbar(x=bin_centers, y=residual, yerr=residual_err, fmt='ko')
+        ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
+        ax3.scatter(x=bin_centers, y=pull, c='black')
+        ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')            
+
+        ax1.grid()
+        ax1.set_ylabel('# of counts per bin',fontsize=16)
+        ax1.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.set_ylim(0, data_project.max()*1.2)
+        ax2.set_ylabel('residual',fontsize=14)
+        ax2.set_xlim(bin_edges.min(), bin_edges.max())
+        ax3.set_ylabel('pull',fontsize=14)
+        ax3.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1)
+        
+#         signal_index = fitted_components_names.index(signal_name)
+#         residual_signal = residual + templates_project[signal_index]
+#         residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
+#         pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
+
+    if direction=='mm2':
+        direction_label = '$M_{miss}^2$'
+        direction_unit = '$[GeV^2/c^4]$'
+        other_direction_label = '$|p_D|\ +\ |p_l|$'
+        other_direction_unit = '[GeV]'
+        axis_to_be_summed_over = 0
+
+        bin_edges = edges[axis_to_be_summed_over] #xedges
+        slice_position = slices[1-axis_to_be_summed_over] #p_D_l
+        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
+        first_slice_index = (slice_index[0]-1)
+        second_slice_index = (slice_index[0])
+
+        # parameters for slices==True
+        fitted_project_slice1 = [temp[:first_slice_index,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice2 = [temp[second_slice_index:,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice1_err = [np.sqrt((err**2)[:first_slice_index,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [np.sqrt((err**2)[second_slice_index:,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        data_slice1 = data_2d[:first_slice_index,:]
+        data_slice2 = data_2d[second_slice_index:,:]
+
+
+    elif direction=='p_D_l':
+        direction_label = '$|p_D|\ +\ |p_l|$'
+        direction_unit = '[GeV]'
+        other_direction_label = '$M_{miss}^2$'
+        other_direction_unit = '$[GeV^2/c^4]$'
+        axis_to_be_summed_over = 1
+
+        bin_edges = edges[axis_to_be_summed_over] #yedges
+        slice_position = slices[1-axis_to_be_summed_over] #mm2
+        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
+        first_slice_index = (slice_index[0]-1)
+        second_slice_index = (slice_index[0])
+
+        # parameters for slices==True
+        fitted_project_slice1 = [temp[:,:first_slice_index].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice2 = [temp[:,second_slice_index:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice1_err = [np.sqrt((err**2)[:,:first_slice_index].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [np.sqrt((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        data_slice1 = data_2d[:,:first_slice_index]
+        data_slice2 = data_2d[:,second_slice_index:]
+
+
+    else:
+        raise ValueError('Current version only supports projection to either MM2 or p_D_l')
+
+
+    if not slices:
+        fig = plt.figure(figsize=(6.4,6.4))
+        gs = gridspec.GridSpec(3,1, height_ratios=[0.7,0.15,0.15])
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        ax3 = fig.add_subplot(gs[2])
+        gs.update(hspace=0.3) 
+        fitted_project = [temp.sum(axis=axis_to_be_summed_over) for temp in fitted_templates]
+        fitted_project_err = [temp.sum(axis=axis_to_be_summed_over) for temp in fitted_templates_err]
+
+        # plot the templates and data and templates_err
+        if plot_with=='mplhep':
+            plot_with_hep(bin_edges, fitted_project, fitted_project_err, counts, '$D\\tau\\nu$', ax1, ax2,ax3)
+        elif plot_with=='pltbar':
+            plot_with_bar(bin_edges, fitted_project, fitted_project_err, counts, '$D\\tau\\nu$', ax1, ax2,ax3)
+        ax1.set_title(f'Fitting projection to {direction_label}')
+        ax3.set_xlabel(direction_label)
+
+    elif slices:
+        fig = plt.figure(figsize=(16,9))
+        spec = gridspec.GridSpec(6,2, figure=fig, wspace=0.4, hspace=0.5)
+        ax1 = fig.add_subplot(spec[:-2, 0])
+        ax2 = fig.add_subplot(spec[:-2, 1])
+        ax3 = fig.add_subplot(spec[-2, 0])
+        ax4 = fig.add_subplot(spec[-2, 1])
+        ax5 = fig.add_subplot(spec[-1, 0])
+        ax6 = fig.add_subplot(spec[-1, 1])
+        #gs.update(hspace=0) 
+
+        # plot the templates and data and template_err
+        if plot_with=='mplhep':
+            plot_with_hep(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, slice1_signal, ax1, ax3, ax5)
+            plot_with_hep(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, slice2_signal, ax2, ax4, ax6)
+        elif plot_with=='pltbar':
+            plot_with_bar(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, ax1, ax3, ax5)
+            plot_with_bar(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, ax2, ax4, ax6)
+
+        ax1.set_title(f'{other_direction_label} < {slice_position}  {other_direction_unit}',fontsize=14)
+        ax2.set_title(f'{other_direction_label} > {slice_position}  {other_direction_unit}',fontsize=14)
+        fig.suptitle(f'Fitted projection to {direction_label} in slices of {other_direction_label}',fontsize=16)
+        fig.supxlabel(direction_label + '  ' + direction_unit,fontsize=16)
 
 # +
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-class plyex:
+class ply:
     def __init__(self, df):
         self.df = df
         
@@ -488,7 +722,7 @@ class plyex:
 
         # Manage the layout
         fig.update_layout(font_family='Rockwell', hovermode='closest',
-                          legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom'))
+                          legend=dict(orientation='h',title='',x=1,y=1,xanchor='right',yanchor='bottom'))
 
         # Manage the hover labels
         count_by_color = self.df.groupby('mode')['__event__'].count()
@@ -525,6 +759,7 @@ class plyex:
         fig.show()
         
     def plot_FOM(self, sigModes, bkgModes, variable, test_points,cut=None):
+        # calculate the FOM, efficiencies
         sig = self.df.loc[self.df['mode'].isin(sigModes)]
         bkg = self.df.loc[self.df['mode'].isin(bkgModes)]
         sig_tot = len(sig)
@@ -594,6 +829,187 @@ class plyex:
         fig.update_yaxes(title_text="Efficiency", secondary_y=False)
 
         fig.show()
+        
+    def plot_cut_efficiency(self, cut, variable='B0_CMS3_weQ2lnuSimple',bins=15):
+        # Create figure with secondary y-axis
+        fig = make_subplots()
+        
+        for mode in self.df['mode'].unique():
+            if mode in ['bkg_continuum','bkg_fakeDTC','bkg_fakeB','bkg_others']:
+                continue
+            comp=self.df.loc[self.df['mode']==mode]
+            (bc, bins1) = np.histogram(comp[variable], bins=bins)
+            (ac, bins1) = np.histogram(comp.query(cut)[variable], bins=bins1)
+            bc+=1
+            ac+=1
+            efficiency = ac / bc
+            factor = [i if i<1 else 0 for i in 1/ac + 1/bc] # mannually set the uncertainty to 0 if bin count==0
+            efficiency_err = efficiency * np.sqrt(factor)
+            bin_centers = (bins1[:-1] + bins1[1:]) /2
+            
+            # Add traces
+            fig.add_trace(
+                go.Scatter(x=bin_centers, y=efficiency, name=mode,
+                           error_y=dict(type='data',array=efficiency_err,visible=True))
+            )
+        
+        
+        # Add figure title
+        fig.update_layout(
+            title_text=f'Efficiency for {cut=}',
+            template='simple_white',
+            hovermode='closest',
+            legend=dict(orientation='h',title='',x=1,y=1,xanchor='right',yanchor='bottom')
+        )
+
+        # Set x-axis title
+        fig.update_xaxes(title_text=variable)
+
+        # Set y-axes titles
+        fig.update_yaxes(title_text="<b>Efficiency</b>")
+
+        fig.show()
+        
+    
+# plotting version: residual = data - all_temp
+def ply_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2'):
+    if direction not in ['mm2', 'p_D_l']:
+        raise ValueError('direction in [mm2, p_D_l]')
+    fitted_components_names = list(Minuit.parameters)
+    #### fitted_templates_2d = templates / normalization * yields
+    fitted_templates_2d = [templates_2d[i]/templates_2d[i].sum() * Minuit.values[i] for i in range(len(templates_2d))]
+    # fitted_templates_err = templates_2d_err, yields_err in quadrature
+                         # = fitted_templates_2d x sqrt( (1/templates_2d) + (yield_err/yield)**2 ) if templates_2d[i,j]!=0
+                         # = 0 if yield ==0 or templates_2d[i,j]==0
+    fitted_templates_err = np.zeros_like(templates_2d)
+    non_zero_masks = [np.where(t!= 0) for t in templates_2d]
+    for i in range(len(templates_2d)):
+        if Minuit.values[i]==0:
+            continue
+        else:
+            fitted_templates_err[i][non_zero_masks[i]] = fitted_templates_2d[i][non_zero_masks[i]] * \
+            np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)        
+
+    if direction=='mm2':
+        direction_label = '$M_{miss}^2$'
+        direction_unit = '$[GeV^2/c^4]$'
+        other_direction_label = '$|p_D|\ +\ |p_l|$'
+        other_direction_unit = '[GeV]'
+        axis_to_be_summed_over = 0
+
+        bin_edges = edges[axis_to_be_summed_over] #xedges
+        slice_position = slices[1-axis_to_be_summed_over] #p_D_l
+        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
+        first_slice_index = (slice_index[0]-1)
+        second_slice_index = (slice_index[0])
+
+        # parameters for slices==True
+        fitted_project_slice1 = [temp[:first_slice_index,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice2 = [temp[second_slice_index:,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice1_err = [np.sqrt((err**2)[:first_slice_index,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [np.sqrt((err**2)[second_slice_index:,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        data_slice1 = data_2d[:first_slice_index,:]
+        data_slice2 = data_2d[second_slice_index:,:]
+
+
+    elif direction=='p_D_l':
+        direction_label = '$|p_D|\ +\ |p_l|$'
+        direction_unit = '[GeV]'
+        other_direction_label = '$M_{miss}^2$'
+        other_direction_unit = '$[GeV^2/c^4]$'
+        axis_to_be_summed_over = 1
+
+        bin_edges = edges[axis_to_be_summed_over] #yedges
+        slice_position = slices[1-axis_to_be_summed_over] #mm2
+        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
+        first_slice_index = (slice_index[0]-1)
+        second_slice_index = (slice_index[0])
+
+        # parameters for slices==True
+        fitted_project_slice1 = [temp[:,:first_slice_index].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice2 = [temp[:,second_slice_index:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice1_err = [np.sqrt((err**2)[:,:first_slice_index].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [np.sqrt((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        data_slice1 = data_2d[:,:first_slice_index]
+        data_slice2 = data_2d[:,second_slice_index:]
+
+    else:
+        raise ValueError('Current version only supports projection to either mm2 or p_D_l')
+
+        
+    def plot(bins, templates_project, templates_project_err, data, column):        
+        # calculate the arguments for plotting
+        bin_width = bins[1]-bins[0]
+        bin_centers = (bins[:-1] + bins[1:]) /2
+        data_project = data.sum(axis=axis_to_be_summed_over)
+        data_err = np.sqrt(data_project)
+
+        # sort the components to plot in order of fitted templates_project size
+        c = px.colors.qualitative.Light24
+        sorted_indices = sorted(range(len(templates_2d)), key=lambda i: np.sum(templates_project[i]), reverse = True)
+        bottom_hist = np.zeros(data.shape[1-axis_to_be_summed_over])
+        for i in sorted_indices:
+            binned_counts = templates_project[i]
+            fig.add_trace(go.Bar(x=bins[:-1], y=binned_counts, width=bin_width,
+                                 alignmentgroup=1, name=fitted_components_names[i],
+                                 legendgroup=fitted_components_names[i],
+                                 marker=dict(color=c[i]),
+                                 showlegend=True if column==1 else False), 
+                          row=1, col=column)
+
+        # plot the data
+        fig.add_trace(go.Scatter(x=bin_centers, y=data_project, name='data',mode='markers',
+                                error_y=dict(type='data',array=data_err,visible=True),
+                                legendgroup='data',marker=dict(color=c[11]),
+                                showlegend=True if column==1 else False),
+                      row=1, col=column)
+
+        # plot the residual
+        residual = data_project - np.sum(templates_project, axis=0)
+        # Error assuming the correlations between data and templates, between each template, are 0
+        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+                        
+        pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
+        fig.add_trace(go.Scatter(x=bin_centers, y=residual,name='residual',mode='markers',
+                        error_y=dict(type='data',array=residual_err,visible=True),
+                                legendgroup='residual',marker=dict(color=c[12]),
+                                showlegend=True if column==1 else False),
+              row=2, col=column)
+        fig.add_trace(go.Scatter(x=bin_centers, y=pull,name='pull',mode='markers',
+                                legendgroup='pull',marker=dict(color=c[13]),
+                                showlegend=True if column==1 else False),
+              row=3, col=column)
+        
+
+    # create subplots
+    fig = make_subplots(rows=3, cols=2, row_heights=[0.7, 0.15,0.15],vertical_spacing=0.05,
+                    subplot_titles=(f'{other_direction_label} < {slice_position}  {other_direction_unit}',
+                                    f'{other_direction_label} > {slice_position}  {other_direction_unit}',
+                                    '','','',''))
+
+    # plot the templates and data and template_err
+    plot(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, column=1)
+    plot(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, column=2)
+    
+    # Set x/y-axis title
+    fig.update_xaxes(title_text=direction_label + direction_unit,row=3)
+    fig.update_yaxes(title_text='# of counts per bin', row=1, col=1)
+    fig.update_yaxes(title_text='residual', row=2, col=1)
+    fig.update_yaxes(title_text='pull', row=3, col=1)
+
+    # Add figure title
+    fig.update_layout(
+        width=850,height=650,
+        title_text=f'Fitted projection to {direction_label} in slices of {other_direction_label}',
+        template='simple_white',
+        hovermode='closest',
+        barmode='stack',
+        legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom'),
+        shapes=[dict(type='line', y0=0, y1=0, xref='paper', 
+                     x0=bin_edges.min(), x1=bin_edges.max())],
+    )
+
+    fig.show()
 
 # +
 ## dataframe samples
