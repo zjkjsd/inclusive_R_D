@@ -251,6 +251,130 @@ DecayMode = Enum('DecayMode', ['bkg', 'sig_D_tau_nu', 'sig_D_e_nu', 'sig_Dst_tau
                            'sig_Dst_e_nu', 'all_Dstst_tau_nu', 'all_Dstst_e_nu',
                            'sig_D_mu_nu', 'sig_Dst_mu_nu', 'all_Dstst_mu_nu'],
              start=0)
+# DecayMode(0).name
+
+# +
+## dataframe samples
+import pandas as pd
+def get_dataframe_samples(df):
+    samples = {}
+    files = ['sigDDst', 'normDDst','bkgDststp_tau', 'bkgDstst0_tau','bkgDstst0_ell']
+
+    Dstst_e_nu_selection = f'DecayMode=={DecayMode["all_Dstst_e_nu"].value} and \
+                            D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG and \
+            ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
+
+    Dstst_tau_nu_selection = f'DecayMode=={DecayMode["all_Dstst_tau_nu"].value} and \
+                            D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15 and \
+            ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
+
+    signals_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15'
+    norms_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG'
+
+    # Sig components
+    sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
+                                            B0_mcErrors<32 and {signals_selection}').copy()
+
+    sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
+                                            B0_mcErrors<64 and {signals_selection}').copy()
+    samples[r'$D\tau\nu$'] = sig_D_tau_nu
+    samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
+
+    sig_D_e_nu=df.query(f'DecayMode=={DecayMode["sig_D_e_nu"].value} and \
+                                    B0_mcErrors<16 and {norms_selection}').copy()
+    sig_Dst_e_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_e_nu"].value} and \
+                                        B0_mcErrors<64 and {norms_selection}').copy()
+    samples[r'$D\ell\nu$'] = sig_D_e_nu
+    samples[r'$D^\ast\ell\nu$'] = sig_Dst_e_nu
+
+    Dstst_tau_nu=df.query(Dstst_tau_nu_selection).copy()
+    samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
+
+    Dstst_e_nu=df.query(Dstst_e_nu_selection).copy()
+    samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_e_nu
+
+
+    #sig_D_mu_nu=df.query('DecayMode=="sig_D_mu_nu" and B0_mcErrors<16').copy()
+    #sig_Dst_mu_nu=df.query('DecayMode=="sig_Dst_mu_nu" and (16<=B0_mcErrors<32 or B0_mcErrors<8)').copy()
+    #all_Dstst_mu_nu=df.query('DecayMode=="all_Dstst_mu_nu" and (16<=B0_mcErrors<64 or B0_mcErrors<8)').copy()
+
+    #Bkg components
+    bkg_fakeD = df.query('abs(D_mcPDG)!=411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
+    bkg_fakeTracksClusters = df.query('B0_mcErrors==512 and B0_isContinuumEvent!=1').copy()
+    bkg_fakeDTC = pd.concat([bkg_fakeD, bkg_fakeTracksClusters])
+    samples[r'bkg_fakeDTC'] = bkg_fakeDTC
+
+    bkg_combinatorial = df.query('B0_mcPDG==300553 and abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
+    bkg_sigOtherBDTaudecay = df.query(f'(DecayMode=={DecayMode["bkg"].value} or \
+                 DecayMode=={DecayMode["sig_D_mu_nu"].value} or DecayMode=={DecayMode["sig_Dst_mu_nu"].value} or \
+                 DecayMode=={DecayMode["all_Dstst_mu_nu"].value}) and B0_mcPDG!=300553 and \
+                 abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
+    bkg_fakeB = pd.concat([bkg_combinatorial, bkg_sigOtherBDTaudecay])
+    samples[r'bkg_fakeB'] = bkg_fakeB
+
+    bkg_continuum = df.query('B0_isContinuumEvent==1').copy()
+    samples[r'bkg_continuum'] = bkg_continuum
+
+    bkg_others = pd.concat([df,
+                            sig_D_e_nu,
+                            sig_D_tau_nu,
+                            sig_Dst_e_nu,
+                            sig_Dst_tau_nu,
+                            Dstst_e_nu,
+                            Dstst_tau_nu,
+                            bkg_fakeDTC,
+                            bkg_fakeB,
+                            bkg_continuum]).drop_duplicates(keep=False)
+    samples[r'bkg_others'] = bkg_others
+    
+    for name, df in samples.items():
+        df['mode']=name
+
+    df = pd.concat([df for df in samples.values()],ignore_index=True).reset_index(drop=True)
+    df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
+    
+    return df, samples
+
+    # Weird! the bkg_others contains some events with
+    # correct sig decay hash chain and correct B0_mcPDG, D_mcPDG, e_genMotherPDG,
+    # but with 128< B0_mcErrors < 256 (misID)
+    
+def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
+    sig = pd.concat(sig_data)
+    bkg = pd.concat(bkg_data)
+    sig_tot = len(sig)
+    bkg_tot = len(bkg)
+    BDT_FOM = []
+    BDT_FOM_err = []
+    BDT_sigEff = []
+    BDT_sigEff_err = []
+    BDT_bkgEff = []
+    BDT_bkgEff_err = []
+    for i in test_points[0]:
+        for j in test_points[1]:
+            for k in test_points[2]:
+                nsig = len(sig.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
+                nbkg = len(bkg.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
+                tot = nsig+nbkg
+                tot_err = np.sqrt(tot)
+                FOM = nsig / tot_err # s / √(s+b)
+                FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
+
+                BDT_FOM.append(round(FOM,2))
+                BDT_FOM_err.append(round(FOM_err,2))
+
+                sigEff = nsig / sig_tot
+                sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
+                bkgEff = nbkg / bkg_tot
+                bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
+                BDT_sigEff.append(round(sigEff,2))
+                BDT_sigEff_err.append(round(sigEff_err,2))
+                BDT_bkgEff.append(round(bkgEff,2))
+                BDT_bkgEff_err.append(round(bkgEff_err,2))
+    print(f'{BDT_FOM=}')
+    print(f'{BDT_sigEff=}')
+    print(f'{BDT_bkgEff=}')
+
 
 # +
 ## Plotting
@@ -320,6 +444,34 @@ class mpl:
 
         axs[0].set_title('signals')
         axs[1].set_title('normalization')
+        axs[0].grid()
+        axs[1].grid()
+        
+    def plot_norms_overlaid(self, variable, cut=None):
+        fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
+        fig.suptitle(f'Overlaid norms ({cut=})', y=1,fontsize=16)
+        fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
+        #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
+        #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
+        fig.supxlabel(f'{variable}',fontsize=16)
+
+        for sample_name, sample in self.samples.items():
+            if sample_name not in [r'$D\ell\nu$',r'$D^\ast\ell\nu$']:
+                continue
+            (counts1, bins) = np.histogram(
+                sample.query(cut)[variable] if cut else sample[variable], bins=50)
+            (counts2, bins) = np.histogram(
+                sample.drop(sample.query(cut).index)[variable] if cut else sample[variable], bins=bins)
+            factor=1
+
+            axs[0].hist(bins[:-1], bins, weights=factor*counts2,label=sample_name,**self.kwarg)
+            axs[0].legend()
+
+            axs[1].hist(bins[:-1], bins, weights=factor*counts1,label=sample_name,**self.kwarg)
+            axs[1].legend()
+
+        axs[0].set_title('Main')
+        axs[1].set_title('Tail')
         axs[0].grid()
         axs[1].grid()
         
@@ -1010,125 +1162,3 @@ def ply_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1]
     )
 
     fig.show()
-
-# +
-## dataframe samples
-import pandas as pd
-def get_dataframe_samples(df):
-    samples = {}
-    files = ['sigDDst', 'normDDst','bkgDststp_tau', 'bkgDstst0_tau','bkgDstst0_ell']
-
-    Dstst_e_nu_selection = f'DecayMode=={DecayMode["all_Dstst_e_nu"].value} and \
-                            D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG and \
-            ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
-
-    Dstst_tau_nu_selection = f'DecayMode=={DecayMode["all_Dstst_tau_nu"].value} and \
-                            D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15 and \
-            ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
-
-    signals_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15'
-    norms_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG'
-
-    # Sig components
-    sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
-                                            B0_mcErrors<32 and {signals_selection}').copy()
-
-    sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
-                                            B0_mcErrors<64 and {signals_selection}').copy()
-    samples[r'$D\tau\nu$'] = sig_D_tau_nu
-    samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
-
-    sig_D_e_nu=df.query(f'DecayMode=={DecayMode["sig_D_e_nu"].value} and \
-                                    B0_mcErrors<16 and {norms_selection}').copy()
-    sig_Dst_e_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_e_nu"].value} and \
-                                        B0_mcErrors<64 and {norms_selection}').copy()
-    samples[r'$D\ell\nu$'] = sig_D_e_nu
-    samples[r'$D^\ast\ell\nu$'] = sig_Dst_e_nu
-
-    Dstst_tau_nu=df.query(Dstst_tau_nu_selection).copy()
-    samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
-
-    Dstst_e_nu=df.query(Dstst_e_nu_selection).copy()
-    samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_e_nu
-
-
-    #sig_D_mu_nu=df.query('DecayMode=="sig_D_mu_nu" and B0_mcErrors<16').copy()
-    #sig_Dst_mu_nu=df.query('DecayMode=="sig_Dst_mu_nu" and (16<=B0_mcErrors<32 or B0_mcErrors<8)').copy()
-    #all_Dstst_mu_nu=df.query('DecayMode=="all_Dstst_mu_nu" and (16<=B0_mcErrors<64 or B0_mcErrors<8)').copy()
-
-    #Bkg components
-    bkg_fakeD = df.query('abs(D_mcPDG)!=411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
-    bkg_fakeTracksClusters = df.query('B0_mcErrors==512 and B0_isContinuumEvent!=1').copy()
-    bkg_fakeDTC = pd.concat([bkg_fakeD, bkg_fakeTracksClusters])
-    samples[r'bkg_fakeDTC'] = bkg_fakeDTC
-
-    bkg_combinatorial = df.query('B0_mcPDG==300553 and abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
-    bkg_sigOtherBDTaudecay = df.query(f'(DecayMode=={DecayMode["bkg"].value} or \
-                 DecayMode=={DecayMode["sig_D_mu_nu"].value} or DecayMode=={DecayMode["sig_Dst_mu_nu"].value} or \
-                 DecayMode=={DecayMode["all_Dstst_mu_nu"].value}) and B0_mcPDG!=300553 and \
-                 abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
-    bkg_fakeB = pd.concat([bkg_combinatorial, bkg_sigOtherBDTaudecay])
-    samples[r'bkg_fakeB'] = bkg_fakeB
-
-    bkg_continuum = df.query('B0_isContinuumEvent==1').copy()
-    samples[r'bkg_continuum'] = bkg_continuum
-
-    bkg_others = pd.concat([df,
-                            sig_D_e_nu,
-                            sig_D_tau_nu,
-                            sig_Dst_e_nu,
-                            sig_Dst_tau_nu,
-                            Dstst_e_nu,
-                            Dstst_tau_nu,
-                            bkg_fakeDTC,
-                            bkg_fakeB,
-                            bkg_continuum]).drop_duplicates(keep=False)
-    samples[r'bkg_others'] = bkg_others
-    
-    for name, df in samples.items():
-        df['mode']=name
-
-    df = pd.concat([df for df in samples.values()],ignore_index=True).reset_index()
-    df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
-    
-    return df, samples
-
-    # Weird! the bkg_others contains some events with
-    # correct sig decay hash chain and correct B0_mcPDG, D_mcPDG, e_genMotherPDG,
-    # but with 128< B0_mcErrors < 256 (misID)
-    
-def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
-    sig = pd.concat(sig_data)
-    bkg = pd.concat(bkg_data)
-    sig_tot = len(sig)
-    bkg_tot = len(bkg)
-    BDT_FOM = []
-    BDT_FOM_err = []
-    BDT_sigEff = []
-    BDT_sigEff_err = []
-    BDT_bkgEff = []
-    BDT_bkgEff_err = []
-    for i in test_points[0]:
-        for j in test_points[1]:
-            for k in test_points[2]:
-                nsig = len(sig.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
-                nbkg = len(bkg.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
-                tot = nsig+nbkg
-                tot_err = np.sqrt(tot)
-                FOM = nsig / tot_err # s / √(s+b)
-                FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
-
-                BDT_FOM.append(round(FOM,2))
-                BDT_FOM_err.append(round(FOM_err,2))
-
-                sigEff = nsig / sig_tot
-                sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
-                bkgEff = nbkg / bkg_tot
-                bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
-                BDT_sigEff.append(round(sigEff,2))
-                BDT_sigEff_err.append(round(sigEff_err,2))
-                BDT_bkgEff.append(round(bkgEff,2))
-                BDT_bkgEff_err.append(round(bkgEff_err,2))
-    print(f'{BDT_FOM=}')
-    print(f'{BDT_sigEff=}')
-    print(f'{BDT_bkgEff=}')

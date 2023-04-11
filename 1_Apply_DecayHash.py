@@ -14,7 +14,6 @@ import argparse
 import decayHash
 from decayHash import DecayHashMap
 import ROOT
-import root_pandas
 import uproot
 import pandas
 import numpy as np
@@ -106,31 +105,20 @@ if __name__ == "__main__":
     args = argparser().parse_args()
     
     # apply offline cuts
-    if args.mctype=='generic':
-        cut = 'D_vtxReChi2<13 and B0_vtxReChi2<14 and -3.2<B0_deltaE<0 and e_p>0.2 and \
-               5<B0_roeMbc_my_mask and 4.3<B0_CMS2_weMbc and B0_CMS_E<5.4 and \
-               -5<B0_roeDeltae_my_mask<2 and -3<B0_CMS0_weDeltae<2 and \
-               abs(B0_roeCharge_my_mask)<3 and \
-               0.2967<B0_Lab5_weMissPTheta<2.7925 and 0.2967<B0_Lab6_weMissPTheta<2.7925 and \
-               0<B0_TagVReChi2<100 and 0<B0_TagVReChi2IP<100'
-    if args.mctype=='signal':
-        cut = 'D_vtxReChi2<13 and B0_vtxReChi2<14 and -3.2<B0_deltaE<0 and e_p>0.2 and \
-               5<B0_roeMbc_my_mask and 4.3<B0_CMS2_weMbc and B0_CMS_E<5.4 and \
-               -5<B0_roeDeltae_my_mask<2 and -3<B0_CMS0_weDeltae<2 and \
-               abs(B0_roeCharge_my_mask)<3 and (nElectrons90+nMuons90)==1 and \
-               0.2967<B0_Lab5_weMissPTheta<2.7925 and 0.2967<B0_Lab6_weMissPTheta<2.7925 and \
-               0<B0_TagVReChi2<100 and 0<B0_TagVReChi2IP<100'
+    cut = 'D_vtxReChi2<13 and B0_vtxReChi2<14 and -3.2<B0_deltaE<0 and \
+           5<B0_roeMbc_my_mask and 4.3<B0_CMS2_weMbc and B0_CMS_E<5.4 and \
+           -5<B0_roeDeltae_my_mask<2 and -3<B0_CMS0_weDeltae<2 and \
+           abs(B0_roeCharge_my_mask)<3 and \
+           0.2967<B0_Lab5_weMissPTheta<2.7925 and 0.2967<B0_Lab6_weMissPTheta<2.7925 and \
+           0<B0_TagVReChi2<100 and 0<B0_TagVReChi2IP<100'
+    # lepton veto (nElectrons90+nMuons90)==1; e_p>0.2, mu_p>0.6
     
     if args.nohash:
         # Load Ntuples
         print(colored(f'Loading Ntuples', 'blue'))
-        # with uproot.concatenate(args.input, library="np") as dict:
-        #     data_dict = dict
-        # df = pandas.DataFrame(data_dict)
-        # with uproot.open(file_location)['B0'] as file:
-        #     df = file.arrays(library="pd")
         file_path_list = [f'{args.dir}/{file}' for file in args.input]
-        df = root_pandas.read_root(file_path_list)
+        with uproot.concatenate(file_path_list, library="np") as data_dict:
+            df = pandas.DataFrame(data_dict)
         # Apply offline cuts
         df_cut = df.query(cut).copy()
         df_cut['B0_mcPDG'] = df_cut['B0_mcPDG'].fillna(0)
@@ -142,7 +130,11 @@ if __name__ == "__main__":
         samples = []
         for filename in args.input:
             print(colored(f'Loading {filename}', 'blue'))
-            df = root_pandas.read_root(f'{args.dir}/{filename}')
+            file_location = f'{args.dir}/{filename}'
+#             with uproot.concatenate([file_location], library="np") as data_dict:
+#                 df = pandas.DataFrame(data_dict)
+            with uproot.open(file_location)['B0'] as file:
+                df = pandas.DataFrame(file.arrays(library="np"))
             # Offline cuts
             df_cut = df.query(cut).copy()
             print(colored(f'sample size decreases from {len(df)} to {len(df_cut)} after cut', 'blue'))
@@ -153,8 +145,11 @@ if __name__ == "__main__":
         df_merged = pandas.concat(samples,ignore_index=True)
             
     df_merged['Signal'] = False
-    df_merged.eval('p_D_l = D_CMS_p + e_CMS_p', inplace=True)
     df_merged.eval('B_D_ReChi2 = B0_vtxReChi2 + D_vtxReChi2', inplace=True)
+    if args.lmode=='e':
+        df_merged.eval('p_D_l = D_CMS_p + e_CMS_p', inplace=True)
+    elif args.lmode=='mu':
+        df_merged.eval('p_D_l = D_CMS_p + mu_CMS_p', inplace=True)
     
     # Apply BCS, should be after MVA cuts
     #print(colored('Selecting the Best Candidate', 'magenta'))
