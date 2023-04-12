@@ -87,12 +87,39 @@ def apply_decayHash(df, filename, args):
         return False
 
     def decay_mode(row):
-        for name,modes in hash_modes.items():
-            if found(modes,row):
-                return util.DecayMode[name].value
-        return util.DecayMode['bkg'].value
+        # return bkg for mis-reconstructed events
+        if abs(int(row['B0_mcPDG'])) not in [511, 521]:
+            return util.DecayMode['bkg'].value
+        if abs(int(row['D_mcPDG']))!=411:
+            return util.DecayMode['bkg'].value
+        if abs(int(row[f'{args.lmode}_genMotherPDG'])) not in [15, 511, 521]:
+            return util.DecayMode['bkg'].value
+        if abs(int(row[f'{args.lmode}_mcPDG'])) not in [11, 13]:
+            return util.DecayMode['bkg'].value
+        
+        # return signal modes
+        sig_mode_list = ['sig_D_tau_nu', 'sig_Dst_tau_nu','all_Dstst_tau_nu']
+        if abs(int(row[f'{args.lmode}_genMotherPDG']))==15:
+            for name,modes in hash_modes.items():
+                if name not in sig_mode_list:
+                    continue
+                if found(modes,row):
+                    return util.DecayMode[name].value
+            return util.DecayMode['bkg'].value
+        
+        norm_mode_list = ['sig_D_e_nu','sig_Dst_e_nu', 'all_Dstst_e_nu',
+                          'sig_D_mu_nu', 'sig_Dst_mu_nu', 'all_Dstst_mu_nu']
+        if abs(int(row[f'{args.lmode}_genMotherPDG'])) in [511, 521]:
+            for name,modes in hash_modes.items():
+                if name not in norm_mode_list:
+                    continue
+                if found(modes,row):
+                    return util.DecayMode[name].value
+            return util.DecayMode['bkg'].value
 
     decayhash=f'{args.dir}/hashmap_{filename}'
+    if filename.endswith('parquet'):
+        decayhash=f'{args.dir}/hashmap_{filename.strip("parquet")}root'
     hashmap2 = DecayHashMap(decayhash, removeRadiativeGammaFlag=True)
 
     print(colored('Appending Decayhash column to the dataframe', 'magenta'))
@@ -133,8 +160,11 @@ if __name__ == "__main__":
             file_location = f'{args.dir}/{filename}'
 #             with uproot.concatenate([file_location], library="np") as data_dict:
 #                 df = pandas.DataFrame(data_dict)
-            with uproot.open(file_location)['B0'] as file:
-                df = pandas.DataFrame(file.arrays(library="np"))
+            if filename.endswith('parquet'):
+                df = pandas.read_parquet(file_location, engine="pyarrow")
+            else:
+                with uproot.open(file_location)['B0'] as file:
+                    df = pandas.DataFrame(file.arrays(library="np"))
             # Offline cuts
             df_cut = df.query(cut).copy()
             print(colored(f'sample size decreases from {len(df)} to {len(df_cut)} after cut', 'blue'))

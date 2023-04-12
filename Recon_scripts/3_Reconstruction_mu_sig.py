@@ -259,8 +259,8 @@ ma.applyChargedPidMVA(['pi+:roe'], path=roe_path, trainingMode=1,
 ma.variablesToEventExtraInfo('B0:Dl', {'p':'B0_p'}, option=0, path=main_path)
 
 ma.copyList('pi+:roe2', 'pi+:roe', writeOut=False, path=roe_path)
-ma.applyCuts(f"pi+:roe", "pidChargedBDTScore(11, ALL)>0.5 and pt>0.2 and thetaInCDCAcceptance and nCDCHits>0 and nPXDHits>0", path=roe_path)
-ma.applyCuts(f"pi+:roe2", "pidChargedBDTScore(13, ALL)>0.5 and pt>0.6", path=roe_path)
+ma.applyCuts(f"pi+:roe", "pidChargedBDTScore(11, ALL)>0.5 and p>0.2 and thetaInCDCAcceptance and nCDCHits>0 and nPXDHits>0", path=roe_path)
+ma.applyCuts(f"pi+:roe2", "pidChargedBDTScore(13, ALL)>0.5 and thetaInCDCAcceptance and inKLMAcceptance", path=roe_path)
 
 ma.variablesToEventExtraInfo('pi+:roe', {'pidChargedBDTScore(11, ALL)':'ROEeidBDT'}, option=1, path=roe_path)
 ma.variablesToEventExtraInfo('pi+:roe2', {'pidChargedBDTScore(13, ALL)':'ROEmuidBDT'}, option=1, path=roe_path)

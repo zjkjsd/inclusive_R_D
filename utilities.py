@@ -256,48 +256,90 @@ DecayMode = Enum('DecayMode', ['bkg', 'sig_D_tau_nu', 'sig_D_e_nu', 'sig_Dst_tau
 # +
 ## dataframe samples
 import pandas as pd
-def get_dataframe_samples(df):
+def get_dataframe_samples(df, mode):
     samples = {}
-    files = ['sigDDst', 'normDDst','bkgDststp_tau', 'bkgDstst0_tau','bkgDstst0_ell']
+    if mode == 'e':
+        Dstst_e_nu_selection = f'DecayMode=={DecayMode["all_Dstst_e_nu"].value} and \
+                                D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG and \
+                ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
 
-    Dstst_e_nu_selection = f'DecayMode=={DecayMode["all_Dstst_e_nu"].value} and \
-                            D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG and \
-            ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
+        Dstst_tau_nu_selection = f'DecayMode=={DecayMode["all_Dstst_tau_nu"].value} and \
+                                D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15 and \
+                ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
 
-    Dstst_tau_nu_selection = f'DecayMode=={DecayMode["all_Dstst_tau_nu"].value} and \
-                            D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15 and \
-            ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
+        signals_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15'
+        norms_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG'
 
-    signals_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_mcPDG*e_genMotherPDG==11*15'
-    norms_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*e_mcPDG==411*11 and e_genMotherPDG==B0_mcPDG'
+        # Sig components
+        sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
+                                                B0_mcErrors<32 and {signals_selection}').copy()
 
-    # Sig components
-    sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
-                                            B0_mcErrors<32 and {signals_selection}').copy()
+        sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
+                                                B0_mcErrors<64 and {signals_selection}').copy()
+        samples[r'$D\tau\nu$'] = sig_D_tau_nu
+        samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
 
-    sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
-                                            B0_mcErrors<64 and {signals_selection}').copy()
-    samples[r'$D\tau\nu$'] = sig_D_tau_nu
-    samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
+        sig_D_ell_nu=df.query(f'DecayMode=={DecayMode["sig_D_e_nu"].value} and \
+                                        B0_mcErrors<16 and {norms_selection}').copy()
 
-    sig_D_e_nu=df.query(f'DecayMode=={DecayMode["sig_D_e_nu"].value} and \
-                                    B0_mcErrors<16 and {norms_selection}').copy()
-    sig_Dst_e_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_e_nu"].value} and \
-                                        B0_mcErrors<64 and {norms_selection}').copy()
-    samples[r'$D\ell\nu$'] = sig_D_e_nu
-    samples[r'$D^\ast\ell\nu$'] = sig_Dst_e_nu
+        sig_Dst_ell_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_e_nu"].value} and \
+                                            B0_mcErrors<64 and {norms_selection}').copy()
 
-    Dstst_tau_nu=df.query(Dstst_tau_nu_selection).copy()
-    samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
+        samples[r'$D\ell\nu$'] = sig_D_ell_nu
+        samples[r'$D^\ast\ell\nu$'] = sig_Dst_ell_nu
 
-    Dstst_e_nu=df.query(Dstst_e_nu_selection).copy()
-    samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_e_nu
+        Dstst_tau_nu=df.query(Dstst_tau_nu_selection).copy()
+        samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
 
+        Dstst_ell_nu=df.query(Dstst_e_nu_selection).copy()
+        samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_ell_nu
+        
+        bkg_sigOtherBDTaudecay = df.query(f'(DecayMode=={DecayMode["bkg"].value} or \
+                 DecayMode=={DecayMode["sig_D_mu_nu"].value} or DecayMode=={DecayMode["sig_Dst_mu_nu"].value} or \
+                 DecayMode=={DecayMode["all_Dstst_mu_nu"].value}) and B0_mcPDG!=300553 and \
+                 abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
 
-    #sig_D_mu_nu=df.query('DecayMode=="sig_D_mu_nu" and B0_mcErrors<16').copy()
-    #sig_Dst_mu_nu=df.query('DecayMode=="sig_Dst_mu_nu" and (16<=B0_mcErrors<32 or B0_mcErrors<8)').copy()
-    #all_Dstst_mu_nu=df.query('DecayMode=="all_Dstst_mu_nu" and (16<=B0_mcErrors<64 or B0_mcErrors<8)').copy()
+    elif mode == 'mu':
+        Dstst_mu_nu_selection = f'DecayMode=={DecayMode["all_Dstst_mu_nu"].value} and \
+                                D_mcPDG*mu_mcPDG==411*13 and mu_genMotherPDG==B0_mcPDG and \
+                ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
 
+        Dstst_tau_nu_selection = f'DecayMode=={DecayMode["all_Dstst_tau_nu"].value} and \
+                                D_mcPDG*mu_mcPDG==411*13 and mu_mcPDG*mu_genMotherPDG==13*15 and \
+                ((B0_mcErrors<64 and B0_mcPDG*D_mcPDG==-511*411) or (B0_mcErrors<512 and abs(B0_mcPDG)==521))'
+
+        signals_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*mu_mcPDG==411*13 and mu_mcPDG*mu_genMotherPDG==13*15'
+        norms_selection = 'B0_mcPDG*D_mcPDG==-511*411 and D_mcPDG*mu_mcPDG==411*13 and mu_genMotherPDG==B0_mcPDG'
+
+        # Sig components
+        sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
+                                                B0_mcErrors<32 and {signals_selection}').copy()
+
+        sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
+                                                B0_mcErrors<64 and {signals_selection}').copy()
+        samples[r'$D\tau\nu$'] = sig_D_tau_nu
+        samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
+
+        sig_D_ell_nu=df.query(f'DecayMode=={DecayMode["sig_D_mu_nu"].value} and \
+                                        B0_mcErrors<16 and {norms_selection}').copy()
+
+        sig_Dst_ell_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_mu_nu"].value} and \
+                                            B0_mcErrors<64 and {norms_selection}').copy()
+
+        samples[r'$D\ell\nu$'] = sig_D_ell_nu
+        samples[r'$D^\ast\ell\nu$'] = sig_Dst_ell_nu
+
+        Dstst_tau_nu=df.query(Dstst_tau_nu_selection).copy()
+        samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
+
+        Dstst_ell_nu=df.query(Dstst_mu_nu_selection).copy()
+        samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_ell_nu
+        
+        bkg_sigOtherBDTaudecay = df.query(f'(DecayMode=={DecayMode["bkg"].value} or \
+                 DecayMode=={DecayMode["sig_D_e_nu"].value} or DecayMode=={DecayMode["sig_Dst_e_nu"].value} or \
+                 DecayMode=={DecayMode["all_Dstst_e_nu"].value}) and B0_mcPDG!=300553 and \
+                 abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
+    
     #Bkg components
     bkg_fakeD = df.query('abs(D_mcPDG)!=411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
     bkg_fakeTracksClusters = df.query('B0_mcErrors==512 and B0_isContinuumEvent!=1').copy()
@@ -305,10 +347,6 @@ def get_dataframe_samples(df):
     samples[r'bkg_fakeDTC'] = bkg_fakeDTC
 
     bkg_combinatorial = df.query('B0_mcPDG==300553 and abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
-    bkg_sigOtherBDTaudecay = df.query(f'(DecayMode=={DecayMode["bkg"].value} or \
-                 DecayMode=={DecayMode["sig_D_mu_nu"].value} or DecayMode=={DecayMode["sig_Dst_mu_nu"].value} or \
-                 DecayMode=={DecayMode["all_Dstst_mu_nu"].value}) and B0_mcPDG!=300553 and \
-                 abs(D_mcPDG)==411 and B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
     bkg_fakeB = pd.concat([bkg_combinatorial, bkg_sigOtherBDTaudecay])
     samples[r'bkg_fakeB'] = bkg_fakeB
 
@@ -316,11 +354,11 @@ def get_dataframe_samples(df):
     samples[r'bkg_continuum'] = bkg_continuum
 
     bkg_others = pd.concat([df,
-                            sig_D_e_nu,
+                            sig_D_ell_nu,
                             sig_D_tau_nu,
-                            sig_Dst_e_nu,
+                            sig_Dst_ell_nu,
                             sig_Dst_tau_nu,
-                            Dstst_e_nu,
+                            Dstst_ell_nu,
                             Dstst_tau_nu,
                             bkg_fakeDTC,
                             bkg_fakeB,
@@ -335,9 +373,9 @@ def get_dataframe_samples(df):
     
     return df, samples
 
-    # Weird! the bkg_others contains some events with
+    # the bkg_others contains some events with
     # correct sig decay hash chain and correct B0_mcPDG, D_mcPDG, e_genMotherPDG,
-    # but with 128< B0_mcErrors < 256 (misID)
+    # but with 128< B0_mcErrors < 256 (misID), might be due to bremsstralung, decayinFlight misID
     
 def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
     sig = pd.concat(sig_data)
@@ -889,7 +927,7 @@ class ply:
         # Show the plot
         fig.show()
         
-    def hist2d(self, facet=False):
+    def hist2d(self, cut=None, facet=False):
         # Define number of colors to generate
         color_sequence = ['rgb(255,255,255)'] + px.colors.sequential.Rainbow[1:]
         num_colors = 9
@@ -897,7 +935,8 @@ class ply:
         my_colors = [[i/(num_colors-1), color_sequence[i]] for i in range(num_colors)]
 
         # Create a 2d histogram
-        fig = px.density_heatmap(self.df, x="B0_CMS3_weMissM2", y="p_D_l",
+        fig = px.density_heatmap(self.df.query(cut) if cut else self.df, 
+                                 x="B0_CMS3_weMissM2", y="p_D_l",
                                  marginal_x='histogram', marginal_y='histogram',
                                  nbinsx=40,nbinsy=40,color_continuous_scale=my_colors,
                                  template='simple_white', title='Signal MC',
