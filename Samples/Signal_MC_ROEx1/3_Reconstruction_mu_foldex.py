@@ -14,6 +14,7 @@ import vertex as vx
 analysis_gt = ma.getAnalysisGlobaltag()
 b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
 b2.conditions.append_globaltag(analysis_gt)
+b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
     
 # Define the path
 main_path = b2.Path()
@@ -54,7 +55,7 @@ ma.correctBremsBelle(outputListName="e+:corrected",
                      inputListName="e+:uncorrected",
                      gammaListName="gamma:bremsinput",
                      angleThreshold=0.15,
-                     multiplePhotons=False,
+                     multiplePhotons=True,
                      path=main_path)
 vm.addAlias("isBremsCorrected", "extraInfo(bremsCorrected)")
 

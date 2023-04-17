@@ -14,6 +14,7 @@ import vertex as vx
 analysis_gt = ma.getAnalysisGlobaltag()
 b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
 b2.conditions.append_globaltag(analysis_gt)
+b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
     
 # Define the path
 main_path = b2.Path()
@@ -54,7 +55,7 @@ ma.correctBremsBelle(outputListName="e+:corrected",
                      inputListName="e+:uncorrected",
                      gammaListName="gamma:bremsinput",
                      angleThreshold=0.15,
-                     multiplePhotons=False,
+                     multiplePhotons=True,
                      path=main_path)
 # ma.correctBrems(outputList="e+:corrected",
 #                 inputList="e+:uncorrected",
@@ -117,6 +118,7 @@ for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD','dr','dz','nCDCHits
     Daughters_vars.append(f'K_{variable}')
     Daughters_vars.append(f'pi1_{variable}')
     Daughters_vars.append(f'pi2_{variable}')
+    
     
 
 # vertex fitting D, save vtx variables before the 2nd freefit
@@ -467,6 +469,8 @@ vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
 
 # Kinematic variables in CMS
 cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
+cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
+cms_momentum_uncertainty = vu.create_aliases(vc.momentum_uncertainty, "useCMSFrame({variable})", "CMS")
 roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
 roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
 
@@ -482,29 +486,33 @@ roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({varia
 GenMCTags=['B0Mode','Bbar0Mode','BminusMode','BplusMode',
            'DminusMode','DplusMode','TauminusMode','TauplusMode',]
 
+vm.addAlias(f'EErr', f'E_uncertainty')
 
 b_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics + vc.deltae_mbc + vc.inv_mass
+    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics + vc.deltae_mbc + vc.inv_mass
     + roe_Mbc_Deltae + roe_cms_kinematics + roe_kinematics + roe_E_Q #+ roe_MC_kinematics
     + roe_multiplicities + roe_nCharged + CSVariables + we #+ roel_DOCA_Chi2
-    + vertex_vars + vc.flight_info + vc.mc_flight_info
+    + vertex_vars + vc.flight_info + vc.mc_flight_info + cms_momentum_uncertainty
     + ['vtxDDSig','DecayHash','DecayHashEx','TagVReChi2','TagVReChi2IP', 'roel_DistanceSig_dis',
-       'genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr'],
+       'genMotherPDG','mcErrors','mcPDG',],
     decay_string='^anti-B0:Dl -> D+:K2pi e-:corrected',
     prefix=['B0'])
 
 D_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
-    + vc.flight_info + vc.mc_flight_info + Daughters_vars + vertex_vars
-    + ['genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr',
-       'dM','BFM','A1FflightDistanceSig_IP'],
+    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
+    + vc.flight_info + vc.mc_flight_info + Daughters_vars + vertex_vars + cms_momentum_uncertainty
+    + ['genMotherPDG','mcErrors','mcPDG','dM','BFM','A1FflightDistanceSig_IP'],
     decay_string='anti-B0:Dl -> ^D+:K2pi e-:corrected',
     prefix=['D'])
 
+for i in range(2):
+    vm.addAlias(f'd{i}_mcPDG', f'daughter({i}, mcPDG)')
+    
 l_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics# + electron_id_weights
-    + ['genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr',
-       'dM','isBremsCorrected','nPXDHits','isCloneTrack'],
+    list_of_variables= cms_kinematics + cms_mc_kinematics 
+    + vc.kinematics + cms_momentum_uncertainty # + electron_id_weights
+    + ['genMotherPDG','mcErrors', 'mcPDG','dM','isBremsCorrected',
+       'nPXDHits','isCloneTrack','d0_mcPDG','d1_mcPDG'],
     decay_string='anti-B0:Dl -> D+:K2pi ^e-:corrected',
     prefix=['e'])
 

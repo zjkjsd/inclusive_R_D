@@ -12,6 +12,7 @@ import vertex as vx
 analysis_gt = ma.getAnalysisGlobaltag()
 b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
 b2.conditions.append_globaltag(analysis_gt)
+b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 
 # Define the path
 main_path = b2.Path()
@@ -52,7 +53,7 @@ ma.correctBremsBelle(outputListName="e+:corrected",
                      inputListName="e+:uncorrected",
                      gammaListName="gamma:bremsinput",
                      angleThreshold=0.15,
-                     multiplePhotons=False,
+                     multiplePhotons=True,
                      path=main_path)
 vm.addAlias("isBremsCorrected", "extraInfo(bremsCorrected)")
 
@@ -480,21 +481,21 @@ b_vars = vu.create_aliases_for_selected(
     + roe_multiplicities + roe_nCharged + CSVariables + we #+ roel_DOCA_Chi2
     + vertex_vars + vc.flight_info + vc.mc_flight_info
     + ['vtxDDSig','DecayHash','DecayHashEx','TagVReChi2','TagVReChi2IP', 'roel_DistanceSig_dis',
-       'genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr'],
+       'genMotherPDG','mcErrors','mcPDG','mcP','pErr'],
     decay_string='^anti-B0:Dl -> D+:K2pi mu-:mymu',
     prefix=['B0'])
 
 D_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
     + vc.flight_info + vc.mc_flight_info + Daughters_vars + vertex_vars
-    + ['genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr',
+    + ['genMotherPDG','mcErrors', 'mcPDG','mcP','pErr',
        'dM','BFM','A1FflightDistanceSig_IP'],
     decay_string='anti-B0:Dl -> ^D+:K2pi mu-:mymu',
     prefix=['D'])
 
 l_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + vc.kinematics# + electron_id_weights
-    + ['genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr',
+    + ['genMotherPDG','mcErrors', 'mcPDG','mcP','pErr',
        'dM','isBremsCorrected','nPXDHits','isCloneTrack'],
     decay_string='anti-B0:Dl -> D+:K2pi ^mu-:mymu',
     prefix=['mu'])

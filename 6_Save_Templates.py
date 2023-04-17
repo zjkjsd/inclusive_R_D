@@ -22,6 +22,12 @@ def argparser():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
+    parser.add_argument('-l', "--lmode",
+                        action="store",
+                        type=str,
+                        required=True,
+                        choices=['e', 'mu'],
+                        help="Lepton mode, e or mu")
     parser.add_argument('-t', "--template",
                         action="store",
                         type=str,
@@ -44,15 +50,21 @@ if __name__ == "__main__":
     # Load Ntuples
     training_variables = util.training_variables
     variables = util.variables
-    files = ['sigDDst', 'normDDst','bkgDststp_tau', 'bkgDstst0_tau','bkgDstst0_ell']
+    files = ['MC14ri_sigDDst_foldex_e_3/sigDDst_0.parquet', 
+             'MC14ri_normDDst_foldex_e_5/normDDst_0.parquet',
+             'MC14ri_Dststell2_foldex_e_2/Dststell2_0.parquet', 
+             'MC14ri_DststTau1_foldex_e_2/DststTau1_0.parquet',
+             'MC14ri_DststTau2_foldex_e_2/DststTau2_0.parquet']
 
     total = []
     for file_name in tqdm(files, desc=colored('Loading parquets', 'blue')):
-        filename=f'./Samples/Signal_MC14ri/MC14ri_{file_name}_bengal_e_2/{file_name}_bengal_e_2_0.parquet'
+        filename=f'./Samples/Signal_MC14ri/{file_name}'
         data = pd.read_parquet(filename, engine="pyarrow",
                                columns=['__experiment__','__run__','__event__','__production__',
-                                        'D_mcPDG', 'e_mcPDG','DecayMode', 'p_D_l', 'B_D_ReChi2',
-                                        'e_genMotherPDG','B0_mcPDG','B0_mcErrors','B0_isContinuumEvent']+variables
+                                        'B0_isContinuumEvent','DecayMode', 'p_D_l', 'B_D_ReChi2',
+                                        'B0_mcPDG','B0_mcErrors','D_mcErrors','D_mcPDG',
+                                        f'{args.lmode}_genMotherPDG', f'{args.lmode}_mcPDG',
+                                        f'{args.lmode}_mcErrors']+variables
                               )
         total.append(data)
     df = pd.concat(total,ignore_index=True).reset_index()
@@ -70,7 +82,7 @@ if __name__ == "__main__":
     del pred, df, lgb_out
 
     print(colored(f'Group the samples with MVA outputs', 'green'))
-    df, samples=util.get_dataframe_samples(df_lgb)
+    df, samples=util.get_dataframe_samples(df_lgb, args.lmode)
 
     # Inititalize the template json file
     workspace = args.template

@@ -88,9 +88,9 @@ def apply_decayHash(df, filename, args):
 
     def decay_mode(row):
         # return bkg for mis-reconstructed events
-        if abs(int(row['B0_mcPDG'])) not in [511, 521]:
+        if abs(int(row['D_mcPDG']))!=411 or int(row['D_mcErrors'])>=128:
             return util.DecayMode['bkg'].value
-        if abs(int(row['D_mcPDG']))!=411:
+        if abs(int(row['B0_mcPDG'])) not in [511, 521]:
             return util.DecayMode['bkg'].value
         if abs(int(row[f'{args.lmode}_genMotherPDG'])) not in [15, 511, 521]:
             return util.DecayMode['bkg'].value
@@ -101,8 +101,10 @@ def apply_decayHash(df, filename, args):
         sig_mode_list = ['sig_D_tau_nu', 'sig_Dst_tau_nu','all_Dstst_tau_nu']
         if abs(int(row[f'{args.lmode}_genMotherPDG']))==15:
             for name,modes in hash_modes.items():
-                if name not in sig_mode_list:
-                    continue
+                if name not in sig_mode_list: 
+                    continue # only tau mode is considered here
+                if name=='sig_D_tau_nu' and 28<int(row[f'B0_mcErrors'])<128:
+                    continue # if a pion is missing, it has to be a D*(**) mode
                 if found(modes,row):
                     return util.DecayMode[name].value
             return util.DecayMode['bkg'].value
@@ -111,8 +113,10 @@ def apply_decayHash(df, filename, args):
                           'sig_D_mu_nu', 'sig_Dst_mu_nu', 'all_Dstst_mu_nu']
         if abs(int(row[f'{args.lmode}_genMotherPDG'])) in [511, 521]:
             for name,modes in hash_modes.items():
-                if name not in norm_mode_list:
-                    continue
+                if name not in norm_mode_list: 
+                    continue # it has to be a ell mode
+                if name in ['sig_D_e_nu','sig_D_mu_nu'] and 16<int(row[f'B0_mcErrors'])<128:
+                    continue # if a photon or pion is missing, it has to be a D*(**) mode
                 if found(modes,row):
                     return util.DecayMode[name].value
             return util.DecayMode['bkg'].value
@@ -120,6 +124,8 @@ def apply_decayHash(df, filename, args):
     decayhash=f'{args.dir}/hashmap_{filename}'
     if filename.endswith('parquet'):
         decayhash=f'{args.dir}/hashmap_{filename.strip("parquet")}root'
+        
+    print(colored('Loading the Hash file', 'blue'))
     hashmap2 = DecayHashMap(decayhash, removeRadiativeGammaFlag=True)
 
     print(colored('Appending Decayhash column to the dataframe', 'magenta'))
@@ -148,8 +154,9 @@ if __name__ == "__main__":
             df = pandas.DataFrame(data_dict)
         # Apply offline cuts
         df_cut = df.query(cut).copy()
+        print(colored(f'sample size decreases from {len(df)} to {len(df_cut)} after cut', 'magenta'))
         df_cut['B0_mcPDG'] = df_cut['B0_mcPDG'].fillna(0)
-        print(colored(f'sample size decreases from {len(df)} to {len(df_cut)} after cut', 'blue'))
+        df_cut['D_mcPDG'] = df_cut['D_mcPDG'].fillna(0)
         df_merged = df_cut
         
     else:
@@ -167,19 +174,17 @@ if __name__ == "__main__":
                     df = pandas.DataFrame(file.arrays(library="np"))
             # Offline cuts
             df_cut = df.query(cut).copy()
-            print(colored(f'sample size decreases from {len(df)} to {len(df_cut)} after cut', 'blue'))
+            print(colored(f'sample size decreases from {len(df)} to {len(df_cut)} after cut', 'magenta'))
             # Apply DecayHash
             df_cut['B0_mcPDG'] = df_cut['B0_mcPDG'].fillna(0)
+            df_cut['D_mcPDG'] = df_cut['D_mcPDG'].fillna(0)
             apply_decayHash(df_cut, filename, args)
             samples.append(df_cut)
         df_merged = pandas.concat(samples,ignore_index=True)
             
     df_merged['Signal'] = False
     df_merged.eval('B_D_ReChi2 = B0_vtxReChi2 + D_vtxReChi2', inplace=True)
-    if args.lmode=='e':
-        df_merged.eval('p_D_l = D_CMS_p + e_CMS_p', inplace=True)
-    elif args.lmode=='mu':
-        df_merged.eval('p_D_l = D_CMS_p + mu_CMS_p', inplace=True)
+    df_merged.eval(f'p_D_l = D_CMS_p + {args.lmode}_CMS_p', inplace=True)
     
     # Apply BCS, should be after MVA cuts
     #print(colored('Selecting the Best Candidate', 'magenta'))
