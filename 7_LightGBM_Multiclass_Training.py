@@ -10,9 +10,10 @@ Usage: python3 7_LightGBM_Multiclass_Training.py (-o multiclassova -c)
 
 import argparse
 import pandas
-import root_pandas
+import uproot
 import lightgbm as lgb
 import gc
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 from termcolor import colored
@@ -50,11 +51,18 @@ if __name__ == "__main__":
 
     # load data
     print(colored(f'Loading data and initializing configrations', 'blue'))
-    signal = root_pandas.read_root('BDTs/MC14ri_signal.root', columns=variables)
-    bkg_continuum = root_pandas.read_root(['BDTs/MC14ri_qqbar.root',
-                                           'BDTs/MC14ri_taupair.root'], columns=variables)
-    bkg_DTCFake = root_pandas.read_root('BDTs/MC14ri_DTCFake.root', columns=variables)
-    bkg_BFake = root_pandas.read_root('BDTs/MC14ri_BFake.root', columns=variables)
+#     signal = root_pandas.read_root('BDTs/MC14ri_signal.root', columns=variables)
+#     bkg_BFake = root_pandas.read_root('BDTs/MC14ri_BFake.root', columns=variables)
+#     bkg_DTCFake = root_pandas.read_root('BDTs/MC14ri_DTCFake.root', columns=variables)
+#     bkg_continuum = root_pandas.read_root(['BDTs/MC14ri_qqbar.root',
+#                                            'BDTs/MC14ri_taupair.root'], columns=variables)
+    bkg_continuum = uproot.concatenate(['BDTs/MC14ri_qqbar.root:B0','BDTs/MC14ri_taupair.root:B0'], variables, library="pd")
+    with uproot.open('BDTs/MC14ri_signal.root:B0') as file:
+        signal = pandas.DataFrame(file.arrays(library="np"), columns=variables)
+    with uproot.open('BDTs/MC14ri_DTCFake.root:B0') as file:
+        bkg_DTCFake = pandas.DataFrame(file.arrays(library="np"), columns=variables)
+    with uproot.open('BDTs/MC14ri_BFake.root:B0') as file:
+        bkg_BFake = pandas.DataFrame(file.arrays(library="np"), columns=variables)
 
     # define multiclass label
     signal['Signal'] = 0
@@ -123,16 +131,16 @@ if __name__ == "__main__":
     eval_result2 = {}
     gbm = lgb.train(params,
                     lgb_train,
-                    num_boost_round=40,
+                    num_boost_round=10,
                     init_model=gbm, # or the file name path 'BDTs/LightGBM/lgbm_model.txt'
                     valid_sets=[lgb_train, lgb_eval],
                     valid_names=['train', 'test'],
                     callbacks=[lgb.reset_parameter(learning_rate=lambda iter: params['learning_rate'] * (0.99 ** iter)),
-                               lgb.reset_parameter(bagging_fraction=[0.7] * 20 + [0.6] * 20),
-                               lgb.early_stopping(5),
+                               lgb.reset_parameter(bagging_fraction=[0.7] * 5 + [0.6] * 5),
+                               lgb.early_stopping(2),
                                lgb.record_evaluation(eval_result2)])
 
-    print(colored('Finished the last 40 rounds with decay learning rates...', 'blue'))
+    print(colored('Finished the last 10 rounds with decay learning rates...', 'blue'))
     
 
     # save model and metric plots
@@ -146,10 +154,17 @@ if __name__ == "__main__":
     for valid_set in ['train', 'test']:
         for metric in params['metric']:
             eval_result1[valid_set][metric] += eval_result2[valid_set][metric]
+            
+    with open('BDTs/LightGBM/eval_result.json', "w") as f:
+        json.dump(eval_result1, f)
 
-    lgb.plot_metric(eval_result1, params['metric'][0], figsize=(12,9))
+    ax0 = lgb.plot_metric(eval_result1, params['metric'][0], figsize=(8,6))
+    ax0.set_xlabel("Iterations", fontsize=14)
+    ax0.set_ylabel(params['metric'][0], fontsize=14)
     plt.savefig(save_path+f"_{params['metric'][0]}.png")
-    lgb.plot_metric(eval_result1, params['metric'][1], figsize=(12,9))
+    ax1 = lgb.plot_metric(eval_result1, params['metric'][1], figsize=(8,6))
+    ax1.set_xlabel("Iterations", fontsize=14)
+    ax1.set_ylabel(params['metric'][1], fontsize=14)
     plt.savefig(save_path+f"_{params['metric'][1]}.png")
 
     # can only predict with the best iteration (or the saving iteration)

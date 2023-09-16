@@ -128,7 +128,7 @@ vertex_vars = ['vtxReChi2','vtxNDF','flightDistanceSig','flightTimeSig',]
 #ma.applyCuts('D+:K2pi', 'vtxReChi2<13', path=main_path)
 
 # Reconstruct B
-ma.reconstructDecay('anti-B0:Dl -> D+:K2pi mu-:mymu ?addbrems', cut='', path=main_path)
+ma.reconstructDecay('anti-B0:Dl =norad=> D+:K2pi mu-:mymu ?addbrems', cut='', path=main_path)
 vx.treeFit('anti-B0:Dl', conf_level=0.00, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
 
 # Get the distance between vertices De/IP and D+
@@ -461,6 +461,7 @@ vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
 
 # Kinematic variables in CMS
 cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
+cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
 roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
 roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
 
@@ -471,6 +472,9 @@ roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({varia
 #               0.2967<Lab5_weMissPTheta<2.7925 and 0.2967<Lab6_weMissPTheta<2.7925 and \
 #               0<TagVReChi2<100 and 0<TagVReChi2IP<100', path=main_path)
 
+ma.printMCParticles(onlyPrimaries=False, maxLevel=-1, path=main_path,
+                    showProperties=False, showMomenta=False, showVertices=False, showStatus=False, 
+                    suppressPrint=True)
 
 # GenMCTagTool
 GenMCTags=['B0Mode','Bbar0Mode','BminusMode','BplusMode',
@@ -478,28 +482,26 @@ GenMCTags=['B0Mode','Bbar0Mode','BminusMode','BplusMode',
 
 
 b_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics + vc.deltae_mbc + vc.inv_mass
+    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics + vc.deltae_mbc + vc.inv_mass
     + roe_Mbc_Deltae + roe_cms_kinematics + roe_kinematics + roe_E_Q #+ roe_MC_kinematics
     + roe_multiplicities + roe_nCharged + CSVariables + we #+ roel_DOCA_Chi2
     + vertex_vars + vc.flight_info + vc.mc_flight_info
     + ['vtxDDSig','DecayHash','DecayHashEx','TagVReChi2','TagVReChi2IP', 'roel_DistanceSig_dis',
-       'genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr'],
-    decay_string='^anti-B0:Dl -> D+:K2pi mu-:mymu',
+       'genMotherPDG','mcErrors','mcPDG','pErr'],
+    decay_string='^anti-B0:Dl =norad=> D+:K2pi mu-:mymu',
     prefix=['B0'])
 
 D_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
+    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
     + vc.flight_info + vc.mc_flight_info + Daughters_vars + vertex_vars
-    + ['genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr',
-       'dM','BFM','A1FflightDistanceSig_IP'],
-    decay_string='anti-B0:Dl -> ^D+:K2pi mu-:mymu',
+    + ['genMotherPDG','mcErrors','mcPDG','pErr','dM','BFM','A1FflightDistanceSig_IP'],
+    decay_string='anti-B0:Dl =norad=> ^D+:K2pi mu-:mymu',
     prefix=['D'])
 
 l_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics# + electron_id_weights
-    + ['genMotherPDG','mcErrors', 'mcP','pErr','mcPDG','mcPhi','phi','phiErr',
-       'dM','isBremsCorrected','nPXDHits','isCloneTrack'],
-    decay_string='anti-B0:Dl -> D+:K2pi ^mu-:mymu',
+    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics
+    + ['genMotherPDG','mcErrors', 'mcPDG','dM','nPXDHits','isCloneTrack','pErr'],
+    decay_string='anti-B0:Dl =norad=> D+:K2pi ^mu-:mymu',
     prefix=['mu'])
 
 #nu_vars = vu.create_aliases_for_selected(

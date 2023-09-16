@@ -9,78 +9,31 @@
 # ####################################################################
 
 import basf2 as b2
-mypath=b2.Path()
-
-# Load the EventInfoSetter module and set the exp/run/evt details
-# expList=1003 for early phase 3, 0 for full Belle2 geometry
-mypath.add_module("EventInfoSetter", expList=0, runList=0, evtNumList=10)
-
-# the command line code is: 
-# bsub -q l 'basf2 /current/directory/0_Gen_MC.py  D_tau/Dst_l  e/mu  -n 10000'
-# Add the generator
-import sys
-decaymode = sys.argv[1]
-light_lepton = sys.argv[2]
-decfile=f'/home/belle/zhangboy/R_D/Signal_MC_ROEx1/B2{decaymode}_nu/decfiles/B2{decaymode}_nu_{light_lepton}.dec'
-output =f'/home/belle/zhangboy/R_D/Signal_MC_ROEx1/B2{decaymode}_nu/MC/MC_{light_lepton}.root'
 import generators as ge
-ge.add_evtgen_generator(path=mypath, finalstate='signal', signaldecfile=decfile)
-
-# Simulate the detector response and the L1 trigger
 import simulation as si
-import background
-si.add_simulation(path=mypath, 
-                  bkgfiles=background.get_background_files())
-
-# Simulate the L1 trigger
-#import L1trigger as l1
-#l1.add_tsim(path=mypath)
-
-# Reconstruct the objects
 import reconstruction as re
-re.add_reconstruction(path=mypath)
-
-# Create the mDST output file
 import mdst
-mdst.add_mdst_output(path=mypath, filename=output)
+import glob
 
-# Process the steering path
-b2.process(path=mypath)
-
-# Finally, print out some statistics about the modules execution
-print(b2.statistics)
-
-""
-import basf2 as b2
-import generators as ge
-import simulation as si
-import L1trigger as l1
-import reconstruction as re
-import mdst as mdst
-import glob as glob
-
-# set database conditions (in addition to default)
-b2.conditions.append_globaltag('mc_production_MC15rd_a_exp20_bucket26')
-b2.conditions.append_globaltag('data_reprocessing_prompt')
-b2.conditions.append_globaltag('AIRFLOW_online_snapshot_20211110-092214')
-
+# set database conditions (in addition to default) release-05-02-00
+b2.conditions.prepend_globaltag("mc_production_MC14a")
 
 # background (collision) files
-bg = glob.glob('./*.root')
-#if running locally
-bg_local = glob.glob("./sub00/*.root")
-
+bg = glob.glob('/group/belle2/dataprod/BGOverlay/early_phase3/release-06-00-05/overlay/BGx1/set0/*.root')
 
 # create path
 main = b2.create_path()
 
 # specify number of events to be generated
-main.add_module("EventInfoSetter", expList=0, runList=0, evtNumList=10000)
+main.add_module("EventInfoSetter", expList=1003, runList=0, evtNumList=50000)
 
-# events generator
-
-# decay file
-decfile = b2.find_file('decfiles/dec/1163340000.dec')
+# the command line code is: 
+# bsub -q l 'basf2 /current/directory/0_Gen_MC.py  D_tau/Dst_l -n 10000'
+# Add the generator
+import sys
+decaymode = sys.argv[1]
+decfile=f'./B2{decaymode}_nu/decfiles/{sys.argv[2]}.dec'
+output =f'./B2{decaymode}_nu/MC/MC_{sys.argv[2]}.root'
 
 # generate events from decfile
 ge.add_evtgen_generator(path=main, finalstate='signal', signaldecfile=decfile)
@@ -93,7 +46,7 @@ si.add_simulation(main, bkgfiles=bg)
 re.add_reconstruction(main)
 
 # Finally add mdst output
-mdst.add_mdst_output(main, filename="mdst.root")
+mdst.add_mdst_output(main, filename=output)
 
 # process events and print call statistics
 b2.process(main)
