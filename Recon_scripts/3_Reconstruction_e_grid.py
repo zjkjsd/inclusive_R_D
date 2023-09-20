@@ -437,10 +437,11 @@ b_vars = vu.create_aliases_for_selected(
     decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
     prefix=['B0'])
 
+vm.addAlias('genGMPDG','genMotherPDG(1)')
 D_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + cms_mc_kinematics + vc.dalitz_3body + vc.inv_mass 
     + Daughters_vars + vertex_vars
-    + ['genMotherPDG','mcErrors','mcPDG','pErr','dM','BFM','A1FflightDistanceSig_IP'],
+    + ['genGMPDG','genMotherPDG','mcErrors','mcPDG','pErr','dM','BFM','A1FflightDistanceSig_IP'],
     decay_string='anti-B0:Dl =norad=> ^D+:K2pi e-:corrected',
     prefix=['D'])
 
@@ -450,7 +451,7 @@ vm.addAlias('pSig','formula((mcP - p)/pErr)')
 
 l_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics # + electron_id_weights
-    + ['genMotherPDG','mcErrors', 'mcPDG','dM','isBremsCorrected',
+    + ['genGMPDG','genMotherPDG','mcErrors', 'mcPDG','dM','isBremsCorrected',
        'nPXDHits','isCloneTrack','d0_mcPDG','d1_mcPDG','pSig'],
     decay_string='anti-B0:Dl =norad=> D+:K2pi ^e-:corrected',
     prefix=['e'])

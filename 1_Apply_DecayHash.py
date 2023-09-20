@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # +
 # #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
@@ -91,8 +92,10 @@ def apply_decayHash(df, filename, args):
         return False
 
     def decay_mode(row):
+        # mcErrors is complicated and handled separately in util
+        
         # return bkg for mis-reconstructed events
-        if abs(int(row['D_mcPDG']))!=411 or int(row['D_mcErrors'])>=128:
+        if abs(int(row['D_mcPDG']))!=411 or int(row['D_mcErrors'])>=8:
             return util.DecayMode['bkg'].value
         if abs(int(row['B0_mcPDG'])) not in [511, 521]:
             return util.DecayMode['bkg'].value
@@ -102,36 +105,89 @@ def apply_decayHash(df, filename, args):
             return util.DecayMode['bkg'].value
         
         # return signal modes
-        if abs(int(row[f'{args.lmode}_genMotherPDG']))==15:
-            sig_mode_list = ['sig_D_tau_nu', 'sig_Dst_tau_nu','Dstst_tau_nu_mixed','Dstst_tau_nu_charged']
-            for name,modes in hash_modes.items():
-                if name not in sig_mode_list: 
-                    continue # only tau mode is considered here
-                if name=='sig_D_tau_nu' and 32<=int(row[f'B0_mcErrors']):
-                    continue # if a pion is missing, it has to be a D*(**) mode
-                if found(modes,row):
-                    return util.DecayMode[name].value
+        for name,modes in hash_modes.items():
+            if name=='sig_D_tau_nu':
+                if abs(int(row[f'D_genMotherPDG']))==511 and abs(int(row[f'{args.lmode}_genMotherPDG']))==15: 
+                # + e_GMPDG==D_MPDG==B_mcPDG
+                    pass
                 else:
                     continue
-            return util.DecayMode['bkg'].value
-        
-        if abs(int(row[f'{args.lmode}_genMotherPDG'])) in [511, 521]:
-            norm_mode_list = ['sig_D_l_nu','sig_Dst_l_nu', 'res_Dstst_l_nu_mixed',
-                              'nonres_Dstst_l_nu_mixed', 'gap_Dstst_l_nu_mixed',
-                              'res_Dstst_l_nu_charged','nonres_Dstst_l_nu_charged']
-            for name,modes in hash_modes.items():
-                if name not in norm_mode_list: 
-                    continue # it has to be a ell mode
-                if name=='sig_D_l_nu' and 16<=int(row[f'B0_mcErrors']):
-                    continue # if a photon or pion is missing, it has to be a D*(**) mode
-                if found(modes,row):
-                    return util.DecayMode[name].value
+            if name=='sig_D_l_nu':
+                if abs(int(row[f'D_genMotherPDG']))==511 and abs(int(row[f'{args.lmode}_genMotherPDG']))==511: 
+                # + e_MPDG==D_MPDG==B_mcPDG
+                    pass
                 else:
                     continue
-            return util.DecayMode['bkg'].value
+            if name=='sig_Dst_tau_nu':
+                if abs(int(row[f'D_genMotherPDG']))==413 and abs(int(row[f'{args.lmode}_genMotherPDG']))==15: 
+                # + e_GMPDG==D_GMPDG==B_mcPDG
+                    pass
+                else:
+                    continue
+            if name=='sig_Dst_l_nu':
+                if abs(int(row[f'D_genMotherPDG']))==413 and abs(int(row[f'{args.lmode}_genMotherPDG']))==511: 
+                # + e_MPDG==D_GMPDG==B_mcPDG
+                    pass
+                else:
+                    continue
+            if name in ['Dstst_tau_nu_mixed','Dstst_tau_nu_charged']:
+                if abs(int(row[f'{args.lmode}_genMotherPDG']))==15:
+                # + e_GMPDG==B_mcPDG
+                    pass
+                else:
+                    continue
+            if name in ['res_Dstst_l_nu_mixed','res_Dstst_l_nu_charged']:
+                if abs(int(row[f'{args.lmode}_genMotherPDG'])) in [511,521]:
+                # + e_MPDG==B_mcPDG
+                    pass
+                else:
+                    continue
+            if name in ['nonres_Dstst_l_nu_mixed','gap_Dstst_l_nu_mixed']:
+                if (abs(int(row[f'D_genMotherPDG'])) in [413,511]) and abs(int(row[f'{args.lmode}_genMotherPDG']))==511: 
+                # + e_MPDG==B_mcPDG
+                    pass
+                else:
+                    continue
+            if name=='nonres_Dstst_l_nu_charged':
+                if (abs(int(row[f'D_genMotherPDG'])) in [413,521]) and abs(int(row[f'{args.lmode}_genMotherPDG']))==521: 
+                # + e_MPDG==B_mcPDG
+                    pass
+                else:
+                    continue
+            
+            if found(modes,row):
+                return util.DecayMode[name].value
+            else:
+                continue
+        return util.DecayMode['bkg'].value
+    
+#         # return signal modes
+#         if abs(int(row[f'{args.lmode}_genMotherPDG']))==15:
+#             sig_mode_list = ['sig_D_tau_nu', 'sig_Dst_tau_nu','Dstst_tau_nu_mixed','Dstst_tau_nu_charged']
+#             for name,modes in hash_modes.items():
+#                 if name not in sig_mode_list: 
+#                     continue # only tau mode is considered here
+#                 if found(modes,row):
+#                     return util.DecayMode[name].value
+#                 else:
+#                     continue
+#             return util.DecayMode['bkg'].value
         
-        else:
-            return util.DecayMode['bkg'].value
+#         if abs(int(row[f'{args.lmode}_genMotherPDG'])) in [511, 521]:
+#             norm_mode_list = ['sig_D_l_nu','sig_Dst_l_nu', 'res_Dstst_l_nu_mixed',
+#                               'nonres_Dstst_l_nu_mixed', 'gap_Dstst_l_nu_mixed',
+#                               'res_Dstst_l_nu_charged','nonres_Dstst_l_nu_charged']
+#             for name,modes in hash_modes.items():
+#                 if name not in norm_mode_list: 
+#                     continue # it has to be a ell mode
+#                 if found(modes,row):
+#                     return util.DecayMode[name].value
+#                 else:
+#                     continue
+#             return util.DecayMode['bkg'].value
+        
+#         else:
+#             return util.DecayMode['bkg'].value
 
     decayhash=f'{args.dir}/hashmap_{filename}'
     if filename.endswith('parquet'):

@@ -308,14 +308,13 @@ def get_dataframe_samples(df, mode, template=True):
     
     bkg_sigOtherBDTaudecay = df.query(f'DecayMode=={DecayMode["bkg"].value} and \
                  B0_mcPDG!=300553 and D_mcErrors<8 and \
-                 D_mcPDG*{mode}_mcPDG==411*{lepton_PDG[mode]} and \
-                 B0_mcErrors!=512 and B0_isContinuumEvent!=1').copy()
+                 B0_mcErrors!=512 and B0_isContinuumEvent!=1 and \
+                 ({lepton_misID} or D_mcPDG*{mode}_mcPDG==411*{lepton_PDG[mode]})').copy()
+                # lepton_misID and possible other decay
+                # or correct Dl but not a signal decay
     
     samples[r'bkg_Odecay'] = bkg_sigOtherBDTaudecay
     samples[r'bkg_combinatorial'] = bkg_combinatorial
-    
-    bkg_misID = df.query(f'{lepton_misID} and abs(D_mcPDG)==411 and ( abs(B0_mcPDG)==511 or abs(B0_mcPDG)==521 )').copy()
-    samples[r'bkg_misID'] = bkg_misID
     
     bkg_continuum = df.query('B0_isContinuumEvent==1').copy()
     samples[r'bkg_continuum'] = bkg_continuum
@@ -336,7 +335,6 @@ def get_dataframe_samples(df, mode, template=True):
                             bkg_fakeD,
                             bkg_sigOtherBDTaudecay,
                             bkg_combinatorial,
-                            bkg_misID,
                             bkg_continuum]).drop_duplicates(keep=False)
     samples[r'bkg_others'] = bkg_others
     
@@ -436,31 +434,58 @@ class mpl:
                 i+=1
                 j=0
                 
-    def plot_signals_overlaid(self, variable, cut=None):
-        fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
+    def plot_signals_overlaid(self, variable, cut=None, mask=[]):
+        fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=False, sharey=False)
         fig.suptitle(f'Overlaid signals ({cut=})', y=1,fontsize=16)
         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
         fig.supxlabel(f'{variable}',fontsize=16)
 
-        for sample_name, sample in self.samples.items():
-            (counts, bins) = np.histogram(
-                sample.query(cut)[variable] if cut else sample[variable], bins=50)
-            factor=1
-            if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
-                axs[0].hist(bins[:-1], bins, weights=factor*counts,label=sample_name,**self.kwarg)
-                axs[0].legend()
-            elif sample_name in [r'$D\ell\nu$',r'$D^\ast\ell\nu$',r'$D^{\ast\ast}\ell\nu$']:
-                axs[1].hist(bins[:-1], bins, weights=factor*counts,label=sample_name,**self.kwarg)
-                axs[1].legend()
+        for name, sample in self.samples.items():
+            if name in mask:
+                continue
+            selection_mask = sample.eval(cut)
+            left= sample[selection_mask] if cut else sample
+            right = sample[~selection_mask] if cut else sample
+            (counts_left, bins_left) = np.histogram(left[variable], bins=50)
+            (counts_right, bins_right) = np.histogram(right[variable], bins=50)
+            if name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',
+                        r'$D^{\ast\ast}\tau\nu$_mixed',
+                        r'$D^{\ast\ast}\tau\nu$_charged',
+                        r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
+                factor=1
+                
+            elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
+                          r'res_$D^{\ast\ast}\ell\nu$_charged',]:
+                factor=2
+                
+            elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
+                          r'nonres_$D^{\ast\ast}\ell\nu$_charged']:
+                factor=16
 
-        axs[0].set_title('signals')
-        axs[1].set_title('normalization')
+            elif name in [r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
+                factor=8
+                
+            else:
+                factor=1
+            
+            axs[0].hist(bins_left[:-1], bins_left, weights=factor*counts_left,
+                        label=name,**self.kwarg)
+            
+            axs[1].hist(bins_right[:-1], bins_right, weights=factor*counts_right,
+                        label=name,**self.kwarg)
+            
+            axs[1].legend()
+            
+        axs[0].set_title(f'Bin1 with {cut}')
+        axs[1].set_title(f'Bin2 with ~{cut}')
         axs[0].grid()
         axs[1].grid()
+        plt.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1.5)
         
-    def plot_norms_overlaid(self, variable, cut=None):
+        
+    def plot_tails_overlaid(self, variable, cut=None):
         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
         fig.suptitle(f'Overlaid norms ({cut=})', y=1,fontsize=16)
         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
@@ -495,32 +520,35 @@ class mpl:
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size==0 or name in mask:
                 continue
-            var_col= sample.query(cut)[variable] if cut else sample[variable]
-            (counts, bins) = np.histogram(var_col, bins=50)
-            factor=10
+            var_col= sample.query(cut) if cut else sample
+            (counts, bins) = np.histogram(var_col[variable], bins=50)
             if name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',
                         r'$D^{\ast\ast}\tau\nu$_mixed',
                         r'$D^{\ast\ast}\tau\nu$_charged',
-                        r'$D\ell\nu$',r'$D^\ast\ell\nu$',
-                        r'res_$D^{\ast\ast}\ell\nu$_mixed',
-                        r'res_$D^{\ast\ast}\ell\nu$_charged',]:
-                axs.hist(bins[:-1], bins, weights=counts,
-                         label=f'{name} \n{self.statistics(var_col)}',**self.kwarg)
+                        r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
+                factor=1
+                
+            elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
+                          r'res_$D^{\ast\ast}\ell\nu$_charged',]:
+                factor=2
                 
             elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
-                          r'gap_$D^{\ast\ast}\ell\nu$_mixed',
                           r'nonres_$D^{\ast\ast}\ell\nu$_charged']:
-                axs.hist(bins[:-1], bins, weights=factor*counts,
-                         label=f'{name} \n{self.statistics(var_col)}',**self.kwarg)
+                factor=16
+
+            elif name in [r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
+                factor=8
+                
             else:
-                axs.hist(bins[:-1], bins, weights=counts,
-                         label=f'{name} \n{self.statistics(var_col)}',**self.kwarg)
+                factor=1
+            axs.hist(bins[:-1], bins, weights=factor*counts,
+                    label=f'{name} \n{self.statistics(var_col[variable])}',**self.kwarg)
 
         axs.set_title(f'Overlaid signals ({cut=})')
         axs.set_xlabel(f'{variable}')
         axs.set_ylabel('# of candidates per bin')
         axs.grid()
-        plt.legend(bbox_to_anchor=(1,1.1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
+        plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
         
 
     def plot_hist_2d(self, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
