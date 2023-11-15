@@ -9,6 +9,7 @@
 # ####################################################################
 
 import basf2 as b2
+import b2test_utils as b2tu
 import generators as ge
 import simulation as si
 import reconstruction as re
@@ -16,7 +17,7 @@ import mdst
 import glob
 
 # set database conditions (in addition to default) release-05-02-00
-b2.conditions.prepend_globaltag("mc_production_MC14a")
+b2.conditions.prepend_globaltag("mc_production_MC15ri_a")
 
 # background (collision) files
 bg = glob.glob('/group/belle2/dataprod/BGOverlay/early_phase3/release-06-00-05/overlay/BGx1/set0/*.root')
@@ -33,7 +34,7 @@ main.add_module("EventInfoSetter", expList=1003, runList=0, evtNumList=50000)
 import sys
 decaymode = sys.argv[1]
 decfile=f'./B2{decaymode}_nu/decfiles/{sys.argv[2]}.dec'
-output =f'./B2{decaymode}_nu/MC/MC_{sys.argv[2]}.root'
+output =f'./B2{decaymode}_nu/MC/MC_{sys.argv[2]}_test.root'
 
 # generate events from decfile
 ge.add_evtgen_generator(path=main, finalstate='signal', signaldecfile=decfile)
@@ -49,5 +50,6 @@ re.add_reconstruction(main)
 mdst.add_mdst_output(main, filename=output)
 
 # process events and print call statistics
-b2.process(main)
+# b2.process(main)
+b2tu.safe_process(main)
 print(b2.statistics)

@@ -14,7 +14,7 @@ import lightgbm as lgb
 import pandas as pd
 import uproot
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 tqdm.pandas()
 
 def argparser():
@@ -73,24 +73,19 @@ if __name__ == "__main__":
     training_variables = util.training_variables
     variables = util.variables
 #     files = ['MC14ri_sigDDst_foldex_e_7/sigDDst_0.parquet', 
-#              'MC14ri_normDDst_foldex_e_7/normDDst_0.parquet',
+#              'MC14ri_normDDst_foldex_e_8/normDDst_0.parquet',
 #              'MC14ri_Dststell2_foldex_e_7/Dststell2_0.parquet', 
 #              'MC14ri_DststTau1_foldex_e_7/DststTau1_0.parquet',
 #              'MC14ri_DststTau2_foldex_e_7/DststTau2_0.parquet']
 
-
+    columns=['__experiment__','__run__','__event__','__production__','B0_isContinuumEvent',
+             'DecayMode', 'p_D_l', 'B_D_ReChi2','B0_mcPDG','B0_mcErrors','D_mcErrors','D_mcPDG',
+             'D_genMotherPDG',f'{args.lmode}_genMotherPDG', f'{args.lmode}_mcPDG',
+             f'{args.lmode}_mcErrors',f'{args.lmode}_pSig']+variables
+    
     for filename in tqdm(args.input, desc=colored('Loading input parquets', 'blue')):
         file_location = f'{args.dir}/{filename}'
-        data = pd.read_parquet(file_location, engine="pyarrow",
-                               columns=['__experiment__','__run__','__event__','__production__',
-                                        'B0_isContinuumEvent','DecayMode', 'p_D_l', 'B_D_ReChi2',
-                                        'B0_mcPDG','B0_mcErrors','D_mcErrors','D_mcPDG',
-                                        f'{args.lmode}_genMotherPDG', f'{args.lmode}_mcPDG',
-                                        f'{args.lmode}_mcErrors',f'{args.lmode}_CMS_mcP',
-                                        f'{args.lmode}_pErr']+variables
-                              )
-        
-        data.eval(f'{args.lmode}_pSig = ({args.lmode}_CMS_mcP - e_CMS_p)/{args.lmode}_pErr', inplace=True)
+        data = pd.read_parquet(file_location, engine="pyarrow",columns=columns)
 
         print(colored(f'Applying MVA...', 'green'))
         bst_lgb = lgb.Booster(model_file=f'./BDTs/LightGBM/lgbm_multiclass.txt')

@@ -234,6 +234,7 @@ if __name__ == "__main__":
             file_location = f'{args.dir}/{filename}'
             if filename.endswith('parquet'):
                 df = pandas.read_parquet(file_location, engine="pyarrow")
+                del df['__MCDecayString__']
             else:
                 with uproot.open(file_location)['B0'] as file:
                     df = pandas.DataFrame(file.arrays(entry_start=0,entry_stop=None,library="np",

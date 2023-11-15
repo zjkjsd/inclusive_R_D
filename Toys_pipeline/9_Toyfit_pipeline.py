@@ -60,7 +60,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
                                        hashed=True,
                                        description='relative path to pyhf workspace')
     
-    init_toy_pars = b2luigi.ListParameter(default=[1]*6, 
+    init_toy_pars = b2luigi.ListParameter(default=[1]*7, 
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
@@ -206,6 +206,10 @@ class pyhf_toy_asimov_fitTask(b2luigi.Task):
                                        hashed=True,
                                        description='relative path to pyhf workspace')
     
+    init_toy_pars = b2luigi.ListParameter(default=[1]*7, 
+                                          hashed=True,
+                                          hash_function=join_list_hash_function)
+    
     n_total_toys = b2luigi.IntParameter(default=100, description='Number of toys to generate')
 
     normalise_by_uncertainty = b2luigi.BoolParameter(default=True,
@@ -225,7 +229,7 @@ class pyhf_toy_asimov_fitTask(b2luigi.Task):
         for part in range(int(np.ceil(self.n_total_toys / n_max_toys_per_job))):
             yield self.clone(pyhf_toy_mle_part_fitTask,
                              workspace_path = self.workspace_path,
-                             init_toy_pars = [1]*6,
+                             init_toy_pars = self.init_toy_pars,
                              part=part,
                              n_toys=n_max_toys_per_job,
                              store_full=True if self.normalise_by_uncertainty else False)
@@ -240,6 +244,7 @@ class pyhf_toy_asimov_fitTask(b2luigi.Task):
             yield self.add_to_output('toy_fit_pulls_3.pdf')
             yield self.add_to_output('toy_fit_pulls_4.pdf')
             yield self.add_to_output('toy_fit_pulls_5.pdf')
+            yield self.add_to_output('toy_fit_pulls_6.pdf')
 
     def run(self):
         import zfit_utils
@@ -338,10 +343,12 @@ class pyhf_linearity_asimov_fitTask(b2luigi.Task):
     workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
                                        hashed=True,
                                        significant=False, description='relative path to pyhf workspace')
-
+    
     n_toys_per_point = b2luigi.IntParameter(default=100, 
                                             description='Number of toys to generate for each test point')
 
+    n_test_parameters = b2luigi.IntParameter(default=7, description='Number of poi')
+    
     n_test_points = b2luigi.IntParameter(default=50, description='Number of test points')
     
     normalise_by_uncertainty = b2luigi.BoolParameter(default=False,
@@ -362,7 +369,7 @@ class pyhf_linearity_asimov_fitTask(b2luigi.Task):
             
             yield self.clone(pyhf_toy_mle_part_fitTask,
                              workspace_path = self.workspace_path,
-                             init_toy_pars = list(rng.random(6)),
+                             init_toy_pars = list(rng.random(self.n_test_parameters)),
                              part=part,
                              n_toys=self.n_toys_per_point,
                              store_full=True if self.normalise_by_uncertainty else False)
@@ -375,6 +382,7 @@ class pyhf_linearity_asimov_fitTask(b2luigi.Task):
         yield self.add_to_output('toy_fit_linearity_3.pdf')
         yield self.add_to_output('toy_fit_linearity_4.pdf')
         yield self.add_to_output('toy_fit_linearity_5.pdf')
+        yield self.add_to_output('toy_fit_linearity_6.pdf')
 
     def run(self):
         import zfit_utils
@@ -469,6 +477,15 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
         yield self.clone(pyhf_toy_asimov_fitTask,
                          workspace_path = self.workspace_path,
                          n_total_toys = 10000,
+                         init_toy_pars = [1,1,1,1,1,1.2,1],
+                         normalise_by_uncertainty = True,
+                         produce_plots = True,
+                         store_full = True)
+        
+        yield self.clone(pyhf_toy_asimov_fitTask,
+                         workspace_path = self.workspace_path,
+                         n_total_toys = 10000,
+                         init_toy_pars = [1,1,1,1,1,0.8,1],
                          normalise_by_uncertainty = True,
                          produce_plots = True,
                          store_full = True)
@@ -476,6 +493,7 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
         yield self.clone(pyhf_linearity_asimov_fitTask,
                          workspace_path = self.workspace_path,
                          n_toys_per_point = 50,
+                         n_test_parameters = 7,
                          n_test_points = 50,
                          normalise_by_uncertainty = False,
                          store_full = False)
@@ -486,7 +504,7 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
 
     b2luigi.process(
-        pyhf_toys_wrapper(workspace_path='R_D_2d_workspace.json'),
+        pyhf_toys_wrapper(workspace_path='R_D_2d_workspace_newTM.json'),
         workers=int(1e4),
         batch=True,
 #         workers=1,
