@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # +
 # define BDT training variables
-spectators = ['__weight__', 'D_CMS_p', 'e_CMS_p', 'B0_CMS3_weMissM2', 'B0_CMS3_weQ2lnuSimple']
+spectators = ['__weight__', 'D_CMS_p', 'ell_CMS_p', 'B0_CMS3_weMissM2', 'B0_CMS3_weQ2lnuSimple']
 
 CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
                 "B0_KSFWV3",   "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
@@ -32,194 +32,49 @@ B_variables = ['B0_Lab5_weMissPTheta',
                'B0_nROE_K',                  'B0_TagVReChi2IP',]
 
 training_variables = CS_variables + DTC_variables + B_variables
-variables = training_variables + spectators
+mva_variables = training_variables + spectators
 
-# +
-## DecayHash
+analysis_variables=['__experiment__',    '__run__',    '__event__',    '__production__',
+                    'B0_isContinuumEvent','B0_mcPDG',  'B0_mcErrors',  'B0_mcDaughter_0_PDG',
+                    'B0_mcDaughter_1_PDG','D_mcErrors','D_genMotherPDG','D_mcPDG',
+                    'D_M',               'D_px',       'D_py',         'D_pz',
+                    'D_p',               'D_CMS_p',    'D_K_mcErrors', 'D_pi1_mcErrors',
+                    'D_pi2_mcErrors',    'D_K_pValue', 'D_pi1_pValue', 'D_pi2_pValue',
+                    'ell_genMotherPDG',  'ell_mcPDG',  'ell_mcErrors', 'ell_genGMPDG',
+                    'ell_px',            'ell_py',     'ell_pz',       'D_BFM',
+                    'ell_p',             'ell_CMS_p',  'ell_pSig',     'ell_pValue',
+                    'mode',              'p_D_l',      'B_D_ReChi2',
+                    'D_daughter_pValue_min',           'D_daughter_pValue_mean']
 
-from collections import OrderedDict
-
-# the order of keys might be important, try to keep the muon modes at the bottom for e reconstruction
-# the e modes will be kept at the bottom for a muon reconstruction
-mode_dict = {}
-mode_dict['e'] = OrderedDict()
-mode_dict['e']['sig_D_tau_nu']=[
-    '511 (-> -411 (-> 321 -211 -211) -15 (-> -11 12 -16) 16)',
-    '-511 (-> 411 (-> -321 211 211) 15 (-> 11 -12 16) -16)']
-
-mode_dict['e']['sig_D_l_nu']=[
-    '511 (-> -411 (-> 321 -211 -211) -11 12)',
-    '-511 (-> 411 (-> -321 211 211) 11 -12)']
-
-mode_dict['e']['sig_Dst_tau_nu']=[
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -15 (-> -11 12 -16) 16)',
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -15 (-> -11 12 -16) 16)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 15 (-> 11 -12 16) -16)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 15 (-> 11 -12 16) -16)']
-
-mode_dict['e']['sig_Dst_l_nu']=[
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -11 12)',
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -11 12)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 11 -12)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 11 -12)']
-
-mode_dict['e']['Dstst_tau_nu_mixed']=[
-    '511 (-> -10413 -15 (-> -11 12 -16) 16)','-511 (-> 10413 15 (-> 11 -12 16) -16)',
-    '511 (-> -10411 -15 (-> -11 12 -16) 16)','-511 (-> 10411 15 (-> 11 -12 16) -16)',
-    '511 (-> -20413 -15 (-> -11 12 -16) 16)','-511 (-> 20413 15 (-> 11 -12 16) -16)',
-    '511 (-> -415 -15 (-> -11 12 -16) 16)',  '-511 (-> 415 15 (-> 11 -12 16) -16)']
-
-mode_dict['e']['Dstst_tau_nu_charged']=[
-    '521 (-> -10423 -15 (-> -11 12 -16) 16)','-521 (-> 10423 15 (-> 11 -12 16) -16)',
-    '521 (-> -10421 -15 (-> -11 12 -16) 16)','-521 (-> 10421 15 (-> 11 -12 16) -16)',
-    '521 (-> -20423 -15 (-> -11 12 -16) 16)','-521 (-> 20423 15 (-> 11 -12 16) -16)',
-    '521 (-> -425 -15 (-> -11 12 -16) 16)',  '-521 (-> 425 15 (-> 11 -12 16) -16)']
-
-mode_dict['e']['res_Dstst_l_nu_mixed']=[
-    '511 (-> -10413 -11 12)','-511 (-> 10413 11 -12)',
-    '511 (-> -10411 -11 12)','-511 (-> 10411 11 -12)',
-    '511 (-> -20413 -11 12)','-511 (-> 20413 11 -12)',
-    '511 (-> -415 -11 12)',  '-511 (-> 415 11 -12)']
-
-mode_dict['e']['res_Dstst_l_nu_charged']=[
-    '521 (-> -10423 -11 12)','-521 (-> 10423 11 -12)',
-    '521 (-> -10421 -11 12)','-521 (-> 10421 11 -12)',
-    '521 (-> -20423 -11 12)','-521 (-> 20423 11 -12)',
-    '521 (-> -425 -11 12)',  '-521 (-> 425 11 -12)']
-
-mode_dict['e']['nonres_Dstst_l_nu_mixed']=[
-    '511 (-> -411 111 -11 12)',     '-511 (-> 411 111 11 -12)',
-    '511 (-> -411 111 111 -11 12)', '-511 (-> 411 111 111 11 -12)',
-    '511 (-> -411 211 -211 -11 12)','-511 (-> 411 211 -211 11 -12)',
-    '511 (-> -411 -211 211 -11 12)','-511 (-> 411 -211 211 11 -12)',
-    '511 (-> -413 111 -11 12)',     '-511 (-> 413 111 11 -12)',
-    '511 (-> -413 111 111 -11 12)', '-511 (-> 413 111 111 11 -12)',
-    '511 (-> -413 211 -211 -11 12)','-511 (-> 413 211 -211 11 -12)',
-    '511 (-> -413 -211 211 -11 12)','-511 (-> 413 -211 211 11 -12)']
-
-mode_dict['e']['nonres_Dstst_l_nu_charged']=[
-    '521 (-> -411 211 -11 12)',    '-521 (-> 411 -211 11 -12)',
-    '521 (-> -411 211 111 -11 12)','-521 (-> 411 -211 111 11 -12)',
-    '521 (-> -411 111 211 -11 12)','-521 (-> 411 111 -211 11 -12)',
-    '521 (-> -413 211 -11 12)',    '-521 (-> 413 -211 11 -12)',
-    '521 (-> -413 211 111 -11 12)','-521 (-> 413 -211 111 11 -12)',
-    '521 (-> -413 111 211 -11 12)','-521 (-> 413 111 -211 11 -12)']
-
-mode_dict['e']['gap_Dstst_l_nu_mixed']=[
-    '511 (-> -411 221 -11 12)','-511 (-> 411 221 11 -12)',
-    '511 (-> -413 221 -11 12)','-511 (-> 413 221 11 -12)']
+all_relevant_variables = mva_variables + analysis_variables
 
 
-#################################
-
-mode_dict['mu'] = OrderedDict()
-mode_dict['mu']['sig_D_tau_nu']=[
-    '511 (-> -411 (-> 321 -211 -211) -15 (-> -13 14 -16) 16)',
-    '-511 (-> 411 (-> -321 211 211) 15 (-> 13 -14 16) -16)']
-
-mode_dict['mu']['sig_D_l_nu']=[
-    '511 (-> -411 (-> 321 -211 -211) -13 14)',
-    '-511 (-> 411 (-> -321 211 211) 13 -14)']
-
-mode_dict['mu']['sig_Dst_tau_nu']=[
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -15 (-> -13 14 -16) 16)',
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -15 (-> -13 14 -16) 16)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 15 (-> 13 -14 16) -16)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 15 (-> 13 -14 16) -16)']
-
-mode_dict['mu']['sig_Dst_l_nu']=[
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -13 14)',
-    '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -13 14)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 13 -14)',
-    '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 13 -14)']
-
-mode_dict['mu']['Dstst_tau_nu_mixed']=[
-    '511 (-> -10413 -15 (-> -13 14 -16) 16)','-511 (-> 10413 15 (-> 13 -14 16) -16)',
-    '511 (-> -10411 -15 (-> -13 14 -16) 16)','-511 (-> 10411 15 (-> 13 -14 16) -16)',
-    '511 (-> -20413 -15 (-> -13 14 -16) 16)','-511 (-> 20413 15 (-> 13 -14 16) -16)',
-    '511 (-> -415 -15 (-> -13 14 -16) 16)',  '-511 (-> 415 15 (-> 13 -14 16) -16)']
-
-mode_dict['mu']['Dstst_tau_nu_charged']=[
-    '521 (-> -10423 -15 (-> -13 14 -16) 16)','-521 (-> 10423 15 (-> 13 -14 16) -16)',
-    '521 (-> -10421 -15 (-> -13 14 -16) 16)','-521 (-> 10421 15 (-> 13 -14 16) -16)',
-    '521 (-> -20423 -15 (-> -13 14 -16) 16)','-521 (-> 20423 15 (-> 13 -14 16) -16)',
-    '521 (-> -425 -15 (-> -13 14 -16) 16)',  '-521 (-> 425 15 (-> 13 -14 16) -16)']
-
-mode_dict['mu']['res_Dstst_l_nu_mixed']=[
-    '511 (-> -10413 -13 14)','-511 (-> 10413 13 -14)',
-    '511 (-> -10411 -13 14)','-511 (-> 10411 13 -14)',
-    '511 (-> -20413 -13 14)','-511 (-> 20413 13 -14)',
-    '511 (-> -415 -13 14)',  '-511 (-> 415 13 -14)',]
-
-mode_dict['mu']['res_Dstst_l_nu_charged']=[
-    '521 (-> -10423 -13 14)','-521 (-> 10423 13 -14)',
-    '521 (-> -10421 -13 14)','-521 (-> 10421 13 -14)',
-    '521 (-> -20423 -13 14)','-521 (-> 20423 13 -14)',
-    '521 (-> -425 -13 14)',  '-521 (-> 425 13 -14)',]
-
-mode_dict['mu']['nonres_Dstst_l_nu_mixed']=[
-    '511 (-> -411 111 -13 14)',     '-511 (-> 411 111 13 -14)',
-    '511 (-> -411 111 111 -13 14)', '-511 (-> 411 111 111 13 -14)',
-    '511 (-> -411 211 -211 -13 14)','-511 (-> 411 211 -211 13 -14)',
-    '511 (-> -411 -211 211 -13 14)','-511 (-> 411 -211 211 13 -14)',
-    '511 (-> -413 111 -13 14)',     '-511 (-> 413 111 13 -14)',
-    '511 (-> -413 111 111 -13 14)', '-511 (-> 413 111 111 13 -14)',
-    '511 (-> -413 211 -211 -13 14)','-511 (-> 413 211 -211 13 -14)',
-    '511 (-> -413 -211 211 -13 14)','-511 (-> 413 -211 211 13 -14)',]
-
-mode_dict['mu']['nonres_Dstst_l_nu_charged']=[
-    '521 (-> -411 211 -13 14)',    '-521 (-> 411 -211 13 -14)',
-    '521 (-> -411 211 111 -13 14)','-521 (-> 411 -211 111 13 -14)',
-    '521 (-> -413 211 -13 14)',    '-521 (-> 413 -211 13 -14)',
-    '521 (-> -413 211 111 -13 14)','-521 (-> 413 -211 111 13 -14)']
-
-mode_dict['mu']['gap_Dstst_l_nu_mixed']=[
-    '511 (-> -411 221 -13 14)','-511 (-> 411 221 13 -14)',
-    '511 (-> -413 221 -13 14)','-511 (-> 413 221 13 -14)']
-
-# +
-from enum import Enum
-
-# define DecayModes from DecayHash
-class DecayMode(Enum):
-    bkg = 0
-    sig_D_tau_nu = 1
-    sig_D_l_nu = 2
-    sig_Dst_tau_nu = 3
-    sig_Dst_l_nu = 4
-    Dstst_tau_nu_mixed = 5
-    Dstst_tau_nu_charged = 6
-    res_Dstst_l_nu_mixed = 7
-    nonres_Dstst_l_nu_mixed = 8
-    gap_Dstst_l_nu_mixed = 9
-    res_Dstst_l_nu_charged = 10
-    nonres_Dstst_l_nu_charged = 11
-
-DecayMode = Enum('DecayMode', ['bkg',                 'sig_D_tau_nu',          'sig_D_l_nu',
-                               'sig_Dst_tau_nu',      'sig_Dst_l_nu',          'Dstst_tau_nu_mixed',
-                               'Dstst_tau_nu_charged','res_Dstst_l_nu_mixed',  'nonres_Dstst_l_nu_mixed',
-                               'gap_Dstst_l_nu_mixed','res_Dstst_l_nu_charged','nonres_Dstst_l_nu_charged'],
-                 start=0)
-# DecayMode(0).name
+DecayMode = {'bkg_fakeD':0,           'bkg_continuum':1,    'bkg_combinatorial':2,
+             'bkg_Odecay':3,          'bkg_fakeTC':4,       r'$D\tau\nu$':5,
+             r'$D^\ast\tau\nu$':6,    r'$D\ell\nu$':7,      r'$D^\ast\ell\nu$':8,
+             r'$D^{\ast\ast}\tau\nu$_mixed':9,              r'$D^{\ast\ast}\tau\nu$_charged':10,
+             r'res_$D^{\ast\ast}\ell\nu$_mixed':11,         r'nonres_$D^{\ast\ast}\ell\nu$_mixed':12,
+             r'gap_$D^{\ast\ast}\ell\nu$_mixed':13,         r'res_$D^{\ast\ast}\ell\nu$_charged':14,
+             r'nonres_$D^{\ast\ast}\ell\nu$_charged':15,    'bkg_others':16}
 
 # +
 ## dataframe samples
 import pandas as pd
-def get_dataframe_samples(df, mode, template=True, new=False):
+def get_dataframe_samples(df, mode, template=True):
     samples = {}
     lepton_PDG = {'e':11, 'mu':13}
     
     # Define Truth matching criteria
-    true_D_tau = f'D_mcErrors<8 and D_mcPDG*{mode}_mcPDG==411*{lepton_PDG[mode]} and {mode}_genGMPDG==B0_mcPDG and abs({mode}_genMotherPDG)==15'
+    true_D_tau = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genGMPDG==B0_mcPDG and abs(ell_genMotherPDG)==15'
     
-    true_D_ell = f'D_mcErrors<8 and D_mcPDG*{mode}_mcPDG==411*{lepton_PDG[mode]} and {mode}_genMotherPDG==B0_mcPDG'
+    true_D_ell = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genMotherPDG==B0_mcPDG'
     
     true_B0 = 'B0_mcPDG*D_mcPDG==-511*411'
     B_charged = 'B0_mcPDG*D_mcPDG==-521*411'
     
-    lepton_misID = f'abs({mode}_mcPDG)!={lepton_PDG[mode]}'
-    lepton_wrong_mother = f'{mode}_genMotherPDG!=B0_mcPDG and \
-    (abs({mode}_genMotherPDG)!=15 or abs({mode}_genMotherPDG)==15 and {mode}_genGMPDG!=B0_mcPDG)'
+    lepton_misID = f'abs(ell_mcPDG)!={lepton_PDG[mode]}'
+    lepton_wrong_mother = f'ell_genMotherPDG!=B0_mcPDG and \
+    (abs(ell_genMotherPDG)!=15 or abs(ell_genMotherPDG)==15 and ell_genGMPDG!=B0_mcPDG)'
     
 ###################### mcErrors need to be handled carefully
 ###################### apparently correct e mcPDG==11 could have large mcErrors, 128, 2048; mcSecPhysProc need to be checked later
@@ -227,8 +82,8 @@ def get_dataframe_samples(df, mode, template=True, new=False):
     # norm modes, signal modes, D** mixed modes
     for key, value in {'D_l':[8,16],'Dst_l':[8,64],'D_tau':[8,32],'Dst_Dstst_mixed':[8,64]}.items():
                     # tau to e has a 1% radiative mode, thus 32
-        correct_decay = f'({value[0]}+{mode}_mcErrors)<=B0_mcErrors<({value[1]}+{mode}_mcErrors)'
-        missing_photon = f'({value[0]+1024}+{mode}_mcErrors)<=B0_mcErrors<({value[1]+1024}+{mode}_mcErrors)'
+        correct_decay = f'({value[0]}+ell_mcErrors)<=B0_mcErrors<({value[1]}+ell_mcErrors)'
+        missing_photon = f'({value[0]+1024}+ell_mcErrors)<=B0_mcErrors<({value[1]+1024}+ell_mcErrors)'
         
 #         wrongBremsDaughter = f'{value[0]+2048}<=B0_mcErrors<{value[1]+2048+128}'
 #         missing_photon_wrongBrems = f'{value[0]+2048+1024}<=B0_mcErrors<{value[1]+2048+1024+128}'
@@ -240,8 +95,8 @@ def get_dataframe_samples(df, mode, template=True, new=False):
         
             
     # D** charged modes
-    Bcharged_errors = f'({8+256}+{mode}_mcErrors)<=B0_mcErrors<({64+256}+{mode}_mcErrors)'
-    missing_photon_Bcharged = f'({8+1024+256}+{mode}_mcErrors)<=B0_mcErrors<({64+1024+256}+{mode}_mcErrors)'
+    Bcharged_errors = f'({8+256}+ell_mcErrors)<=B0_mcErrors<({64+256}+ell_mcErrors)'
+    missing_photon_Bcharged = f'({8+1024+256}+ell_mcErrors)<=B0_mcErrors<({64+1024+256}+ell_mcErrors)'
     
     # a charged particle (e.g. pi,e,mu) is added as a Brems daughter by the correctBrem module
     # however, this mistake doesn't change the MM2 and p_D_l much, still within the signal window
@@ -253,104 +108,56 @@ def get_dataframe_samples(df, mode, template=True, new=False):
 #         if template:
 #             DecayErrors[f'Bcharged_errors'] = Bcharged_errors
 
-    if not new:
-        # Sig components
-        sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
-        {true_B0} and {true_D_tau} and {DecayErrors["D_tau_errors"]}').copy()
 
-        sig_D_l_nu=df.query(f'DecayMode=={DecayMode[f"sig_D_l_nu"].value} and \
-        {true_B0} and {true_D_ell} and {DecayErrors["D_l_errors"]}').copy()
+    B2D_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*15'
+    B2D_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
+    B2Dst_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
+    B2Dst_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
 
-        sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
-        {true_B0} and {true_D_tau} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+    Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
+                 -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
+    B2Dstst_tau = 'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
+    B2Dstst_ell_res = f'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
 
-        sig_Dst_l_nu=df.query(f'DecayMode=={DecayMode[f"sig_Dst_l_nu"].value} and \
-        {true_B0} and {true_D_ell} and {DecayErrors["Dst_l_errors"]}').copy()
+    D_Dst_list = [411, 413, -411, -413]
+    Pi_list = [111, 211, -211]
+    B2Dstst_ell_non = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_list'
+    B2Dstst_ell_gap = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG==221'
 
-        Dstst_tau_nu_mixed=df.query(f'DecayMode=={DecayMode["Dstst_tau_nu_mixed"].value} and \
-        {true_B0} and {true_D_tau} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
 
-        res_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"res_Dstst_l_nu_mixed"].value} and \
-        {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+    # Sig components
+    sig_D_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2D_tau} and \
+    {DecayErrors["D_tau_errors"]}').copy()
 
-        nonres_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"nonres_Dstst_l_nu_mixed"].value} and \
-        {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+    sig_D_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2D_ell} and \
+    {DecayErrors["D_l_errors"]}').copy()
 
-        gap_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"gap_Dstst_l_nu_mixed"].value} and \
-        {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+    sig_Dst_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2Dst_tau} and \
+    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
 
-        Dstst_tau_nu_charged=df.query(f'DecayMode=={DecayMode["Dstst_tau_nu_charged"].value} and \
-        {B_charged} and {true_D_tau} and {DecayErrors["Bcharged_errors"]}').copy()
+    sig_Dst_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2Dst_ell} and \
+    {DecayErrors["Dst_l_errors"]}').copy()
 
-        res_Dstst_l_nu_charged=df.query(f'DecayMode=={DecayMode[f"res_Dstst_l_nu_charged"].value} and \
-        {B_charged} and {true_D_ell} and {DecayErrors["Bcharged_errors"]}').copy()
+    Dstst_tau_nu_mixed=df.query(f'{true_B0} and {true_D_tau} and {B2Dstst_tau} and \
+    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
 
-        nonres_Dstst_l_nu_charged=df.query(f'DecayMode=={DecayMode[f"nonres_Dstst_l_nu_charged"].value} and \
-        {B_charged} and {true_D_ell} and {DecayErrors["Bcharged_errors"]}').copy()
+    res_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_res} and \
+    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
 
-    
-    if new:
-        
-        B2D_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*15'
-        B2D_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
-        B2Dst_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
-        B2Dst_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
+    nonres_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_non} and \
+    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
 
-        Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
-                     -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
-        B2Dstst_tau = 'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
-        B2Dstst_ell_res = f'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
-        
-        D_Dst_list = [411, 413, -411, -413]
-        Pi_list = [111, 211, -211]
-        B2Dstst_ell_non = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_list'
-        B2Dstst_ell_gap = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG==221'
-        
-#         B2Dst = 'D_genGMPDG==B0_mcPDG and abs(D_genMotherPDG)==413'
-#         B2Dstst_res = '(B0_nMissD_1>0 or B0_nMissD_0st>0 or B0_nMissDp_1>0 or B0_nMissD_2st>0 or \
-#                         B0_nMissD_10>0 or B0_nMissD_0st0>0 or B0_nMissDp_10>0 or B0_nMissD_2st0>0)'
-#         B2Dstst_non_gap = f'({B2D} or {B2Dst})'
-        
-#         NoMiss = 'B0_nMissPi==0 and B0_nMissPi0==0 and B0_nMissEta==0'
-#         NoMiss_pi_eta = 'B0_nMissPi==0 and B0_nMissEta==0'
-#         MissPi_mixed = '(B0_nMissPi>1 or B0_nMissPi0>0) and B0_nMissEta==0'
-#         MissPi_charged = '(B0_nMissPi>0 or B0_nMissPi0>0) and B0_nMissEta==0'
-#         MissEta = 'B0_nMissEta>0'
-        
-        
-        # Sig components
-        sig_D_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2D_tau} and \
-        {DecayErrors["D_tau_errors"]}').copy()
+    gap_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_gap} and \
+    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
 
-        sig_D_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2D_ell} and \
-        {DecayErrors["D_l_errors"]}').copy()
+    Dstst_tau_nu_charged=df.query(f'{B_charged} and {true_D_tau} and {B2Dstst_tau} and \
+    {DecayErrors["Bcharged_errors"]}').copy()
 
-        sig_Dst_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2Dst_tau} and \
-        {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+    res_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_res} and \
+    {DecayErrors["Bcharged_errors"]}').copy()
 
-        sig_Dst_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2Dst_ell} and \
-        {DecayErrors["Dst_l_errors"]}').copy()
-
-        Dstst_tau_nu_mixed=df.query(f'{true_B0} and {true_D_tau} and {B2Dstst_tau} and \
-        {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-        res_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_res} and \
-        {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-        nonres_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_non} and \
-        {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-        gap_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_gap} and \
-        {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-        Dstst_tau_nu_charged=df.query(f'{B_charged} and {true_D_tau} and {B2Dstst_tau} and \
-        {DecayErrors["Bcharged_errors"]}').copy()
-
-        res_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_res} and \
-        {DecayErrors["Bcharged_errors"]}').copy()
-
-        nonres_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_non} and \
-        {DecayErrors["Bcharged_errors"]}').copy()
+    nonres_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_non} and \
+    {DecayErrors["Bcharged_errors"]}').copy()
     
     samples[r'$D\tau\nu$'] = sig_D_tau_nu
     samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
@@ -387,7 +194,6 @@ def get_dataframe_samples(df, mode, template=True, new=False):
     samples[r'bkg_Odecay'] = bkg_sigOtherBDTaudecay
     
     
-    
     bkg_others = pd.concat([df,
                             sig_D_tau_nu,
                             sig_D_l_nu,
@@ -405,11 +211,13 @@ def get_dataframe_samples(df, mode, template=True, new=False):
                             bkg_sigOtherBDTaudecay,
                             bkg_combinatorial,
                             bkg_continuum]).drop_duplicates(
-        subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    samples[r'bkg_others'] = bkg_others
+                subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+    samples['bkg_others'] = bkg_others
+
     
     for name, df in samples.items():
-        df['mode']=name
+        df['mode']=DecayMode[name]
 
     df = pd.concat([df for df in samples.values()],ignore_index=True).reset_index(drop=True)
     df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
@@ -612,7 +420,7 @@ class mpl:
         axs[0].grid()
         axs[1].grid()
         
-    def plot_all_overlaid(self,variable,cut=None,mask=[]):
+    def plot_all_overlaid(self,variable,cut=None,mask=[],density=False):
             
         fig,axs =plt.subplots(sharex=True, sharey=False)
         for name, sample in self.samples.items():
@@ -626,28 +434,21 @@ class mpl:
                         r'$D^{\ast\ast}\tau\nu$_mixed',
                         r'$D^{\ast\ast}\tau\nu$_charged',
                         r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
-                factor=1
+                pass
                 
             elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
                           r'res_$D^{\ast\ast}\ell\nu$_charged',]:
-                factor=2
                 kwarg={'histtype':'step','lw':2,'linestyle':'dotted'}
                 
             elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
-                          r'nonres_$D^{\ast\ast}\ell\nu$_charged']:
-                factor=16
+                          r'nonres_$D^{\ast\ast}\ell\nu$_charged',
+                          r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
                 kwarg={'histtype':'step','lw':1}
 
-            elif name in [r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
-                factor=8
-                kwarg={'histtype':'step','lw':1}
-                
-            else:
-                factor=1
-            axs.hist(bins[:-1], bins, weights=factor*counts,
+            axs.hist(bins[:-1], bins, weights=counts, density=density,
                     label=f'{name} \n{self.statistics(var_col[variable])}',**kwarg)
 
-        axs.set_title(f'Overlaid signals ({cut=})')
+        axs.set_title(f'Overlaid components ({cut=})')
         axs.set_xlabel(f'{variable}')
         axs.set_ylabel('# of candidates per bin')
         axs.grid()
@@ -700,7 +501,7 @@ class mpl:
         fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.05,fontsize=18)
         
 
-    def plot_correlation(self, df, cut=None, target='B0_CMS3_weMissM2', variables=variables):
+    def plot_correlation(self, df, cut=None, target='B0_CMS3_weMissM2', variables=analysis_variables):
         fig = plt.figure(figsize=[50,300])
         for i in range(len(variables)):
             ax = fig.add_subplot(17,4,i+1)
@@ -1519,3 +1320,210 @@ def ply_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1]
     )
 
     fig.show()
+
+# +
+# from enum import Enum
+
+# # define DecayModes from DecayHash
+# class DecayMode(Enum):
+#     bkg = 0
+#     sig_D_tau_nu = 1
+#     sig_D_l_nu = 2
+#     sig_Dst_tau_nu = 3
+#     sig_Dst_l_nu = 4
+#     Dstst_tau_nu_mixed = 5
+#     Dstst_tau_nu_charged = 6
+#     res_Dstst_l_nu_mixed = 7
+#     nonres_Dstst_l_nu_mixed = 8
+#     gap_Dstst_l_nu_mixed = 9
+#     res_Dstst_l_nu_charged = 10
+#     nonres_Dstst_l_nu_charged = 11
+
+# DecayMode = Enum('DecayMode', ['bkg_fakeD',           'bkg_continuum',    'bkg_combinatorial',
+#                                'bkg_Odecay',          'bkg_fakeTC',       r'$D\tau\nu$',
+#                                r'$D^\ast\tau\nu$',    r'$D\ell\nu$',      r'$D^\ast\ell\nu$',
+#                                r'$D^{\ast\ast}\tau\nu$_mixed',            r'$D^{\ast\ast}\tau\nu$_charged',
+#                                r'res_$D^{\ast\ast}\ell\nu$_mixed',        r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
+#                                r'gap_$D^{\ast\ast}\ell\nu$_mixed',        r'res_$D^{\ast\ast}\ell\nu$_charged',
+#                                r'nonres_$D^{\ast\ast}\ell\nu$_charged'],
+#                  start=0)
+
+# DecayMode(0).name
+
+#     if not new:
+#         # Sig components
+#         sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
+#         {true_B0} and {true_D_tau} and {DecayErrors["D_tau_errors"]}').copy()
+
+#         sig_D_l_nu=df.query(f'DecayMode=={DecayMode[f"sig_D_l_nu"].value} and \
+#         {true_B0} and {true_D_ell} and {DecayErrors["D_l_errors"]}').copy()
+
+#         sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
+#         {true_B0} and {true_D_tau} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#         sig_Dst_l_nu=df.query(f'DecayMode=={DecayMode[f"sig_Dst_l_nu"].value} and \
+#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_l_errors"]}').copy()
+
+#         Dstst_tau_nu_mixed=df.query(f'DecayMode=={DecayMode["Dstst_tau_nu_mixed"].value} and \
+#         {true_B0} and {true_D_tau} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#         res_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"res_Dstst_l_nu_mixed"].value} and \
+#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#         nonres_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"nonres_Dstst_l_nu_mixed"].value} and \
+#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#         gap_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"gap_Dstst_l_nu_mixed"].value} and \
+#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#         Dstst_tau_nu_charged=df.query(f'DecayMode=={DecayMode["Dstst_tau_nu_charged"].value} and \
+#         {B_charged} and {true_D_tau} and {DecayErrors["Bcharged_errors"]}').copy()
+
+#         res_Dstst_l_nu_charged=df.query(f'DecayMode=={DecayMode[f"res_Dstst_l_nu_charged"].value} and \
+#         {B_charged} and {true_D_ell} and {DecayErrors["Bcharged_errors"]}').copy()
+
+#         nonres_Dstst_l_nu_charged=df.query(f'DecayMode=={DecayMode[f"nonres_Dstst_l_nu_charged"].value} and \
+#         {B_charged} and {true_D_ell} and {DecayErrors["Bcharged_errors"]}').copy()
+
+# +
+# ## DecayHash
+
+# from collections import OrderedDict
+
+# # the order of keys might be important, try to keep the muon modes at the bottom for e reconstruction
+# # the e modes will be kept at the bottom for a muon reconstruction
+# mode_dict = {}
+# mode_dict['e'] = OrderedDict()
+# mode_dict['e']['sig_D_tau_nu']=[
+#     '511 (-> -411 (-> 321 -211 -211) -15 (-> -11 12 -16) 16)',
+#     '-511 (-> 411 (-> -321 211 211) 15 (-> 11 -12 16) -16)']
+
+# mode_dict['e']['sig_D_l_nu']=[
+#     '511 (-> -411 (-> 321 -211 -211) -11 12)',
+#     '-511 (-> 411 (-> -321 211 211) 11 -12)']
+
+# mode_dict['e']['sig_Dst_tau_nu']=[
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -15 (-> -11 12 -16) 16)',
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -15 (-> -11 12 -16) 16)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 15 (-> 11 -12 16) -16)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 15 (-> 11 -12 16) -16)']
+
+# mode_dict['e']['sig_Dst_l_nu']=[
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -11 12)',
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -11 12)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 11 -12)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 11 -12)']
+
+# mode_dict['e']['Dstst_tau_nu_mixed']=[
+#     '511 (-> -10413 -15 (-> -11 12 -16) 16)','-511 (-> 10413 15 (-> 11 -12 16) -16)',
+#     '511 (-> -10411 -15 (-> -11 12 -16) 16)','-511 (-> 10411 15 (-> 11 -12 16) -16)',
+#     '511 (-> -20413 -15 (-> -11 12 -16) 16)','-511 (-> 20413 15 (-> 11 -12 16) -16)',
+#     '511 (-> -415 -15 (-> -11 12 -16) 16)',  '-511 (-> 415 15 (-> 11 -12 16) -16)']
+
+# mode_dict['e']['Dstst_tau_nu_charged']=[
+#     '521 (-> -10423 -15 (-> -11 12 -16) 16)','-521 (-> 10423 15 (-> 11 -12 16) -16)',
+#     '521 (-> -10421 -15 (-> -11 12 -16) 16)','-521 (-> 10421 15 (-> 11 -12 16) -16)',
+#     '521 (-> -20423 -15 (-> -11 12 -16) 16)','-521 (-> 20423 15 (-> 11 -12 16) -16)',
+#     '521 (-> -425 -15 (-> -11 12 -16) 16)',  '-521 (-> 425 15 (-> 11 -12 16) -16)']
+
+# mode_dict['e']['res_Dstst_l_nu_mixed']=[
+#     '511 (-> -10413 -11 12)','-511 (-> 10413 11 -12)',
+#     '511 (-> -10411 -11 12)','-511 (-> 10411 11 -12)',
+#     '511 (-> -20413 -11 12)','-511 (-> 20413 11 -12)',
+#     '511 (-> -415 -11 12)',  '-511 (-> 415 11 -12)']
+
+# mode_dict['e']['res_Dstst_l_nu_charged']=[
+#     '521 (-> -10423 -11 12)','-521 (-> 10423 11 -12)',
+#     '521 (-> -10421 -11 12)','-521 (-> 10421 11 -12)',
+#     '521 (-> -20423 -11 12)','-521 (-> 20423 11 -12)',
+#     '521 (-> -425 -11 12)',  '-521 (-> 425 11 -12)']
+
+# mode_dict['e']['nonres_Dstst_l_nu_mixed']=[
+#     '511 (-> -411 111 -11 12)',     '-511 (-> 411 111 11 -12)',
+#     '511 (-> -411 111 111 -11 12)', '-511 (-> 411 111 111 11 -12)',
+#     '511 (-> -411 211 -211 -11 12)','-511 (-> 411 211 -211 11 -12)',
+#     '511 (-> -411 -211 211 -11 12)','-511 (-> 411 -211 211 11 -12)',
+#     '511 (-> -413 111 -11 12)',     '-511 (-> 413 111 11 -12)',
+#     '511 (-> -413 111 111 -11 12)', '-511 (-> 413 111 111 11 -12)',
+#     '511 (-> -413 211 -211 -11 12)','-511 (-> 413 211 -211 11 -12)',
+#     '511 (-> -413 -211 211 -11 12)','-511 (-> 413 -211 211 11 -12)']
+
+# mode_dict['e']['nonres_Dstst_l_nu_charged']=[
+#     '521 (-> -411 211 -11 12)',    '-521 (-> 411 -211 11 -12)',
+#     '521 (-> -411 211 111 -11 12)','-521 (-> 411 -211 111 11 -12)',
+#     '521 (-> -411 111 211 -11 12)','-521 (-> 411 111 -211 11 -12)',
+#     '521 (-> -413 211 -11 12)',    '-521 (-> 413 -211 11 -12)',
+#     '521 (-> -413 211 111 -11 12)','-521 (-> 413 -211 111 11 -12)',
+#     '521 (-> -413 111 211 -11 12)','-521 (-> 413 111 -211 11 -12)']
+
+# mode_dict['e']['gap_Dstst_l_nu_mixed']=[
+#     '511 (-> -411 221 -11 12)','-511 (-> 411 221 11 -12)',
+#     '511 (-> -413 221 -11 12)','-511 (-> 413 221 11 -12)']
+
+
+# #################################
+
+# mode_dict['mu'] = OrderedDict()
+# mode_dict['mu']['sig_D_tau_nu']=[
+#     '511 (-> -411 (-> 321 -211 -211) -15 (-> -13 14 -16) 16)',
+#     '-511 (-> 411 (-> -321 211 211) 15 (-> 13 -14 16) -16)']
+
+# mode_dict['mu']['sig_D_l_nu']=[
+#     '511 (-> -411 (-> 321 -211 -211) -13 14)',
+#     '-511 (-> 411 (-> -321 211 211) 13 -14)']
+
+# mode_dict['mu']['sig_Dst_tau_nu']=[
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -15 (-> -13 14 -16) 16)',
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -15 (-> -13 14 -16) 16)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 15 (-> 13 -14 16) -16)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 15 (-> 13 -14 16) -16)']
+
+# mode_dict['mu']['sig_Dst_l_nu']=[
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -13 14)',
+#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -13 14)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 13 -14)',
+#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 13 -14)']
+
+# mode_dict['mu']['Dstst_tau_nu_mixed']=[
+#     '511 (-> -10413 -15 (-> -13 14 -16) 16)','-511 (-> 10413 15 (-> 13 -14 16) -16)',
+#     '511 (-> -10411 -15 (-> -13 14 -16) 16)','-511 (-> 10411 15 (-> 13 -14 16) -16)',
+#     '511 (-> -20413 -15 (-> -13 14 -16) 16)','-511 (-> 20413 15 (-> 13 -14 16) -16)',
+#     '511 (-> -415 -15 (-> -13 14 -16) 16)',  '-511 (-> 415 15 (-> 13 -14 16) -16)']
+
+# mode_dict['mu']['Dstst_tau_nu_charged']=[
+#     '521 (-> -10423 -15 (-> -13 14 -16) 16)','-521 (-> 10423 15 (-> 13 -14 16) -16)',
+#     '521 (-> -10421 -15 (-> -13 14 -16) 16)','-521 (-> 10421 15 (-> 13 -14 16) -16)',
+#     '521 (-> -20423 -15 (-> -13 14 -16) 16)','-521 (-> 20423 15 (-> 13 -14 16) -16)',
+#     '521 (-> -425 -15 (-> -13 14 -16) 16)',  '-521 (-> 425 15 (-> 13 -14 16) -16)']
+
+# mode_dict['mu']['res_Dstst_l_nu_mixed']=[
+#     '511 (-> -10413 -13 14)','-511 (-> 10413 13 -14)',
+#     '511 (-> -10411 -13 14)','-511 (-> 10411 13 -14)',
+#     '511 (-> -20413 -13 14)','-511 (-> 20413 13 -14)',
+#     '511 (-> -415 -13 14)',  '-511 (-> 415 13 -14)',]
+
+# mode_dict['mu']['res_Dstst_l_nu_charged']=[
+#     '521 (-> -10423 -13 14)','-521 (-> 10423 13 -14)',
+#     '521 (-> -10421 -13 14)','-521 (-> 10421 13 -14)',
+#     '521 (-> -20423 -13 14)','-521 (-> 20423 13 -14)',
+#     '521 (-> -425 -13 14)',  '-521 (-> 425 13 -14)',]
+
+# mode_dict['mu']['nonres_Dstst_l_nu_mixed']=[
+#     '511 (-> -411 111 -13 14)',     '-511 (-> 411 111 13 -14)',
+#     '511 (-> -411 111 111 -13 14)', '-511 (-> 411 111 111 13 -14)',
+#     '511 (-> -411 211 -211 -13 14)','-511 (-> 411 211 -211 13 -14)',
+#     '511 (-> -411 -211 211 -13 14)','-511 (-> 411 -211 211 13 -14)',
+#     '511 (-> -413 111 -13 14)',     '-511 (-> 413 111 13 -14)',
+#     '511 (-> -413 111 111 -13 14)', '-511 (-> 413 111 111 13 -14)',
+#     '511 (-> -413 211 -211 -13 14)','-511 (-> 413 211 -211 13 -14)',
+#     '511 (-> -413 -211 211 -13 14)','-511 (-> 413 -211 211 13 -14)',]
+
+# mode_dict['mu']['nonres_Dstst_l_nu_charged']=[
+#     '521 (-> -411 211 -13 14)',    '-521 (-> 411 -211 13 -14)',
+#     '521 (-> -411 211 111 -13 14)','-521 (-> 411 -211 111 13 -14)',
+#     '521 (-> -413 211 -13 14)',    '-521 (-> 413 -211 13 -14)',
+#     '521 (-> -413 211 111 -13 14)','-521 (-> 413 -211 111 13 -14)']
+
+# mode_dict['mu']['gap_Dstst_l_nu_mixed']=[
+#     '511 (-> -411 221 -13 14)','-511 (-> 411 221 13 -14)',
+#     '511 (-> -413 221 -13 14)','-511 (-> 413 221 13 -14)']

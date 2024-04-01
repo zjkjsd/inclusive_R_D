@@ -102,10 +102,9 @@ ma.buildEventKinematics(fillWithMostLikely=True,path=main_path)
 
 
 
-# Reconstruct D
-#Dcuts = '1.855 < M < 1.885'
-#Dcuts = '1.84 <M< 1.9'
-Dcuts = '1.74 <M< 1.84 or 1.9 <M< 2'
+# Reconstruct D, 1 sigma == 0.005, mean==1.87
+#Dcuts = '1.855 <M< 1.885' signal region
+Dcuts = '[1.79 <M< 1.82 or 1.92 <M< 1.95]' # 10 to 16 sigma sideband
 ma.reconstructDecay('D+:K2pi -> K-:myk pi+:mypi pi+:mypi', cut=Dcuts, path=main_path)
 
 ma.variablesToExtraInfo('D+:K2pi', variables={'M':'D_BFM','InvM':'D_BFInvM'},option=0, path=main_path)
@@ -113,7 +112,7 @@ vm.addAlias('BFM','extraInfo(D_BFM)')
 vm.addAlias('BFInvM','extraInfo(D_BFInvM)')
 
 Daughters_vars = []
-for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD','dr','dz','nCDCHits','nPXDHits','pValue']:
+for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD','dr','dz','nCDCHits','pValue','mcErrors']:
     vm.addAlias(f'K_{variable}', f'daughter(0, {variable})')
     vm.addAlias(f'pi1_{variable}', f'daughter(1, {variable})')
     vm.addAlias(f'pi2_{variable}', f'daughter(2, {variable})')
@@ -135,7 +134,7 @@ vm.addAlias('A1FflightDistanceSig_IP','extraInfo(D_A1FflightDistanceSig)')
 
 vertex_vars = ['vtxReChi2','vtxNDF','flightDistanceSig','flightTimeSig',]
 
-ma.applyCuts('D+:K2pi', 'vtxReChi2<13', path=main_path)
+ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {Dcuts}', path=main_path)
 
 
 # Reconstruct B
@@ -462,14 +461,14 @@ b_vars = vu.create_aliases_for_selected(
     + roe_nCharged + CSVariables + we + vertex_vars + cms_mc_kinematics + TVVariables 
     + extra_mcDaughters_vars
     #+ vc.flight_info + vc.mc_flight_info + roel_DOCA_Chi2 + cms_kinematics + vc.kinematics + vc.inv_mass
-    + ['vtxDDSig','DecayHash','DecayHashEx','roel_DistanceSig_dis','mcErrors','mcPDG'],
+    + ['vtxDDSig','roel_DistanceSig_dis','mcErrors','mcPDG'],#'DecayHash','DecayHashEx',
     decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
     prefix=['B0'])
 
 vm.addAlias('genGMPDG','genMotherPDG(1)')
 D_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.dalitz_3body + vc.inv_mass 
-    + Daughters_vars + vertex_vars
+    list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
+    + Daughters_vars + vertex_vars #+ cms_mc_kinematics
     + ['genGMPDG','genMotherPDG','mcErrors','mcPDG','pErr','dM','BFM','A1FflightDistanceSig_IP'],
     decay_string='anti-B0:Dl =norad=> ^D+:K2pi e-:corrected',
     prefix=['D'])
@@ -479,11 +478,11 @@ for i in range(2):
 vm.addAlias('pSig','formula((mcP - p)/pErr)')
 
 l_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + cms_mc_kinematics + vc.kinematics # + electron_id_weights
-    + ['genGMPDG','genMotherPDG','mcErrors', 'mcPDG','dM','isBremsCorrected',
+    list_of_variables= cms_kinematics + vc.kinematics # + cms_mc_kinematics + electron_id_weights
+    + ['genGMPDG','genMotherPDG','mcErrors', 'mcPDG','dM','isBremsCorrected', 'pValue',
        'nPXDHits','isCloneTrack','d0_mcPDG','d1_mcPDG','pSig'],
     decay_string='anti-B0:Dl =norad=> D+:K2pi ^e-:corrected',
-    prefix=['e'])
+    prefix=['ell'])
 
 #nu_vars = vu.create_aliases_for_selected(
 #    list_of_variables= cms_kinematics + vc.inv_mass,

@@ -176,6 +176,7 @@ def plot_linearity_test(
         intercept: Union[uncertainties.ufloat, List[uncertainties.ufloat]],
         color: Union[str, List[str]],
         file_name: str,
+        bonds: Optional[List[float]] = [0,1],
         x_offset: Optional[List[float]] = [0],
         extra_info=None,
         title_info=None,
@@ -195,7 +196,7 @@ def plot_linearity_test(
         color = [color]
 
     plt.figure(figsize=figsize)
-    x_array_line = np.linspace(0, 1, 1001)
+    x_array_line = np.linspace(bonds[0], bonds[1], 1001)
 
     for i in range(len(slope)):
         slope_str, slope_err_str = round_pdg_style_str(slope[i].n, slope[i].s)
@@ -228,7 +229,7 @@ def plot_linearity_test(
                  fontsize=9)
 
         plt.errorbar(np.array(x) + x_offset[i], np.array(y[i]), yerr=yerr[i], label=None, fmt='.', color='k')
-        plt.plot(np.array([0, 1]) + x_offset[i], [0, 1], color='gray', label='Diagonal', lw=0.5, zorder=-100, ls='--')
+        plt.plot(np.array([bonds[0], bonds[1]]) + x_offset[i], [bonds[0], bonds[1]], color='gray', label='Diagonal', lw=0.5, zorder=-100, ls='--')
 
         # if we have multiple lines put the extra info there
         if line_infos is not None:
