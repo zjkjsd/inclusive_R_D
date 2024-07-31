@@ -34,17 +34,21 @@ B_variables = ['B0_Lab5_weMissPTheta',
 training_variables = CS_variables + DTC_variables + B_variables
 mva_variables = training_variables + spectators
 
-analysis_variables=['__experiment__',    '__run__',    '__event__',    '__production__',
-                    'B0_isContinuumEvent','B0_mcPDG',  'B0_mcErrors',  'B0_mcDaughter_0_PDG',
-                    'B0_mcDaughter_1_PDG','D_mcErrors','D_genMotherPDG','D_mcPDG',
-                    'D_M',               'D_px',       'D_py',         'D_pz',
-                    'D_p',               'D_CMS_p',    'D_K_mcErrors', 'D_pi1_mcErrors',
-                    'D_pi2_mcErrors',    'D_K_pValue', 'D_pi1_pValue', 'D_pi2_pValue',
-                    'ell_genMotherPDG',  'ell_mcPDG',  'ell_mcErrors', 'ell_genGMPDG',
-                    'ell_px',            'ell_py',     'ell_pz',       'D_BFM',
-                    'ell_p',             'ell_CMS_p',  'ell_pSig',     'ell_pValue',
-                    'mode',              'p_D_l',      'B_D_ReChi2',
-                    'D_daughter_pValue_min',           'D_daughter_pValue_mean']
+analysis_variables=['__experiment__',     '__run__',       '__event__',      '__production__',
+                    'B0_isContinuumEvent','B0_mcPDG',      'B0_mcErrors',    'B0_mcDaughter_0_PDG',
+                    'B0_mcDaughter_1_PDG','D_mcErrors',    'D_genGMPDG',     'D_genMotherPDG',
+                    'D_mcPDG',            'D_BFM',         'D_M',            'D_px',
+                    'D_py',               'D_pz',          'D_p',            'D_CMS_p',
+                    'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_pValue', 
+                    'D_pi1_pValue',       'D_pi2_pValue',
+                    'ell_genMotherPDG',   'ell_mcPDG',     'ell_mcErrors',   'ell_genGMPDG',
+                    'ell_px',             'ell_py',        'ell_pz',         'ell_p',
+                    'ell_CMS_p',          'ell_pSig',      'ell_pValue',
+#                     'ell_GMdaughter_0_PDG',                'ell_GMdaughter_1_PDG',
+#                     'ell_Mdaughter_0_PDG',                 'ell_Mdaughter_1_PDG'
+                    'mode',               'p_D_l',         'B_D_ReChi2',
+                    'D_daughter_pValue_min',           'D_daughter_pValue_mean',
+                    'signal_prob', 'fakeD_prob', 'continuum_prob', 'fakeB_prob']
 
 all_relevant_variables = mva_variables + analysis_variables
 
@@ -57,10 +61,222 @@ DecayMode = {'bkg_fakeD':0,           'bkg_continuum':1,    'bkg_combinatorial':
              r'gap_$D^{\ast\ast}\ell\nu$_mixed':13,         r'res_$D^{\ast\ast}\ell\nu$_charged':14,
              r'nonres_$D^{\ast\ast}\ell\nu$_charged':15,    'bkg_others':16}
 
+DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl':2,
+                 'bkg_continuum':3,          'bkg_combinatorial':4,   'bkg_singleBbkg':5,
+                 'bkg_other_TDTl':6,         'bkg_other_signal':7,
+                 r'$D\tau\nu$':8,            r'$D^\ast\tau\nu$':9,    r'$D\ell\nu$':10,
+                 r'$D^\ast\ell\nu$':11,                r'$D^{\ast\ast}\tau\nu$':12,
+                 r'$D^{\ast\ast}\ell\nu$':13,          r'$D\ell\nu$_gap':14}
+
 # +
 ## dataframe samples
 import pandas as pd
-def get_dataframe_samples(df, mode, template=True):
+def get_dataframe_samples_new(df, mode, template=True):
+    samples = {}
+    lepton_PDG = {'e':11, 'mu':13}
+    
+    ################## Define D and lepton #################
+    trueD = 'D_mcErrors==0'
+    truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
+    
+    fakeD = '0<D_mcErrors<512'
+    fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]} and ell_mcErrors!=512'
+    
+    fakeTracks = 'B0_mcErrors==512'
+    
+    ################# Define B ####################
+    
+    FD = f'{fakeD} and ({fakel} or {truel})' # i.e. Not a fakeTrack lepton
+    TDFl = f'{trueD} and {fakel}'
+    TDTl = f'{trueD} and {truel}'
+    
+    # more categories with TDTl
+    continuum = f'{TDTl} and B0_isContinuumEvent==1'
+    combinatorial = f'{TDTl} and B0_mcPDG==300553'
+    signals = f'{TDTl} and (abs(B0_mcPDG)==511 or abs(B0_mcPDG)==521) and \
+    (ell_genMotherPDG==B0_mcPDG or ell_genGMPDG==B0_mcPDG and abs(ell_genMotherPDG)==15)'
+    singleBbkg = f'{TDTl} and B0_isContinuumEvent==0 and B0_mcPDG!=300553 and \
+    ( (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521) or \
+    ( ell_genMotherPDG!=B0_mcPDG and (ell_genGMPDG!=B0_mcPDG or abs(ell_genMotherPDG)!=15) ) )'
+    
+    # more categories with signals
+    B2D_tau = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*15'
+    B2D_ell = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
+    B2Dst_tau = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
+    B2Dst_ell = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
+
+    Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
+                 -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
+    B2Dstst_tau = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
+    B2Dstst_ell = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
+
+    D_Dst_list = [411, 413, -411, -413]
+    Pi_eta_list = [111, 211, -211, 221]
+    B2D_ell_gap = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_eta_list'
+    
+    ######################### Apply selection ###########################
+    
+    # Fake bkg components
+    bkg_FakeD = df.query(FD).copy()
+    bkg_TDFl = df.query(TDFl).copy()
+    bkg_fakeTracks = df.query(fakeTracks).copy()
+    samples[r'bkg_FakeD'] = bkg_FakeD
+    samples[r'bkg_TDFl'] = bkg_TDFl
+    samples[r'bkg_fakeTracks'] = bkg_fakeTracks
+    
+    # True Dl bkg components
+    bkg_continuum = df.query(continuum).copy()
+    bkg_combinatorial = df.query(combinatorial).copy()
+    bkg_singleBbkg = df.query(singleBbkg).copy()
+    signals_all = df.query(signals).copy()
+    bkg_other_TDTl = pd.concat([df.query(TDTl).copy(),
+                                bkg_singleBbkg,
+                                bkg_combinatorial,
+                                bkg_continuum,
+                                signals_all]).drop_duplicates(
+        subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+    samples[r'bkg_continuum'] = bkg_continuum
+    samples[r'bkg_combinatorial'] = bkg_combinatorial
+    samples[r'bkg_singleBbkg'] = bkg_singleBbkg
+    samples[r'bkg_other_TDTl'] = bkg_other_TDTl
+    
+    # True Dl Signal components
+    D_tau_nu=df.query(B2D_tau).copy()
+    D_l_nu=df.query(B2D_ell).copy()
+    Dst_tau_nu=df.query(B2Dst_tau).copy()
+    Dst_l_nu=df.query(B2Dst_ell).copy()
+    Dstst_tau_nu=df.query(B2Dstst_tau).copy()
+    Dstst_l_nu=df.query(B2Dstst_ell).copy()
+    D_l_nu_gap=df.query(B2D_ell_gap).copy()
+    
+    bkg_other_signal = pd.concat([signals_all,
+                                  D_tau_nu,
+                                  Dst_tau_nu,
+                                  D_l_nu,
+                                  Dst_l_nu,
+                                  Dstst_tau_nu,
+                                  Dstst_l_nu,
+                                  D_l_nu_gap]).drop_duplicates(
+        subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+    samples[r'$D\tau\nu$'] = D_tau_nu
+    samples[r'$D^\ast\tau\nu$'] = Dst_tau_nu
+    samples[r'$D\ell\nu$'] = D_l_nu
+    samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
+    samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
+    samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_l_nu
+    samples[r'$D\ell\nu$_gap'] = D_l_nu_gap
+    samples['bkg_other_signal'] = bkg_other_signal
+    
+    for name, df in samples.items():
+        df['mode']=DecayMode_new[name]
+    return samples
+    
+# def get_dataframe_samples_new_inclusiveD(df, mode, template=True):
+#     samples = {}
+#     lepton_PDG = {'e':11, 'mu':13}
+    
+#     ################## Define lepton #################
+#     truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
+#     fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]} and ell_mcErrors!=512'
+#     fakeTrack = 'ell_mcErrors==512'
+    
+#     ################# Define B ####################
+    
+#     D_Dst_list = [411, 413, -411, -413]
+#     Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
+#                  -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
+#     D_list = D_Dst_list + Dstst_list
+#     Pi_eta_list = [111, 211, -211, 221]
+    
+    
+#     # more categories with truel
+#     continuum = f'{truel} and B0_isContinuumEvent==1'
+    
+#     signals = f'{truel} and (abs(ell_genGMPDG)==511 or abs(ell_genGMPDG)==521) and \
+#     abs(ell_genMotherPDG)==15 and (ell_GMdaughter_0_PDG in @D_list)'
+    
+#     norms = f'{truel} and (abs(ell_genMotherPDG)==511 or abs(ell_genMotherPDG)==521) and \
+#     (ell_Mdaughter_0_PDG in @D_list)'
+    
+#     BBbkg = f'{truel} and B0_isContinuumEvent==0 and \
+#     ( (abs(ell_genGMPDG)!=511 and abs(ell_genGMPDG)!=521) or abs(ell_genMotherPDG)!=15 or (ell_GMdaughter_0_PDG not in @D_list) ) and \
+#     ( (abs(ell_genMotherPDG)!=511 and abs(ell_genMotherPDG)!=521)) or (ell_Mdaughter_0_PDG not in @D_list)'
+# #     combinatorial = f'{TDTl} and B0_mcPDG==300553'
+# #     singleBbkg = f'{TDTl} and B0_isContinuumEvent==0 and B0_mcPDG!=300553 and \
+# #     ( (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521) or \
+# #     ( ell_genMotherPDG!=B0_mcPDG and (ell_genGMPDG!=B0_mcPDG or abs(ell_genMotherPDG)!=15) ) )'
+    
+#     # more categories with signals and norms
+#     B2D_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==411*15'
+#     B2D_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==411*{lepton_PDG[mode]}'
+#     B2Dst_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==413*15'
+#     B2Dst_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==413*{lepton_PDG[mode]}'
+
+#     B2Dstst_tau = f'{signals} and (ell_GMdaughter_0_PDG in @Dstst_list) and abs(ell_GMdaughter_1_PDG)==15'
+#     B2Dstst_ell_res = f'{norms} and (ell_Mdaughter_0_PDG in @Dstst_list) and abs(ell_Mdaughter_1_PDG)=={lepton_PDG[mode]}'
+
+#     B2Dstst_ell_gap_non = f'{norms} and (ell_Mdaughter_0_PDG in @D_Dst_list) and ell_Mdaughter_1_PDG in @Pi_eta_list'
+
+#     ######################### Apply selection ###########################
+    
+#     # Fake bkg components
+#     bkg_fakel = df.query(fakel).copy()
+#     bkg_fakeTrack = df.query(fakeTrack).copy()
+#     samples[r'bkg_fakel'] = bkg_fakel
+#     samples[r'bkg_fakeTrack'] = bkg_fakeTrack
+    
+#     # True Dl bkg components
+#     bkg_continuum = df.query(continuum).copy()
+#     bkg_BB = df.query(BBbkg).copy()
+#     signals_all = df.query(signals).copy()
+#     norms_all = df.query(norms).copy()
+#     bkg_other_truel = pd.concat([df.query(truel).copy(),
+#                                  bkg_continuum,
+#                                  bkg_BB,
+#                                  signals_all,
+#                                  norms_all]).drop_duplicates(
+#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+#     samples[r'bkg_continuum'] = bkg_continuum
+#     samples[r'bkg_BB'] = bkg_BB
+#     samples[r'bkg_other_truel'] = bkg_other_truel
+    
+#     # True Dl Signal components
+#     D_tau_nu=df.query(B2D_tau).copy()
+#     D_l_nu=df.query(B2D_ell).copy()
+#     Dst_tau_nu=df.query(B2Dst_tau).copy()
+#     Dst_l_nu=df.query(B2Dst_ell).copy()
+#     Dstst_tau_nu=df.query(B2Dstst_tau).copy()
+#     Dstst_l_nu_res=df.query(B2Dstst_ell_res).copy()
+#     Dstst_l_nu_gap_non=df.query(B2Dstst_ell_gap_non).copy()
+    
+#     bkg_other_signal = pd.concat([signals_all,
+#                                   norms_all,
+#                                   D_tau_nu,
+#                                   Dst_tau_nu,
+#                                   D_l_nu,
+#                                   Dst_l_nu,
+#                                   Dstst_tau_nu,
+#                                   Dstst_l_nu_res,
+#                                   Dstst_l_nu_gap_non]).drop_duplicates(
+#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+#     samples[r'$D\tau\nu$'] = D_tau_nu
+#     samples[r'$D^\ast\tau\nu$'] = Dst_tau_nu
+#     samples[r'$D\ell\nu$'] = D_l_nu
+#     samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
+#     samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
+#     samples[r'$D^{\ast\ast}\ell\nu$_res'] = Dstst_l_nu_res
+#     samples[r'$D^{\ast\ast}\ell\nu$_gap_non'] = Dstst_l_nu_gap_non
+#     samples['bkg_other_signal'] = bkg_other_signal
+    
+#     for name, df in samples.items():
+#         df['mode']=DecayMode_inclusiveD[name]
+#     return samples
+    
+def get_dataframe_samples_old(df, mode, template=True):
     samples = {}
     lepton_PDG = {'e':11, 'mu':13}
     
@@ -228,7 +444,9 @@ def get_dataframe_samples(df, mode, template=True):
     # The added daughter to the electron are pions, electrons, muons
     # so the 130<B0_mcErrors<160, e_mcErrors==128, 2176, 2180
     
-    
+
+
+# +
 # Function to check for duplicate entries in a dictionary of Pandas DataFrames
 def check_duplicate_entries(data_dict):
     # Create an empty list to store duplicate pairs
@@ -302,174 +520,272 @@ from matplotlib import gridspec
 plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors)
 
 class mpl:
-    def __init__(self, samples):
-        self.samples = samples
+    def __init__(self, mc_samples, data=None):
+        self.samples = mc_samples
+        self.data = data
         self.kwarg={'histtype':'step','lw':2}
     
     def statistics(self,df):
         counts=df.count()
         mean=df.mean()
         std=df.std()
-        return f'''counts = %d \nmean = %5.3f \nstd = %5.3f''' %(counts,mean,std)
+        return f'''{counts=:d} \n{mean=:.3f} \n{std=:.3f}'''
 
-    def plot_all_separately(self, variable, cut=None, xlim=None):
-        fig,axs =plt.subplots(4,3,figsize=(16,10), sharex=True, sharey=False)
-        fig.suptitle(f'All components with {cut}',fontsize=16)
-        fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
-        fig.supxlabel(f'{variable}', y=0.06,fontsize=16)
-        i=0
-        j=0
-        for sample_name, sample in self.samples.items():
-            (counts, bins) = np.histogram(sample.query(cut)[variable] if cut else sample[variable], bins=50)
-            if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
-                factor = 1
-            elif sample_name in [r'$D\ell\nu$',r'$D^\ast\ell\nu$',r'$D^{\ast\ast}\ell\nu$']:
-                factor = 1
-            axs[i,j].hist(bins[:-1], bins, weights=factor*counts,label=sample_name,**self.kwarg)
+#     def plot_all_separately(self, variable, cut=None, xlim=None):
+#         fig,axs =plt.subplots(4,3,figsize=(16,10), sharex=True, sharey=False)
+#         fig.suptitle(f'All components with {cut}',fontsize=16)
+#         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
+#         fig.supxlabel(f'{variable}', y=0.06,fontsize=16)
+#         i=0
+#         j=0
+#         for sample_name, sample in self.samples.items():
+#             (counts, bins) = np.histogram(sample.query(cut)[variable] if cut else sample[variable], bins=50)
+#             if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
+#                 factor = 1
+#             elif sample_name in [r'$D\ell\nu$',r'$D^\ast\ell\nu$',r'$D^{\ast\ast}\ell\nu$']:
+#                 factor = 1
+#             axs[i,j].hist(bins[:-1], bins, weights=factor*counts,label=sample_name,**self.kwarg)
 
-            #plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
-            axs[i,j].grid()
-            axs[i,j].set_title(sample_name)
-            if xlim:
-                axs[i,j].set_xlim(xlim)
-            j+=1
-            if j==3:
-                i+=1
-                j=0
+#             #plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
+#             axs[i,j].grid()
+#             axs[i,j].set_title(sample_name)
+#             if xlim:
+#                 axs[i,j].set_xlim(xlim)
+#             j+=1
+#             if j==3:
+#                 i+=1
+#                 j=0
                 
-    def plot_signals_overlaid(self, variable, cut=None, mask=[]):
-        fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=False, sharey=False)
-        fig.suptitle(f'Overlaid signals ({cut=})', y=1,fontsize=16)
-        fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
-        #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
-        #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
-        fig.supxlabel(f'{variable}',fontsize=16)
+#     def plot_signals_overlaid(self, variable, cut=None, mask=[]):
+#         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=False, sharey=False)
+#         fig.suptitle(f'Overlaid signals ({cut=})', y=1,fontsize=16)
+#         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
+#         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
+#         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
+#         fig.supxlabel(f'{variable}',fontsize=16)
 
-        for name, sample in self.samples.items():
-            if name in mask:
-                continue
-            selection_mask = sample.eval(cut)
-            left= sample[selection_mask] if cut else sample
-            right = sample[~selection_mask] if cut else sample
-            (counts_left, bins_left) = np.histogram(left[variable], bins=50)
-            (counts_right, bins_right) = np.histogram(right[variable], bins=50)
-            kwarg=self.kwarg
-            if name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',
-                        r'$D^{\ast\ast}\tau\nu$_mixed',
-                        r'$D^{\ast\ast}\tau\nu$_charged',
-                        r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
-                factor=1
+#         for name, sample in self.samples.items():
+#             if name in mask:
+#                 continue
+#             selection_mask = sample.eval(cut)
+#             left= sample[selection_mask] if cut else sample
+#             right = sample[~selection_mask] if cut else sample
+#             (counts_left, bins_left) = np.histogram(left[variable], bins=50)
+#             (counts_right, bins_right) = np.histogram(right[variable], bins=50)
+#             kwarg=self.kwarg
+#             if name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',
+#                         r'$D^{\ast\ast}\tau\nu$_mixed',
+#                         r'$D^{\ast\ast}\tau\nu$_charged',
+#                         r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
+#                 factor=1
                 
-            elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
-                          r'res_$D^{\ast\ast}\ell\nu$_charged',]:
-                factor=2
-                kwarg={'histtype':'step','lw':2,'linestyle':'dotted'}
+#             elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
+#                           r'res_$D^{\ast\ast}\ell\nu$_charged',]:
+#                 factor=2
+#                 kwarg={'histtype':'step','lw':2,'linestyle':'dotted'}
                 
-            elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
-                          r'nonres_$D^{\ast\ast}\ell\nu$_charged']:
-                factor=16
-                kwarg={'histtype':'step','lw':1}
+#             elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
+#                           r'nonres_$D^{\ast\ast}\ell\nu$_charged']:
+#                 factor=16
+#                 kwarg={'histtype':'step','lw':1}
 
-            elif name in [r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
-                factor=8
-                kwarg={'histtype':'step','lw':1}
+#             elif name in [r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
+#                 factor=8
+#                 kwarg={'histtype':'step','lw':1}
                 
-            else:
-                factor=1
+#             else:
+#                 factor=1
             
-            axs[0].hist(bins_left[:-1], bins_left, weights=factor*counts_left,
-                        label=name,**kwarg)
+#             axs[0].hist(bins_left[:-1], bins_left, weights=factor*counts_left,
+#                         label=name,**kwarg)
             
-            axs[1].hist(bins_right[:-1], bins_right, weights=factor*counts_right,
-                        label=name,**kwarg)
+#             axs[1].hist(bins_right[:-1], bins_right, weights=factor*counts_right,
+#                         label=name,**kwarg)
             
-            axs[1].legend()
+#             axs[1].legend()
             
-        axs[0].set_title(f'Bin1 with {cut}')
-        axs[1].set_title(f'Bin2 with ~{cut}')
-        axs[0].grid()
-        axs[1].grid()
-        plt.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1.5)
+#         axs[0].set_title(f'Bin1 with {cut}')
+#         axs[1].set_title(f'Bin2 with ~{cut}')
+#         axs[0].grid()
+#         axs[1].grid()
+#         plt.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1.5)
         
         
-    def plot_tails_overlaid(self, variable, cut=None):
-        fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
-        fig.suptitle(f'Overlaid norms ({cut=})', y=1,fontsize=16)
-        fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
-        #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
-        #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
-        fig.supxlabel(f'{variable}',fontsize=16)
+#     def plot_tails_overlaid(self, variable, cut=None):
+#         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
+#         fig.suptitle(f'Overlaid norms ({cut=})', y=1,fontsize=16)
+#         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
+#         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
+#         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
+#         fig.supxlabel(f'{variable}',fontsize=16)
 
-        for sample_name, sample in self.samples.items():
-            if sample_name not in [r'$D\ell\nu$',r'$D^\ast\ell\nu$']:
-                continue
-            (counts1, bins) = np.histogram(
-                sample.query(cut)[variable] if cut else sample[variable], bins=50)
-            (counts2, bins) = np.histogram(
-                sample.drop(sample.query(cut).index)[variable] if cut else sample[variable], bins=bins)
-            factor=1
+#         for sample_name, sample in self.samples.items():
+#             if sample_name not in [r'$D\ell\nu$',r'$D^\ast\ell\nu$']:
+#                 continue
+#             (counts1, bins) = np.histogram(
+#                 sample.query(cut)[variable] if cut else sample[variable], bins=50)
+#             (counts2, bins) = np.histogram(
+#                 sample.drop(sample.query(cut).index)[variable] if cut else sample[variable], bins=bins)
+#             factor=1
 
-            axs[0].hist(bins[:-1], bins, weights=factor*counts2,label=sample_name,**self.kwarg)
-            axs[0].legend()
+#             axs[0].hist(bins[:-1], bins, weights=factor*counts2,label=sample_name,**self.kwarg)
+#             axs[0].legend()
 
-            axs[1].hist(bins[:-1], bins, weights=factor*counts1,label=sample_name,**self.kwarg)
-            axs[1].legend()
+#             axs[1].hist(bins[:-1], bins, weights=factor*counts1,label=sample_name,**self.kwarg)
+#             axs[1].legend()
 
-        axs[0].set_title('Main')
-        axs[1].set_title('Tail')
-        axs[0].grid()
-        axs[1].grid()
-        
-    def plot_all_overlaid(self,variable,cut=None,mask=[],density=False):
+#         axs[0].set_title('Main')
+#         axs[1].set_title('Tail')
+#         axs[0].grid()
+#         axs[1].grid()
+
+    def plot_data_mc_overlaid(self,variable,bins,cut=None,scale=[1,1],correction=False,mask=[]):
+        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
+        # Data
+        data = self.data
+        data['__weight__'] = scale[0]
+        var_col= data.query(cut)[variable] if cut else data[variable]
+        (counts, _) = np.histogram(var_col, bins=bins,
+                                    weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
+        bin_centers = (bins[:-1] + bins[1:]) /2
+        axs.errorbar(x=bin_centers, y=counts, yerr=np.sqrt(counts), fmt='ko',
+                    label=f'''Data \n{self.statistics(var_col)}
+cut_eff={(len(var_col)/len(data)):.3f}''')
             
-        fig,axs =plt.subplots(sharex=True, sharey=False)
+        # MC
+        if correction:
+            mc_combined = pd.concat(self.samples.values(), ignore_index=True)
+            mc_combined['__weight__'] = scale[1]
+            var_col= mc_combined.query(cut)[variable] if cut else mc_combined[variable]
+            (counts, _) = np.histogram(var_col, bins=bins,
+                                    weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
+            axs.hist(bins[:-1], bins, weights=counts,histtype='step',color='black',
+                    label=f'''Unweighted MC \n{self.statistics(var_col)}
+cut_eff={(len(var_col)/len(mc_combined)):.3f}''')
+        
+        
+        bottom = 0
         for name, sample in self.samples.items():
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size==0 or name in mask:
                 continue
-            var_col= sample.query(cut) if cut else sample
-            (counts, bins) = np.histogram(var_col[variable], bins=50)
+            sample['__weight__'] = scale[1]
+            var_col= sample.query(cut)[variable] if cut else sample[variable]
+            (counts, _) = np.histogram(var_col, bins=bins,
+                                      weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
+            
+            if correction:
+                (counts, _) = np.histogram(var_col, bins=bins,
+                                weights=scale[1]*sample.query(cut)['PIDWeight'] if cut else scale[1]*sample['PIDWeight'])
+
+            axs.hist(bins[:-1], bins, weights=counts, bottom=bottom,
+                    label=f'''{name} \n{self.statistics(var_col)}
+cut_eff={(sample_size/len(sample)):.3f}''')
+            
+            bottom += counts
+
+        axs.set_title(f'Overlaid Data vs MC ({cut=})')
+        axs.set_xlabel(f'{variable}')
+        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
+        axs.grid()
+        plt.legend(bbox_to_anchor=(1,1),ncol=2, fancybox=True, shadow=True,labelspacing=1.5)
+
+    def plot_data_mc_all(self, bins, variables, cut=None, scale=[1,1], figsize=(30, 100), fontsize=12):
+        fig = plt.figure(figsize=figsize)
+        dfs = [self.data, self.mc_samples]
+        names = ['Data', 'MC']
+
+#         for i in range(len(variables)):
+#             ax = fig.add_subplot(len(variables)//3 + 1, 3, i+1)
+#             bin1 = bins
+#             for j in range(len(names)):
+#                 dfs[j]['__weight__'] = scale[j]
+#                 var_col = dfs[j][variables[i]]
+#                 if cut is not None:
+#                     var_col = var_col.query(cut)
+#                 (counts, bin1) = np.histogram(var_col, bins=bin1,
+#                                            weights=dfs[j].query(cut)['__weight__'] if cut else dfs[j]['__weight__'])
+#                 kwarg={'histtype':'step','lw':2}
+
+#                 if names[j]=='MC':
+#                     ax.hist(bin1[:-1], bin1, weights=counts,
+#                         label=f'{names[j]} \n{statistics(var_col)} \n cut_eff={(len(var_col)/len(dfs[j])):.3f}',**kwarg)
+
+#                 elif names[j]=='Data':
+#                     bin_centers = (bin1[:-1] + bin1[1:]) /2
+#                     ax.errorbar(x=bin_centers, y=counts, yerr=np.sqrt(counts), fmt='ko',
+#                                 label=f'{names[j]} \n{statistics(var_col)} \n cut_eff={(len(var_col)/len(dfs[j])):.3f}')
+
+#             ax.set_ylabel(f'# of events per bin {(bin1[1]-bin1[0]):.3f} GeV',fontsize=fontsize)
+#             ax.set_xlabel(variables[i],fontsize=fontsize)
+#             ax.grid()
+#     #         ax.legend()
+#         fig.suptitle(f'Overlaid Data vs MC ({cut=})', fontsize=fontsize*2)
+#         plt.tight_layout()
+    
+    
+    def plot_all_mc_stacked(self,variable,bins,cut=None,mask=[]):
+        
+        bottom = 0
+        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(6, 5))
+        for name, sample in self.samples.items():
+            sample_size = len(sample.query(cut)) if cut else len(sample)
+            if sample_size==0 or name in mask:
+                continue
+            var_col= sample.query(cut)[variable] if cut else sample[variable]
+            (counts, _) = np.histogram(var_col, bins=bins)
+
+            axs.hist(bins[:-1], bins, weights=counts, bottom=bottom,
+                    label=f'''{name} \n{self.statistics(var_col)}
+cut_eff={(sample_size/len(sample)):.3f}''')
+            
+            bottom += counts
+
+        axs.set_title(f'Stacked components ({cut=})',fontsize=14)
+        axs.set_xlabel(f'{variable}',fontsize=14)
+        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV',fontsize=14)
+        axs.grid()
+        plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5,fontsize=14)
+        
+        
+    def plot_all_mc_overlaid(self,variable,bins,cut=None,mask=[],density=False):
+            
+        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(6, 4))
+        for name, sample in self.samples.items():
+            sample_size = len(sample.query(cut)) if cut else len(sample)
+            if sample_size==0 or name in mask:
+                continue
+            var_col= sample.query(cut)[variable] if cut else sample[variable]
+            (counts, _) = np.histogram(var_col, bins=bins)
+
             kwarg=self.kwarg
-            if name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',
-                        r'$D^{\ast\ast}\tau\nu$_mixed',
-                        r'$D^{\ast\ast}\tau\nu$_charged',
-                        r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
-                pass
-                
-            elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
-                          r'res_$D^{\ast\ast}\ell\nu$_charged',]:
-                kwarg={'histtype':'step','lw':2,'linestyle':'dotted'}
-                
-            elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
-                          r'nonres_$D^{\ast\ast}\ell\nu$_charged',
-                          r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
-                kwarg={'histtype':'step','lw':1}
 
             axs.hist(bins[:-1], bins, weights=counts, density=density,
-                    label=f'{name} \n{self.statistics(var_col[variable])}',**kwarg)
+                    label=f'''{name} \n{self.statistics(var_col)}
+cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
 
-        axs.set_title(f'Overlaid components ({cut=})')
-        axs.set_xlabel(f'{variable}')
-        axs.set_ylabel('# of candidates per bin')
+        axs.set_title(f'Overlaid components ({cut=})', fontsize=14)
+        axs.set_xlabel(f'{variable}', fontsize=14)
+        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=14)
         axs.grid()
         plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
         
 
     def plot_hist_2d(self, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
         variable_x, variable_y = variables
-        xedges = np.linspace(-2, 10, 48)
+        xedges = np.linspace(-8, 11, 50)
         if variables[1]=='p_D_l':
-            yedges = np.linspace(0.4, 4.6, 42)
+            yedges = np.linspace(0.4, 4.8, 40)
         elif variables[1]=='B_CMS_E':
-            yedges = np.linspace(1.4, 5.6, 42)
+            yedges = np.linspace(1.4, 5.6, 40)
         
         
-        fig = plt.figure(figsize=[16,26])
+        fig = plt.figure(figsize=[16,20])
         for i, (name, sample) in enumerate(self.samples.items()):
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size==0:
                 continue
-            ax = fig.add_subplot(6,3,i+1)
+            ax = fig.add_subplot(5,3,i+1)
             (counts, xedges, yedges) = np.histogram2d(
                             sample.query(cut)[variable_x] if cut else sample[variable_x], 
                             sample.query(cut)[variable_y] if cut else sample[variable_y],
@@ -492,12 +808,11 @@ class mpl:
             ax.grid()
             ax.set_xlim(xedges.min(),xedges.max())
             ax.set_ylim(yedges.min(),yedges.max())
-            ax.set_title(name,fontsize=14)
             fig.colorbar(im,ax=ax)
             ax.set_title(name,fontsize=14)
 
         fig.suptitle(f'Signal MC ({cut=})', y=0.95, fontsize=18)
-        fig.supylabel('$|p_D|\ +\ |p_l|\ \ \ [GeV]$', x=0.05,fontsize=18)
+        fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
         fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.05,fontsize=18)
         
 
@@ -1011,10 +1326,11 @@ def mpl_projection_residual_cabinetry(fit_result, templates_2d, data_2d, edges, 
         fig.suptitle(f'Fitted projection to {direction_label} in slices of {other_direction_label}',fontsize=16)
         fig.supxlabel(direction_label + '  ' + direction_unit,fontsize=16)
 
+
 # +
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+# import plotly.express as px
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
 
 class ply:
     def __init__(self, df):

@@ -1,0 +1,5 @@
+/belle/MC/release-06-00-08/DB00002100/MC15ri_b/prod00029631/s00/e1003/4S_offres/r00000/ccbar/mdst
+/belle/MC/release-06-00-08/DB00002100/MC15ri_b/prod00029632/s00/e1003/4S_offres/r00000/uubar/mdst
+/belle/MC/release-06-00-08/DB00002100/MC15ri_b/prod00029633/s00/e1003/4S_offres/r00000/ddbar/mdst
+/belle/MC/release-06-00-08/DB00002100/MC15ri_b/prod00029634/s00/e1003/4S_offres/r00000/ssbar/mdst
+/belle/MC/release-06-00-08/DB00002100/MC15ri_b/prod00029635/s00/e1003/4S_offres/r00000/taupair/mdst
