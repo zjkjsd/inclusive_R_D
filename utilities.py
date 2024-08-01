@@ -67,8 +67,8 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl'
                  r'$D\tau\nu$':8,            r'$D^\ast\tau\nu$':9,    r'$D\ell\nu$':10,
                  r'$D^\ast\ell\nu$':11,                r'$D^{\ast\ast}\tau\nu$':12,
                  r'$D^{\ast\ast}\ell\nu$':13,          r'$D\ell\nu$_gap':14}
+# -
 
-# +
 ## dataframe samples
 import pandas as pd
 def get_dataframe_samples_new(df, mode, template=True):
@@ -172,278 +172,136 @@ def get_dataframe_samples_new(df, mode, template=True):
     for name, df in samples.items():
         df['mode']=DecayMode_new[name]
     return samples
-    
-# def get_dataframe_samples_new_inclusiveD(df, mode, template=True):
-#     samples = {}
-#     lepton_PDG = {'e':11, 'mu':13}
-    
-#     ################## Define lepton #################
-#     truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
-#     fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]} and ell_mcErrors!=512'
-#     fakeTrack = 'ell_mcErrors==512'
-    
-#     ################# Define B ####################
-    
-#     D_Dst_list = [411, 413, -411, -413]
-#     Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
-#                  -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
-#     D_list = D_Dst_list + Dstst_list
-#     Pi_eta_list = [111, 211, -211, 221]
-    
-    
-#     # more categories with truel
-#     continuum = f'{truel} and B0_isContinuumEvent==1'
-    
-#     signals = f'{truel} and (abs(ell_genGMPDG)==511 or abs(ell_genGMPDG)==521) and \
-#     abs(ell_genMotherPDG)==15 and (ell_GMdaughter_0_PDG in @D_list)'
-    
-#     norms = f'{truel} and (abs(ell_genMotherPDG)==511 or abs(ell_genMotherPDG)==521) and \
-#     (ell_Mdaughter_0_PDG in @D_list)'
-    
-#     BBbkg = f'{truel} and B0_isContinuumEvent==0 and \
-#     ( (abs(ell_genGMPDG)!=511 and abs(ell_genGMPDG)!=521) or abs(ell_genMotherPDG)!=15 or (ell_GMdaughter_0_PDG not in @D_list) ) and \
-#     ( (abs(ell_genMotherPDG)!=511 and abs(ell_genMotherPDG)!=521)) or (ell_Mdaughter_0_PDG not in @D_list)'
-# #     combinatorial = f'{TDTl} and B0_mcPDG==300553'
-# #     singleBbkg = f'{TDTl} and B0_isContinuumEvent==0 and B0_mcPDG!=300553 and \
-# #     ( (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521) or \
-# #     ( ell_genMotherPDG!=B0_mcPDG and (ell_genGMPDG!=B0_mcPDG or abs(ell_genMotherPDG)!=15) ) )'
-    
-#     # more categories with signals and norms
-#     B2D_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==411*15'
-#     B2D_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==411*{lepton_PDG[mode]}'
-#     B2Dst_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==413*15'
-#     B2Dst_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==413*{lepton_PDG[mode]}'
 
-#     B2Dstst_tau = f'{signals} and (ell_GMdaughter_0_PDG in @Dstst_list) and abs(ell_GMdaughter_1_PDG)==15'
-#     B2Dstst_ell_res = f'{norms} and (ell_Mdaughter_0_PDG in @Dstst_list) and abs(ell_Mdaughter_1_PDG)=={lepton_PDG[mode]}'
 
-#     B2Dstst_ell_gap_non = f'{norms} and (ell_Mdaughter_0_PDG in @D_Dst_list) and ell_Mdaughter_1_PDG in @Pi_eta_list'
-
-#     ######################### Apply selection ###########################
+# +
+# Function to rebin a histogram
+def rebin_histogram(counts, bin_edges, threshold):
+    new_counts = []
+    new_edges = [bin_edges[0]]
     
-#     # Fake bkg components
-#     bkg_fakel = df.query(fakel).copy()
-#     bkg_fakeTrack = df.query(fakeTrack).copy()
-#     samples[r'bkg_fakel'] = bkg_fakel
-#     samples[r'bkg_fakeTrack'] = bkg_fakeTrack
-    
-#     # True Dl bkg components
-#     bkg_continuum = df.query(continuum).copy()
-#     bkg_BB = df.query(BBbkg).copy()
-#     signals_all = df.query(signals).copy()
-#     norms_all = df.query(norms).copy()
-#     bkg_other_truel = pd.concat([df.query(truel).copy(),
-#                                  bkg_continuum,
-#                                  bkg_BB,
-#                                  signals_all,
-#                                  norms_all]).drop_duplicates(
-#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    
-#     samples[r'bkg_continuum'] = bkg_continuum
-#     samples[r'bkg_BB'] = bkg_BB
-#     samples[r'bkg_other_truel'] = bkg_other_truel
-    
-#     # True Dl Signal components
-#     D_tau_nu=df.query(B2D_tau).copy()
-#     D_l_nu=df.query(B2D_ell).copy()
-#     Dst_tau_nu=df.query(B2Dst_tau).copy()
-#     Dst_l_nu=df.query(B2Dst_ell).copy()
-#     Dstst_tau_nu=df.query(B2Dstst_tau).copy()
-#     Dstst_l_nu_res=df.query(B2Dstst_ell_res).copy()
-#     Dstst_l_nu_gap_non=df.query(B2Dstst_ell_gap_non).copy()
-    
-#     bkg_other_signal = pd.concat([signals_all,
-#                                   norms_all,
-#                                   D_tau_nu,
-#                                   Dst_tau_nu,
-#                                   D_l_nu,
-#                                   Dst_l_nu,
-#                                   Dstst_tau_nu,
-#                                   Dstst_l_nu_res,
-#                                   Dstst_l_nu_gap_non]).drop_duplicates(
-#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    
-#     samples[r'$D\tau\nu$'] = D_tau_nu
-#     samples[r'$D^\ast\tau\nu$'] = Dst_tau_nu
-#     samples[r'$D\ell\nu$'] = D_l_nu
-#     samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
-#     samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
-#     samples[r'$D^{\ast\ast}\ell\nu$_res'] = Dstst_l_nu_res
-#     samples[r'$D^{\ast\ast}\ell\nu$_gap_non'] = Dstst_l_nu_gap_non
-#     samples['bkg_other_signal'] = bkg_other_signal
-    
-#     for name, df in samples.items():
-#         df['mode']=DecayMode_inclusiveD[name]
-#     return samples
-    
-def get_dataframe_samples_old(df, mode, template=True):
-    samples = {}
-    lepton_PDG = {'e':11, 'mu':13}
-    
-    # Define Truth matching criteria
-    true_D_tau = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genGMPDG==B0_mcPDG and abs(ell_genMotherPDG)==15'
-    
-    true_D_ell = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genMotherPDG==B0_mcPDG'
-    
-    true_B0 = 'B0_mcPDG*D_mcPDG==-511*411'
-    B_charged = 'B0_mcPDG*D_mcPDG==-521*411'
-    
-    lepton_misID = f'abs(ell_mcPDG)!={lepton_PDG[mode]}'
-    lepton_wrong_mother = f'ell_genMotherPDG!=B0_mcPDG and \
-    (abs(ell_genMotherPDG)!=15 or abs(ell_genMotherPDG)==15 and ell_genGMPDG!=B0_mcPDG)'
-    
-###################### mcErrors need to be handled carefully
-###################### apparently correct e mcPDG==11 could have large mcErrors, 128, 2048; mcSecPhysProc need to be checked later
-    DecayErrors = {}
-    # norm modes, signal modes, D** mixed modes
-    for key, value in {'D_l':[8,16],'Dst_l':[8,64],'D_tau':[8,32],'Dst_Dstst_mixed':[8,64]}.items():
-                    # tau to e has a 1% radiative mode, thus 32
-        correct_decay = f'({value[0]}+ell_mcErrors)<=B0_mcErrors<({value[1]}+ell_mcErrors)'
-        missing_photon = f'({value[0]+1024}+ell_mcErrors)<=B0_mcErrors<({value[1]+1024}+ell_mcErrors)'
+    i = 0
+    while i < len(counts):
+        bin_count = counts[i]
+        start_edge = bin_edges[i]
+        end_edge = bin_edges[i + 1]
         
-#         wrongBremsDaughter = f'{value[0]+2048}<=B0_mcErrors<{value[1]+2048+128}'
-#         missing_photon_wrongBrems = f'{value[0]+2048+1024}<=B0_mcErrors<{value[1]+2048+1024+128}'
+        # Merge bins until bin_count is above the threshold
+        while bin_count < threshold and i < len(counts) - 1:
+            i += 1
+            bin_count += counts[i]
+            end_edge = bin_edges[i + 1]
         
-        DecayErrors[f'{key}_errors'] = f'({correct_decay} or {missing_photon})'
-        # note that the parentheses in the `or` statement is very important when using `and` in front
-        if template and (key in ['D_l', 'Dst_l']):
-            DecayErrors[f'{key}_errors'] = correct_decay
+        new_counts.append(bin_count)
+        new_edges.append(end_edge)
         
-            
-    # D** charged modes
-    Bcharged_errors = f'({8+256}+ell_mcErrors)<=B0_mcErrors<({64+256}+ell_mcErrors)'
-    missing_photon_Bcharged = f'({8+1024+256}+ell_mcErrors)<=B0_mcErrors<({64+1024+256}+ell_mcErrors)'
+        i += 1
     
-    # a charged particle (e.g. pi,e,mu) is added as a Brems daughter by the correctBrem module
-    # however, this mistake doesn't change the MM2 and p_D_l much, still within the signal window
-    # B0_mcErrors is offset by 128 due to the misID of the Brems daughter
-#     wrongBremsDaughter_Bcharged = f'{8+2048+256}<=B0_mcErrors<{64+2048+256+128}'
-#     missing_photon_wrongBrems_Bcharged = f'{8+2048+1024+256}<=B0_mcErrors<{64+2048+1024+256+128}'
+    return np.array(new_counts), np.array(new_edges)
 
-    DecayErrors[f'Bcharged_errors'] = f'({Bcharged_errors} or {missing_photon_Bcharged})'
-#         if template:
-#             DecayErrors[f'Bcharged_errors'] = Bcharged_errors
+# new_counts, new_bin_edges = rebin_histogram(counts, bin_edges, threshold)
 
-
-    B2D_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*15'
-    B2D_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
-    B2Dst_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
-    B2Dst_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
-
-    Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
-                 -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
-    B2Dstst_tau = 'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
-    B2Dstst_ell_res = f'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
-
-    D_Dst_list = [411, 413, -411, -413]
-    Pi_list = [111, 211, -211]
-    B2Dstst_ell_non = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_list'
-    B2Dstst_ell_gap = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG==221'
-
-
-    # Sig components
-    sig_D_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2D_tau} and \
-    {DecayErrors["D_tau_errors"]}').copy()
-
-    sig_D_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2D_ell} and \
-    {DecayErrors["D_l_errors"]}').copy()
-
-    sig_Dst_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2Dst_tau} and \
-    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-    sig_Dst_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2Dst_ell} and \
-    {DecayErrors["Dst_l_errors"]}').copy()
-
-    Dstst_tau_nu_mixed=df.query(f'{true_B0} and {true_D_tau} and {B2Dstst_tau} and \
-    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-    res_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_res} and \
-    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-    nonres_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_non} and \
-    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-    gap_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_gap} and \
-    {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-    Dstst_tau_nu_charged=df.query(f'{B_charged} and {true_D_tau} and {B2Dstst_tau} and \
-    {DecayErrors["Bcharged_errors"]}').copy()
-
-    res_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_res} and \
-    {DecayErrors["Bcharged_errors"]}').copy()
-
-    nonres_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_non} and \
-    {DecayErrors["Bcharged_errors"]}').copy()
+# Function to rebin another histogram using new bin edges
+def rebin_histogram_with_new_edges_and_uncertainties(counts, uncertainties, old_bin_edges, new_bin_edges):
+    # Rebin the counts using np.histogram
+    new_counts, _ = np.histogram(np.repeat(old_bin_edges[:-1], counts), bins=new_bin_edges)
     
-    samples[r'$D\tau\nu$'] = sig_D_tau_nu
-    samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
-    samples[r'$D^{\ast\ast}\tau\nu$_mixed'] = Dstst_tau_nu_mixed
-    samples[r'$D^{\ast\ast}\tau\nu$_charged'] = Dstst_tau_nu_charged
-    samples[r'$D\ell\nu$'] = sig_D_l_nu
-    samples[r'$D^\ast\ell\nu$'] = sig_Dst_l_nu
-    samples[r'res_$D^{\ast\ast}\ell\nu$_mixed'] = res_Dstst_l_nu_mixed
-    samples[r'nonres_$D^{\ast\ast}\ell\nu$_mixed'] = nonres_Dstst_l_nu_mixed
-    samples[r'gap_$D^{\ast\ast}\ell\nu$_mixed'] = gap_Dstst_l_nu_mixed
-    samples[r'res_$D^{\ast\ast}\ell\nu$_charged'] = res_Dstst_l_nu_charged
-    samples[r'nonres_$D^{\ast\ast}\ell\nu$_charged'] = nonres_Dstst_l_nu_charged
-   
+    # Initialize new uncertainties array
+    new_uncertainties = np.zeros_like(new_counts, dtype=float)
     
-    #Bkg components
-    bkg_fakeTracksClusters = df.query('B0_mcErrors==512 and B0_isContinuumEvent!=1').copy()
-    samples[r'bkg_fakeTC'] = bkg_fakeTracksClusters
-    
-    bkg_continuum = df.query('B0_isContinuumEvent==1').copy()
-    samples[r'bkg_continuum'] = bkg_continuum
-    
-    bkg_BBbar = df.query('B0_mcErrors!=512 and B0_isContinuumEvent!=1')
-    bkg_fakeD = bkg_BBbar.query('(abs(D_mcPDG)!=411 or D_mcErrors>=8)').copy()
-    samples[r'bkg_fakeD'] = bkg_fakeD
+    # Combine uncertainties in the new bins
+    for i in range(len(old_bin_edges) - 1):
+        bin_value = old_bin_edges[i]
+        new_bin_index = np.digitize(bin_value, new_bin_edges) - 1
+        new_uncertainties[new_bin_index] += uncertainties[i] ** 2  # Sum uncertainties in quadrature
 
-    bkg_trueD = bkg_BBbar.query('abs(D_mcPDG)==411 and D_mcErrors<8')
-    bkg_combinatorial = bkg_trueD.query('B0_mcPDG==300553').copy()
-    samples[r'bkg_combinatorial'] = bkg_combinatorial
-    
-    bkg_sigOtherBDTaudecay = bkg_trueD.query(f'B0_mcPDG!=300553 and \
-                (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521 or \
-                {lepton_misID} or {lepton_wrong_mother})').copy()
-                # reconstruct a non-B particle or lepton_misID or lepton from B daughter decay
-    samples[r'bkg_Odecay'] = bkg_sigOtherBDTaudecay
-    
-    
-    bkg_others = pd.concat([df,
-                            sig_D_tau_nu,
-                            sig_D_l_nu,
-                            sig_Dst_tau_nu,
-                            sig_Dst_l_nu,
-                            Dstst_tau_nu_mixed,
-                            Dstst_tau_nu_charged,
-                            res_Dstst_l_nu_mixed,
-                            nonres_Dstst_l_nu_mixed,
-                            gap_Dstst_l_nu_mixed,
-                            res_Dstst_l_nu_charged,
-                            nonres_Dstst_l_nu_charged,
-                            bkg_fakeTracksClusters,
-                            bkg_fakeD,
-                            bkg_sigOtherBDTaudecay,
-                            bkg_combinatorial,
-                            bkg_continuum]).drop_duplicates(
-                subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    
-    samples['bkg_others'] = bkg_others
+    # Take the square root of the sum of squares
+    new_uncertainties = np.sqrt(new_uncertainties)
+    return new_counts, new_uncertainties
 
-    
+# new_counts_B, new_uncertainties_B = rebin_histogram_with_new_edges_and_uncertainties(counts_B, uncertainties_B, bin_edges_B, new_bin_edges_A)
+
+def create_templates(samples:dict, bins:list, variables:list=['B0_CMS3_weMissM2','p_D_l'],bin_threshold=1,merge_threshold=10):
+    #################### Create template 2d histograms ################
+    histograms = {}
+    staterr = {}
     for name, df in samples.items():
-        df['mode']=DecayMode[name]
+        if name in ['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal']:
+            continue
 
-    df = pd.concat([df for df in samples.values()],ignore_index=True).reset_index(drop=True)
-    df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
-    
-    return df, samples
+        (counts, xedges, yedges) = np.histogram2d(df[variables[0]], 
+                                                  df[variables[1]],
+                                                  bins=bins,
+                                                  weights=df['__weight__'])
 
-    # the bkg_others contains events with wrong bremsstralung corrected electrons
-    # The added daughter to the electron are pions, electrons, muons
-    # so the 130<B0_mcErrors<160, e_mcErrors==128, 2176, 2180
+        (staterr_squared, xedges, yedges) = np.histogram2d(df[variables[0]], 
+                                                           df[variables[1]],
+                                                           bins=bins,
+                                                           weights=df['__weight__']**2)
+        histograms[name] = counts.T
+        staterr[name] = np.sqrt(staterr_squared.T)
+
+    ################### Trimming and flattening ###############
+    # remove bins with count smaller than bin_threshold
+    indices_threshold = np.where(np.sum(list(histograms.values()),axis=0) >= bin_threshold)
+    template_flat = {name:t[indices_threshold].tolist() for name,t in histograms.items()}
+    staterr_flat = {name:se[indices_threshold].tolist() for name,se in staterr.items()}
+
+    asimov_data = np.sum(list(template_flat.values()),axis=0).tolist()
+
+    ################## Create a new set of templates whose adjacent bins are merged if <10 counts
+
+    dummy_bin_edges = np.arange(len(asimov_data)+1)
+    new_counts, new_dummy_bin_edges = rebin_histogram(counts=asimov_data, 
+                                                      bin_edges=dummy_bin_edges, 
+                                                      threshold=merge_threshold)
+    print(f'original template length = {len(asimov_data)}')
+    print(f'new template length = {len(new_counts)}')
+
+    template_flat_merged = {}
+    staterr_flat_merged = {}
+    for name, t in template_flat.items():
+        new_c, new_err = rebin_histogram_with_new_edges_and_uncertainties(counts=t,
+                                                                        uncertainties=staterr_flat[name], 
+                                                                        old_bin_edges=dummy_bin_edges,
+                                                                        new_bin_edges=new_dummy_bin_edges)
+        template_flat_merged[name] = new_c.tolist()
+        staterr_flat_merged[name] = new_err.tolist()
+
+    asimov_data_merged = np.sum(list(template_flat_merged.values()),axis=0).tolist()
     
+    return indices_threshold,(template_flat,staterr_flat,asimov_data),(template_flat_merged,staterr_flat_merged,asimov_data_merged)
+
+def update_workspace(workspace:dict,temp_asimov_sets:list) -> dict:
+    names = list(temp_asimov_sets[0][0].keys())
+    for ch_index in range(len(temp_asimov_sets)):
+        template_flat = temp_asimov_sets[ch_index][0]
+        staterr_flat = temp_asimov_sets[ch_index][1]
+        asimov_data = temp_asimov_sets[ch_index][2]
+        
+        for samp_index, samples in enumerate(workspace['channels'][ch_index]['samples']):
+            workspace['channels'][ch_index]['samples'][samp_index]['name'] = names[samp_index]
+            workspace['channels'][ch_index]['samples'][samp_index]['data'] = template_flat[names[samp_index]]
+            for mod_index,m in enumerate(samples['modifiers']):
+                if m['type']=='staterror':
+        #             workspace['channels'][0]['samples'][i]['modifiers'].remove(m)
+                    workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['data'] = staterr_flat[names[samp_index]]
+                    workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = f'staterror_{ch_index}_channel'
+                elif m['type']=="normfactor":
+                    workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = names[samp_index]+'_norm'
+                else:
+                    print(m['type'],'is turned on')
+
+        workspace['observations'][ch_index]['data']=asimov_data
+
+    for i, par in enumerate(workspace["measurements"][0]["config"]["parameters"]):
+        par['name']=names[i]+'_norm'
+    #     par['bounds'] = [[-1,1]]
+    #     par['inits'] = [0.5]
+
+    workspace["measurements"][0]["config"]['poi']="$D\\tau\\nu$_norm"
+    
+    return workspace
 
 
 # +
@@ -750,7 +608,7 @@ cut_eff={(sample_size/len(sample)):.3f}''')
         
     def plot_all_mc_overlaid(self,variable,bins,cut=None,mask=[],density=False):
             
-        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(6, 4))
+        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
         for name, sample in self.samples.items():
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size==0 or name in mask:
@@ -771,49 +629,93 @@ cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
         plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
         
 
-    def plot_hist_2d(self, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
+    def plot_all_2Dhist(self, bins:list, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
         variable_x, variable_y = variables
-        xedges = np.linspace(-8, 11, 50)
-        if variables[1]=='p_D_l':
-            yedges = np.linspace(0.4, 4.8, 40)
-        elif variables[1]=='B_CMS_E':
-            yedges = np.linspace(1.4, 5.6, 40)
-        
-        
+        xedges, yedges = bins
+       
+        # create a mask
+        mask_arr = np.ones((len(yedges)-1,len(xedges)-1)) # switch the shape for x,y as plotting counts.T
+        if mask:
+            # apply mask at mm2<1.6 and p_D_l>1 
+            mm2_split = mask[0]
+            pDl_split = mask[1]
+            mm2_split_index, = np.asarray(np.isclose(xedges,mm2_split,atol=0.2)).nonzero()
+            pDl_split_index, = np.asarray(np.isclose(yedges,pDl_split,atol=0.2)).nonzero()
+            mask_arr[:,mm2_split_index[0]:] = mask[2] # select the small mm2
+            mask_arr[:pDl_split_index[0],:] = mask[2] # select the large pDl
+            
         fig = plt.figure(figsize=[16,20])
         for i, (name, sample) in enumerate(self.samples.items()):
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size==0:
                 continue
             ax = fig.add_subplot(5,3,i+1)
-            (counts, xedges, yedges) = np.histogram2d(
+            (counts, xe, ye) = np.histogram2d(
                             sample.query(cut)[variable_x] if cut else sample[variable_x], 
                             sample.query(cut)[variable_y] if cut else sample[variable_y],
                             bins=[xedges, yedges])
-            counts = counts.T
-            
-            mask_arr = np.ones_like(counts)
-            if mask:
-                # apply mask at mm2<1.6 and p_D_l>1 
-                mm2_split = mask[0]
-                pDl_split = mask[1]
-                mm2_split_index, = np.asarray(np.isclose(xedges,mm2_split,atol=0.2)).nonzero()
-                pDl_split_index, = np.asarray(np.isclose(yedges,pDl_split,atol=0.2)).nonzero()
-                mask_arr[:,mm2_split_index[0]:] = mask[2] # select the small mm2
-                mask_arr[:pDl_split_index[0],:] = mask[2] # select the large pDl
-                
 
-            X, Y = np.meshgrid(xedges, yedges)
-            im=ax.pcolormesh(X, Y, counts, cmap='rainbow', norm=colors.LogNorm(), alpha=mask_arr)
+            im = ax.imshow(counts.T, origin='lower', aspect='auto', 
+                     cmap='rainbow', norm=colors.LogNorm(),alpha=mask_arr,
+                     extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+            fig.colorbar(im, ax=ax)
+#             X, Y = np.meshgrid(xedges, yedges)
+#             im=ax.pcolormesh(X, Y, counts, cmap='rainbow', norm=colors.LogNorm(), alpha=mask_arr)
             ax.grid()
             ax.set_xlim(xedges.min(),xedges.max())
             ax.set_ylim(yedges.min(),yedges.max())
-            fig.colorbar(im,ax=ax)
             ax.set_title(name,fontsize=14)
 
         fig.suptitle(f'Signal MC ({cut=})', y=0.95, fontsize=18)
         fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
         fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.05,fontsize=18)
+        
+    def plot_2Dhist_and_projections(self, bins:list, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None):
+        variable_x, variable_y = variables
+        xedges, yedges = bins
+
+        for name, sample in self.samples.items():
+            sample_size = len(sample.query(cut)) if cut else len(sample)
+            if sample_size==0:
+                continue
+            # Compute 2d hist
+            (counts, xe, ye) = np.histogram2d(
+                            sample.query(cut)[variable_x] if cut else sample[variable_x], 
+                            sample.query(cut)[variable_y] if cut else sample[variable_y],
+                            bins=[xedges, yedges])
+            # Compute projections
+            x_projection = counts.sum(axis=1)  # Sum along the y-axis
+            y_projection = counts.sum(axis=0)  # Sum along the x-axis
+
+            # Plot the 2D histogram
+            fig, ax = plt.subplots(1, 3, figsize=(18, 5))
+
+            # 2D Histogram
+            im = ax[0].imshow(counts.T, origin='lower', aspect='auto', 
+                             cmap='rainbow', norm=colors.LogNorm(),
+                             extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+            fig.colorbar(im, ax=ax[0])
+            ax[0].set_title(name)
+            ax[0].set_xlabel('$M_{miss}^2$', fontsize=14)
+            ax[0].set_ylabel('$|p_D| + |p_{\ell}|$', fontsize=14)
+            ax[0].grid()
+
+            # X Projection
+            ax[1].bar(xedges[:-1], x_projection, width=np.diff(xedges), align='edge')
+            ax[1].set_title('$M_{miss}^2$ Projection')
+            ax[1].set_xlabel('$M_{miss}^2$')
+            ax[1].set_ylabel('Counts')
+            ax[1].grid()
+
+            # Y Projection
+            ax[2].barh(yedges[:-1], y_projection, height=np.diff(yedges), align='edge')
+            ax[2].set_title('$|p_D| + |p_{\ell}|$ Projection')
+            ax[2].set_xlabel('Counts')
+            ax[2].set_ylabel('$|p_D| + |p_{\ell}|$')
+            ax[2].grid()
+
+            plt.tight_layout()
+            plt.show()
         
 
     def plot_correlation(self, df, cut=None, target='B0_CMS3_weMissM2', variables=analysis_variables):
@@ -1843,3 +1745,275 @@ def ply_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1]
 # mode_dict['mu']['gap_Dstst_l_nu_mixed']=[
 #     '511 (-> -411 221 -13 14)','-511 (-> 411 221 13 -14)',
 #     '511 (-> -413 221 -13 14)','-511 (-> 413 221 13 -14)']
+
+# +
+# def get_dataframe_samples_new_inclusiveD(df, mode, template=True):
+#     samples = {}
+#     lepton_PDG = {'e':11, 'mu':13}
+    
+#     ################## Define lepton #################
+#     truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
+#     fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]} and ell_mcErrors!=512'
+#     fakeTrack = 'ell_mcErrors==512'
+    
+#     ################# Define B ####################
+    
+#     D_Dst_list = [411, 413, -411, -413]
+#     Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
+#                  -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
+#     D_list = D_Dst_list + Dstst_list
+#     Pi_eta_list = [111, 211, -211, 221]
+    
+    
+#     # more categories with truel
+#     continuum = f'{truel} and B0_isContinuumEvent==1'
+    
+#     signals = f'{truel} and (abs(ell_genGMPDG)==511 or abs(ell_genGMPDG)==521) and \
+#     abs(ell_genMotherPDG)==15 and (ell_GMdaughter_0_PDG in @D_list)'
+    
+#     norms = f'{truel} and (abs(ell_genMotherPDG)==511 or abs(ell_genMotherPDG)==521) and \
+#     (ell_Mdaughter_0_PDG in @D_list)'
+    
+#     BBbkg = f'{truel} and B0_isContinuumEvent==0 and \
+#     ( (abs(ell_genGMPDG)!=511 and abs(ell_genGMPDG)!=521) or abs(ell_genMotherPDG)!=15 or (ell_GMdaughter_0_PDG not in @D_list) ) and \
+#     ( (abs(ell_genMotherPDG)!=511 and abs(ell_genMotherPDG)!=521)) or (ell_Mdaughter_0_PDG not in @D_list)'
+# #     combinatorial = f'{TDTl} and B0_mcPDG==300553'
+# #     singleBbkg = f'{TDTl} and B0_isContinuumEvent==0 and B0_mcPDG!=300553 and \
+# #     ( (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521) or \
+# #     ( ell_genMotherPDG!=B0_mcPDG and (ell_genGMPDG!=B0_mcPDG or abs(ell_genMotherPDG)!=15) ) )'
+    
+#     # more categories with signals and norms
+#     B2D_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==411*15'
+#     B2D_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==411*{lepton_PDG[mode]}'
+#     B2Dst_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==413*15'
+#     B2Dst_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==413*{lepton_PDG[mode]}'
+
+#     B2Dstst_tau = f'{signals} and (ell_GMdaughter_0_PDG in @Dstst_list) and abs(ell_GMdaughter_1_PDG)==15'
+#     B2Dstst_ell_res = f'{norms} and (ell_Mdaughter_0_PDG in @Dstst_list) and abs(ell_Mdaughter_1_PDG)=={lepton_PDG[mode]}'
+
+#     B2Dstst_ell_gap_non = f'{norms} and (ell_Mdaughter_0_PDG in @D_Dst_list) and ell_Mdaughter_1_PDG in @Pi_eta_list'
+
+#     ######################### Apply selection ###########################
+    
+#     # Fake bkg components
+#     bkg_fakel = df.query(fakel).copy()
+#     bkg_fakeTrack = df.query(fakeTrack).copy()
+#     samples[r'bkg_fakel'] = bkg_fakel
+#     samples[r'bkg_fakeTrack'] = bkg_fakeTrack
+    
+#     # True Dl bkg components
+#     bkg_continuum = df.query(continuum).copy()
+#     bkg_BB = df.query(BBbkg).copy()
+#     signals_all = df.query(signals).copy()
+#     norms_all = df.query(norms).copy()
+#     bkg_other_truel = pd.concat([df.query(truel).copy(),
+#                                  bkg_continuum,
+#                                  bkg_BB,
+#                                  signals_all,
+#                                  norms_all]).drop_duplicates(
+#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+#     samples[r'bkg_continuum'] = bkg_continuum
+#     samples[r'bkg_BB'] = bkg_BB
+#     samples[r'bkg_other_truel'] = bkg_other_truel
+    
+#     # True Dl Signal components
+#     D_tau_nu=df.query(B2D_tau).copy()
+#     D_l_nu=df.query(B2D_ell).copy()
+#     Dst_tau_nu=df.query(B2Dst_tau).copy()
+#     Dst_l_nu=df.query(B2Dst_ell).copy()
+#     Dstst_tau_nu=df.query(B2Dstst_tau).copy()
+#     Dstst_l_nu_res=df.query(B2Dstst_ell_res).copy()
+#     Dstst_l_nu_gap_non=df.query(B2Dstst_ell_gap_non).copy()
+    
+#     bkg_other_signal = pd.concat([signals_all,
+#                                   norms_all,
+#                                   D_tau_nu,
+#                                   Dst_tau_nu,
+#                                   D_l_nu,
+#                                   Dst_l_nu,
+#                                   Dstst_tau_nu,
+#                                   Dstst_l_nu_res,
+#                                   Dstst_l_nu_gap_non]).drop_duplicates(
+#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+#     samples[r'$D\tau\nu$'] = D_tau_nu
+#     samples[r'$D^\ast\tau\nu$'] = Dst_tau_nu
+#     samples[r'$D\ell\nu$'] = D_l_nu
+#     samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
+#     samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
+#     samples[r'$D^{\ast\ast}\ell\nu$_res'] = Dstst_l_nu_res
+#     samples[r'$D^{\ast\ast}\ell\nu$_gap_non'] = Dstst_l_nu_gap_non
+#     samples['bkg_other_signal'] = bkg_other_signal
+    
+#     for name, df in samples.items():
+#         df['mode']=DecayMode_inclusiveD[name]
+#     return samples
+    
+# def get_dataframe_samples_old(df, mode, template=True):
+#     samples = {}
+#     lepton_PDG = {'e':11, 'mu':13}
+    
+#     # Define Truth matching criteria
+#     true_D_tau = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genGMPDG==B0_mcPDG and abs(ell_genMotherPDG)==15'
+    
+#     true_D_ell = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genMotherPDG==B0_mcPDG'
+    
+#     true_B0 = 'B0_mcPDG*D_mcPDG==-511*411'
+#     B_charged = 'B0_mcPDG*D_mcPDG==-521*411'
+    
+#     lepton_misID = f'abs(ell_mcPDG)!={lepton_PDG[mode]}'
+#     lepton_wrong_mother = f'ell_genMotherPDG!=B0_mcPDG and \
+#     (abs(ell_genMotherPDG)!=15 or abs(ell_genMotherPDG)==15 and ell_genGMPDG!=B0_mcPDG)'
+    
+# ###################### mcErrors need to be handled carefully
+# ###################### apparently correct e mcPDG==11 could have large mcErrors, 128, 2048; mcSecPhysProc need to be checked later
+#     DecayErrors = {}
+#     # norm modes, signal modes, D** mixed modes
+#     for key, value in {'D_l':[8,16],'Dst_l':[8,64],'D_tau':[8,32],'Dst_Dstst_mixed':[8,64]}.items():
+#                     # tau to e has a 1% radiative mode, thus 32
+#         correct_decay = f'({value[0]}+ell_mcErrors)<=B0_mcErrors<({value[1]}+ell_mcErrors)'
+#         missing_photon = f'({value[0]+1024}+ell_mcErrors)<=B0_mcErrors<({value[1]+1024}+ell_mcErrors)'
+        
+# #         wrongBremsDaughter = f'{value[0]+2048}<=B0_mcErrors<{value[1]+2048+128}'
+# #         missing_photon_wrongBrems = f'{value[0]+2048+1024}<=B0_mcErrors<{value[1]+2048+1024+128}'
+        
+#         DecayErrors[f'{key}_errors'] = f'({correct_decay} or {missing_photon})'
+#         # note that the parentheses in the `or` statement is very important when using `and` in front
+#         if template and (key in ['D_l', 'Dst_l']):
+#             DecayErrors[f'{key}_errors'] = correct_decay
+        
+            
+#     # D** charged modes
+#     Bcharged_errors = f'({8+256}+ell_mcErrors)<=B0_mcErrors<({64+256}+ell_mcErrors)'
+#     missing_photon_Bcharged = f'({8+1024+256}+ell_mcErrors)<=B0_mcErrors<({64+1024+256}+ell_mcErrors)'
+    
+#     # a charged particle (e.g. pi,e,mu) is added as a Brems daughter by the correctBrem module
+#     # however, this mistake doesn't change the MM2 and p_D_l much, still within the signal window
+#     # B0_mcErrors is offset by 128 due to the misID of the Brems daughter
+# #     wrongBremsDaughter_Bcharged = f'{8+2048+256}<=B0_mcErrors<{64+2048+256+128}'
+# #     missing_photon_wrongBrems_Bcharged = f'{8+2048+1024+256}<=B0_mcErrors<{64+2048+1024+256+128}'
+
+#     DecayErrors[f'Bcharged_errors'] = f'({Bcharged_errors} or {missing_photon_Bcharged})'
+# #         if template:
+# #             DecayErrors[f'Bcharged_errors'] = Bcharged_errors
+
+
+#     B2D_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*15'
+#     B2D_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
+#     B2Dst_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
+#     B2Dst_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
+
+#     Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
+#                  -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
+#     B2Dstst_tau = 'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
+#     B2Dstst_ell_res = f'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
+
+#     D_Dst_list = [411, 413, -411, -413]
+#     Pi_list = [111, 211, -211]
+#     B2Dstst_ell_non = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_list'
+#     B2Dstst_ell_gap = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG==221'
+
+
+#     # Sig components
+#     sig_D_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2D_tau} and \
+#     {DecayErrors["D_tau_errors"]}').copy()
+
+#     sig_D_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2D_ell} and \
+#     {DecayErrors["D_l_errors"]}').copy()
+
+#     sig_Dst_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2Dst_tau} and \
+#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#     sig_Dst_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2Dst_ell} and \
+#     {DecayErrors["Dst_l_errors"]}').copy()
+
+#     Dstst_tau_nu_mixed=df.query(f'{true_B0} and {true_D_tau} and {B2Dstst_tau} and \
+#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#     res_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_res} and \
+#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#     nonres_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_non} and \
+#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#     gap_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_gap} and \
+#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
+
+#     Dstst_tau_nu_charged=df.query(f'{B_charged} and {true_D_tau} and {B2Dstst_tau} and \
+#     {DecayErrors["Bcharged_errors"]}').copy()
+
+#     res_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_res} and \
+#     {DecayErrors["Bcharged_errors"]}').copy()
+
+#     nonres_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_non} and \
+#     {DecayErrors["Bcharged_errors"]}').copy()
+    
+#     samples[r'$D\tau\nu$'] = sig_D_tau_nu
+#     samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
+#     samples[r'$D^{\ast\ast}\tau\nu$_mixed'] = Dstst_tau_nu_mixed
+#     samples[r'$D^{\ast\ast}\tau\nu$_charged'] = Dstst_tau_nu_charged
+#     samples[r'$D\ell\nu$'] = sig_D_l_nu
+#     samples[r'$D^\ast\ell\nu$'] = sig_Dst_l_nu
+#     samples[r'res_$D^{\ast\ast}\ell\nu$_mixed'] = res_Dstst_l_nu_mixed
+#     samples[r'nonres_$D^{\ast\ast}\ell\nu$_mixed'] = nonres_Dstst_l_nu_mixed
+#     samples[r'gap_$D^{\ast\ast}\ell\nu$_mixed'] = gap_Dstst_l_nu_mixed
+#     samples[r'res_$D^{\ast\ast}\ell\nu$_charged'] = res_Dstst_l_nu_charged
+#     samples[r'nonres_$D^{\ast\ast}\ell\nu$_charged'] = nonres_Dstst_l_nu_charged
+   
+    
+#     #Bkg components
+#     bkg_fakeTracksClusters = df.query('B0_mcErrors==512 and B0_isContinuumEvent!=1').copy()
+#     samples[r'bkg_fakeTC'] = bkg_fakeTracksClusters
+    
+#     bkg_continuum = df.query('B0_isContinuumEvent==1').copy()
+#     samples[r'bkg_continuum'] = bkg_continuum
+    
+#     bkg_BBbar = df.query('B0_mcErrors!=512 and B0_isContinuumEvent!=1')
+#     bkg_fakeD = bkg_BBbar.query('(abs(D_mcPDG)!=411 or D_mcErrors>=8)').copy()
+#     samples[r'bkg_fakeD'] = bkg_fakeD
+
+#     bkg_trueD = bkg_BBbar.query('abs(D_mcPDG)==411 and D_mcErrors<8')
+#     bkg_combinatorial = bkg_trueD.query('B0_mcPDG==300553').copy()
+#     samples[r'bkg_combinatorial'] = bkg_combinatorial
+    
+#     bkg_sigOtherBDTaudecay = bkg_trueD.query(f'B0_mcPDG!=300553 and \
+#                 (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521 or \
+#                 {lepton_misID} or {lepton_wrong_mother})').copy()
+#                 # reconstruct a non-B particle or lepton_misID or lepton from B daughter decay
+#     samples[r'bkg_Odecay'] = bkg_sigOtherBDTaudecay
+    
+    
+#     bkg_others = pd.concat([df,
+#                             sig_D_tau_nu,
+#                             sig_D_l_nu,
+#                             sig_Dst_tau_nu,
+#                             sig_Dst_l_nu,
+#                             Dstst_tau_nu_mixed,
+#                             Dstst_tau_nu_charged,
+#                             res_Dstst_l_nu_mixed,
+#                             nonres_Dstst_l_nu_mixed,
+#                             gap_Dstst_l_nu_mixed,
+#                             res_Dstst_l_nu_charged,
+#                             nonres_Dstst_l_nu_charged,
+#                             bkg_fakeTracksClusters,
+#                             bkg_fakeD,
+#                             bkg_sigOtherBDTaudecay,
+#                             bkg_combinatorial,
+#                             bkg_continuum]).drop_duplicates(
+#                 subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    
+#     samples['bkg_others'] = bkg_others
+
+    
+#     for name, df in samples.items():
+#         df['mode']=DecayMode[name]
+
+#     df = pd.concat([df for df in samples.values()],ignore_index=True).reset_index(drop=True)
+#     df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
+    
+#     return df, samples
+
+#     # the bkg_others contains events with wrong bremsstralung corrected electrons
+#     # The added daughter to the electron are pions, electrons, muons
+#     # so the 130<B0_mcErrors<160, e_mcErrors==128, 2176, 2180
