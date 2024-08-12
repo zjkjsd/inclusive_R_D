@@ -106,7 +106,8 @@ if __name__ == "__main__":
     spec = cabinetry.workspace.load(workspace_path)
     if args.merge:
         spec = util.update_workspace(workspace=spec,temp_asimov_sets=[temp_asimov_merged_e])
-    spec = util.update_workspace(workspace=spec,temp_asimov_sets=[temp_asimov_e])
+    else:
+        spec = util.update_workspace(workspace=spec,temp_asimov_sets=[temp_asimov_e])
     model, data = cabinetry.model_utils.model_and_data(spec)
 
     ## Fit
@@ -116,5 +117,6 @@ if __name__ == "__main__":
     #, minos=model.config.parameters[:7])
 
     with open(f'fit_{args.binning[0]}_{args.binning[1]}_merge{args.merge}.txt', 'w') as file:
+        file.write(f"template length = {len(data)}" + '\n')
         for label, result, unc in zip(fit_results.labels, fit_results.bestfit, fit_results.uncertainty):
             file.write(f"{label}: {result:.3f} +/- {unc:.3f}" + '\n')

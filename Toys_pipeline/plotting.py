@@ -156,7 +156,7 @@ def plot_toy_gaussian(
              transform=plt.gca().transAxes)
 
     if extra_info is not None:
-        plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, transform=plt.gca().transAxes, fontsize=18)
+        plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, transform=plt.gca().transAxes, fontsize=12)
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     if title_info is not None:
@@ -246,7 +246,7 @@ def plot_linearity_test(
                 plt.ylim(bot, top + 0.08 * (top - bot))
 
     if extra_info is not None:
-        plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, transform=plt.gca().transAxes, fontsize=18)
+        plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, transform=plt.gca().transAxes, fontsize=12)
 
     left, right = plt.xlim()
     plt.xlim(left, right + 0.1 * (right - left))

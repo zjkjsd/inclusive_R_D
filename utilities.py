@@ -272,7 +272,7 @@ def create_templates(samples:dict, bins:list, variables:list=['B0_CMS3_weMissM2'
     
     return indices_threshold,(template_flat,staterr_flat,asimov_data),(template_flat_merged,staterr_flat_merged,asimov_data_merged)
 
-def update_workspace(workspace:dict,temp_asimov_sets:list) -> dict:
+def update_workspace(workspace:dict,temp_asimov_sets:list,staterror:bool=True) -> dict:
     names = list(temp_asimov_sets[0][0].keys())
     for ch_index in range(len(temp_asimov_sets)):
         template_flat = temp_asimov_sets[ch_index][0]
@@ -282,11 +282,15 @@ def update_workspace(workspace:dict,temp_asimov_sets:list) -> dict:
         for samp_index, samples in enumerate(workspace['channels'][ch_index]['samples']):
             workspace['channels'][ch_index]['samples'][samp_index]['name'] = names[samp_index]
             workspace['channels'][ch_index]['samples'][samp_index]['data'] = template_flat[names[samp_index]]
+            if 'staterror' not in [m['type'] for m in samples['modifiers']] and staterror:
+                workspace['channels'][ch_index]['samples'][samp_index]['modifiers'].append({'type':'staterror'})
             for mod_index,m in enumerate(samples['modifiers']):
                 if m['type']=='staterror':
-        #             workspace['channels'][0]['samples'][i]['modifiers'].remove(m)
-                    workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['data'] = staterr_flat[names[samp_index]]
-                    workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = f'staterror_{ch_index}_channel'
+                    if staterror:
+                        workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['data'] = staterr_flat[names[samp_index]]
+                        workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = f'staterror_{ch_index}_channel'
+                    else:
+                        workspace['channels'][ch_index]['samples'][samp_index]['modifiers'].remove(m)
                 elif m['type']=="normfactor":
                     workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = names[samp_index]+'_norm'
                 else:
