@@ -67,10 +67,12 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl'
                  r'$D\tau\nu$':8,            r'$D^\ast\tau\nu$':9,    r'$D\ell\nu$':10,
                  r'$D^\ast\ell\nu$':11,                r'$D^{\ast\ast}\tau\nu$':12,
                  r'$D^{\ast\ast}\ell\nu$':13,          r'$D\ell\nu$_gap':14}
-# -
 
+# +
 ## dataframe samples
+import numpy as np
 import pandas as pd
+
 def get_dataframe_samples_new(df, mode, template=True):
     samples = {}
     lepton_PDG = {'e':11, 'mu':13}
@@ -120,9 +122,9 @@ def get_dataframe_samples_new(df, mode, template=True):
     bkg_FakeD = df.query(FD).copy()
     bkg_TDFl = df.query(TDFl).copy()
     bkg_fakeTracks = df.query(fakeTracks).copy()
-    samples[r'bkg_FakeD'] = bkg_FakeD
-    samples[r'bkg_TDFl'] = bkg_TDFl
-    samples[r'bkg_fakeTracks'] = bkg_fakeTracks
+    samples['bkg_FakeD'] = bkg_FakeD
+    samples['bkg_TDFl'] = bkg_TDFl
+    samples['bkg_fakeTracks'] = bkg_fakeTracks
     
     # True Dl bkg components
     bkg_continuum = df.query(continuum).copy()
@@ -136,10 +138,10 @@ def get_dataframe_samples_new(df, mode, template=True):
                                 signals_all]).drop_duplicates(
         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
     
-    samples[r'bkg_continuum'] = bkg_continuum
-    samples[r'bkg_combinatorial'] = bkg_combinatorial
-    samples[r'bkg_singleBbkg'] = bkg_singleBbkg
-    samples[r'bkg_other_TDTl'] = bkg_other_TDTl
+    samples['bkg_continuum'] = bkg_continuum
+    samples['bkg_combinatorial'] = bkg_combinatorial
+    samples['bkg_singleBbkg'] = bkg_singleBbkg
+    samples['bkg_other_TDTl'] = bkg_other_TDTl
     
     # True Dl Signal components
     D_tau_nu=df.query(B2D_tau).copy()
@@ -272,40 +274,62 @@ def create_templates(samples:dict, bins:list, variables:list=['B0_CMS3_weMissM2'
     
     return indices_threshold,(template_flat,staterr_flat,asimov_data),(template_flat_merged,staterr_flat_merged,asimov_data_merged)
 
-def update_workspace(workspace:dict,temp_asimov_sets:list,staterror:bool=True) -> dict:
+
+def update_workspace(workspace: dict, temp_asimov_sets: list, staterror: bool = True, exclude_sample: list = []) -> dict:
     names = list(temp_asimov_sets[0][0].keys())
     for ch_index in range(len(temp_asimov_sets)):
         template_flat = temp_asimov_sets[ch_index][0]
         staterr_flat = temp_asimov_sets[ch_index][1]
-        asimov_data = temp_asimov_sets[ch_index][2]
-        
-        for samp_index, samples in enumerate(workspace['channels'][ch_index]['samples']):
-            workspace['channels'][ch_index]['samples'][samp_index]['name'] = names[samp_index]
-            workspace['channels'][ch_index]['samples'][samp_index]['data'] = template_flat[names[samp_index]]
-            if 'staterror' not in [m['type'] for m in samples['modifiers']] and staterror:
-                workspace['channels'][ch_index]['samples'][samp_index]['modifiers'].append({'type':'staterror'})
-            for mod_index,m in enumerate(samples['modifiers']):
-                if m['type']=='staterror':
+#         asimov_data = temp_asimov_sets[ch_index][2]
+
+        # Update samples
+        for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
+            sample['name'] = names[samp_index]
+            sample['data'] = template_flat[names[samp_index]]
+            if 'staterror' not in [m['type'] for m in sample['modifiers']] and staterror:
+                sample['modifiers'].append({'type': 'staterror'})
+
+            for mod_index, m in enumerate(sample['modifiers']):
+                if m['type'] == 'staterror':
                     if staterror:
-                        workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['data'] = staterr_flat[names[samp_index]]
-                        workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = f'staterror_{ch_index}_channel'
+                        m['data'] = staterr_flat[names[samp_index]]
+                        m['name'] = f'staterror_{ch_index}_channel'
                     else:
-                        workspace['channels'][ch_index]['samples'][samp_index]['modifiers'].remove(m)
-                elif m['type']=="normfactor":
-                    workspace['channels'][ch_index]['samples'][samp_index]['modifiers'][mod_index]['name'] = names[samp_index]+'_norm'
+                        # Modifying the list of modifiers safely
+                        sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'staterror']
+                elif m['type'] == "normfactor":
+                    m['name'] = names[samp_index] + '_norm'
                 else:
-                    print(m['type'],'is turned on')
+                    print(m['type'], 'is turned on')
 
-        workspace['observations'][ch_index]['data']=asimov_data
+        # Exclude samples
+        workspace['channels'][ch_index]['samples'] = [
+            sample for sample in workspace['channels'][ch_index]['samples'] if sample['name'] not in exclude_sample
+        ]
+        # Update the asimov data
+        templates_kept = [sample['data'] for sample in workspace['channels'][ch_index]['samples']]
+        asimov_data = np.sum(templates_kept,axis=0).tolist()
+        workspace['observations'][ch_index]['data'] = asimov_data
 
+    # Update measurement parameters
     for i, par in enumerate(workspace["measurements"][0]["config"]["parameters"]):
-        par['name']=names[i]+'_norm'
-    #     par['bounds'] = [[-1,1]]
-    #     par['inits'] = [0.5]
-
-    workspace["measurements"][0]["config"]['poi']="$D\\tau\\nu$_norm"
+        par['name'] = names[i] + '_norm'
     
+    workspace["measurements"][0]["config"]["parameters"] = [
+        par for par in workspace["measurements"][0]["config"]["parameters"] if par['name'] not in [s + '_norm' for s in exclude_sample]
+    ]
+
+    workspace["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
+
     return workspace
+
+# for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
+#     sample = {'name': 'new_sample'}  # This would not update the list in `workspace`
+# Using sample as a reference to the list element is perfectly fine and will not cause bugs 
+# as long as you're modifying the contents of sample (like updating values or appending to a list). 
+# However, be cautious when assigning a completely new value to sample itself, 
+# as that won't update the original list.
+
 
 
 # +
@@ -372,8 +396,6 @@ def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
 
 # +
 ## Plotting
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
