@@ -223,12 +223,15 @@ def rebin_histogram_with_new_edges_and_uncertainties(counts, uncertainties, old_
 
 # new_counts_B, new_uncertainties_B = rebin_histogram_with_new_edges_and_uncertainties(counts_B, uncertainties_B, bin_edges_B, new_bin_edges_A)
 
-def create_templates(samples:dict, bins:list, variables:list=['B0_CMS3_weMissM2','p_D_l'],bin_threshold=1,merge_threshold=10):
+def create_templates(samples:dict, bins:list, 
+                     variables=['B0_CMS3_weMissM2','p_D_l'],
+                     bin_threshold=1, merge_threshold=10,
+                     sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal']):
     #################### Create template 2d histograms ################
     histograms = {}
     staterr = {}
     for name, df in samples.items():
-        if name in ['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal']:
+        if name in sample_to_exclude:
             continue
 
         (counts, xedges, yedges) = np.histogram2d(df[variables[0]], 
@@ -275,7 +278,7 @@ def create_templates(samples:dict, bins:list, variables:list=['B0_CMS3_weMissM2'
     return indices_threshold,(template_flat,staterr_flat,asimov_data),(template_flat_merged,staterr_flat_merged,asimov_data_merged)
 
 
-def update_workspace(workspace: dict, temp_asimov_sets: list, staterror: bool = True, exclude_sample: list = []) -> dict:
+def update_workspace(workspace: dict, temp_asimov_sets: list, staterror: bool = True) -> dict:
     names = list(temp_asimov_sets[0][0].keys())
     for ch_index in range(len(temp_asimov_sets)):
         template_flat = temp_asimov_sets[ch_index][0]
@@ -302,23 +305,10 @@ def update_workspace(workspace: dict, temp_asimov_sets: list, staterror: bool = 
                 else:
                     print(m['type'], 'is turned on')
 
-        # Exclude samples
-        workspace['channels'][ch_index]['samples'] = [
-            sample for sample in workspace['channels'][ch_index]['samples'] if sample['name'] not in exclude_sample
-        ]
-        # Update the asimov data
-        templates_kept = [sample['data'] for sample in workspace['channels'][ch_index]['samples']]
-        asimov_data = np.sum(templates_kept,axis=0).tolist()
-        workspace['observations'][ch_index]['data'] = asimov_data
-
     # Update measurement parameters
     for i, par in enumerate(workspace["measurements"][0]["config"]["parameters"]):
         par['name'] = names[i] + '_norm'
     
-    workspace["measurements"][0]["config"]["parameters"] = [
-        par for par in workspace["measurements"][0]["config"]["parameters"] if par['name'] not in [s + '_norm' for s in exclude_sample]
-    ]
-
     workspace["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
 
     return workspace

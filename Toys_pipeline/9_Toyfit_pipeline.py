@@ -535,7 +535,7 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
                          samples_toFix = self.samples_toFix,
                          test_fakeD_sideband = self.test_fakeD_sideband,
                          n_total_toys = 5000,
-                         init_toy_pars = [1]*7,
+                         init_toy_pars = [1]*12,
                          normalise_by_uncertainty = True)
         
 #         yield self.clone(pyhf_linearity_fitTask,
@@ -553,7 +553,7 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
     
     b2luigi.process(
-        pyhf_toys_wrapper(workspace_path='2d_ws_SR_1ch_noStaterror_noBkg_50_25.json',
+        pyhf_toys_wrapper(workspace_path='2d_ws_SR_1ch_50_25.json',
                           samples_toFix = [],
                           test_fakeD_sideband = False),
         workers=int(1e4),
