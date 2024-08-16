@@ -20,11 +20,10 @@ import uncertainties
 from tqdm.auto import tqdm
 
 import b2luigi
-import itertools
 import json
 import yaml
-import logging
-#import pickle
+# import logging
+# import pickle
 
 
 def to_string(x):
@@ -54,15 +53,15 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
     """
     Task to perform an mle fit on toys of the asimov sample on a prepared pyhf spec.
     """
-    queue = 'l'
-    
-    workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
-                                       hashed=True,
-                                       description='relative path to pyhf workspace')
+    queue = 'lx'
     
     samples_toFix = b2luigi.ListParameter(default=[],significant=True,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
+    
+    workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
+                                       hashed=True,
+                                       description='relative path to pyhf workspace')
     
     test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=True)
     
@@ -80,6 +79,9 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
 
     part = b2luigi.IntParameter(
         default=0, description='Needed to be able to run N jobs (each with a part number) with n toys each')
+    
+    binning = b2luigi.ListParameter(default=[0,0], significant=False,
+                                    hashed=True, hash_function=join_list_hash_function)
 
     # safety factor to account for failed toys
     # runs until self.n_toys successful fits or safety_factor*self.n_toys attempts.
@@ -107,8 +109,8 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
         # Create a boolean list for fixing parameters
         fix_mask = [sample in self.samples_toFix for sample in all_sample_names]
         
-        # Retrieve all parameter names from the model
-        all_parameter_names = model.config.parameters
+        # Retrieve all parameter names in the correct order
+        all_parameter_names = model.config.par_order
         # Create a list of parameter names for samples that are not fixed
         minos_parameters = [param for param, fix in zip(all_parameter_names, fix_mask) if not fix]
         
@@ -212,6 +214,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
             'results': fit_results,
             'failed_fits': failed_fits,
             'atempted_fits': attempted_fits,
+            'binning': self.binning,
         }
 
         with open(self.get_output_file_name('toy_part_results.json'), 'w') as f:
@@ -225,14 +228,14 @@ class pyhf_toy_fitTask(b2luigi.Task):
     """
     queue = 'l'
     
+    samples_toFix = b2luigi.ListParameter(default=[], significant=True,
+                                          hashed=True,
+                                          hash_function=join_list_hash_function)
+    
     workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
                                        significant=True,
                                        hashed=True,
                                        description='relative path to pyhf workspace')
-    
-    samples_toFix = b2luigi.ListParameter(default=[], significant=True,
-                                          hashed=True,
-                                          hash_function=join_list_hash_function)
     
     test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=True)
     
@@ -361,7 +364,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
     
     queue = 'l'
     
-    workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
+    workspace_path = b2luigi.Parameter(default='',
                                        hashed=True,
                                        significant=True, description='relative path to pyhf workspace')
     
@@ -427,7 +430,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
             with open(input_file, 'r') as f:
                 in_dict = json.load(f)
                 failed_fits += in_dict['failed_fits']
-                merged_toy_results_dict['poi'] = in_dict['poi']
+                par_names = in_dict['poi']
                 # Convert the list to a tuple to make it hashable, keys in a dict
                 truth = tuple(in_dict['toy_pars'])
                 fitted = in_dict['results']['best_fit']
@@ -444,7 +447,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
         processed_results = {'fitted':[],
                              'error':[],
                              'truth':[],
-                             'poi': merged_toy_results_dict['poi']}
+                             'poi': par_names}
         
         for truth, fits in merged_toy_results_dict.items():
             processed_results['truth'].append(truth)
@@ -514,29 +517,201 @@ class pyhf_linearity_fitTask(b2luigi.Task):
         return
 
 
+class pyhf_binning_fitTask(b2luigi.Task):
+    """
+    Task to summarise mle fit uncertainties on toys with different binning.
+    """
+    
+    queue = 'l'
+    
+    samples_toFix = b2luigi.ListParameter(default=[], significant=True,
+                                          hashed=True,
+                                          hash_function=join_list_hash_function)
+    
+    binning = b2luigi.ListParameter(default=[10,101,5], significant=True,
+                                    hashed=True,
+                                    hash_function=join_list_hash_function,
+                                    description='first_nbin, last_nbin+1, increment')
+    
+    n_toys_per_binning = b2luigi.IntParameter(default=10, 
+                                            significant=False,
+                                            description='Number of toys to generate for each test binning')
+    
+    create_templates = b2luigi.BoolParameter(default=True, significant=False)
+    
+    staterror = b2luigi.BoolParameter(default=False, significant=False)
+    
+    workspace_path = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       significant=False, description='relative path to pyhf workspace')
+    
+    job_name = 'toyBinning'
 
+
+    htcondor_settings = {
+        'request_cpus': 1,
+        'request_memory': '16000 MB',
+        '+RequestRuntime': 3600,
+    }
+
+    def requires(self):
+        if self.create_templates:
+            import uproot
+            import sys
+            sys.path.append('/home/belle/zhangboy/inclusive_R_D/')
+            import utilities as util
+            
+            ## Loading Ntuples
+            columns = util.all_relevant_variables + ['B0_CMS4_weMissM2']
+
+            # Load template samples
+            e_temp = uproot.concatenate([f'../Samples/Generic_MC15ri/e_channel/MC15ri_local_200fb/*.root:B0'],
+                                      library="np",
+                                      #cut=input_cut,
+                                      filter_branch=lambda branch: branch.name in columns)
+
+            df_e = pd.DataFrame(e_temp)
+
+            # load MVA
+            import lightgbm as lgb
+            training_variables = util.training_variables
+            bst_lgb = lgb.Booster(model_file=f'../BDTs/LightGBM/lgbm_multiclass.txt')
+            cut='signal_prob==largest_prob and signal_prob>0.8 and \
+            continuum_prob<0.04 and fakeD_prob<0.05'
+
+            df_e.eval('B_D_ReChi2 = B0_vtxReChi2 + D_vtxReChi2', inplace=True)
+            df_e.eval(f'p_D_l = D_CMS_p + ell_CMS_p', inplace=True)
+
+            pred_e = bst_lgb.predict(df_e[training_variables], num_iteration=50) #bst_lgb.best_iteration
+            lgb_out_e = pd.DataFrame(pred_e, columns=['signal_prob','continuum_prob','fakeD_prob','fakeB_prob'])
+
+            df_lgb_e = pd.concat([df_e, lgb_out_e], axis=1)
+            df_lgb_e['largest_prob'] = df_lgb_e[['signal_prob','continuum_prob','fakeD_prob','fakeB_prob']].max(axis=1)
+            del pred_e, lgb_out_e
+
+            df_cut_e=df_lgb_e.query(cut)
+            df_bestSelected_e=df_cut_e.loc[df_cut_e.groupby(['__experiment__','__run__','__event__','__production__']).B_D_ReChi2.idxmin()]
+        else:
+            pass
+        
+        # define binning
+        nBins = np.arange(*self.binning) # 10,15,20...100
+        
+        for nMM2_bins in nBins:
+            for nPDl_bins in nBins:
+                workspace_path = f'temp/binning_{nMM2_bins}_{nPDl_bins}.json'
+                
+                if self.create_templates:
+                    # Define the bin edges
+                    MM2_bins = np.linspace(-5, 10, nMM2_bins + 1)
+                    p_D_l_bins = np.linspace(0.4, 5, nPDl_bins + 1)
+
+                    # create templates
+                    te=util.get_dataframe_samples_new(df_bestSelected_e, 'e', template=False)
+                    indices_threshold_3,temp_asimov_e,temp_asimov_merged_e = util.create_templates(
+                        samples=te, bins=[MM2_bins, p_D_l_bins], 
+                        variables=['B0_CMS3_weMissM2','p_D_l'],
+                        bin_threshold=1,merge_threshold=10,
+                        sample_to_exclude=[#'bkg_FakeD','bkg_TDFl','bkg_continuum','bkg_combinatorial','bkg_singleBbkg',
+                                           'bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal'])
+
+                    # load,update,save example workspace
+                    spec = cabinetry.workspace.load(self.workspace_path)
+                    spec = util.update_workspace(workspace=spec,
+                                 temp_asimov_sets=[temp_asimov_e],
+                                 staterror=self.staterror)
+                    cabinetry.workspace.save(spec, workspace_path)
+                else:
+                    pass
+                
+                # submit fit task
+                n_parameters = 12 - len(self.samples_toFix)
+                toy_pars = [1]*n_parameters
+
+                yield self.clone(pyhf_toy_mle_part_fitTask,
+                                 samples_toFix = self.samples_toFix,
+                                 workspace_path = workspace_path,
+                                 test_fakeD_sideband = False,
+                                 init_toy_pars = toy_pars,
+                                 n_toys=self.n_toys_per_binning,
+                                 binning=[int(nMM2_bins), int(nPDl_bins)])
+
+    def output(self):
+        yield self.add_to_output('binning_toy_results.csv')
+
+    def run(self):
+
+        # average results for each test binning
+        processed_results = {'nMM2_bins':[],
+                             'nPDl_bins':[]}
+
+        for input_file in tqdm(self.get_input_file_names('toy_part_results.json')):
+            with open(input_file, 'r') as f:
+                in_dict = json.load(f)
+                successful_fits = in_dict['atempted_fits'] - in_dict['failed_fits']
+                
+                # calculate the mean and error of hesse
+                hesse = in_dict['results']['uncertainty']
+                avg = np.mean(hesse,axis=0).tolist()
+                if successful_fits==0:
+                    err = [0]*len(avg)
+                else:
+                    err = (np.std(hesse,axis=0)/np.sqrt(successful_fits)).tolist()
+                
+                # Append the avg values to the corresponding key in the dictionary
+                pars_hesse_avg = [par+'_hesse_avg' for par in in_dict['poi']]
+                pars_hesse_err = [par+'_hesse_err' for par in in_dict['poi']]
+                for i, par in enumerate(pars_hesse_avg):
+                    if par in processed_results:
+                        processed_results[par].append(avg[i])
+                    else:
+                        processed_results[par] = [avg[i]]
+                        
+                for i, par in enumerate(pars_hesse_err):
+                    if par in processed_results:
+                        processed_results[par].append(err[i])
+                    else:
+                        processed_results[par] = [err[i]]
+                
+                processed_results['nMM2_bins'].append(in_dict['binning'][0])
+                processed_results['nPDl_bins'].append(in_dict['binning'][1])
+        
+        # save the result to a csv file
+        df = pd.DataFrame.from_dict(processed_results)
+        df.to_csv(self.get_output_file_name('binning_toy_results.csv'),index=False)
+
+        return
 
 class pyhf_toys_wrapper(b2luigi.WrapperTask):
     """
     Wrapper for submitting all the pyhf asimov toys tasks.
     """
-    workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
-                                       hashed=True,
-                                       description='relative path to pyhf workspace')
+
     samples_toFix = b2luigi.ListParameter(default=[], significant=True,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
+    workspace_path = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       description='relative path to pyhf workspace')
     test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=False)
 
     def requires(self):
     
-        yield self.clone(pyhf_toy_fitTask,
-                         workspace_path = self.workspace_path,
+        yield self.clone(pyhf_binning_fitTask,
+                         binning = [10,101,5],
                          samples_toFix = self.samples_toFix,
-                         test_fakeD_sideband = self.test_fakeD_sideband,
-                         n_total_toys = 5000,
-                         init_toy_pars = [1]*12,
-                         normalise_by_uncertainty = True)
+                         n_toys_per_point = 10,
+                         workspace_path = self.workspace_path,
+                         create_templates = False,
+                         staterror = True)
+    
+#         yield self.clone(pyhf_toy_fitTask,
+#                          workspace_path = self.workspace_path,
+#                          samples_toFix = self.samples_toFix,
+#                          test_fakeD_sideband = self.test_fakeD_sideband,
+#                          n_total_toys = 5000,
+#                          init_toy_pars = [1]*12,
+#                          normalise_by_uncertainty = True)
         
 #         yield self.clone(pyhf_linearity_fitTask,
 #                          workspace_path = self.workspace_path,
@@ -554,7 +729,8 @@ if __name__ == '__main__':
     
     b2luigi.process(
         pyhf_toys_wrapper(workspace_path='2d_ws_SR_1ch_50_25.json',
-                          samples_toFix = [],
+                          samples_toFix = [#'bkg_FakeD','bkg_TDFl','bkg_continuum','bkg_combinatorial','bkg_singleBbkg'
+                                          ],
                           test_fakeD_sideband = False),
         workers=int(1e4),
         batch=True,

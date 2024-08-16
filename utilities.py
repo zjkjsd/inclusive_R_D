@@ -280,34 +280,60 @@ def create_templates(samples:dict, bins:list,
 
 def update_workspace(workspace: dict, temp_asimov_sets: list, staterror: bool = True) -> dict:
     names = list(temp_asimov_sets[0][0].keys())
+    
     for ch_index in range(len(temp_asimov_sets)):
         template_flat = temp_asimov_sets[ch_index][0]
         staterr_flat = temp_asimov_sets[ch_index][1]
-#         asimov_data = temp_asimov_sets[ch_index][2]
-
+        asimov_data = temp_asimov_sets[ch_index][2]
+        
+        # Update the number of samples to match the new names
+        current_samples = workspace['channels'][ch_index]['samples']
+        if len(current_samples) < len(names):
+            # Add missing samples
+            for _ in range(len(names) - len(current_samples)):
+                current_samples.append({'name': '', 'data': [], 'modifiers': []})
+        elif len(current_samples) > len(names):
+            # Remove extra samples
+            workspace['channels'][ch_index]['samples'] = current_samples[:len(names)]
+        
         # Update samples
         for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
             sample['name'] = names[samp_index]
             sample['data'] = template_flat[names[samp_index]]
+            
             if 'staterror' not in [m['type'] for m in sample['modifiers']] and staterror:
                 sample['modifiers'].append({'type': 'staterror'})
-
+            
             for mod_index, m in enumerate(sample['modifiers']):
                 if m['type'] == 'staterror':
                     if staterror:
                         m['data'] = staterr_flat[names[samp_index]]
                         m['name'] = f'staterror_{ch_index}_channel'
                     else:
-                        # Modifying the list of modifiers safely
+                        # Safely remove the 'staterror' modifier if not needed
                         sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'staterror']
                 elif m['type'] == "normfactor":
                     m['name'] = names[samp_index] + '_norm'
                 else:
                     print(m['type'], 'is turned on')
+                    
+        workspace['observations'][ch_index]['data'] = asimov_data
 
     # Update measurement parameters
+    current_parameters = workspace["measurements"][0]["config"]["parameters"]
+    if len(current_parameters) < len(names):
+        # Add missing parameters
+        for _ in range(len(names) - len(current_parameters)):
+            current_parameters.append({'name': '', 'bounds': [[0,2]], 'inits': [1]})
+    elif len(current_parameters) > len(names):
+        # Remove extra parameters
+        workspace["measurements"][0]["config"]["parameters"] = current_parameters[:len(names)]
     for i, par in enumerate(workspace["measurements"][0]["config"]["parameters"]):
         par['name'] = names[i] + '_norm'
+        if par['name'].startswith('bkg'):
+            par['bounds'] = [[0,2]]
+        else:
+            par['bounds'] = [[-5,5]]
     
     workspace["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
 

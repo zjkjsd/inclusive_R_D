@@ -16,16 +16,16 @@ b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 main_path = b2.Path()
 
 input_file = '../Samples/Signal_MC_ROEx1/B2Dstst_l_nu/MC/MC_1193710005_mod.root'
-output_file = 'MC_mu.root'
+output_file = 'MC_mu_test.root'
 
 ma.inputMdstList(filelist=input_file, path=main_path)
 
-goodTrack = 'abs(dz)<0.2 and dr<0.1 and pt>0.1 and E<5.5 and thetaInCDCAcceptance and nCDCHits>0'
+goodTrack = 'abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nCDCHits>0'
 
 vm.addAlias("pionID_binary_noSVD", "binaryPID_noSVD(211, 321)")
 vm.addAlias("kaonID_binary_noSVD", "binaryPID_noSVD(321, 211)")
-ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and pionID_binary_noSVD > 0.1', path=main_path)
-ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonID_binary_noSVD > 0.9', path=main_path)
+ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and pionIDNN > 0.1', path=main_path)
+ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_path)
 
 # ----------------------------------
 # Fill example standard lepton list.
@@ -77,8 +77,8 @@ ma.applyChargedPidMVA(['mu+:mymu'], path=main_path, trainingMode=1,
 # ------------------------------------------------------------
 # Add extra cuts on the standard lepton lists and lepton veto.
 # ------------------------------------------------------------
-
-ma.applyCuts(f"e-:corrected", "pidChargedBDTScore(11, ALL)>0.9 and p>0.2", path=main_path)
+vm.addAlias('eID','pidChargedBDTScore(11, ALL)')
+ma.applyCuts(f"e-:corrected", "eID>0.9 and p>0.2", path=main_path)
 ma.applyCuts(f"mu-:mymu", "muonID_noSVD>0.9", path=main_path) #pidChargedBDTScore(13, ALL)>0.9
 
 # select events only containing 1 lepton
@@ -103,7 +103,8 @@ vm.addAlias('BFInvM','extraInfo(D_BFInvM)')
 
 Daughters_vars = []
 for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD',
-                 'dr','dz','nCDCHits','pValue','mcErrors','pt','trackLength']:
+                 'dr','dz','nCDCHits','pValue','mcErrors','pt',
+                 'p','cosTheta','theta','charge','PDG','mcPDG']:
     vm.addAlias(f'K_{variable}', f'daughter(0, {variable})')
     vm.addAlias(f'pi1_{variable}', f'daughter(1, {variable})')
     vm.addAlias(f'pi2_{variable}', f'daughter(2, {variable})')
@@ -157,7 +158,6 @@ ma.matchMCTruth('anti-B0:Dl', path=main_path)
 # main_path.add_module('ParticleMCDecayString', listName='anti-B0:Dl', fileName=output_hash)
 # vm.addAlias('DecayHash','extraInfo(DecayHash)')
 # vm.addAlias('DecayHashEx','extraInfo(DecayHashExtended)')
-
 
 ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and -3.2<deltaE<0 and CMS_E<5.4', path=main_path)
 
@@ -324,11 +324,27 @@ for var in we_vars:
 
 # fit B vertex on the tag-side
 # vx.TagV("anti-B0:Dl", fitAlgorithm="Rave", maskName='my_mask', path=main_path)
-
 vx.TagV('B0:Dl',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
         reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
 vm.addAlias('TagVReChi2','formula(TagVChi2/TagVNDF)')
 vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
+
+ma.applyCuts('anti-B0:Dl', '5<roeMbc(my_mask) and -5<roeDeltae(my_mask)<2 and \
+              4.3<CMS2_weMbc and -3<CMS0_weDeltae<2 and abs(roeCharge(my_mask))<3 and \
+              0.2967<Lab5_weMissPTheta<2.7925 and 0.2967<Lab6_weMissPTheta<2.7925 and \
+              0<TagVReChi2<100 and 0<TagVReChi2IP<100', path=main_path)
+
+vm.addAlias('genGMPDG','genMotherPDG(1)')
+vm.addAlias('mcDaughter_0_PDG', 'mcDaughter(0,PDG)')
+vm.addAlias('mcDaughter_1_PDG', 'mcDaughter(1,PDG)')
+extra_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG']
+
+# Kinematic variables in CMS
+cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
+# cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
+# cms_momentum_uncertainty = vu.create_aliases(vc.momentum_uncertainty, "useCMSFrame({variable})", "CMS")
+# roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
+# roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
 
 TVVariables = ['DeltaZ',    'DeltaZErr',    'TagVReChi2',    'TagVReChi2IP',
                'TagVx',     'TagVxErr',     'TagVy',         'TagVyErr',
@@ -402,51 +418,44 @@ CSVariables = [
 ]
 
 
-
-
 # Write variables to Ntuples
-vm.addAlias('cos_pV','cosAngleBetweenMomentumAndVertexVector')
-vm.addAlias('cos_pB','cosThetaBetweenParticleAndNominalB')
+# vm.addAlias('cos_pV','cosAngleBetweenMomentumAndVertexVector')
+# vm.addAlias('cos_pB','cosThetaBetweenParticleAndNominalB')
+
+# Extra truth matching variables
+# vm.addAlias("mcPDG_genB0", "genUpsilon4S(mcDaughter(0, mcPDG))")
+# vm.addAlias("mcPDG_genB1", "genUpsilon4S(mcDaughter(1, mcPDG))")
+# vm.addAlias("genID_B0", "genUpsilon4S(mcDaughter(0, genParticleID))")
+# vm.addAlias("genID_B1", "genUpsilon4S(mcDaughter(1, genParticleID))")
+
+# vm.addAlias('GMdaughter_0_PDG', 'mcMother(mcMother(mcDaughter(0,PDG)))')
+# vm.addAlias('GMdaughter_1_PDG', 'mcMother(mcMother(mcDaughter(1,PDG)))')
+# vm.addAlias('Mdaughter_0_PDG', 'mcMother(mcDaughter(0,PDG))')
+# vm.addAlias('Mdaughter_1_PDG', 'mcMother(mcDaughter(1,PDG))')
+
+# vm.addAlias('nMissPi','genNMissingDaughter(211)')
+# vm.addAlias('nMissPi0','genNMissingDaughter(111)')
+# vm.addAlias('nMissDst','genNMissingDaughter(413)')
+# vm.addAlias('nMissD_1','genNMissingDaughter(10413)')
+# vm.addAlias('nMissD_0st','genNMissingDaughter(10411)')
+# vm.addAlias('nMissDp_1','genNMissingDaughter(20413)')
+# vm.addAlias('nMissD_2st','genNMissingDaughter(415)')
+# vm.addAlias('nMissD_10','genNMissingDaughter(10423)')
+# vm.addAlias('nMissD_0st0','genNMissingDaughter(10421)')
+# vm.addAlias('nMissDp_10','genNMissingDaughter(20423)')
+# vm.addAlias('nMissD_2st0','genNMissingDaughter(425)')
+# vm.addAlias('nMissEta','genNMissingDaughter(221)')
+
+# nMissingP = ['nMissPi','nMissPi0','nMissDst',
+#              'nMissD_1','nMissD_0st','nMissDp_1',
+#              'nMissD_2st','nMissD_10','nMissD_0st0',
+#              'nMissDp_10','nMissD_2st0','nMissEta']
 
 
-# Kinematic variables in CMS
-cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
-cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
-roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
-roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
-
-
-ma.applyCuts('anti-B0:Dl', '5<roeMbc(my_mask) and -5<roeDeltae(my_mask)<2 and \
-              4.3<CMS2_weMbc and -3<CMS0_weDeltae<2 and abs(roeCharge(my_mask))<3 and \
-              0.2967<Lab5_weMissPTheta<2.7925 and 0.2967<Lab6_weMissPTheta<2.7925 and \
-              0<TagVReChi2<100 and 0<TagVReChi2IP<100', path=main_path)
-
-vm.addAlias('genGMPDG','genMotherPDG(1)')
-vm.addAlias('mcDaughter_0_PDG', 'mcDaughter(0,PDG)')
-vm.addAlias('mcDaughter_1_PDG', 'mcDaughter(1,PDG)')
-extra_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG']
 
 # ma.printMCParticles(onlyPrimaries=False, maxLevel=-1, path=main_path,
 #                     showProperties=False, showMomenta=False, showVertices=False, showStatus=False, 
 #                     suppressPrint=True)
-
-vm.addAlias('nMissPi','genNMissingDaughter(211)')
-vm.addAlias('nMissPi0','genNMissingDaughter(111)')
-vm.addAlias('nMissDst','genNMissingDaughter(413)')
-vm.addAlias('nMissD_1','genNMissingDaughter(10413)')
-vm.addAlias('nMissD_0st','genNMissingDaughter(10411)')
-vm.addAlias('nMissDp_1','genNMissingDaughter(20413)')
-vm.addAlias('nMissD_2st','genNMissingDaughter(415)')
-vm.addAlias('nMissD_10','genNMissingDaughter(10423)')
-vm.addAlias('nMissD_0st0','genNMissingDaughter(10421)')
-vm.addAlias('nMissDp_10','genNMissingDaughter(20423)')
-vm.addAlias('nMissD_2st0','genNMissingDaughter(425)')
-vm.addAlias('nMissEta','genNMissingDaughter(221)')
-
-nMissingP = ['nMissPi','nMissPi0','nMissDst',
-             'nMissD_1','nMissD_0st','nMissDp_1',
-             'nMissD_2st','nMissD_10','nMissD_0st0',
-             'nMissDp_10','nMissD_2st0','nMissEta']
 
 b_vars = vu.create_aliases_for_selected(
     list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_multiplicities 
@@ -466,12 +475,11 @@ D_vars = vu.create_aliases_for_selected(
 
 for i in range(2):
     vm.addAlias(f'd{i}_mcPDG', f'daughter({i}, mcPDG)')
-vm.addAlias('pSig','formula((mcP - p)/pErr)')
-
 l_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics # + cms_mc_kinematics + electron_id_weights
-    + ['genGMPDG','genMotherPDG','mcErrors', 'mcPDG','dM','isBremsCorrected','pValue',
-       'isCloneTrack','d0_mcPDG','d1_mcPDG'],
+    list_of_variables= cms_kinematics + vc.kinematics #+ cms_mc_kinematics + cms_momentum_uncertainty #+ electron_id_weights
+    + ['genGMPDG','genMotherPDG',#'GMdaughter_0_PDG','GMdaughter_1_PDG','Mdaughter_0_PDG','Mdaughter_1_PDG',
+       'mcErrors','mcPDG','dM','isBremsCorrected','pValue','isCloneTrack','d0_mcPDG','d1_mcPDG',
+       'cosTheta','theta','muonID_noSVD','charge','PDG'],
     decay_string='anti-B0:Dl =norad=> D+:K2pi ^mu-:mymu',
     prefix=['ell'])
 
