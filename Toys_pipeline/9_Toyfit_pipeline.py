@@ -53,7 +53,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
     """
     Task to perform an mle fit on toys of the asimov sample on a prepared pyhf spec.
     """
-    queue = 'lx'
+    queue = 'l'
     
     samples_toFix = b2luigi.ListParameter(default=[],significant=True,
                                           hashed=True,
@@ -316,6 +316,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
             # calculate pulls
             if self.normalise_by_uncertainty:
                 hesse_error = np.array(merged_toy_results_dict['uncertainty'])[:,poi_index]
+                percent_error = hesse_error / fitted # will show in the plot
                 if 'minos_uncertainty_up' in merged_toy_results_dict.keys():
                     # minos errors
                     minos_up = np.array(merged_toy_results_dict['minos_uncertainty_up'])[:,poi_index]
@@ -346,7 +347,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 center_bins_on_zero=self.normalise_by_uncertainty,
                 gauss_color=(plotting_style.BrightColorScheme.pink
                              if poi_index<3 else plotting_style.BrightColorScheme.orange),
-                extra_info=f'Percent Error: {hesse_error.mean():.3f}' if abs(sigma.n)<5 else 'Fit failed',
+                extra_info=f'Percent Error: {percent_error.mean():.3f}' if abs(sigma.n)<5 else 'Fit failed',
                 title_info= poi,
                 file_name=self.get_output_file_name(f'toy_fit_pulls_{nplot}.pdf'),
             )
@@ -364,13 +365,13 @@ class pyhf_linearity_fitTask(b2luigi.Task):
     
     queue = 'l'
     
-    workspace_path = b2luigi.Parameter(default='',
-                                       hashed=True,
-                                       significant=True, description='relative path to pyhf workspace')
-    
     samples_toFix = b2luigi.ListParameter(default=[], significant=True,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
+    
+    workspace_path = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       significant=True, description='relative path to pyhf workspace')
     
     test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=True)
     
@@ -528,7 +529,7 @@ class pyhf_binning_fitTask(b2luigi.Task):
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
-    binning = b2luigi.ListParameter(default=[10,101,5], significant=True,
+    binning = b2luigi.ListParameter(default=[10,81,5], significant=False,
                                     hashed=True,
                                     hash_function=join_list_hash_function,
                                     description='first_nbin, last_nbin+1, increment')
@@ -697,30 +698,30 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 
     def requires(self):
     
-        yield self.clone(pyhf_binning_fitTask,
-                         binning = [10,101,5],
-                         samples_toFix = self.samples_toFix,
-                         n_toys_per_point = 10,
-                         workspace_path = self.workspace_path,
-                         create_templates = False,
-                         staterror = True)
+#         yield self.clone(pyhf_binning_fitTask,
+#                          binning = [10,76,5],
+#                          samples_toFix = self.samples_toFix,
+#                          n_toys_per_point = 25,
+#                          workspace_path = self.workspace_path,
+#                          create_templates = False,
+#                          staterror = True)
     
-#         yield self.clone(pyhf_toy_fitTask,
-#                          workspace_path = self.workspace_path,
-#                          samples_toFix = self.samples_toFix,
-#                          test_fakeD_sideband = self.test_fakeD_sideband,
-#                          n_total_toys = 5000,
-#                          init_toy_pars = [1]*12,
-#                          normalise_by_uncertainty = True)
+        yield self.clone(pyhf_toy_fitTask,
+                         workspace_path = self.workspace_path,
+                         samples_toFix = self.samples_toFix,
+                         test_fakeD_sideband = self.test_fakeD_sideband,
+                         n_total_toys = 2000,
+                         init_toy_pars = [0.4]*12,
+                         normalise_by_uncertainty = True)
         
-#         yield self.clone(pyhf_linearity_fitTask,
-#                          workspace_path = self.workspace_path,
-#                          samples_toFix = self.samples_toFix,
-#                          test_fakeD_sideband = self.test_fakeD_sideband,
-#                          linearity_parameter_bonds = [0.01,0.2],
-#                          n_toys_per_point = 50,
-#                          n_test_parameters = 8,
-#                          n_test_points = 80)
+        yield self.clone(pyhf_linearity_fitTask,
+                         workspace_path = self.workspace_path,
+                         samples_toFix = self.samples_toFix,
+                         test_fakeD_sideband = self.test_fakeD_sideband,
+                         linearity_parameter_bonds = [0.2,0.6],
+                         n_toys_per_point = 30,
+                         n_test_parameters = 12,
+                         n_test_points = 40)
 
 
 if __name__ == '__main__':
@@ -728,8 +729,8 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
     
     b2luigi.process(
-        pyhf_toys_wrapper(workspace_path='2d_ws_SR_1ch_50_25.json',
-                          samples_toFix = [#'bkg_FakeD','bkg_TDFl','bkg_continuum','bkg_combinatorial','bkg_singleBbkg'
+        pyhf_toys_wrapper(workspace_path='2d_ws_SR_e_60_60_1ab.json',
+                          samples_toFix = ['bkg_FakeD','bkg_TDFl','bkg_continuum','bkg_combinatorial','bkg_singleBbkg'
                                           ],
                           test_fakeD_sideband = False),
         workers=int(1e4),
