@@ -96,7 +96,7 @@ ma.buildEventKinematics(fillWithMostLikely=True,path=main_path)
 
 
 # Reconstruct D, 1 sigma == 0.005, mean==1.87
-DMcut1 = '[1.78 <M< 1.83 or 1.91 <M< 1.96 or 1.845 <M< 1.895]' #
+DMcut1 = '[1.77 <M< 1.97]' #
 DMcut2 = '[1.79 <M< 1.82 or 1.92 <M< 1.95 or 1.855 <M< 1.885]' #
 ma.reconstructDecay('D+:K2pi -> K-:myk pi+:mypi pi+:mypi', cut=DMcut1, path=main_path)
 

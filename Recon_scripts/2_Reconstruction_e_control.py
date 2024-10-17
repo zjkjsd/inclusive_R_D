@@ -12,11 +12,14 @@ b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
 b2.conditions.append_globaltag(analysis_gt)
 b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 
+# b2.conditions.prepend_globaltag('data_beam_conditions_proc13prompt')
+# b2.conditions.prepend_globaltag('data_trigger_conditions_proc13')
+
 # Define the path
 main_path = b2.Path()
 
 input_file = '../Samples/Signal_MC_ROEx1/B2Dstst_l_nu/MC/MC_1193710005_mod.root'
-output_file = 'MC_mu_test.root'
+output_file = 'MC_e_test.root'
 
 ma.inputMdstList(filelist=input_file, path=main_path)
 
@@ -26,6 +29,9 @@ vm.addAlias("pionID_binary_noSVD", "binaryPID_noSVD(211, 321)")
 vm.addAlias("kaonID_binary_noSVD", "binaryPID_noSVD(321, 211)")
 ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and pionIDNN > 0.1', path=main_path)
 ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_path)
+# kaonIDNN, pionIDNN
+# kaonID, pionID, 
+
 
 # ----------------------------------
 # Fill example standard lepton list.
@@ -87,7 +93,7 @@ ma.applyEventCuts('formula(nParticlesInList(e-:corrected) + nParticlesInList(mu-
 #stdV0s.stdKshorts(path=main_path)
 
 # Event Kinematics
-ma.buildEventKinematics(fillWithMostLikely=True,path=main_path)
+ma.buildEventKinematics(fillWithMostLikely=True,path=main_path) 
 
 
 
@@ -114,7 +120,7 @@ for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD',
     
     
 
-# vertex fitting D, save vtx variables before the 2nd freefit
+# vertex fitting D, save vtx variables before the 2nd treefit
 vx.treeFit('D+:K2pi', conf_level=0.00, updateAllDaughters=True, massConstraint=[], ipConstraint=False, path=main_path)
 vm.addAlias('vtxChi2','extraInfo(chiSquared)')
 vm.addAlias('vtxNDF','extraInfo(ndf)')
@@ -131,7 +137,7 @@ ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {DMcut2}', path=main_path)
 
 
 # Reconstruct B
-ma.reconstructDecay('anti-B0:Dl =norad=> D+:K2pi mu-:mymu ?addbrems', cut='', path=main_path)
+ma.reconstructDecay('anti-B0:Dl =norad=> D+:K2pi e-:corrected ?addbrems', cut='', path=main_path)
 vx.treeFit('anti-B0:Dl', conf_level=0.00, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
 
 # Get the distance between vertices De/IP and D+
@@ -139,7 +145,7 @@ vm.addAlias('vtxDDSig', 'vertexDistanceOfDaughterSignificance(0,0)')
 #vm.addAlias('vtxIPDSig', 'vertexDistanceOfDaughterSignificance(0)') this output the same distribution as above
 
 # Calculate DOCA(D,l)
-# ma.calculateDistance('anti-B0:Dl', 'anti-B0:Dl -> ^D+:K2pi ^mu-:corrected', "vertextrack", path=main_path)
+# ma.calculateDistance('anti-B0:Dl', 'anti-B0:Dl -> ^D+:K2pi ^e-:corrected', "vertextrack", path=main_path)
 vm.addAlias('DistanceSig', 'formula( extraInfo(CalculatedDistance) / extraInfo(CalculatedDistanceError) )')
 
 def Distance_dic(target='sig_', kind='_vtx'):
@@ -159,7 +165,7 @@ ma.matchMCTruth('anti-B0:Dl', path=main_path)
 # vm.addAlias('DecayHash','extraInfo(DecayHash)')
 # vm.addAlias('DecayHashEx','extraInfo(DecayHashExtended)')
 
-ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and -3.2<deltaE<0 and CMS_E<5.4', path=main_path)
+ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and CMS_E<5.4', path=main_path)
 
 
 
@@ -205,10 +211,10 @@ ma.discardFromROEMasks('pi+:all', ['my_mask'], '[isCurl==1 or pt==0 or E>5.5] an
 # These distances below will be used to suppress the combinatorial bkg(in MVAs)
 # DOCA between \ell and any track in the ROE
 ma.fillParticleList('pi+:roe', 'isInRestOfEvent>0 and passesROEMask(my_mask)', path = roe_path)
-ma.fillSignalSideParticleList('mu-:sig', 'anti-B0:Dl -> D+:K2pi ^mu-:mymu ?addbrems', path=roe_path)
-ma.reconstructDecay('K_L0:virtual -> pi+:roe mu-:sig ?addbrems', cut='', path=roe_path)
+ma.fillSignalSideParticleList('e-:sig', 'anti-B0:Dl -> D+:K2pi ^e-:corrected ?addbrems', path=roe_path)
+ma.reconstructDecay('K_L0:virtual -> pi+:roe e-:sig ?addbrems', cut='', path=roe_path)
 vx.treeFit('K_L0:virtual', conf_level=-1, updateAllDaughters=False, massConstraint=[], ipConstraint=False, path=roe_path)
-ma.calculateDistance('K_L0:virtual', 'K_L0:virtual -> ^pi+:roe ^mu-:sig', "2tracks", path=roe_path)
+ma.calculateDistance('K_L0:virtual', 'K_L0:virtual -> ^pi+:roe ^e-:sig ?addbrems', "2tracks", path=roe_path)
 
 
 ma.rankByLowest('K_L0:virtual', 'DistanceSig', numBest=1, path=roe_path)
@@ -247,8 +253,6 @@ for var in ['ROEeidBDT','ROEmuidBDT']:
     vm.addAlias(var, f'ifNANgiveX(eventExtraInfo({var}),-1)')
 
 main_path.for_each('RestOfEvent', 'RestOfEvents', roe_path)
-
-
 
 
 # ROE variables
@@ -329,8 +333,8 @@ vx.TagV('B0:Dl',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociatio
 vm.addAlias('TagVReChi2','formula(TagVChi2/TagVNDF)')
 vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
 
-ma.applyCuts('anti-B0:Dl', '5<roeMbc(my_mask) and -5<roeDeltae(my_mask)<2 and \
-              4.3<CMS2_weMbc and -3<CMS0_weDeltae<2 and abs(roeCharge(my_mask))<3 and \
+ma.applyCuts('anti-B0:Dl', '4.5<roeMbc(my_mask) and -5<roeDeltae(my_mask)<5 and \
+              4<CMS2_weMbc and -5<CMS0_weDeltae<5 and abs(roeCharge(my_mask))<3 and \
               0.2967<Lab5_weMissPTheta<2.7925 and 0.2967<Lab6_weMissPTheta<2.7925 and \
               0<TagVReChi2<100 and 0<TagVReChi2IP<100', path=main_path)
 
@@ -459,18 +463,18 @@ CSVariables = [
 
 b_vars = vu.create_aliases_for_selected(
     list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_multiplicities 
-    + roe_nCharged + CSVariables + we + vertex_vars + TVVariables #+ cms_mc_kinematics 
+    + roe_nCharged + CSVariables + we + vertex_vars + TVVariables #+ cms_mc_kinematics
     + extra_mcDaughters_vars
     #+ vc.flight_info + vc.mc_flight_info + roel_DOCA_Chi2 + cms_kinematics + vc.kinematics + vc.inv_mass
-    + ['vtxDDSig','roel_DistanceSig_dis','mcErrors','mcPDG','genParticleID'], #'DecayHash','DecayHashEx',
-    decay_string='^anti-B0:Dl =norad=> D+:K2pi mu-:mymu',
+    + ['vtxDDSig','roel_DistanceSig_dis','mcErrors','mcPDG','genParticleID'],#'DecayHash','DecayHashEx',
+    decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
     prefix=['B0'])
 
 D_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
-    + Daughters_vars + vertex_vars #+ cms_mc_kinematics
+    + Daughters_vars + vertex_vars #+ cms_mc_kinematics + cms_momentum_uncertainty
     + ['genGMPDG','genMotherPDG','mcErrors','mcPDG','pErr','dM','BFM','A1FflightDistanceSig_IP'],
-    decay_string='anti-B0:Dl =norad=> ^D+:K2pi mu-:mymu',
+    decay_string='anti-B0:Dl =norad=> ^D+:K2pi e-:corrected',
     prefix=['D'])
 
 for i in range(2):
@@ -479,8 +483,8 @@ l_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + vc.kinematics #+ cms_mc_kinematics + cms_momentum_uncertainty #+ electron_id_weights
     + ['genGMPDG','genMotherPDG',#'GMdaughter_0_PDG','GMdaughter_1_PDG','Mdaughter_0_PDG','Mdaughter_1_PDG',
        'mcErrors','mcPDG','dM','isBremsCorrected','pValue','isCloneTrack','d0_mcPDG','d1_mcPDG',
-       'cosTheta','theta','muonID_noSVD','charge','PDG'],
-    decay_string='anti-B0:Dl =norad=> D+:K2pi ^mu-:mymu',
+       'cosTheta','theta','eID','charge','PDG'],
+    decay_string='anti-B0:Dl =norad=> D+:K2pi ^e-:corrected',
     prefix=['ell'])
 
 #nu_vars = vu.create_aliases_for_selected(
@@ -499,4 +503,3 @@ ma.variablesToNtuple('anti-B0:Dl', candidate_vars, useFloat=True,
                      filename=output_file, treename='B0', path=main_path)
 
 b2.process(path=main_path)
-

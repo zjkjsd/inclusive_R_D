@@ -14,6 +14,8 @@ EventType=$2
 # Save the output Ntuples into different folders
 if [ "$steering" == "2_Reconstruction_e.py" ]; then
     destination_folder='../Samples/Generic_MC15ri/e_channel/MC15ri_local_200fb'
+elif [ "$steering" == "2_Reconstruction_e_control.py" ]; then
+    destination_folder='../Samples/Generic_MC15ri/e_channel/MC15ri_local_200fb_control'
 elif [ "$steering" == "3_Reconstruction_e_wrongCharge.py" ]; then
     destination_folder='../Samples/Generic_MC15ri/e_channel/MC15ri_local_wrongCharge_200fb'
 elif [ "$steering" == "4_Reconstruction_mu.py" ]; then

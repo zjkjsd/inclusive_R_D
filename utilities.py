@@ -72,8 +72,27 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl'
 ## dataframe samples
 import numpy as np
 import pandas as pd
+import lightgbm as lgb
 
-def get_dataframe_samples_new(df, mode, template=True):
+def apply_mva_bcs(df, features, cut):
+    # load model
+    bst_lgb = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
+    # predict
+    pred = bst_lgb.predict(df[features], num_iteration=50) #bst_lgb.best_iteration
+    lgb_out = pd.DataFrame(pred, columns=['signal_prob','continuum_prob','fakeD_prob','fakeB_prob'])
+    # combine the predict result
+    df_lgb = pd.concat([df, lgb_out], axis=1)
+    df_lgb['largest_prob'] = df_lgb[['signal_prob','continuum_prob','fakeD_prob','fakeB_prob']].max(axis=1)
+    del pred,lgb_out
+    
+    # apply the MVA cut and BCS
+    df_cut=df_lgb.query(cut)
+    df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['B_D_ReChi2'].idxmin()]
+    
+    return df_bestSelected
+
+
+def get_dataframe_samples_new(df, mode, template=True) -> dict:
     samples = {}
     lepton_PDG = {'e':11, 'mu':13}
     
@@ -449,14 +468,189 @@ def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
 
 
 # +
+## 1d fit
+from iminuit import cost, Minuit
+from scipy.stats import norm
+from scipy.integrate import quad
+from uncertainties import ufloat, correlated_values
+import uncertainties.unumpy as unp
+
+class polynomial:
+    def __init__(self, par, x_min, x_max):
+        self.par = par
+        self.x_min = x_min
+        self.x_max = x_max
+        
+    def function(self, x):
+        return np.polyval(p=self.par, x=x)
+    
+    def pdf(self, x):
+        # Compute the normalization constant
+        normalization_constant, _ = quad(self.function, self.x_min, self.x_max)
+
+        # Now normalize the polynomial
+        return self.function(x) / normalization_constant
+    
+    def cdf(self, x):
+        normalization_constant, _ = quad(self.function, self.x_min, self.x_max)
+
+        # Calculate the cumulative distribution function for each x
+        def cumulative_value(x_val):
+            return quad(self.function, self.x_min, x_val)[0] / normalization_constant
+
+        # Apply the cumulative_value function to each element of x
+        return np.array([cumulative_value(val) for val in np.atleast_1d(x)])
+
+        
+
+class fit_iminuit:
+    def __init__(self,x_edges, hist):
+        self.x_edges = x_edges
+        self.y_val = unp.nominal_values(hist)
+        self.y_err = unp.std_devs(hist)
+        self.x_min = min(x_edges)
+        self.x_max = max(x_edges)
+        # self.x_mask_bkg = (x < 1.82) | (x > 1.921)
+        # self.x_mask_sig_bkg = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885))
+
+    # np.polynomial.Polynomial.fit and np.polyval handle the order of polynomial coefficients differently.
+    # np.polyval expects the coefficients in decreasing order of powers, i.e., from the highest degree term to the constant term.
+    # np.polynomial.Polynomial stores the coefficients in increasing order of powers (from the constant term to the highest degree).
+        
+    # fit polynomial
+    def gauss_polyno(self, x, par):
+        return par[0] * norm.pdf(x, par[1], par[2]) + np.polyval(par[3:], x)# for len(par) == 2, this is a line
+    
+    def gauss_poly_cdf(self, x, *par):
+        sig_gauss = par[0] * norm.cdf(x, par[1], par[2])
+        bkg_poly = par[3] * polynomial(par[4:],self.x_min,self.x_max).cdf(x)
+        return sig_gauss + bkg_poly
+        
+    def estimate_init(self, x, y, deg):
+        # polynomial
+        p = np.polynomial.Polynomial.fit(x, y, deg=deg)
+        init = p.convert().coef[::-1] # Reverse the coefficient order
+        p_init = tuple([round(i,1) for i in init])
+        # gaussian
+        mean = np.average(x, weights=y)
+        variance = np.average((x - mean)**2, weights=y)
+        std = np.sqrt(variance)
+        
+        return round(mean,2), round(std,2), p_init
+    
+    def fit_gauss_poly_LS(self, deg,loss='linear', x=None, y_val=None, y_err=None):#'soft_l1'
+        # get starting values
+        if x is None:
+            x = self.x_edges[:-1] + np.diff(self.x_edges)[0]
+        if y_val is None:
+            y_val = self.y_val
+            y_err = self.y_err
+        g_mean, g_std, p_init = self.estimate_init(x,y_val,deg)
+        init = np.array([round(y_val.sum()/5000,1), g_mean, g_std, *p_init])
+        print('initial parameters=', init)
+        
+        # cost function and minuit
+        c = cost.LeastSquares(x,y_val,y_err,model=self.gauss_polyno,loss=loss)
+        m = Minuit(c, init)
+
+        # fit the bkg in sideband first
+        m.limits["x0", "x1", "x2"] = (0, None)
+        m.fixed["x0", "x1", "x2"] = True
+        # temporarily mask out the signal
+        c.mask = (x < 1.82) | (x > 1.921)
+        m.simplex().migrad()
+
+        # fit the signal with the bkg fixed
+        c.mask = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885)) # include the signal
+        m.fixed = False  # release all parameters
+        m.fixed["x3","x4"] = True  # fix background amplitude
+        m.simplex().migrad()
+
+        # fit everything together to get the correct uncertainties
+        m.fixed = False
+        m.migrad()
+        
+        # fit result
+        result = correlated_values(m.values, m.covariance)
+        return m, c, result
+    
+    def fit_gauss_poly_ML(self, deg, xe=None, hist=None):
+        # get starting values
+        if xe is None:
+            xe = self.x_edges
+        if hist is None:
+            hist = self.y_val
+        g_mean, g_std, p_init = self.estimate_init(xe[:-1],hist,deg)
+        init = np.array([round(hist.sum()/10,1), g_mean, g_std, round(hist.sum(),1),*p_init])
+        print('initial parameters=', init)
+            
+        # cost function and minuit
+        c = cost.ExtendedBinnedNLL(n=hist,xe=xe,scaled_cdf=self.gauss_poly_cdf) 
+        m = Minuit(c, *init)
+        
+        # fit the bkg in sideband first
+        m.limits["x0", "x1", "x2"] = (0, None)
+        m.fixed["x0", "x1", "x2"] = True
+        # we temporarily mask out the signal
+        cx = 0.5 * (xe[1:] + xe[:-1])
+        c.mask = (cx < 1.819) | (cx > 1.921)
+        m.simplex().migrad()
+
+        # fit the signal with the bkg fixed
+        c.mask = (cx < 1.819) | (cx > 1.921) | ((1.856 < cx) & (cx < 1.884)) # include the signal
+        m.fixed = False  # release all parameters
+        m.fixed["x3","x4","x5"] = True  # fix background amplitude
+        m.simplex().migrad()
+
+        # fit everything together to get the correct uncertainties
+        m.fixed = False
+        m.migrad()
+        
+        result = correlated_values(m.values, m.covariance)
+        return m, c, result
+        
+        
+    def plot_result(self, x, y, yerr, result):
+        # Generate x, y values for plotting the fitted function
+        x_plot = np.linspace(min(x), max(x), 500)
+        y_plot = self.polyno(x_plot, result)
+
+        # Calculate y and residual for plotting the residual plot
+        y_fit = self.polyno(x, result)
+        y_data = unp.uarray(y, yerr)
+        residual = y_data - y_fit
+
+        # Create a figure with two subplots: one for the histogram, one for the residual plot
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5), gridspec_kw={'height_ratios': [5, 1]})
+    
+        # Plot data points and fitted function in ax1
+        ax1.errorbar(x, y, yerr, fmt='o', label='Data')
+        ax1.plot(x_plot, unp.nominal_values(y_plot), label='Fitted polynomial', color='red')
+        ax1.grid()
+        ax1.legend()
+        ax1.set_ylabel('n Events per bin')
+        #plt.ylim(0,1)
+
+        # Plot the residuals in ax2
+        ax2.errorbar(x, unp.nominal_values(residual), yerr=unp.std_devs(residual), fmt='o', color='black')
+        # Add a horizontal line at y=0 for reference
+        ax2.axhline(0, color='gray', linestyle='--')
+        # Label the residual plot
+        ax2.set_ylabel('Residuals')
+        # ax2.set_xlabel(f'{variable}')
+        
+        # Adjust the layout to avoid overlapping of the subplots
+        plt.tight_layout()
+        # Show the plot
+        plt.show()
+
+# +
 ## Plotting
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cm
 from matplotlib import gridspec
 
-from uncertainties import ufloat
-from uncertainties.unumpy import uarray
 # import mplhep as hep
 plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors)
 
@@ -465,171 +659,365 @@ class mpl:
         self.samples = mc_samples
         self.data = data
         self.kwarg={'histtype':'step','lw':2}
+        self.colors = plt.cm.tab20.colors
+        # sort the components to plot in order of fitted templates_project size
+        self.sorted_order = ['bkg_FakeD',    'bkg_continuum',    'bkg_combinatorial',
+                             'bkg_singleBbkg','bkg_TDFl',        r'$D\ell\nu$_gap',
+                             r'$D^{\ast\ast}\ell\nu$',           r'$D^\ast\ell\nu$',
+                             r'$D\ell\nu$',                 r'$D^{\ast\ast}\tau\nu$',
+                             r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',]
     
-    def statistics(self,df):
-        counts=df.count()
-        mean=df.mean()
-        std=df.std()
+    def statistics(self, df=None, hist=None):
+        if df is not None:
+            counts = df.count()
+            mean = df.mean()
+            std = df.std()
+        
+        if hist is not None:
+            bin_counts, bin_edges = hist
+            counts = np.sum(bin_counts)
+            
+            # Step 1: Calculate bin centers
+            bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+            
+            # Step 2: Calculate the weighted mean
+            mean = np.average(bin_centers, weights=bin_counts)
+            
+            # Step 3: Calculate the weighted variance
+            variance = np.average((bin_centers - mean)**2, weights=bin_counts)
+            
+            # Step 4: Use the uncertainties package's sqrt if variance has uncertainties
+            std = unp.sqrt(variance)
+        
         return f'''{counts=:d} \n{mean=:.3f} \n{std=:.3f}'''
 
-#     def plot_all_separately(self, variable, cut=None, xlim=None):
-#         fig,axs =plt.subplots(4,3,figsize=(16,10), sharex=True, sharey=False)
-#         fig.suptitle(f'All components with {cut}',fontsize=16)
-#         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
-#         fig.supxlabel(f'{variable}', y=0.06,fontsize=16)
-#         i=0
-#         j=0
-#         for sample_name, sample in self.samples.items():
-#             (counts, bins) = np.histogram(sample.query(cut)[variable] if cut else sample[variable], bins=50)
-#             if sample_name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',r'$D^{\ast\ast}\tau\nu$']:
-#                 factor = 1
-#             elif sample_name in [r'$D\ell\nu$',r'$D^\ast\ell\nu$',r'$D^{\ast\ast}\ell\nu$']:
-#                 factor = 1
-#             axs[i,j].hist(bins[:-1], bins, weights=factor*counts,label=sample_name,**self.kwarg)
-
-#             #plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
-#             axs[i,j].grid()
-#             axs[i,j].set_title(sample_name)
-#             if xlim:
-#                 axs[i,j].set_xlim(xlim)
-#             j+=1
-#             if j==3:
-#                 i+=1
-#                 j=0
-                
-#     def plot_signals_overlaid(self, variable, cut=None, mask=[]):
-#         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=False, sharey=False)
-#         fig.suptitle(f'Overlaid signals ({cut=})', y=1,fontsize=16)
-#         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
-#         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
-#         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
-#         fig.supxlabel(f'{variable}',fontsize=16)
-
-#         for name, sample in self.samples.items():
-#             if name in mask:
-#                 continue
-#             selection_mask = sample.eval(cut)
-#             left= sample[selection_mask] if cut else sample
-#             right = sample[~selection_mask] if cut else sample
-#             (counts_left, bins_left) = np.histogram(left[variable], bins=50)
-#             (counts_right, bins_right) = np.histogram(right[variable], bins=50)
-#             kwarg=self.kwarg
-#             if name in [r'$D\tau\nu$',r'$D^\ast\tau\nu$',
-#                         r'$D^{\ast\ast}\tau\nu$_mixed',
-#                         r'$D^{\ast\ast}\tau\nu$_charged',
-#                         r'$D\ell\nu$',r'$D^\ast\ell\nu$',]:
-#                 factor=1
-                
-#             elif name in [r'res_$D^{\ast\ast}\ell\nu$_mixed',
-#                           r'res_$D^{\ast\ast}\ell\nu$_charged',]:
-#                 factor=2
-#                 kwarg={'histtype':'step','lw':2,'linestyle':'dotted'}
-                
-#             elif name in [r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
-#                           r'nonres_$D^{\ast\ast}\ell\nu$_charged']:
-#                 factor=16
-#                 kwarg={'histtype':'step','lw':1}
-
-#             elif name in [r'gap_$D^{\ast\ast}\ell\nu$_mixed',]:
-#                 factor=8
-#                 kwarg={'histtype':'step','lw':1}
-                
-#             else:
-#                 factor=1
-            
-#             axs[0].hist(bins_left[:-1], bins_left, weights=factor*counts_left,
-#                         label=name,**kwarg)
-            
-#             axs[1].hist(bins_right[:-1], bins_right, weights=factor*counts_right,
-#                         label=name,**kwarg)
-            
-#             axs[1].legend()
-            
-#         axs[0].set_title(f'Bin1 with {cut}')
-#         axs[1].set_title(f'Bin2 with ~{cut}')
-#         axs[0].grid()
-#         axs[1].grid()
-#         plt.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1.5)
-        
-        
-#     def plot_tails_overlaid(self, variable, cut=None):
-#         fig,axs =plt.subplots(1,2,figsize=(12,5), sharex=True, sharey=False)
-#         fig.suptitle(f'Overlaid norms ({cut=})', y=1,fontsize=16)
-#         fig.supylabel('# of candidates per bin',x=0.06,fontsize=16)
-#         #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
-#         #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
-#         fig.supxlabel(f'{variable}',fontsize=16)
-
-#         for sample_name, sample in self.samples.items():
-#             if sample_name not in [r'$D\ell\nu$',r'$D^\ast\ell\nu$']:
-#                 continue
-#             (counts1, bins) = np.histogram(
-#                 sample.query(cut)[variable] if cut else sample[variable], bins=50)
-#             (counts2, bins) = np.histogram(
-#                 sample.drop(sample.query(cut).index)[variable] if cut else sample[variable], bins=bins)
-#             factor=1
-
-#             axs[0].hist(bins[:-1], bins, weights=factor*counts2,label=sample_name,**self.kwarg)
-#             axs[0].legend()
-
-#             axs[1].hist(bins[:-1], bins, weights=factor*counts1,label=sample_name,**self.kwarg)
-#             axs[1].legend()
-
-#         axs[0].set_title('Main')
-#         axs[1].set_title('Tail')
-#         axs[0].grid()
-#         axs[1].grid()
-
-    def plot_data_mc_overlaid(self,variable,bins,cut=None,scale=[1,1],correction=False,mask=[]):
-        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
-        # Data
-        data = self.data
-        data['__weight__'] = scale[0]
-        var_col= data.query(cut)[variable] if cut else data[variable]
-        (counts, _) = np.histogram(var_col, bins=bins,
+    def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, scale=1, name='Data'):
+        # Provide either variable or hist
+        if variable:
+            data = sub_df if sub_df is not None else self.data
+            if scale:
+                data['__weight__'] = scale
+            var_col= data.query(cut)[variable] if cut else data[variable]
+            (counts, _) = np.histogram(var_col, bins=bins,
                                     weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
+            (staterr_squared, _) = np.histogram(var_col, bins=bins,
+                                    weights=data.query(cut)['__weight__']**2 if cut else data['__weight__']**2)
+            staterror = np.sqrt(staterr_squared)
+            label=f'''{name} \n{self.statistics(df=var_col)} \n cut_eff={(len(var_col)/len(data)):.3f}'''
+            data_counts = unp.uarray(counts, staterror)
+        else:
+            data_counts = hist
+            label=f'''{name} \n{self.statistics(hist=[data_counts,bins])}'''
+
         bin_centers = (bins[:-1] + bins[1:]) /2
-        axs.errorbar(x=bin_centers, y=counts, yerr=np.sqrt(counts), fmt='ko',
-                    label=f'''Data \n{self.statistics(var_col)}
-cut_eff={(len(var_col)/len(data)):.3f}''')
-            
-        # MC
+        data_val = unp.nominal_values(data_counts)
+        data_err = unp.std_devs(data_counts)
+        ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko',label=label)
+
+        return data_counts
+
+    def plot_mc_1d(self, bins, ax, sub_df=None,sub_name=None, variable=None, cut=None, scale=1,correction=None,mask=[]):
         if correction:
             mc_combined = pd.concat(self.samples.values(), ignore_index=True)
-            mc_combined['__weight__'] = scale[1]
+            if scale:
+                mc_combined['__weight__'] = scale
             var_col= mc_combined.query(cut)[variable] if cut else mc_combined[variable]
-            (counts, _) = np.histogram(var_col, bins=bins,
+            (stacked_counts, _) = np.histogram(var_col, bins=bins,
                                     weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
-            axs.hist(bins[:-1], bins, weights=counts,histtype='step',color='black',
-                    label=f'''Unweighted MC \n{self.statistics(var_col)}
-cut_eff={(len(var_col)/len(mc_combined)):.3f}''')
+            ax.hist(bins[:-1], bins, weights=stacked_counts,histtype='step',color='black',
+                    label=f'''Unweighted MC \n{self.statistics(df=var_col)} \n cut_eff={(len(var_col)/len(mc_combined)):.3f}''')
         
-        
-        bottom = 0
-        for name, sample in self.samples.items():
-            sample_size = len(sample.query(cut)) if cut else len(sample)
-            if sample_size==0 or name in mask:
-                continue
-            sample['__weight__'] = scale[1]
+        if sub_df is not None:
+            sample = sub_df
+            if scale:
+                sample['__weight__'] = scale
             var_col= sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins,
                                       weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
-            
-            if correction:
+            (staterr_squared, _) = np.histogram(var_col, bins=bins,
+                                    weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
+            staterror = np.sqrt(staterr_squared)
+            ax.hist(bins[:-1], bins, weights=counts, **self.kwarg,
+                    label=f'''{sub_name} \n{self.statistics(df=var_col)} \n cut_eff={(len(var_col)/len(sample)):.3f}''')
+            sample_counts = unp.uarray(counts, staterror)
+            bottom = sample_counts
+        
+        else:
+            bottom = unp.uarray(np.zeros(len(bins)-1), np.zeros(len(bins)-1))
+            for i,name in enumerate(self.sorted_order):
+                sample = self.samples[name]
+                sample_size = len(sample.query(cut)) if cut else len(sample)
+                if sample_size==0 or name in mask:
+                    continue
+                if scale:
+                    sample['__weight__'] = scale
+                var_col= sample.query(cut)[variable] if cut else sample[variable]
                 (counts, _) = np.histogram(var_col, bins=bins,
-                                weights=scale[1]*sample.query(cut)['PIDWeight'] if cut else scale[1]*sample['PIDWeight'])
+                                          weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
+                (staterr_squared, _) = np.histogram(var_col, bins=bins,
+                                        weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
+                staterror = np.sqrt(staterr_squared)
+                
+                if correction:
+                    (counts, _) = np.histogram(var_col, bins=bins,
+                                    weights=scale*sample.query(cut)['PIDWeight'] if cut else scale*sample['PIDWeight'])
+                    (staterr_squared, _) = np.histogram(var_col, bins=bins,
+                            weights=(scale*sample.query(cut)['PIDWeight'])**2 if cut else (scale*sample['PIDWeight'])**2)
+                    staterror = np.sqrt(staterr_squared)
+    
+                b = unp.nominal_values(bottom)
+                ax.hist(bins[:-1], bins, weights=counts, bottom=b,color = self.colors[i],
+                        label=f'''{name} \n{self.statistics(df=var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
+                
+                sample_counts = unp.uarray(counts, staterror)
+                bottom += sample_counts
 
-            axs.hist(bins[:-1], bins, weights=counts, bottom=bottom,
-                    label=f'''{name} \n{self.statistics(var_col)}
-cut_eff={(sample_size/len(sample)):.3f}''')
+        return bottom
+
+    def plot_residuals(self, bins, data, model, ax):
+        # Compute residuals (Data - Model) and their errors
+        bin_centers = (bins[:-1] + bins[1:]) /2
+        residuals = data - model
+        res_val = unp.nominal_values(residuals)
+        res_err = unp.std_devs(residuals)
+
+        # Create a mask to exclude points where residual_errors are zero
+        mask = res_err != 0
+        # Compute chi-squared excluding those points
+        chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
+        ndf = len(res_val[mask])
+
+        # Plot the residuals in ax
+        ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',
+                   label=f'rechi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}')
+        # Add a horizontal line at y=0 for reference
+        ax.axhline(0, color='gray', linestyle='--')
+        # Label the residual plot
+        ax.set_ylabel('Residuals')
+        
+    def plot_ratios(self, bins, data, model, ax):
+        # Compute ratios (Data / Model) and their errors
+        bin_centers = (bins[:-1] + bins[1:]) /2
+        mask_model = model != 0
+        ratios = unp.uarray(np.ones_like(model), np.zeros_like(model))
+        ratios[mask_model] = data[mask_model] / model[mask_model]
+        rat_val = unp.nominal_values(ratios)
+        rat_err = unp.std_devs(ratios)
+
+        # Plot the ratios in ax
+        ax.errorbar(bin_centers, rat_val, yerr=rat_err, fmt='ok')
+        # Add a horizontal line at y=0 for reference
+        ax.axhline(1, color='gray', linestyle='--')
+        # Label the residual plot
+        ax.set_ylabel('Ratios')
+    
+    def plot_data_mc_stacked(self,variable,bins,cut=None,scale=[1,1],
+                             correction=False,mask=[],figsize=(8,5),
+                             ratio=False):
+        # Create a figure with two subplots: one for the histogram, one for the residual plot
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
+        # Data
+        data_counts = self.plot_data_1d(bins=bins, variable=variable, ax=ax1, cut=cut, scale=scale[0])
             
-            bottom += counts
+        # MC
+        mc_counts = self.plot_mc_1d(bins=bins, variable=variable, ax=ax1, cut=cut, 
+                                    scale=scale[1],correction=correction,mask=mask)
+        
+        if ratio:
+            self.plot_ratios(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
+        else:
+            # Residuals (Data - Model)
+            self.plot_residuals(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
+            ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True)
+        
+        ax1.set_title(f'Overlaid Data vs MC ({cut=})')
+        ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
+        ax1.grid()
+        ax1.legend(bbox_to_anchor=(1,1),ncol=2, fancybox=True, shadow=True,labelspacing=1.5)
+        ax2.set_xlabel(f'{variable}')
+        
+        
+        # Adjust the layout to avoid overlapping of the subplots
+        plt.tight_layout()
+        # Show the plot
+        plt.show()
 
-        axs.set_title(f'Overlaid Data vs MC ({cut=})')
-        axs.set_xlabel(f'{variable}')
-        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
-        axs.grid()
-        plt.legend(bbox_to_anchor=(1,1),ncol=2, fancybox=True, shadow=True,labelspacing=1.5)
+        return data_counts, mc_counts
+        
+        
+    def plot_mc_sig_control(self,variable,bins,bkg_name='bkg_FakeD',merge_sidebands=False,
+                            cut=None,scale={},correction=False,mask=[],figsize=(8,5)):
+        # Create a figure with two subplots: one for the histogram, one for the residual plot
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
+        
+        if bkg_name=='bkg_FakeD':
+            sample = self.samples[bkg_name]
+            left = sample.query('D_M<1.83').copy()
+            sig = sample.query('1.84<D_M<1.9').copy()
+            right = sample.query('D_M>1.91').copy()
+                
+            regions = {'left sideband': left,
+                       'signal region': sig,
+                       'right sideband': right}
+            for region, df in regions.items():
+                df['__weight__'] = scale[region]
+            
+            if merge_sidebands:
+                sides = pd.concat([left, right])
+                regions = {'sidebands': sides,
+                       'signal region': sig,}
+            
+            sb_total = 0 # total counts in sidebands used in residual calculation
+            sig_total = 0
+            for region, df in regions.items():
+                if region=='signal region':
+                    counts = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
+                                            cut=cut, scale=None,name=region)
+                    sig_total += counts
+                    
+                elif region in ['sidebands','left sideband', 'right sideband']:
+                    counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
+                                    ax=ax1, cut=cut, scale=None,correction=correction,mask=mask)
+                    sb_total += counts
+            
+            # Residuals (Data - Model) and their errors
+            self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
+            ax2.set_xlabel(f'{variable}')
+                    
+        ax1.set_title(f'Overlaid signal region vs control region ({bkg_name=})')
+        ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
+        ax1.grid()
+        ax1.legend(bbox_to_anchor=(1,1),ncol=2, fancybox=True, shadow=True,labelspacing=1.5)
+        ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True)
+        
+        # Adjust the layout to avoid overlapping of the subplots
+        plt.tight_layout()
+        plt.show()
+
+    def plot_data_subtracted_and_mc(self,var_list,bin_list,cut=None,scale={},
+                                    correction=False,mask=['bkg_FakeD'],figsize=(10,10)):
+        # get data in sig and sidebands regions
+        data_left = self.data.query('D_M<1.83').copy()
+        data_sig = self.data.query('1.84<D_M<1.9').copy()
+        data_right = self.data.query('D_M>1.91').copy()
+        # get mc in sig region without fake D
+        mc_sig = pd.concat([df.query('1.84<D_M<1.9').copy() for name, df in self.samples.items() if name != 'bkg_FakeD'], 
+                           ignore_index=True)
+
+        data_mc_regions = {'data left sideband': data_left,
+                           'data signal region': data_sig,
+                           'data right sideband': data_right,
+                           'mc signal region': mc_sig}
+
+        for region, df in data_mc_regions.items():
+                df['__weight__'] = scale[region]
+            
+        # calculate the 2d hists
+        data_sb_2d = 0 
+        data_sig_2d = 0
+        mc_sig_2d = 0
+        variable_x, variable_y = var_list
+        edges_x, edges_y = bin_list
+        var_x_label = '$M_{miss}^2$    [$GeV^2/c^4$]'
+        var_y_label = '$|p_D| + |p_{\ell}|$    [GeV/c]'
+        
+        for region, df in data_mc_regions.items():
+            (counts_2d, xe, ye) = np.histogram2d(
+                df.query(cut)[variable_x] if cut else df[variable_x], 
+                df.query(cut)[variable_y] if cut else df[variable_y],
+                bins=[edges_x, edges_y],
+                weights=df.query(cut)['__weight__'] if cut else df['__weight__'])
+            (staterr_squared_2d, edges_x, edges_y) = np.histogram2d(
+                df.query(cut)[variable_x] if cut else df[variable_x], 
+                df.query(cut)[variable_y] if cut else df[variable_y],
+                bins=[edges_x, edges_y],
+                weights=df.query(cut)['__weight__']**2 if cut else df['__weight__']**2)
+            staterr_2d = np.sqrt(staterr_squared_2d)
+
+            # Ensure that both arrays have the same shape
+            assert counts_2d.shape == staterr_2d.shape, \
+                f"Shape mismatch between hist counts and staterror for 2d data in {region=}"
+            # Combine the count values with their uncertainties
+            counts_uncert_2d = unp.uarray(counts_2d.round(3), staterr_2d.round(3))
+            
+            if region=='data signal region':
+                data_sig_2d += counts_uncert_2d
+
+            elif region=='mc signal region':
+                mc_sig_2d += counts_uncert_2d
+                
+            elif region in ['data left sideband', 'data right sideband']:
+                data_sb_2d += counts_uncert_2d
+
+        # subtract the sidebands from sig region
+        data_subtracted_2d = data_sig_2d - data_sb_2d
+
+        # get 2 projections
+        data_subtracted_x = data_subtracted_2d.sum(axis=1)  # Sum along the y-axis
+        data_subtracted_y = data_subtracted_2d.sum(axis=0)  # Sum along the x-axis
+           
+        
+        # Create figure and define subplots layout
+        fig = plt.figure(figsize=figsize)
+        gs = gridspec.GridSpec(11,11, figure=fig, wspace=5, hspace=1)
+        ax1 = fig.add_subplot(gs[:4,:5])
+        ax2 = fig.add_subplot(gs[:5,5:])
+        ax3 = fig.add_subplot(gs[5, 5:])
+        ax4 = fig.add_subplot(gs[5:10,:6])
+        ax5 = fig.add_subplot(gs[10, :6])
+        ax6 = fig.add_subplot(gs[7:,6:])
+
+        # Top-left: 2D histogram of Data (p_D_l vs B0_CMS3_weMissM2)
+        im = ax1.imshow(abs(unp.nominal_values(data_subtracted_2d)).T, origin='lower', aspect='auto', 
+                         cmap='rainbow', norm=colors.LogNorm(),
+                         extent=[edges_x[0], edges_x[-1], edges_y[0], edges_y[-1]])
+        fig.colorbar(im, ax=ax1)
+        ax1.set_title('Data, background subtracted')
+        ax1.set_xlabel(var_x_label)
+        ax1.set_ylabel(var_y_label)
+        ax1.grid()
+    
+        
+        # Top-right: 1D histogram of p_D_l projection + residuals
+        data_y = self.plot_data_1d(bins=edges_y, hist=data_subtracted_y, ax=ax2,cut=cut, name='Data')
+        mc_y = self.plot_mc_1d(bins=edges_y, variable=variable_y, ax=ax2, scale=scale['mc signal region'],
+                               cut='1.84<D_M<1.9', correction=correction,mask=mask)
+        ax2.set_title('$|p_D| + |p_{\ell}|$ Projection')
+        ax2.grid()
+        ax2.legend(ncol=1, framealpha=0, shadow=False,labelspacing=1.5,fontsize=8)
+        # Residual plot below
+        self.plot_residuals(bins=edges_y, data=data_y, model=mc_y, ax=ax3)
+        ax3.set_xlabel(var_y_label)
+        ax3.legend(bbox_to_anchor=(0.8,-1.2),ncol=2, framealpha=0, shadow=False,labelspacing=1.5)
+        
+        
+        # Bottom-left: 1D histogram of mm2 projection + residuals
+        data_x = self.plot_data_1d(bins=edges_x, hist=data_subtracted_x, ax=ax4,cut=cut, name='Data')
+        mc_x = self.plot_mc_1d(bins=edges_x, variable=variable_x, ax=ax4, scale=scale['mc signal region'],
+                               cut='1.84<D_M<1.9', correction=correction,mask=mask)
+        ax4.set_title('$M_{miss}^2$ Projection')
+        ax4.grid()
+        ax4.legend(ncol=1, framealpha=0, shadow=False,labelspacing=1.5,fontsize=8)
+        # Residual plot below
+        self.plot_residuals(bins=edges_x, data=data_x, model=mc_x, ax=ax5)
+        ax5.set_xlabel(var_x_label)
+        ax5.legend(bbox_to_anchor=(0.8,12.5),ncol=2, framealpha=0, shadow=False,labelspacing=1.5)
+        
+        
+        # Bottom-right: 2D histogram of MC (B0_CMS3_weMissM2 vs p_D_l)
+        im = ax6.imshow(unp.nominal_values(mc_sig_2d).T, origin='lower', aspect='auto', 
+                         cmap='rainbow', norm=colors.LogNorm(),
+                         extent=[edges_x[0], edges_x[-1], edges_y[0], edges_y[-1]])
+        fig.colorbar(im, ax=ax6)
+        ax6.set_title('MC, background removed')
+        ax6.set_xlabel(var_x_label)
+        ax6.set_ylabel(var_y_label)
+        ax6.grid()
+        
+        # Adjust layout to avoid overlap
+        fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, hspace=0.4, wspace=0.4)
+        plt.show()
+
 
     def plot_data_mc_all(self, bins, variables, cut=None, scale=[1,1], figsize=(30, 100), fontsize=12):
         fig = plt.figure(figsize=figsize)
@@ -665,28 +1053,9 @@ cut_eff={(sample_size/len(sample)):.3f}''')
 #         plt.tight_layout()
     
     
-    def plot_all_mc_stacked(self,variable,bins,cut=None,mask=[]):
-        
-        bottom = 0
-        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(6, 5))
-        for name, sample in self.samples.items():
-            sample_size = len(sample.query(cut)) if cut else len(sample)
-            if sample_size==0 or name in mask:
-                continue
-            var_col= sample.query(cut)[variable] if cut else sample[variable]
-            (counts, _) = np.histogram(var_col, bins=bins)
-
-            axs.hist(bins[:-1], bins, weights=counts, bottom=bottom,
-                    label=f'''{name} \n{self.statistics(var_col)}
-cut_eff={(sample_size/len(sample)):.3f}''')
-            
-            bottom += counts
-
-        axs.set_title(f'Stacked components ({cut=})',fontsize=14)
-        axs.set_xlabel(f'{variable}',fontsize=14)
-        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV',fontsize=14)
-        axs.grid()
-        plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5,fontsize=14)
+    
+    
+    
         
         
     def plot_all_mc_overlaid(self,variable,bins,cut=None,mask=[],density=False):
@@ -702,8 +1071,7 @@ cut_eff={(sample_size/len(sample)):.3f}''')
             kwarg=self.kwarg
 
             axs.hist(bins[:-1], bins, weights=counts, density=density,
-                    label=f'''{name} \n{self.statistics(var_col)}
-cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
+                    label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
 
         axs.set_title(f'Overlaid components ({cut=})', fontsize=14)
         axs.set_xlabel(f'{variable}', fontsize=14)
@@ -712,9 +1080,9 @@ cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
         plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
         
 
-    def plot_all_2Dhist(self, bins:list, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
-        variable_x, variable_y = variables
-        xedges, yedges = bins
+    def plot_all_2Dhist(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
+        variable_x, variable_y = var_list
+        xedges, yedges = bin_list
        
         # create a mask
         mask_arr = np.ones((len(yedges)-1,len(xedges)-1)) # switch the shape for x,y as plotting counts.T
@@ -753,9 +1121,9 @@ cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
         fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
         fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.05,fontsize=18)
         
-    def plot_2Dhist_and_projections(self, bins:list, variables=['B0_CMS3_weMissM2','p_D_l'], cut=None):
-        variable_x, variable_y = variables
-        xedges, yedges = bins
+    def plot_2Dhist_and_projections(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None):
+        variable_x, variable_y = var_list
+        xedges, yedges = bin_list
 
         for name, sample in self.samples.items():
             sample_size = len(sample.query(cut)) if cut else len(sample)
@@ -891,31 +1259,9 @@ cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
             bin_centers = (bins1[:-1] + bins1[1:]) /2
             plt.errorbar(x=bin_centers, y=efficiency, yerr=efficiency_err, label=name)
             plt.legend()
-        
-    def plot_fitting_difference(self, yaml_file):
-        fig,axs =plt.subplots(2,3,figsize=(16,10), sharex=True, sharey=False)
-        fig.suptitle(f'fitted yield - true yield',fontsize=16)
-        fig.supylabel('yield difference',x=0.06,fontsize=16)
-        fig.supxlabel(f'index of subset samples', y=0.06,fontsize=16)
-        i=0
-        j=0
-        with open(yaml_file, 'r+') as f:
-            data = yaml.safe_load(f)
-            components = data['signal_e']
+    
+            
 
-        for comp_name, info in components.items():
-            axs[i,j].errorbar(x=range(1,len(info['difference'])+1), y=info['difference'], yerr=info['errors'], fmt='ko')
-            axs[i,j].axhline(y=0, linestyle='-', linewidth=3, color='r')
-            axs[i,j].grid()
-            axs[i,j].set_title(comp_name,fontsize=14)
-            j+=1
-            if j==3 and i==0:
-                i+=1
-                j=0
-            if j==3 and i==1:
-                break
-            
-            
 
 # +
 def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d, 
@@ -936,14 +1282,14 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
                         r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',]
         
         # plot data and fitted values
-        data_val = np.array([val.n for val in data_1d])
-        data_err = np.array([val.s for val in data_1d])
+        data_val = unp.nominal_values(data_1d)
+        data_err = unp.std_devs(data_1d)
         ax1.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko')
         
         bottom_hist = np.zeros_like(data_1d)
         for i,name in enumerate(sorted_order):
-            values = np.array([val.n for val in fitted_1d[name]])
-            errors = np.array([val.s for val in fitted_1d[name]])
+            values = unp.nominal_values(fitted_1d[name])
+            errors = unp.std_devs(fitted_1d[name])
             
             ax1.bar(x=bins[:-1], height=values, bottom=bottom_hist, color = c[i],
                     width=bin_width, align='edge', label=name)
@@ -955,8 +1301,8 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         total_fitted_1d = np.sum(list(fitted_1d.values()), axis=0)
         # Calculate residuals
         residual = data_1d - total_fitted_1d
-        residual_val = np.array([val.n for val in residual])
-        residual_err = np.array([val.s for val in residual])
+        residual_val = unp.nominal_values(residual)
+        residual_err = unp.std_devs(residual)
         pull = np.array([0 if residual_err[i]==0 else (residual_val[i]/residual_err[i]) for i in range(len(residual))])
                         
         ax2.errorbar(x=bin_centers, y=residual_val, yerr=residual_err, fmt='ko')
@@ -984,7 +1330,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
                 f"Shape mismatch between template and staterror for {name}"
 
             # Combine the template values with their uncertainties
-            combined_templates[name] = uarray(templates_2d[name], staterror_2d[name])
+            combined_templates[name] = unp.uarray(templates_2d[name], staterror_2d[name])
 
         return combined_templates
     
@@ -996,10 +1342,10 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
     # get 2d templates and data
     components_names = [n.rstrip('norm').rstrip('_') for n in fit_result.labels[:12]]
     combined_templates_2d = combine_templates_with_uncertainties(templates_2d, staterror_2d)
-    data_2d = uarray(data_2d, np.sqrt(data_2d))
+    data_2d = unp.uarray(data_2d, np.sqrt(data_2d))
     fitted_2d = {}
     
-    # calculate fitted values, 2d
+    # Calculate fitted values, 2d
     for i, name in enumerate(components_names):
         fitted_2d[name] = combined_templates_2d[name] * combined_result[i]
           
@@ -1021,7 +1367,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
     bin_edges = edges_list[axis]
     if not slice_thresholds:
         # calculate 1d projection if not slice
-        # sum over the same axis due to data_2d is transposed
+        # sum over the same axis due to data_2d being transposed
         data_1d = np.sum(data_2d, axis=axis)
         fitted_1d = {name: np.sum(template, axis=axis) for name, template in fitted_2d.items()}
     
@@ -1074,6 +1420,8 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         fig.supxlabel(axis_label + '  ' + axis_unit,fontsize=14)
         
     return fig
+
+
 
 # # plotting version: two residual plots, residual_signal = data - all_temp
 # def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2', plot_with='pltbar'):
