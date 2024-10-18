@@ -608,6 +608,31 @@ class fit_iminuit:
         
         result = correlated_values(m.values, m.covariance)
         return m, c, result
+
+    def poly_integral(self, xrange, result):
+        if len(result)==5:
+            # Define a wrapper for the fitted polynomial
+            def fitted_poly(x, *par):
+                return np.polyval(par[-2:], x)
+
+            par = unp.nominal_values(result)
+            # Perform the integration over the range [x_min, x_max]
+            area, error = quad(fitted_poly, xrange[0], xrange[1], args=tuple(par))
+            area, error = (round(area,3), round(error,3))
+
+            print(f"Area under the curve from {xrange[0]} to {xrange[1]}: {area}")
+            return area, error
+
+        elif len(result)==6:
+            def fitted_poly_cdf(x, par):
+                return par[-3] * polynomial(par[-2:],self.x_min,self.x_max).cdf(x)
+
+            par = unp.nominal_values(result)
+            # integral of pdf is the difference of cdf (scaled)
+            yields = fitted_poly_cdf(xrange[1], par) - fitted_poly_cdf(xrange[0], par)
+            yields = round(float(yields),3)
+            print(f"Yields from {xrange[0]} to {xrange[1]}: {yields}")
+            return yields
         
         
     def plot_result(self, x, y, yerr, result):
