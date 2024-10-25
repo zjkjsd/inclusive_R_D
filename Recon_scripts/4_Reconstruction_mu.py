@@ -496,7 +496,7 @@ l_vars = vu.create_aliases_for_selected(
 candidate_vars = ['Ecms','ROEeidBDT','ROEmuidBDT'] + b_vars + D_vars + l_vars
 
 ma.variablesToNtuple('anti-B0:Dl', candidate_vars, useFloat=True,
-                     filename=output_file, treename='B0', path=main_path)
+                     filename=output_file, treename='B0', path=main_path, basketsize=1_000_000)
 
 b2.process(path=main_path)
 

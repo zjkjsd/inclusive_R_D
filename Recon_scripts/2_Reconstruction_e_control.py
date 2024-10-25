@@ -19,7 +19,7 @@ b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 main_path = b2.Path()
 
 input_file = '../Samples/Signal_MC_ROEx1/B2Dstst_l_nu/MC/MC_1193710005_mod.root'
-output_file = 'MC_e_test.root'
+output_file = 'MC_e_control_test.root'
 
 ma.inputMdstList(filelist=input_file, path=main_path)
 
@@ -31,7 +31,6 @@ ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and pionIDNN > 0.1', path=main
 ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_path)
 # kaonIDNN, pionIDNN
 # kaonID, pionID, 
-
 
 # ----------------------------------
 # Fill example standard lepton list.
@@ -333,7 +332,7 @@ vx.TagV('B0:Dl',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociatio
 vm.addAlias('TagVReChi2','formula(TagVChi2/TagVNDF)')
 vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
 
-ma.applyCuts('anti-B0:Dl', '4.5<roeMbc(my_mask) and -5<roeDeltae(my_mask)<5 and \
+ma.applyCuts('anti-B0:Dl', '4<roeMbc(my_mask) and -5<roeDeltae(my_mask)<5 and \
               4<CMS2_weMbc and -5<CMS0_weDeltae<5 and abs(roeCharge(my_mask))<3 and \
               0.2967<Lab5_weMissPTheta<2.7925 and 0.2967<Lab6_weMissPTheta<2.7925 and \
               0<TagVReChi2<100 and 0<TagVReChi2IP<100', path=main_path)
@@ -500,6 +499,6 @@ l_vars = vu.create_aliases_for_selected(
 candidate_vars = ['Ecms','ROEeidBDT','ROEmuidBDT'] + b_vars + D_vars + l_vars
 
 ma.variablesToNtuple('anti-B0:Dl', candidate_vars, useFloat=True,
-                     filename=output_file, treename='B0', path=main_path)
+                     filename=output_file, treename='B0', path=main_path, basketsize=1_000_000)
 
 b2.process(path=main_path)

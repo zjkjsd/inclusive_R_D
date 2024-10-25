@@ -36,7 +36,9 @@ mva_variables = training_variables + spectators
 
 analysis_variables=['__experiment__',     '__run__',       '__event__',      '__production__',
                     'B0_isContinuumEvent','B0_mcPDG',      'B0_mcErrors',    'B0_mcDaughter_0_PDG',
-                    'B0_mcDaughter_1_PDG','D_mcErrors',    'D_genGMPDG',     'D_genMotherPDG',
+                    'B0_mcDaughter_1_PDG','B0_deltaE',     'B0_Mbc',         'B0_CMS2_weMbc', 
+                    'B0_CMS0_weDeltae',
+                    'D_mcErrors',         'D_genGMPDG',    'D_genMotherPDG',
                     'D_mcPDG',            'D_BFM',         'D_M',            'D_px',
                     'D_py',               'D_pz',          'D_p',            'D_CMS_p',
                     'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_pValue', 
@@ -53,13 +55,13 @@ analysis_variables=['__experiment__',     '__run__',       '__event__',      '__
 all_relevant_variables = mva_variables + analysis_variables
 
 
-DecayMode = {'bkg_fakeD':0,           'bkg_continuum':1,    'bkg_combinatorial':2,
-             'bkg_Odecay':3,          'bkg_fakeTC':4,       r'$D\tau\nu$':5,
-             r'$D^\ast\tau\nu$':6,    r'$D\ell\nu$':7,      r'$D^\ast\ell\nu$':8,
-             r'$D^{\ast\ast}\tau\nu$_mixed':9,              r'$D^{\ast\ast}\tau\nu$_charged':10,
-             r'res_$D^{\ast\ast}\ell\nu$_mixed':11,         r'nonres_$D^{\ast\ast}\ell\nu$_mixed':12,
-             r'gap_$D^{\ast\ast}\ell\nu$_mixed':13,         r'res_$D^{\ast\ast}\ell\nu$_charged':14,
-             r'nonres_$D^{\ast\ast}\ell\nu$_charged':15,    'bkg_others':16}
+# DecayMode = {'bkg_fakeD':0,           'bkg_continuum':1,    'bkg_combinatorial':2,
+#              'bkg_Odecay':3,          'bkg_fakeTC':4,       r'$D\tau\nu$':5,
+#              r'$D^\ast\tau\nu$':6,    r'$D\ell\nu$':7,      r'$D^\ast\ell\nu$':8,
+#              r'$D^{\ast\ast}\tau\nu$_mixed':9,              r'$D^{\ast\ast}\tau\nu$_charged':10,
+#              r'res_$D^{\ast\ast}\ell\nu$_mixed':11,         r'nonres_$D^{\ast\ast}\ell\nu$_mixed':12,
+#              r'gap_$D^{\ast\ast}\ell\nu$_mixed':13,         r'res_$D^{\ast\ast}\ell\nu$_charged':14,
+#              r'nonres_$D^{\ast\ast}\ell\nu$_charged':15,    'bkg_others':16}
 
 DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl':2,
                  'bkg_continuum':3,          'bkg_combinatorial':4,   'bkg_singleBbkg':5,
@@ -635,39 +637,39 @@ class fit_iminuit:
             return yields
         
         
-    def plot_result(self, x, y, yerr, result):
-        # Generate x, y values for plotting the fitted function
-        x_plot = np.linspace(min(x), max(x), 500)
-        y_plot = self.polyno(x_plot, result)
+#     def plot_result(self, x, y, yerr, result):
+#         # Generate x, y values for plotting the fitted function
+#         x_plot = np.linspace(min(x), max(x), 500)
+#         y_plot = self.polyno(x_plot, result)
 
-        # Calculate y and residual for plotting the residual plot
-        y_fit = self.polyno(x, result)
-        y_data = unp.uarray(y, yerr)
-        residual = y_data - y_fit
+#         # Calculate y and residual for plotting the residual plot
+#         y_fit = self.polyno(x, result)
+#         y_data = unp.uarray(y, yerr)
+#         residual = y_data - y_fit
 
-        # Create a figure with two subplots: one for the histogram, one for the residual plot
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5), gridspec_kw={'height_ratios': [5, 1]})
+#         # Create a figure with two subplots: one for the histogram, one for the residual plot
+#         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5), gridspec_kw={'height_ratios': [5, 1]})
     
-        # Plot data points and fitted function in ax1
-        ax1.errorbar(x, y, yerr, fmt='o', label='Data')
-        ax1.plot(x_plot, unp.nominal_values(y_plot), label='Fitted polynomial', color='red')
-        ax1.grid()
-        ax1.legend()
-        ax1.set_ylabel('n Events per bin')
-        #plt.ylim(0,1)
+#         # Plot data points and fitted function in ax1
+#         ax1.errorbar(x, y, yerr, fmt='o', label='Data')
+#         ax1.plot(x_plot, unp.nominal_values(y_plot), label='Fitted polynomial', color='red')
+#         ax1.grid()
+#         ax1.legend()
+#         ax1.set_ylabel('n Events per bin')
+#         #plt.ylim(0,1)
 
-        # Plot the residuals in ax2
-        ax2.errorbar(x, unp.nominal_values(residual), yerr=unp.std_devs(residual), fmt='o', color='black')
-        # Add a horizontal line at y=0 for reference
-        ax2.axhline(0, color='gray', linestyle='--')
-        # Label the residual plot
-        ax2.set_ylabel('Residuals')
-        # ax2.set_xlabel(f'{variable}')
+#         # Plot the residuals in ax2
+#         ax2.errorbar(x, unp.nominal_values(residual), yerr=unp.std_devs(residual), fmt='o', color='black')
+#         # Add a horizontal line at y=0 for reference
+#         ax2.axhline(0, color='gray', linestyle='--')
+#         # Label the residual plot
+#         ax2.set_ylabel('Residuals')
+#         # ax2.set_xlabel(f'{variable}')
         
-        # Adjust the layout to avoid overlapping of the subplots
-        plt.tight_layout()
-        # Show the plot
-        plt.show()
+#         # Adjust the layout to avoid overlapping of the subplots
+#         plt.tight_layout()
+#         # Show the plot
+#         plt.show()
 
 # +
 ## Plotting
@@ -838,27 +840,30 @@ class mpl:
     
     def plot_data_mc_stacked(self,variable,bins,cut=None,scale=[1,1],
                              correction=False,mask=[],figsize=(8,5),
-                             ratio=False):
+                             ratio=False, legend_nc=2,legend_fs=12):
         # Create a figure with two subplots: one for the histogram, one for the residual plot
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
-        # Data
-        data_counts = self.plot_data_1d(bins=bins, variable=variable, ax=ax1, cut=cut, scale=scale[0])
             
         # MC
         mc_counts = self.plot_mc_1d(bins=bins, variable=variable, ax=ax1, cut=cut, 
                                     scale=scale[1],correction=correction,mask=mask)
+        # Data
+        if self.data is None:
+            data_counts = unp.uarray(np.zeros_like(mc_counts), np.zeros_like(mc_counts))
+        else:
+            data_counts = self.plot_data_1d(bins=bins, variable=variable, ax=ax1, cut=cut, scale=scale[0])
         
         if ratio:
             self.plot_ratios(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
         else:
             # Residuals (Data - Model)
             self.plot_residuals(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
-            ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True)
+            ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
         
         ax1.set_title(f'Overlaid Data vs MC ({cut=})')
         ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
         ax1.grid()
-        ax1.legend(bbox_to_anchor=(1,1),ncol=2, fancybox=True, shadow=True,labelspacing=1.5)
+        ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
         ax2.set_xlabel(f'{variable}')
         
         
@@ -870,8 +875,9 @@ class mpl:
         return data_counts, mc_counts
         
         
-    def plot_mc_sig_control(self,variable,bins,bkg_name='bkg_FakeD',merge_sidebands=False,
-                            cut=None,scale={},correction=False,mask=[],figsize=(8,5)):
+    def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,scale={},mask=[],
+                            bkg_name='bkg_FakeD',merge_sidebands=False,samples_sig=None,
+                            figsize=(8,5),legend_nc=2,legend_fs=12):
         # Create a figure with two subplots: one for the histogram, one for the residual plot
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
         
@@ -908,12 +914,36 @@ class mpl:
             # Residuals (Data - Model) and their errors
             self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
             ax2.set_xlabel(f'{variable}')
+            
+        elif bkg_name in ['bkg_continuum','bkg_combinatorial']:
+            sample_control = self.samples[bkg_name]
+            if samples_sig is None:
+                print(f'Error: samples_sig is required for {bkg_name}')
+                return
+            else:
+                sample_sig = samples_sig[bkg_name]
+                
+            regions = {'control region': sample_control,
+                       'signal region': sample_sig}
+            for region, df in regions.items():
+                df['__weight__'] = scale[region]
+            
+            sig_total = self.plot_data_1d(bins=bins, sub_df=sample_sig, variable=variable, 
+                                          ax=ax1,cut=cut, scale=None,name='signal region')
+
+            control_total = self.plot_mc_1d(bins=bins, sub_df=sample_control, sub_name='control region', 
+                                            variable=variable,ax=ax1,cut=cut, scale=None,
+                                            correction=correction,mask=mask)
+            
+            # Residuals (Data - Model) and their errors
+            self.plot_residuals(bins=bins, data=sig_total, model=control_total, ax=ax2)
+            ax2.set_xlabel(f'{variable}')
                     
         ax1.set_title(f'Overlaid signal region vs control region ({bkg_name=})')
         ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
         ax1.grid()
-        ax1.legend(bbox_to_anchor=(1,1),ncol=2, fancybox=True, shadow=True,labelspacing=1.5)
-        ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True)
+        ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
+        ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
         
         # Adjust the layout to avoid overlapping of the subplots
         plt.tight_layout()
@@ -963,7 +993,7 @@ class mpl:
             assert counts_2d.shape == staterr_2d.shape, \
                 f"Shape mismatch between hist counts and staterror for 2d data in {region=}"
             # Combine the count values with their uncertainties
-            counts_uncert_2d = unp.uarray(counts_2d.round(3), staterr_2d.round(3))
+            counts_uncert_2d = unp.uarray(counts_2d.round(0), staterr_2d.round(0))
             
             if region=='data signal region':
                 data_sig_2d += counts_uncert_2d

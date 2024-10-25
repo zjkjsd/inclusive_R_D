@@ -29,7 +29,6 @@ ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_p
 # kaonIDNN, pionIDNN
 # kaonID, pionID, 
 
-
 # ----------------------------------
 # Fill example standard lepton list.
 # ----------------------------------
@@ -162,7 +161,7 @@ ma.matchMCTruth('anti-B0:Dl', path=main_path)
 # vm.addAlias('DecayHash','extraInfo(DecayHash)')
 # vm.addAlias('DecayHashEx','extraInfo(DecayHashExtended)')
 
-ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and -3.2<deltaE<0 and CMS_E<5.4', path=main_path)
+ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and CMS_E<5.4', path=main_path)
 
 
 
@@ -497,6 +496,6 @@ l_vars = vu.create_aliases_for_selected(
 candidate_vars = ['Ecms','ROEeidBDT','ROEmuidBDT'] + b_vars + D_vars + l_vars
 
 ma.variablesToNtuple('anti-B0:Dl', candidate_vars, useFloat=True,
-                     filename=output_file, treename='B0', path=main_path)
+                     filename=output_file, treename='B0', path=main_path, basketsize=1_000_000)
 
 b2.process(path=main_path)
