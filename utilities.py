@@ -42,10 +42,12 @@ analysis_variables=['__experiment__',     '__run__',       '__event__',      '__
                     'D_mcPDG',            'D_BFM',         'D_M',            'D_px',
                     'D_py',               'D_pz',          'D_p',            'D_CMS_p',
                     'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_pValue', 
-                    'D_pi1_pValue',       'D_pi2_pValue',
+                    'D_pi1_pValue',       'D_pi2_pValue',  'D_K_charge',     'D_K_cosTheta',
+                    'D_K_p',              'D_K_PDG',       'D_K_mcPDG',
                     'ell_genMotherPDG',   'ell_mcPDG',     'ell_mcErrors',   'ell_genGMPDG',
                     'ell_px',             'ell_py',        'ell_pz',         'ell_p',
-                    'ell_CMS_p',          'ell_pSig',      'ell_pValue',
+                    'ell_CMS_p',          'ell_pSig',      'ell_pValue',     'ell_charge',
+                    'ell_theta',          'ell_PDG',       'ell_eID',
 #                     'ell_GMdaughter_0_PDG',                'ell_GMdaughter_1_PDG',
 #                     'ell_Mdaughter_0_PDG',                 'ell_Mdaughter_1_PDG'
                     'mode',               'p_D_l',         'B_D_ReChi2',
@@ -470,6 +472,132 @@ def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
 
 
 # +
+## PID corrections
+import sys
+import os
+from datetime import date
+import warnings
+from sysvar import add_weights_to_dataframe
+
+class PID_corrections:
+    def __init__(self):
+        self.e_efficiency = '~/B2SW/2024_OleMiss/systematics_framework/correction-tables/MC15/run_independent/PID/coarse_theta_binning/efficiency/e_efficiency_table.csv'
+        self.pi_e_fake = '~/B2SW/2024_OleMiss/systematics_framework/correction-tables/MC15/run_independent/PID/coarse_theta_binning/fakeRate/pi_e_fakeRate_table.csv'
+        self.mu_efficiency = ''
+        self.pi_mu_fake = ''
+        self.K_efficiency = 'tables/K_efficiency_kaonIDNN_0.9_2024-10-31.csv'
+        self.pi_K_fake = 'tables/pi_K_fake_kaonIDNN_0.9_2024-10-31.csv'
+        self.sys_path = '/group/belle2/dataprod/Systematics/systematic_corrections_framework/scripts/'
+        
+    def plot_table(self, table, table_name):
+        fig, axs = plt.subplots(1,2, figsize=(8, 4), dpi=120)
+        fig.suptitle(table_name)
+        axs[0].plot(table[['p_min', 'p_max']].values.T);
+        axs[1].plot(table[['theta_min', 'theta_max']].values.T);
+        axs[0].set_xticks([0,1], ['min', 'max'])
+        axs[1].set_xticks([0,1], ['min', 'max'])
+        axs[0].set_xlabel('p_bin')
+        axs[1].set_xlabel('theta_bin')
+        axs[0].set_ylabel('p')
+        axs[1].set_ylabel('theta')
+        axs[0].grid()
+        axs[1].grid();
+        
+    def get_lepton_tables(self, lepton='e', var="pidChargedBDTScore_e",
+                          thres=0.9, exclude_bins='p_min>-1'):
+        final_query = f'is_best_available == True and variable == "{var}" and \
+        threshold =={thres}'
+        
+        if lepton=='e':
+            ell_efficiency_table = pd.read_csv(self.e_efficiency).query(final_query).query(exclude_bins)
+            pi_ell_fake_table = pd.read_csv(self.pi_e_fake).query(final_query).query(exclude_bins)
+        
+        elif lepton=='mu':
+            ell_efficiency_table = pd.read_csv(self.mu_efficiency).query(final_query).query(exclude_bins)
+            pi_ell_fake_table = pd.read_csv(self.pi_mu_fake).query(final_query).query(exclude_bins)
+        
+        self.plot_table(table=ell_efficiency_table, table_name=f'{lepton} efficiency')
+        self.plot_table(table=pi_ell_fake_table, table_name=f'pi {lepton} fake rate')
+        
+        return ell_efficiency_table, pi_ell_fake_table
+        
+    def get_hadron_tables(self, new_table=False, hadron='K', var='kaonIDNN', thres=0.9):
+        
+        if new_table:
+            sys.path.insert(1, self.sys_path)
+            import weight_table as wm
+            
+            # efficiency table
+            ratio_cfg = {
+                "cut": f"{var} > {thres}",
+                "particle_type": hadron,
+                "data_collection": "proc13+prompt",
+                "mc_collection": "MC15ri",
+                "track_variables": ["p", "cosTheta", "charge"],
+                "precut": "",
+                "binning": [np.linspace(0.2, 4, 11),
+                           [-0.866, -0.682, -0.4226, -0.1045, 0.225, 0.5, 0.766, 0.8829, 0.9563],
+                           [-2, 0, 2]]
+            }
+            efficiency_obj = wm.produce_data_mc_ratio(**ratio_cfg)
+            efficiency_obj.plot()
+            efficiency_table = efficiency_obj.create_weights()
+            
+            os.makedirs('tables/', exist_ok=True)
+            efficiency_table.to_csv(f'tables/{hadron}_efficiency_{var}_{thres}_{date.today()}.csv', index=None)
+            
+            # fake rate table
+            ratio_cfg = {
+                "cut": f"{var} > {thres}",
+                "particle_type": "pi",
+                "data_collection": "proc13+prompt",
+                "mc_collection": "MC15ri",
+                "track_variables": ["p", "cosTheta", "charge"],
+                "precut": "",
+                "binning": [np.linspace(0.2, 4, 11),
+                           [-0.866, -0.682, -0.4226, -0.1045, 0.225, 0.5, 0.766, 0.8829, 0.9563],
+                           [-2, 0, 2]]
+            }
+            pi_fake_obj = wm.produce_data_mc_ratio(**ratio_cfg)
+            pi_fake_obj.plot()
+            pi_fake_table = pi_fake_obj.create_weights()
+            
+            pi_fake_table.to_csv(f'tables/pi_{hadron}_fake_{var}_{thres}_{date.today()}.csv', index=None)
+        
+        else:
+            # load the existing CSV table:
+            efficiency_table = pd.read_csv(self.K_efficiency, index_col=None)
+            pi_fake_table = pd.read_csv(self.pi_K_fake, index_col=None)
+            
+        return efficiency_table, pi_fake_table
+    
+    def apply_corrections(self, eff_table, fake_table, df, plots=True,
+                          p='e', var='pidChargedBDTScore_e', thres=0.9):
+        if p=='e':
+            p_tables = {(11, 11): eff_table,
+                        (11, 211): fake_table}
+            p_thresholds = {11: (var, thres)}
+            p_prefix = 'ell'
+        
+        elif p=='K':
+            p_tables = {(321, 321): eff_table,
+                        (321, 211): fake_table}
+            p_thresholds = {321: (var, thres)}
+            p_prefix = 'D_K'
+            
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            add_weights_to_dataframe(p_prefix,
+                                     df,
+                                     systematic='custom_PID',
+                                     custom_tables=p_tables,
+                                     custom_thresholds=p_thresholds,
+                                     show_plots=plots,
+                                     sys_seed=0)
+
+
+
+# +
 ## 1d fit
 from iminuit import cost, Minuit
 from scipy.stats import norm
@@ -506,12 +634,13 @@ class polynomial:
         
 
 class fit_iminuit:
-    def __init__(self,x_edges, hist):
+    def __init__(self,x_edges, hist, poly_only):
         self.x_edges = x_edges
         self.y_val = unp.nominal_values(hist)
         self.y_err = unp.std_devs(hist)
         self.x_min = min(x_edges)
         self.x_max = max(x_edges)
+        self.poly_only = poly_only
         # self.x_mask_bkg = (x < 1.82) | (x > 1.921)
         # self.x_mask_sig_bkg = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885))
 
@@ -558,19 +687,22 @@ class fit_iminuit:
         # fit the bkg in sideband first
         m.limits["x0", "x1", "x2"] = (0, None)
         m.fixed["x0", "x1", "x2"] = True
+        if self.poly_only:
+            m.values["x0"] = 0
         # temporarily mask out the signal
         c.mask = (x < 1.82) | (x > 1.921)
         m.simplex().migrad()
+        
+        if not self.poly_only:
+            # fit the signal with the bkg fixed
+            c.mask = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885)) # include the signal
+            m.fixed = False  # release all parameters
+            m.fixed["x3","x4"] = True  # fix background amplitude
+            m.simplex().migrad()
 
-        # fit the signal with the bkg fixed
-        c.mask = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885)) # include the signal
-        m.fixed = False  # release all parameters
-        m.fixed["x3","x4"] = True  # fix background amplitude
-        m.simplex().migrad()
-
-        # fit everything together to get the correct uncertainties
-        m.fixed = False
-        m.migrad()
+            # fit everything together to get the correct uncertainties
+            m.fixed = False
+            m.migrad()
         
         # fit result
         result = correlated_values(m.values, m.covariance)
@@ -593,20 +725,23 @@ class fit_iminuit:
         # fit the bkg in sideband first
         m.limits["x0", "x1", "x2"] = (0, None)
         m.fixed["x0", "x1", "x2"] = True
+        if self.poly_only:
+            m.values["x0"] = 0
         # we temporarily mask out the signal
         cx = 0.5 * (xe[1:] + xe[:-1])
         c.mask = (cx < 1.819) | (cx > 1.921)
         m.simplex().migrad()
 
-        # fit the signal with the bkg fixed
-        c.mask = (cx < 1.819) | (cx > 1.921) | ((1.856 < cx) & (cx < 1.884)) # include the signal
-        m.fixed = False  # release all parameters
-        m.fixed["x3","x4","x5"] = True  # fix background amplitude
-        m.simplex().migrad()
+        if not self.poly_only:
+            # fit the signal with the bkg fixed
+            c.mask = (cx < 1.819) | (cx > 1.921) | ((1.856 < cx) & (cx < 1.884)) # include the signal
+            m.fixed = False  # release all parameters
+            m.fixed["x3","x4","x5"] = True  # fix background amplitude
+            m.simplex().migrad()
 
-        # fit everything together to get the correct uncertainties
-        m.fixed = False
-        m.migrad()
+            # fit everything together to get the correct uncertainties
+            m.fixed = False
+            m.migrad()
         
         result = correlated_values(m.values, m.covariance)
         return m, c, result
@@ -692,7 +827,7 @@ class mpl:
                              'bkg_singleBbkg','bkg_TDFl',        r'$D\ell\nu$_gap',
                              r'$D^{\ast\ast}\ell\nu$',           r'$D^\ast\ell\nu$',
                              r'$D\ell\nu$',                 r'$D^{\ast\ast}\tau\nu$',
-                             r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',]
+                             r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
     
     def statistics(self, df=None, hist=None):
         if df is not None:
@@ -717,13 +852,29 @@ class mpl:
             std = unp.sqrt(variance)
         
         return f'''{counts=:d} \n{mean=:.3f} \n{std=:.3f}'''
+    
+    def plot_pie(self, cut='1.855<D_M<1.885'):
+        # Plotting the pie chart
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
+        sizes = [len(self.samples[comp].query(cut)) for comp in self.sorted_order]
+        ax1.pie(sizes, labels=self.sorted_order, autopct='%1.1f%%', startangle=140)
+        ax1.set_title(f'All components in the region {cut=}')
+        ax2.pie(sizes[:5], labels=self.sorted_order[:5], autopct='%1.1f%%', startangle=140)
+        ax2.set_title(f'BKG components in the region {cut=}')
+        plt.tight_layout()
+        plt.show()
 
-    def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, scale=1, name='Data'):
+    def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, 
+                     sig_mask=False, scale=1, name='Data'):
         # Provide either variable or hist
         if variable:
-            data = sub_df if sub_df is not None else self.data
+            if sig_mask:
+                s_mask = 'D_M<1.855 or D_M>1.885'
+                data = sub_df.query(s_mask) if sub_df is not None else self.data.query(s_mask)
+            else:
+                data = sub_df if sub_df is not None else self.data
             if scale:
-                data['__weight__'] = scale
+                data.loc[:, '__weight__'] = scale
             var_col= data.query(cut)[variable] if cut else data[variable]
             (counts, _) = np.histogram(var_col, bins=bins,
                                     weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
@@ -745,9 +896,11 @@ class mpl:
 
     def plot_mc_1d(self, bins, ax, sub_df=None,sub_name=None, variable=None, cut=None, scale=1,correction=None,mask=[]):
         if correction:
-            mc_combined = pd.concat(self.samples.values(), ignore_index=True)
+            mc_combined = pd.concat(
+                [df for name, df in self.samples.items() if name not in mask],
+                ignore_index=True)
             if scale:
-                mc_combined['__weight__'] = scale
+                mc_combined.loc[:, '__weight__'] = scale
             var_col= mc_combined.query(cut)[variable] if cut else mc_combined[variable]
             (stacked_counts, _) = np.histogram(var_col, bins=bins,
                                     weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
@@ -757,7 +910,7 @@ class mpl:
         if sub_df is not None:
             sample = sub_df
             if scale:
-                sample['__weight__'] = scale
+                sample.loc[:, '__weight__'] = scale
             var_col= sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins,
                                       weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -777,7 +930,7 @@ class mpl:
                 if sample_size==0 or name in mask:
                     continue
                 if scale:
-                    sample['__weight__'] = scale
+                    sample.loc[:, '__weight__'] = scale
                 var_col= sample.query(cut)[variable] if cut else sample[variable]
                 (counts, _) = np.histogram(var_col, bins=bins,
                                           weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -800,27 +953,82 @@ class mpl:
                 bottom += sample_counts
 
         return bottom
+    
+    def plot_single_2d(self, df, variables, bins,fig, ax,name,hist=None,cut=None):
+        # Compute 2d hist
+        if hist is None:
+            (counts, xedges, yedges) = np.histogram2d(
+                            df.query(cut)[variables[0]] if cut else df[variables[0]], 
+                            df.query(cut)[variables[1]] if cut else df[variables[1]],
+                            bins=bins,
+                    weights=df.query(cut)['__weight__'] if cut else df['__weight__'])
 
-    def plot_residuals(self, bins, data, model, ax):
-        # Compute residuals (Data - Model) and their errors
-        bin_centers = (bins[:-1] + bins[1:]) /2
-        residuals = data - model
-        res_val = unp.nominal_values(residuals)
-        res_err = unp.std_devs(residuals)
+            (staterr_squared, _, _) = np.histogram2d(
+                            df.query(cut)[variables[0]] if cut else df[variables[0]], 
+                            df.query(cut)[variables[1]] if cut else df[variables[1]],
+                            bins=bins,
+                    weights=df.query(cut)['__weight__']**2 if cut else df['__weight__']**2)
+            staterror = np.sqrt(staterr_squared)
 
-        # Create a mask to exclude points where residual_errors are zero
-        mask = res_err != 0
-        # Compute chi-squared excluding those points
-        chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
-        ndf = len(res_val[mask])
+            counts_err = unp.uarray(counts.round(0), staterror.round(0))
+        else:
+            xedges, yedges = bins
+            counts = hist
+            counts_err = hist.round(0)
 
-        # Plot the residuals in ax
-        ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',
-                   label=f'rechi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}')
-        # Add a horizontal line at y=0 for reference
-        ax.axhline(0, color='gray', linestyle='--')
-        # Label the residual plot
-        ax.set_ylabel('Residuals')
+        # 2D Histogram
+        im = ax.imshow(counts.T.round(0), origin='lower', aspect='auto', 
+                         cmap='rainbow', norm=colors.LogNorm(),
+                         extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+        fig.colorbar(im, ax=ax)
+        ax.set_xlabel('$M_{miss}^2$')
+        ax.set_ylabel('$|p_D| + |p_{\ell}|$')
+        ax.set_title(name)
+        ax.grid()
+        
+        return counts_err
+
+    def plot_residuals(self, bins, data, model, ax, fig=None):
+        if len(bins)>2:
+            # Compute residuals (Data - Model) and their errors
+            # at bins where data is not 0
+            bin_centers = (bins[:-1] + bins[1:]) /2
+            data_zero_i = data == 0
+
+            residuals = data - model
+            residuals[data_zero_i] = 0
+
+            res_val = unp.nominal_values(residuals)
+            res_err = unp.std_devs(residuals)
+
+            # Create a mask to exclude points where residual_errors are zero
+            mask = res_err != 0
+            # Compute chi-squared excluding those points
+            chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
+            ndf = len(res_val[mask])
+
+            # Plot the residuals in ax
+            ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',
+                       label=f'rechi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}')
+            # Add a horizontal line at y=0 for reference
+            ax.axhline(0, color='gray', linestyle='--')
+            # Label the residual plot
+            ax.set_ylabel('Residuals')
+        elif len(bins)==2:
+            residuals = data - model
+            res_val = unp.nominal_values(residuals)
+            res_err = unp.std_devs(residuals)
+            
+            # Create a mask to exclude points where residual_errors are zero
+            mask = res_err != 0
+            # Compute chi-squared excluding those points
+            chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
+            ndf = len(res_val[mask])
+            
+            # Plot the residuals in ax
+            self.plot_single_2d(bins=bins, df=None, variables=None,
+                                hist=res_val, fig=fig, ax=ax,
+                        name=f'rechi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}')
         
     def plot_ratios(self, bins, data, model, ax):
         # Compute ratios (Data / Model) and their errors
@@ -839,6 +1047,7 @@ class mpl:
         ax.set_ylabel('Ratios')
     
     def plot_data_mc_stacked(self,variable,bins,cut=None,scale=[1,1],
+                             data_sig_mask=False,
                              correction=False,mask=[],figsize=(8,5),
                              ratio=False, legend_nc=2,legend_fs=12):
         # Create a figure with two subplots: one for the histogram, one for the residual plot
@@ -851,7 +1060,9 @@ class mpl:
         if self.data is None:
             data_counts = unp.uarray(np.zeros_like(mc_counts), np.zeros_like(mc_counts))
         else:
-            data_counts = self.plot_data_1d(bins=bins, variable=variable, ax=ax1, cut=cut, scale=scale[0])
+            data_counts = self.plot_data_1d(bins=bins, variable=variable, 
+                                            sig_mask=data_sig_mask,
+                                            ax=ax1, cut=cut, scale=scale[0])
         
         if ratio:
             self.plot_ratios(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
@@ -878,8 +1089,12 @@ class mpl:
     def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,scale={},mask=[],
                             bkg_name='bkg_FakeD',merge_sidebands=False,samples_sig=None,
                             figsize=(8,5),legend_nc=2,legend_fs=12):
-        # Create a figure with two subplots: one for the histogram, one for the residual plot
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
+        if type(variable)==str:
+            # Create a figure with two subplots: one for the histogram, one for the residual plot
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
+        elif type(variable)==list:
+            # Create a figure with two subplots: one for sig, one for the control
+            fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
         
         if bkg_name=='bkg_FakeD':
             sample = self.samples[bkg_name]
@@ -900,20 +1115,33 @@ class mpl:
             
             sb_total = 0 # total counts in sidebands used in residual calculation
             sig_total = 0
-            for region, df in regions.items():
-                if region=='signal region':
-                    counts = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
-                                            cut=cut, scale=None,name=region)
-                    sig_total += counts
-                    
-                elif region in ['sidebands','left sideband', 'right sideband']:
-                    counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
-                                    ax=ax1, cut=cut, scale=None,correction=correction,mask=mask)
-                    sb_total += counts
-            
-            # Residuals (Data - Model) and their errors
-            self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
-            ax2.set_xlabel(f'{variable}')
+            if type(variable)==str:
+                for region, df in regions.items():
+                    if region=='signal region':
+                        counts = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
+                                                cut=cut, scale=None,name=region)
+                        sig_total += counts
+
+                    elif region in ['sidebands','left sideband', 'right sideband']:
+                        counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
+                                        ax=ax1, cut=cut, scale=None,correction=correction,mask=mask)
+                        sb_total += counts
+
+                # Residuals (Data - Model) and their errors
+                self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
+                ax2.set_xlabel(f'{variable}')
+                
+            elif type(variable)==list:
+                assert merge_sidebands==True, 'merge_sidebands must be True'
+                for region, df in regions.items():
+                    if region=='signal region':
+                        sig_total = self.plot_single_2d(bins=bins, df=df, variables=variable, 
+                                                        fig=fig, ax=ax1, cut=cut, name=region)
+                    elif region in ['sidebands']:
+                        sb_total = self.plot_single_2d(bins=bins, df=df, variables=variable, 
+                                        fig=fig, ax=ax2, cut=cut, name=region)
+                # Residuals (Data - Model) and their errors
+                self.plot_residuals(bins=bins, data=sig_total, model=sb_total, fig=fig, ax=ax3)
             
         elif bkg_name in ['bkg_continuum','bkg_combinatorial']:
             sample_control = self.samples[bkg_name]
@@ -938,13 +1166,15 @@ class mpl:
             # Residuals (Data - Model) and their errors
             self.plot_residuals(bins=bins, data=sig_total, model=control_total, ax=ax2)
             ax2.set_xlabel(f'{variable}')
-                    
-        ax1.set_title(f'Overlaid signal region vs control region ({bkg_name=})')
-        ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
-        ax1.grid()
-        ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
-        ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
         
+        if type(variable)==str:
+            ax1.set_title(f'Overlaid signal region vs control region ({bkg_name=})')
+            ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
+            ax1.grid()
+            ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
+            ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
+        elif type(variable)==list:
+            fig.suptitle(f'signal region vs weighted control region ({bkg_name=})')
         # Adjust the layout to avoid overlapping of the subplots
         plt.tight_layout()
         plt.show()

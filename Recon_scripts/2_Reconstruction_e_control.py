@@ -255,8 +255,8 @@ main_path.for_each('RestOfEvent', 'RestOfEvents', roe_path)
 
 
 # ROE variables
-roe_kinematics = ["roeE(my_mask)", "roeP(my_mask)", "roePx(my_mask)",
-                  "roePy(my_mask)","roePz(my_mask)","roePt(my_mask)",]
+roe_kinematics = ["roeP(my_mask)"]#, "roeE(my_mask)", "roePx(my_mask)",
+                  #"roePy(my_mask)","roePz(my_mask)","roePt(my_mask)",]
 roe_MC_kinematics = ['roeMC_E','roeMC_M','roeMC_P',
                      'roeMC_PTheta','roeMC_Pt',
                      'roeMC_Px','roeMC_Py','roeMC_Pz',]
@@ -346,7 +346,7 @@ extra_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG']
 cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
 # cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
 # cms_momentum_uncertainty = vu.create_aliases(vc.momentum_uncertainty, "useCMSFrame({variable})", "CMS")
-# roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
+roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
 # roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
 
 TVVariables = ['DeltaZ',    'DeltaZErr',    'TagVReChi2',    'TagVReChi2IP',
@@ -463,7 +463,7 @@ CSVariables = [
 b_vars = vu.create_aliases_for_selected(
     list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_multiplicities 
     + roe_nCharged + CSVariables + we + vertex_vars + TVVariables #+ cms_mc_kinematics
-    + extra_mcDaughters_vars
+    + extra_mcDaughters_vars + roe_cms_kinematics
     #+ vc.flight_info + vc.mc_flight_info + roel_DOCA_Chi2 + cms_kinematics + vc.kinematics + vc.inv_mass
     + ['vtxDDSig','roel_DistanceSig_dis','mcErrors','mcPDG','genParticleID'],#'DecayHash','DecayHashEx',
     decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
