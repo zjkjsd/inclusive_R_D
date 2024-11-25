@@ -108,6 +108,7 @@ vm.addAlias('BFInvM','extraInfo(D_BFInvM)')
 
 Daughters_vars = []
 for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD',
+                 'pionIDNN','kaonIDNN',
                  'dr','dz','nCDCHits','pValue','mcErrors','pt',
                  'p','cosTheta','theta','charge','PDG','mcPDG']:
     vm.addAlias(f'K_{variable}', f'daughter(0, {variable})')

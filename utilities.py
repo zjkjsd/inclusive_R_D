@@ -13,23 +13,25 @@ CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
                 #"B0_thrustBm", "B0_KSFWV1",     "B0_KSFWV2",     "B0_KSFWV11",
                 #"B0_KSFWV12",] correlates with mm2 or p_D_l
 
-DTC_variables = ['D_K_kaonID_binary_noSVD',    'D_pi1_kaonID_binary_noSVD',
-                 'D_pi2_kaonID_binary_noSVD',  'D_K_dr', 
-                 'D_pi1_dr',                   'D_pi2_dr',
-                 'D_K_dz',                     'D_pi1_dz', 
-                 'D_pi2_dz',                   'D_K_pValue', 
-                 'D_pi1_pValue',               'D_pi2_pValue',#?
-                 'D_vtxReChi2',                #'D_BFInvM', D mass will suppress the sideband
+DTC_variables = [#'D_K_kaonID_binary_noSVD',    'D_pi1_kaonID_binary_noSVD',
+#                  'D_K_kaonIDNN',               'D_K_pionIDNN',
+#                  'D_pi2_kaonIDNN',             'D_pi2_pionIDNN',
+#                  'D_pi1_kaonIDNN',             'D_pi1_pionIDNN',
+#                  'D_K_dr',                     'D_K_dz',
+#                  'D_pi1_dr',                   'D_pi2_dr',
+#                  'D_pi1_dz',                   'D_pi2_dz', 
+                 'D_pi1_pValue',               'D_pi2_pValue',
+                 'D_K_pValue',                 'D_vtxReChi2',               
                  'D_A1FflightDistanceSig_IP',  'D_daughterInvM_0_1',
                  'D_daughterInvM_1_2',         'B0_vtxDDSig',]
 
 B_variables = ['B0_Lab5_weMissPTheta',
                'B0_vtxReChi2',               'B0_flightDistanceSig',
-               'B0_nROE_Tracks_my_mask',     'B0_nROE_NeutralHadrons_my_mask', # can remove
                'B0_roel_DistanceSig_dis',    'B0_roeDeltae_my_mask',
                'B0_roeEextra_my_mask',       'B0_roeMbc_my_mask',
-               'B0_nROE_Photons_my_mask',    'B0_roeCharge_my_mask', # can remove
-               'B0_nROE_K',                  'B0_TagVReChi2IP',]
+               'B0_roeCharge_my_mask',        'B0_TagVReChi2IP', ]
+                #'B0_nROE_Tracks_my_mask',     'B0_nROE_NeutralHadrons_my_mask',
+                #'B0_nROE_Photons_my_mask',    'B0_nROE_K',
 
 training_variables = CS_variables + DTC_variables + B_variables
 mva_variables = training_variables + spectators
@@ -76,21 +78,32 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl'
 ## dataframe samples
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
+from autogluon.tabular import TabularPredictor
 
 def apply_mva_bcs(df, features, cut):
     # load model
-    bst_lgb = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
-    # predict
-    pred = bst_lgb.predict(df[features], num_iteration=50) #bst_lgb.best_iteration
-    lgb_out = pd.DataFrame(pred, columns=['signal_prob','continuum_prob','fakeD_prob','fakeB_prob'])
-    # combine the predict result
-    df_lgb = pd.concat([df, lgb_out], axis=1)
-    df_lgb['largest_prob'] = df_lgb[['signal_prob','continuum_prob','fakeD_prob','fakeB_prob']].max(axis=1)
-    del pred,lgb_out
+    predictor = TabularPredictor.load("/home/belle/zhangboy/inclusive_R_D/AutogluonModels/ag-20241122_055446")
+    pred = predictor.predict_proba(df)
+    pred = pred.rename(columns={0: 'fakeTracks_prob', 
+                                1: 'fakeD_prob',
+                                2: 'fakeL_prob',
+                                3: 'continuum_prob',
+                                4: 'combinatorial_prob',
+                                5: 'singleBbkg_prob',
+                                8: 'sig_prob'})
+    df_pred = pd.concat([df, pred], axis=1)
+
+#     bst_lgb = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
+#     # predict
+#     pred = bst_lgb.predict(df[features], num_iteration=50) #bst_lgb.best_iteration
+#     lgb_out = pd.DataFrame(pred, columns=['signal_prob','continuum_prob','fakeD_prob','fakeB_prob'])
+#     # combine the predict result
+#     df_lgb = pd.concat([df, lgb_out], axis=1)
+#     df_lgb['largest_prob'] = df_lgb[['signal_prob','continuum_prob','fakeD_prob','fakeB_prob']].max(axis=1)
+#     del pred,lgb_out
     
     # apply the MVA cut and BCS
-    df_cut=df_lgb.query(cut)
+    df_cut=df_pred.query(cut)
     df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['B_D_ReChi2'].idxmin()]
     
     return df_bestSelected
@@ -829,7 +842,7 @@ class mpl:
                              r'$D\ell\nu$',                 r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
     
-    def statistics(self, df=None, hist=None):
+    def statistics(self, df=None, hist=None, count_only=False):
         if df is not None:
             counts = df.count()
             mean = df.mean()
@@ -850,8 +863,10 @@ class mpl:
             
             # Step 4: Use the uncertainties package's sqrt if variance has uncertainties
             std = unp.sqrt(variance)
-        
-        return f'''{counts=:d} \n{mean=:.3f} \n{std=:.3f}'''
+        if count_only:
+            return f'{counts=:d}'
+        else:
+            return f'''{counts=:d} \n{mean=:.3f} \n{std=:.3f}'''
     
     def plot_pie(self, cut='1.855<D_M<1.885'):
         # Plotting the pie chart
@@ -881,7 +896,8 @@ class mpl:
             (staterr_squared, _) = np.histogram(var_col, bins=bins,
                                     weights=data.query(cut)['__weight__']**2 if cut else data['__weight__']**2)
             staterror = np.sqrt(staterr_squared)
-            label=f'''{name} \n{self.statistics(df=var_col)} \n cut_eff={(len(var_col)/len(data)):.3f}'''
+            label=f'{name} \n{self.statistics(df=var_col)}\
+\n cut_eff={(len(var_col)/len(data)):.3f}'
             data_counts = unp.uarray(counts, staterror)
         else:
             data_counts = hist
@@ -894,7 +910,8 @@ class mpl:
 
         return data_counts
 
-    def plot_mc_1d(self, bins, ax, sub_df=None,sub_name=None, variable=None, cut=None, scale=1,correction=None,mask=[]):
+    def plot_mc_1d(self, bins, ax, sub_df=None,sub_name=None, variable=None, cut=None,
+                   scale=1,correction=None,mask=[],legend_count=False):
         if correction:
             mc_combined = pd.concat(
                 [df for name, df in self.samples.items() if name not in mask],
@@ -905,7 +922,8 @@ class mpl:
             (stacked_counts, _) = np.histogram(var_col, bins=bins,
                                     weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
             ax.hist(bins[:-1], bins, weights=stacked_counts,histtype='step',color='black',
-                    label=f'''Unweighted MC \n{self.statistics(df=var_col)} \n cut_eff={(len(var_col)/len(mc_combined)):.3f}''')
+                    label=f'Unweighted MC \n{self.statistics(df=var_col,count_only=legend_count)} \
+\n cut_eff={(len(var_col)/len(mc_combined)):.3f}')
         
         if sub_df is not None:
             sample = sub_df
@@ -918,7 +936,8 @@ class mpl:
                                     weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
             staterror = np.sqrt(staterr_squared)
             ax.hist(bins[:-1], bins, weights=counts, **self.kwarg,
-                    label=f'''{sub_name} \n{self.statistics(df=var_col)} \n cut_eff={(len(var_col)/len(sample)):.3f}''')
+                    label=f'{sub_name} \n{self.statistics(df=var_col,count_only=legend_count)} \
+\n cut_eff={(len(var_col)/len(sample)):.3f}')
             sample_counts = unp.uarray(counts, staterror)
             bottom = sample_counts
         
@@ -947,7 +966,8 @@ class mpl:
     
                 b = unp.nominal_values(bottom)
                 ax.hist(bins[:-1], bins, weights=counts, bottom=b,color = self.colors[i],
-                        label=f'''{name} \n{self.statistics(df=var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
+                        label=f'{name} \n{self.statistics(df=var_col,count_only=legend_count)} \
+\n cut_eff={(sample_size/len(sample)):.3f}')
                 
                 sample_counts = unp.uarray(counts, staterror)
                 bottom += sample_counts
@@ -1203,8 +1223,12 @@ class mpl:
         mc_sig_2d = 0
         variable_x, variable_y = var_list
         edges_x, edges_y = bin_list
-        var_x_label = '$M_{miss}^2$    [$GeV^2/c^4$]'
-        var_y_label = '$|p_D| + |p_{\ell}|$    [GeV/c]'
+        if var_list==['B0_CMS3_weMissM2','p_D_l']:
+            var_x_label = '$M_{miss}^2$    [$GeV^2/c^4$]'
+            var_y_label = '$|p_D| + |p_{\ell}|$    [GeV/c]'
+        else:
+            var_x_label = var_list[0]
+            var_y_label = var_list[1]
         
         for region, df in data_mc_regions.items():
             (counts_2d, xe, ye) = np.histogram2d(
@@ -1266,8 +1290,11 @@ class mpl:
         # Top-right: 1D histogram of p_D_l projection + residuals
         data_y = self.plot_data_1d(bins=edges_y, hist=data_subtracted_y, ax=ax2,cut=cut, name='Data')
         mc_y = self.plot_mc_1d(bins=edges_y, variable=variable_y, ax=ax2, scale=scale['mc signal region'],
-                               cut='1.84<D_M<1.9', correction=correction,mask=mask)
-        ax2.set_title('$|p_D| + |p_{\ell}|$ Projection')
+                               cut='1.84<D_M<1.9', correction=correction,mask=mask,legend_count=True)
+        if var_list==['B0_CMS3_weMissM2','p_D_l']:
+            ax2.set_title('$|p_D| + |p_{\ell}|$ Projection')
+        else:
+            ax2.set_title(f'{var_list[1]} Projection')
         ax2.grid()
         ax2.legend(ncol=1, framealpha=0, shadow=False,labelspacing=1.5,fontsize=8)
         # Residual plot below
@@ -1279,8 +1306,11 @@ class mpl:
         # Bottom-left: 1D histogram of mm2 projection + residuals
         data_x = self.plot_data_1d(bins=edges_x, hist=data_subtracted_x, ax=ax4,cut=cut, name='Data')
         mc_x = self.plot_mc_1d(bins=edges_x, variable=variable_x, ax=ax4, scale=scale['mc signal region'],
-                               cut='1.84<D_M<1.9', correction=correction,mask=mask)
-        ax4.set_title('$M_{miss}^2$ Projection')
+                               cut='1.84<D_M<1.9', correction=correction,mask=mask,legend_count=True)
+        if var_list==['B0_CMS3_weMissM2','p_D_l']:
+            ax4.set_title('$M_{miss}^2$ Projection')
+        else:
+            ax4.set_title(f'{var_list[0]} Projection')
         ax4.grid()
         ax4.legend(ncol=1, framealpha=0, shadow=False,labelspacing=1.5,fontsize=8)
         # Residual plot below
@@ -1303,6 +1333,72 @@ class mpl:
         fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, hspace=0.4, wspace=0.4)
         plt.show()
 
+    def plot_FOM(self, sigModes, bkgModes, variable, test_points, cut=None, reverse=False):
+        # define signal / bkg sample
+        sig = pd.concat([self.samples[i] for i in sigModes])
+        bkg = pd.concat([self.samples[i] for i in bkgModes])
+        # of events before cut
+        sig_tot = ufloat( len(sig), np.sqrt(len(sig)) )
+        bkg_tot = ufloat( len(bkg), np.sqrt(len(bkg)) )
+        
+        FOM_list = []
+        sigEff_list = []
+        bkgEff_list = []
+
+        for i in test_points:
+            # of events after cut
+            if reverse:
+                x = f'{variable}<{i}'
+            else:
+                x = f'{variable}>{i}'
+            
+            nsig_val = len(sig.query(f"{cut} and {x}" if cut else f"{x}"))
+            nbkg_val = len(bkg.query(f"{cut} and {x}" if cut else f"{x}"))
+            
+            nsig = ufloat(nsig_val, np.sqrt(nsig_val))
+            nbkg = ufloat(nbkg_val, np.sqrt(nbkg_val))
+            ntot = nsig+nbkg
+            # calculation
+            if ntot==0:
+                FOM = ufloat(0,0)
+            else:
+                FOM = nsig / ntot**0.5 # s / √(s+b)
+            sigEff = nsig / sig_tot
+            bkgEff = nbkg / bkg_tot
+
+            FOM_list.append(FOM)
+            sigEff_list.append(sigEff)
+            bkgEff_list.append(bkgEff)
+
+
+        fig, ax1 = plt.subplots(figsize=(8, 6))
+        
+        color = 'tab:blue'
+        ax1.set_ylabel('Efficiency', color=color)  # we already handled the x-label with ax1
+        ax1.errorbar(x=test_points, y=[E.n for E in sigEff_list], yerr=[E.s for E in sigEff_list],
+                     marker='o',label='Signal Efficiency',color=color)
+        ax1.errorbar(x=test_points, y=[E.n for E in bkgEff_list], yerr=[E.s for E in bkgEff_list],
+                     marker='o',label='Bkg Efficiency',color='green')
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax1.legend(loc='upper left')
+        ax1.grid()
+        ax1.set_xlabel('Signal Probability')
+        
+        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+        
+        color = 'tab:red'
+        ax2.set_ylabel('FOM', color=color)
+        ax2.errorbar(x=test_points, y=[F.n for F in FOM_list], yerr=[F.s for F in FOM_list],
+                     marker='o',label='FOM',color=color)
+        ax2.tick_params(axis='y', labelcolor=color)
+        #ax2.grid()
+        ax2.legend(loc='upper right')
+
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.title(f'FOM for {variable=}')
+        plt.xlim(0,1)
+        plt.ylim(bottom=0)
+        plt.show()
 
     def plot_data_mc_all(self, bins, variables, cut=None, scale=[1,1], figsize=(30, 100), fontsize=12):
         fig = plt.figure(figsize=figsize)
@@ -1464,64 +1560,6 @@ class mpl:
             ax.set_ylabel(target,fontsize=30)
             ax.set_xlabel(variables[i],fontsize=30)
             ax.grid()
-
-    def plot_FOM(self, sigModes, bkgModes, variable, test_points, cut=None):
-        sig = pd.concat([self.samples[i] for i in sigModes])
-        bkg = pd.concat([self.samples[i] for i in bkgModes])
-        sig_tot = len(sig)
-        bkg_tot = len(bkg)
-        BDT_FOM = []
-        BDT_FOM_err = []
-        BDT_sigEff = []
-        BDT_sigEff_err = []
-        BDT_bkgEff = []
-        BDT_bkgEff_err = []
-        for i in test_points:
-            nsig = len(sig.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
-            nbkg = len(bkg.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
-            tot = nsig+nbkg
-            tot_err = np.sqrt(tot)
-            FOM = nsig / tot_err # s / √(s+b)
-            FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
-
-            BDT_FOM.append(FOM)
-            BDT_FOM_err.append(FOM_err)
-
-            sigEff = nsig / sig_tot
-            sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
-            bkgEff = nbkg / bkg_tot
-            bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
-            BDT_sigEff.append(sigEff)
-            BDT_sigEff_err.append(sigEff_err)
-            BDT_bkgEff.append(bkgEff)
-            BDT_bkgEff_err.append(bkgEff_err)
-
-        fig, ax1 = plt.subplots(figsize=(8, 6))
-        
-
-        color = 'tab:red'
-        ax1.set_ylabel('Efficiency', color=color)  # we already handled the x-label with ax1
-        ax1.errorbar(x=test_points, y=BDT_sigEff, yerr=BDT_sigEff_err,marker='o',label='Signal Efficiency',color=color)
-        ax1.errorbar(x=test_points, y=BDT_bkgEff, yerr=BDT_bkgEff_err,marker='o',label='Bkg Efficiency',color='green')
-        ax1.tick_params(axis='y', labelcolor=color)
-        ax1.legend(loc='upper left')
-        ax1.grid()
-        ax1.set_xlabel('Signal Probability')
-        
-        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-        
-        color = 'tab:blue'
-        ax2.set_ylabel('FOM', color=color)
-        ax2.errorbar(x=test_points, y=BDT_FOM, yerr=BDT_FOM_err,marker='o',label='FOM',color=color)
-        ax2.tick_params(axis='y', labelcolor=color)
-        #ax2.grid()
-        ax2.legend(loc='upper right')
-
-        fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.title(f'FOM for {variable=}')
-        plt.xlim(0,1)
-        plt.ylim(bottom=0)
-        plt.show()
         
     def plot_cut_efficiency(self, cut, variable='B0_CMS3_weQ2lnuSimple',bins=15,xlim=[2,12],comp=[r'$D\tau\nu$',r'$D\ell\nu$']):
         plt.title(f'Efficiency for {cut=}', y=1,fontsize=16);
@@ -1544,8 +1582,6 @@ class mpl:
             bin_centers = (bins1[:-1] + bins1[1:]) /2
             plt.errorbar(x=bin_centers, y=efficiency, yerr=efficiency_err, label=name)
             plt.legend()
-    
-            
 
 
 # +
