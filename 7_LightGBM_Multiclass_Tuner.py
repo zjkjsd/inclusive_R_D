@@ -9,13 +9,12 @@ Usage: python3 7_LightGBM_Multiclass_TunerCV.py (-o multiclassova -c)
 """
 
 import argparse
-import pandas
-import root_pandas
+import pandas as pd
+import uproot
 import gc
 import numpy as np
 import matplotlib.pyplot as plt
 from termcolor import colored
-from sklearn.model_selection import train_test_split
 import utilities as util
 
 import lightgbm as lgb
@@ -50,36 +49,20 @@ if __name__ == "__main__":
 
     # define training variables
     training_variables = util.training_variables
-    variables = util.variables
 
     # load data
     print(colored(f'Loading data and initializing configrations', 'blue'))
-    signal = pandas.read_parquet('BDTs/MC14ri_signal.parquet', engine="pyarrow", columns=variables)
-    bkg_continuum = pandas.read_parquet('BDTs/MC14ri_qqbar.parquet', engine="pyarrow", columns=variables)
-    bkg_DTCFake = pandas.read_parquet('BDTs/MC14ri_DTCFake.parquet', engine="pyarrow", columns=variables)
-    bkg_BFake = pandas.read_parquet('BDTs/MC14ri_BFake.parquet', engine="pyarrow", columns=variables)
-
-    # define multiclass label
-    signal['Signal'] = 0
-    signal['__weight__'] = 13
-    bkg_continuum['Signal'] = 1
-    bkg_DTCFake['Signal'] = 2
-    bkg_BFake['Signal'] = 3
-
-    df = pandas.concat([signal,
-                        bkg_continuum.sample(n=1000000, random_state=0),
-                        bkg_DTCFake.sample(n=1000000, random_state=0),
-                        bkg_BFake], ignore_index=True)
-
+    train_sub = uproot.concatenate([f'AutogluonModels/train.root:B0'],library="np")
+    df_train_sub = pd.DataFrame({k:v for k, v in train_sub.items() if k!='index'})
     
+    # train test split
+    print(colored(f'Splitting training test samples', 'green'))
+    train_data = df_train_sub.sample(frac=1, random_state=0)
+
     # use all data for cv
     print(colored(f'Running CV tuner', 'magenta'))
-
-    lgb_train = lgb.Dataset(data=df[training_variables], label=df['Signal'],
-                            weight=df['__weight__'],free_raw_data=True)
-
-    del signal,bkg_continuum,bkg_DTCFake,bkg_BFake, df
-    gc.collect()
+    lgb_train = lgb.Dataset(data=train_data[training_variables], label=train_data['target'],
+                            weight=train_data['__weight__'],free_raw_data=True)
 
     def objective(trial):
         param = {'boosting_type': 'gbdt',
@@ -89,7 +72,7 @@ if __name__ == "__main__":
                  'max_bin': 255,
                  "seed":0,
                  'force_col_wise': True,
-                 'feature_fraction': 1,
+                 'feature_fraction': 0.9,
                  'feature_pre_filter':False,
                  'verbosity':-1,
                  'bagging_fraction': 0.8,
@@ -97,7 +80,7 @@ if __name__ == "__main__":
                  "lambda_l1": trial.suggest_float("lambda_l1", 1e-8, 10.0, log=True),
                  "lambda_l2": trial.suggest_float("lambda_l2", 1e-8, 10.0, log=True),
                  "num_leaves": trial.suggest_int("num_leaves", 2, 80),
-                 "learning_rate": trial.suggest_float("learning_rate", 0.2, 2),
+                 "learning_rate": trial.suggest_float("learning_rate", 0.1, 2),
                  "min_child_samples": trial.suggest_int("min_child_samples", 100, 1e+8, step=5),
                 }
 

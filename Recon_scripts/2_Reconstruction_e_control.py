@@ -23,14 +23,12 @@ output_file = 'MC_e_control_test.root'
 
 ma.inputMdstList(filelist=input_file, path=main_path)
 
-goodTrack = 'abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nCDCHits>0'
+goodTrack = 'abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nPXDHits>0'
 
-vm.addAlias("pionID_binary_noSVD", "binaryPID_noSVD(211, 321)")
-vm.addAlias("kaonID_binary_noSVD", "binaryPID_noSVD(321, 211)")
-ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and pionIDNN > 0.1', path=main_path)
-ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_path)
-# kaonIDNN, pionIDNN
-# kaonID, pionID, 
+# vm.addAlias("pionID_binary_noSVD", "binaryPID_noSVD(211, 321)")
+# vm.addAlias("kaonID_binary_noSVD", "binaryPID_noSVD(321, 211)")
+ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and nCDCHits>20 and pionIDNN > 0.1', path=main_path)
+ma.fillParticleList('K-:myk', cut=goodTrack + ' and nCDCHits>20 and kaonIDNN > 0.9', path=main_path)
 
 # ----------------------------------
 # Fill example standard lepton list.
@@ -40,7 +38,7 @@ ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_p
 # is applied first to get the 4-momentum right,
 # and the resulting particle list is passed as input to the stdE list creator.
 ma.fillParticleList("e+:uncorrected",
-                    cut=goodTrack,  # NB: whichever cut is set here, will be inherited by the std electrons.
+                    cut=goodTrack + ' and nCDCHits>0',  # NB: whichever cut is set here, will be inherited by the std electrons.
                     path=main_path)
 
 ma.fillParticleList('gamma:all', '', path=main_path)
@@ -72,7 +70,7 @@ ma.applyChargedPidMVA(['e+:corrected'], path=main_path, trainingMode=1,
 
 
 ma.fillParticleList("mu+:mymu",
-                    cut=goodTrack + " and inKLMAcceptance",
+                    cut=goodTrack + " and nCDCHits>0 and inKLMAcceptance",
                     path=main_path)
 
 ma.applyChargedPidMVA(['mu+:mymu'], path=main_path, trainingMode=1, 
@@ -95,9 +93,9 @@ ma.applyEventCuts('formula(nParticlesInList(e-:corrected) + nParticlesInList(mu-
 ma.buildEventKinematics(fillWithMostLikely=True,path=main_path) 
 
 
-
-
-# Reconstruct D, 1 sigma == 0.005, mean==1.87
+# --------------------------------------------------------
+# Reconstruct D, 1 sigma == 0.005, mean==1.87, vertex fit
+# --------------------------------------------------------
 DMcut1 = '[1.77 <M< 1.97]' #
 DMcut2 = '[1.79 <M< 1.82 or 1.92 <M< 1.95 or 1.855 <M< 1.885]' #
 ma.reconstructDecay('D+:K2pi -> K-:myk pi+:mypi pi+:mypi', cut=DMcut1, path=main_path)
@@ -107,9 +105,7 @@ vm.addAlias('BFM','extraInfo(D_BFM)')
 vm.addAlias('BFInvM','extraInfo(D_BFInvM)')
 
 Daughters_vars = []
-for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD',
-                 'pionIDNN','kaonIDNN',
-                 'dr','dz','nCDCHits','pValue','mcErrors','pt',
+for variable in ['pionIDNN','kaonIDNN','mcErrors','pt',
                  'p','cosTheta','theta','charge','PDG','mcPDG']:
     vm.addAlias(f'K_{variable}', f'daughter(0, {variable})')
     vm.addAlias(f'pi1_{variable}', f'daughter(1, {variable})')
@@ -119,7 +115,6 @@ for variable in ['kaonID_binary_noSVD','pionID_binary_noSVD',
     Daughters_vars.append(f'pi2_{variable}')
     
     
-
 # vertex fitting D, save vtx variables before the 2nd treefit
 vx.treeFit('D+:K2pi', conf_level=0.00, updateAllDaughters=True, massConstraint=[], ipConstraint=False, path=main_path)
 vm.addAlias('vtxChi2','extraInfo(chiSquared)')
@@ -136,40 +131,42 @@ vertex_vars = ['vtxReChi2','vtxNDF','flightDistanceSig','flightTimeSig',]
 ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {DMcut2}', path=main_path)
 
 
-# Reconstruct B
+# --------------------------
+# Reconstruct B, vertex fit
+# --------------------------
 ma.reconstructDecay('anti-B0:Dl =norad=> D+:K2pi e-:corrected ?addbrems', cut='', path=main_path)
 vx.treeFit('anti-B0:Dl', conf_level=0.00, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
 
 # Get the distance between vertices De/IP and D+
 vm.addAlias('vtxDDSig', 'vertexDistanceOfDaughterSignificance(0,0)')
 #vm.addAlias('vtxIPDSig', 'vertexDistanceOfDaughterSignificance(0)') this output the same distribution as above
+# Angle bewteen 1st and 2nd daughter
+vm.addAlias('angle_0_1', 'daughterAngle(0,1)')
+vm.addAlias('CMS_angle_0_1', 'useCMSFrame( daughterAngle(0,1) )')
 
 # Calculate DOCA(D,l)
-# ma.calculateDistance('anti-B0:Dl', 'anti-B0:Dl -> ^D+:K2pi ^e-:corrected', "vertextrack", path=main_path)
-vm.addAlias('DistanceSig', 'formula( extraInfo(CalculatedDistance) / extraInfo(CalculatedDistanceError) )')
+ma.calculateDistance('anti-B0:Dl', 'anti-B0:Dl -> ^D+:K2pi ^e-:corrected', "vertextrack", path=main_path)
+vm.addAlias('D_l_DisSig', 'formula( extraInfo(CalculatedDistance) / extraInfo(CalculatedDistanceError) )')
 
-def Distance_dic(target='sig_', kind='_vtx'):
-    return {'extraInfo(CalculatedDistance)':f'{target}Distance{kind}',
-            'extraInfo(CalculatedDistanceError)':f'{target}DistanceError{kind}',
-            'DistanceSig':f'{target}DistanceSig{kind}',
-#             'extraInfo(CalculatedDistanceVector_X)':f'{target}DistanceVector_X{kind}',
-#             'extraInfo(CalculatedDistanceCovMatrixXZ)':f'{target}DistanceCovMatrixXZ{kind}',
-            'daughterAngle(0, 1)':f'{target}daughterAngleLab{kind}',
-            'useCMSFrame(daughterAngle(0, 1))':f'{target}daughterAngleCMS{kind}'}
+ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and CMS_E<5.4', path=main_path)
 
 # MC Truth Matching
 ma.matchMCTruth('anti-B0:Dl', path=main_path)
+
+vm.addAlias('genGMPDG','genMotherPDG(1)')
+vm.addAlias('mcDaughter_0_PDG', 'mcDaughter(0,PDG)')
+vm.addAlias('mcDaughter_1_PDG', 'mcDaughter(1,PDG)')
+extra_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG']
 
 # generate the DecayHash
 # main_path.add_module('ParticleMCDecayString', listName='anti-B0:Dl', fileName=output_hash)
 # vm.addAlias('DecayHash','extraInfo(DecayHash)')
 # vm.addAlias('DecayHashEx','extraInfo(DecayHashExtended)')
 
-ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and CMS_E<5.4', path=main_path)
 
-
-
-# build the ROE
+# ----------
+# Build ROE
+# ----------
 ma.fillParticleList('pi+:all', '', path=main_path)
 ma.tagCurlTracks('pi+:all', mcTruth=True, selectorType='mva', path=main_path)
 vm.addAlias('isCurl', 'extraInfo(isCurl)')
@@ -199,37 +196,36 @@ ma.updateROEUsingV0Lists('anti-B0:Dl', mask_names='my_mask', default_cleanup=Tru
 ma.updateROEMask("B0:Dl","my_mask",tight_track, tight_gamma, path=main_path)
 
 
-
-
+# ----------------
+# Create ROE path
+# ----------------
 roe_path = b2.Path()
 deadEndPath = b2.Path()
 ma.signalSideParticleFilter('anti-B0:Dl', '', roe_path, deadEndPath)
 ma.discardFromROEMasks('pi+:all', ['my_mask'], '[isCurl==1 or pt==0 or E>5.5] and isInRestOfEvent==1', path=roe_path)
-
+ma.fillParticleList('pi+:roe', 'isInRestOfEvent>0 and passesROEMask(my_mask)', path = roe_path)
 
 # Virtual particles are place holders for the calculateDistance module to work
 # These distances below will be used to suppress the combinatorial bkg(in MVAs)
 # DOCA between \ell and any track in the ROE
-ma.fillParticleList('pi+:roe', 'isInRestOfEvent>0 and passesROEMask(my_mask)', path = roe_path)
-ma.fillSignalSideParticleList('e-:sig', 'anti-B0:Dl -> D+:K2pi ^e-:corrected ?addbrems', path=roe_path)
-ma.reconstructDecay('K_L0:virtual -> pi+:roe e-:sig ?addbrems', cut='', path=roe_path)
-vx.treeFit('K_L0:virtual', conf_level=-1, updateAllDaughters=False, massConstraint=[], ipConstraint=False, path=roe_path)
-ma.calculateDistance('K_L0:virtual', 'K_L0:virtual -> ^pi+:roe ^e-:sig ?addbrems', "2tracks", path=roe_path)
 
+# ma.fillSignalSideParticleList('e-:sig', 'anti-B0:Dl -> D+:K2pi ^e-:corrected ?addbrems', path=roe_path)
+# ma.reconstructDecay('K_L0:virtual -> pi+:roe e-:sig ?addbrems', cut='', path=roe_path)
+# vx.treeFit('K_L0:virtual', conf_level=-1, updateAllDaughters=False, massConstraint=[], ipConstraint=False, path=roe_path)
+# ma.calculateDistance('K_L0:virtual', 'K_L0:virtual -> ^pi+:roe ^e-:sig ?addbrems', "2tracks", path=roe_path)
 
-ma.rankByLowest('K_L0:virtual', 'DistanceSig', numBest=1, path=roe_path)
-roel_DOCA_dis_dic = Distance_dic('roel_','_dis')
-ma.variableToSignalSideExtraInfo('K_L0:virtual', roel_DOCA_dis_dic, path=roe_path)
-ma.variableToSignalSideExtraInfo('K_L0:virtual', {'vtxReChi2':'roel_vtxReChi2_dis'}, path=roe_path)
+# ma.rankByLowest('K_L0:virtual', 'DistanceSig', numBest=1, path=roe_path)
+# roel_DOCA_dis_dic = Distance_dic('roel_','_dis')
+# ma.variableToSignalSideExtraInfo('K_L0:virtual', roel_DOCA_dis_dic, path=roe_path)
+# ma.variableToSignalSideExtraInfo('K_L0:virtual', {'vtxReChi2':'roel_vtxReChi2_dis'}, path=roe_path)
 
-roel_DOCA_Chi2 = []
+# roel_DOCA_Chi2 = []
+# for key, value in roel_DOCA_dis_dic.items():
+#     vm.addAlias(value, f'ifNANgiveX(extraInfo({value}), -1.0)')
+#     roel_DOCA_Chi2.append(value)
     
-for key, value in roel_DOCA_dis_dic.items():
-    vm.addAlias(value, f'ifNANgiveX(extraInfo({value}), -1.0)')
-    roel_DOCA_Chi2.append(value)
-    
-vm.addAlias('roel_vtxReChi2_dis', f'ifNANgiveX(extraInfo(roel_vtxReChi2_dis), -1.0)')
-roel_DOCA_Chi2.append('roel_vtxReChi2_dis')
+# vm.addAlias('roel_vtxReChi2_dis', f'ifNANgiveX(extraInfo(roel_vtxReChi2_dis), -1.0)')
+# roel_DOCA_Chi2.append('roel_vtxReChi2_dis')
 
 # lepton veto 2
 ma.applyChargedPidMVA(['pi+:roe'], path=roe_path, trainingMode=1, 
@@ -255,7 +251,9 @@ for var in ['ROEeidBDT','ROEmuidBDT']:
 main_path.for_each('RestOfEvent', 'RestOfEvents', roe_path)
 
 
-# ROE variables
+# ----------
+# ROE vars
+# ----------
 roe_kinematics = ["roeP(my_mask)"]#, "roeE(my_mask)", "roePx(my_mask)",
                   #"roePy(my_mask)","roePz(my_mask)","roePt(my_mask)",]
 roe_MC_kinematics = ['roeMC_E','roeMC_M','roeMC_P',
@@ -266,26 +264,31 @@ roe_Mbc_Deltae = ["roeMbc(my_mask)", "roeM(my_mask)","roeDeltae(my_mask)",]
 
 roe_E_Q = ['roeCharge(my_mask)', 'roeNeextra(my_mask)','roeEextra(my_mask)',]
 
-roe_multiplicities = ["nROE_Charged(my_mask)",'nROE_ECLClusters(my_mask)',
-                      'nROE_NeutralECLClusters(my_mask)','nROE_KLMClusters',
-                      'nROE_NeutralHadrons(my_mask)',"nROE_Photons(my_mask)",
-                      'nROE_Tracks(my_mask)','nROE_Composites(my_mask)',]
-                      #'roeMC_MissFlags(my_mask)',]
+# Kinematic variables in CMS
+cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
+# cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
+# cms_momentum_uncertainty = vu.create_aliases(vc.momentum_uncertainty, "useCMSFrame({variable})", "CMS")
+roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
+# roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
 
-vm.addAlias('nROE_e','nROE_Charged(my_mask, 11)')
-vm.addAlias('nROE_mu','nROE_Charged(my_mask, 13)')
-vm.addAlias('nROE_K','nROE_Charged(my_mask, 321)')
-vm.addAlias('nROE_pi','nROE_Charged(my_mask, 211)')
-roe_nCharged = ['nROE_e','nROE_mu','nROE_K','nROE_pi']
+# roe_multiplicities = ["nROE_Charged(my_mask)",'nROE_ECLClusters(my_mask)',
+#                       'nROE_NeutralECLClusters(my_mask)','nROE_KLMClusters',
+#                       'nROE_NeutralHadrons(my_mask)',"nROE_Photons(my_mask)",
+#                       'nROE_Tracks(my_mask)','nROE_Composites(my_mask)',]
+#                       #'roeMC_MissFlags(my_mask)',]
 
-
+# vm.addAlias('nROE_e','nROE_Charged(my_mask, 11)')
+# vm.addAlias('nROE_mu','nROE_Charged(my_mask, 13)')
+# vm.addAlias('nROE_K','nROE_Charged(my_mask, 321)')
+# vm.addAlias('nROE_pi','nROE_Charged(my_mask, 211)')
+# roe_nCharged = ['nROE_e','nROE_mu','nROE_K','nROE_pi']
 
 vm.addAlias('CMS0_weDeltae','weDeltae(my_mask,0)')
-vm.addAlias('Lab1_weDeltae','weDeltae(my_mask,1)')
+# vm.addAlias('Lab1_weDeltae','weDeltae(my_mask,1)')
 #Option for correctedB_deltae variable should only be 0/1 (CMS/LAB)
 #Option for correctedB_mbc variable should only be 0/1/2 (CMS/LAB/CMS with factor)
 vm.addAlias('CMS0_weMbc','weMbc(my_mask,0)')
-vm.addAlias('Lab1_weMbc','weMbc(my_mask,1)')
+# vm.addAlias('Lab1_weMbc','weMbc(my_mask,1)')
 vm.addAlias('CMS2_weMbc','weMbc(my_mask,2)')
 
 vm.addAlias('CMS0_weMissM2','weMissM2(my_mask,0)')
@@ -324,37 +327,29 @@ for var in we_vars:
         elif i<8:
             we.append(f'CMS{i}_{var}')
             
-            
 
-# fit B vertex on the tag-side
+# ------------------
+# Tag side B vertex
+# ------------------
 # vx.TagV("anti-B0:Dl", fitAlgorithm="Rave", maskName='my_mask', path=main_path)
 vx.TagV('B0:Dl',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
         reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
 vm.addAlias('TagVReChi2','formula(TagVChi2/TagVNDF)')
 vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
 
+TVVariables = ['TagVReChi2','TagVReChi2IP',] #'DeltaZ',        'DeltaZErr',    
+#                'TagVx',     'TagVxErr',     'TagVy',         'TagVyErr',
+#                'TagVz',     'TagVzErr',     'TagVNTracks']
+
 ma.applyCuts('anti-B0:Dl', '4<roeMbc(my_mask) and -5<roeDeltae(my_mask)<5 and \
               4<CMS2_weMbc and -5<CMS0_weDeltae<5 and abs(roeCharge(my_mask))<3 and \
               0.2967<Lab5_weMissPTheta<2.7925 and 0.2967<Lab6_weMissPTheta<2.7925 and \
               0<TagVReChi2<100 and 0<TagVReChi2IP<100', path=main_path)
 
-vm.addAlias('genGMPDG','genMotherPDG(1)')
-vm.addAlias('mcDaughter_0_PDG', 'mcDaughter(0,PDG)')
-vm.addAlias('mcDaughter_1_PDG', 'mcDaughter(1,PDG)')
-extra_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG']
 
-# Kinematic variables in CMS
-cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
-# cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
-# cms_momentum_uncertainty = vu.create_aliases(vc.momentum_uncertainty, "useCMSFrame({variable})", "CMS")
-roe_cms_kinematics = vu.create_aliases(roe_kinematics, "useCMSFrame({variable})", "CMS")
-# roe_cms_MC_kinematics = vu.create_aliases(roe_MC_kinematics, "useCMSFrame({variable})", "CMS")
-
-TVVariables = ['DeltaZ',    'DeltaZErr',    'TagVReChi2',    'TagVReChi2IP',
-               'TagVx',     'TagVxErr',     'TagVy',         'TagVyErr',
-               'TagVz',     'TagVzErr',     'TagVNTracks']
-
+# ---------------------
 # Continuum Suppression
+# ---------------------
 ma.buildContinuumSuppression(list_name="B0:Dl", roe_mask="my_mask", path=main_path)
 
 vm.addAlias('KSFWV1','KSFWVariables(et)') #correlates with p_D + p_l
@@ -375,50 +370,23 @@ vm.addAlias('KSFWV15','KSFWVariables(hoo1)')
 vm.addAlias('KSFWV16','KSFWVariables(hoo2)')
 vm.addAlias('KSFWV17','KSFWVariables(hoo3)')
 vm.addAlias('KSFWV18','KSFWVariables(hoo4)')
-vm.addAlias('CC1','CleoConeCS(1)')
-vm.addAlias('CC2','CleoConeCS(2)')
-vm.addAlias('CC3','CleoConeCS(3)')
-vm.addAlias('CC4','CleoConeCS(4)')
-vm.addAlias('CC5','CleoConeCS(5)')
-vm.addAlias('CC6','CleoConeCS(6)')
-vm.addAlias('CC7','CleoConeCS(7)')
-vm.addAlias('CC8','CleoConeCS(8)')
-vm.addAlias('CC9','CleoConeCS(9)')
+# vm.addAlias('CC1','CleoConeCS(1)')
+# vm.addAlias('CC2','CleoConeCS(2)')
+# vm.addAlias('CC3','CleoConeCS(3)')
+# vm.addAlias('CC4','CleoConeCS(4)')
+# vm.addAlias('CC5','CleoConeCS(5)')
+# vm.addAlias('CC6','CleoConeCS(6)')
+# vm.addAlias('CC7','CleoConeCS(7)')
+# vm.addAlias('CC8','CleoConeCS(8)')
+# vm.addAlias('CC9','CleoConeCS(9)')
 
 CSVariables = [
-    'isContinuumEvent',
-    "R2",
-    "thrustBm",
-    "thrustOm",
-    "cosTBTO",
-    "cosTBz",
-    "KSFWV1",
-    "KSFWV2",
-    "KSFWV3",
-    "KSFWV4",
-    "KSFWV5",
-    "KSFWV6",
-    "KSFWV7",
-    "KSFWV8",
-    "KSFWV9",
-    "KSFWV10",
-    "KSFWV11",
-    "KSFWV12",
-    "KSFWV13",
-    "KSFWV14",
-    "KSFWV15",
-    "KSFWV16",
-    "KSFWV17",
-    "KSFWV18",
-    "CC1",
-    "CC2",
-    "CC3",
-    "CC4",
-    "CC5",
-    "CC6",
-    "CC7",
-    "CC8",
-    "CC9",
+    'isContinuumEvent',  "R2",  "thrustBm",  "thrustOm",  "cosTBTO",  "cosTBz",
+    "KSFWV1",        "KSFWV2",  "KSFWV3",    "KSFWV4",    "KSFWV5",   "KSFWV6",
+    "KSFWV7",        "KSFWV8",  "KSFWV9",    "KSFWV10",   "KSFWV11",  "KSFWV12",
+    "KSFWV13",      "KSFWV14",  "KSFWV15",   "KSFWV16",   "KSFWV17",  "KSFWV18",
+#     "CC1",              "CC2",  "CC3",       "CC4",       "CC5",      "CC6",
+#     "CC7",              "CC8",  "CC9",
 ]
 
 
@@ -426,63 +394,35 @@ CSVariables = [
 # vm.addAlias('cos_pV','cosAngleBetweenMomentumAndVertexVector')
 # vm.addAlias('cos_pB','cosThetaBetweenParticleAndNominalB')
 
-# Extra truth matching variables
-# vm.addAlias("mcPDG_genB0", "genUpsilon4S(mcDaughter(0, mcPDG))")
-# vm.addAlias("mcPDG_genB1", "genUpsilon4S(mcDaughter(1, mcPDG))")
-# vm.addAlias("genID_B0", "genUpsilon4S(mcDaughter(0, genParticleID))")
-# vm.addAlias("genID_B1", "genUpsilon4S(mcDaughter(1, genParticleID))")
 
-# vm.addAlias('GMdaughter_0_PDG', 'mcMother(mcMother(mcDaughter(0,PDG)))')
-# vm.addAlias('GMdaughter_1_PDG', 'mcMother(mcMother(mcDaughter(1,PDG)))')
-# vm.addAlias('Mdaughter_0_PDG', 'mcMother(mcDaughter(0,PDG))')
-# vm.addAlias('Mdaughter_1_PDG', 'mcMother(mcDaughter(1,PDG))')
-
-# vm.addAlias('nMissPi','genNMissingDaughter(211)')
-# vm.addAlias('nMissPi0','genNMissingDaughter(111)')
-# vm.addAlias('nMissDst','genNMissingDaughter(413)')
-# vm.addAlias('nMissD_1','genNMissingDaughter(10413)')
-# vm.addAlias('nMissD_0st','genNMissingDaughter(10411)')
-# vm.addAlias('nMissDp_1','genNMissingDaughter(20413)')
-# vm.addAlias('nMissD_2st','genNMissingDaughter(415)')
-# vm.addAlias('nMissD_10','genNMissingDaughter(10423)')
-# vm.addAlias('nMissD_0st0','genNMissingDaughter(10421)')
-# vm.addAlias('nMissDp_10','genNMissingDaughter(20423)')
-# vm.addAlias('nMissD_2st0','genNMissingDaughter(425)')
-# vm.addAlias('nMissEta','genNMissingDaughter(221)')
-
-# nMissingP = ['nMissPi','nMissPi0','nMissDst',
-#              'nMissD_1','nMissD_0st','nMissDp_1',
-#              'nMissD_2st','nMissD_10','nMissD_0st0',
-#              'nMissDp_10','nMissD_2st0','nMissEta']
-
-
-
-# ma.printMCParticles(onlyPrimaries=False, maxLevel=-1, path=main_path,
-#                     showProperties=False, showMomenta=False, showVertices=False, showStatus=False, 
-#                     suppressPrint=True)
+# ---------------------
+# Save to ntuples
+# ---------------------
+ma.printMCParticles(onlyPrimaries=False, maxLevel=-1, path=main_path,
+                    showProperties=False, showMomenta=False, showVertices=False, showStatus=False, 
+                    suppressPrint=True)
 
 b_vars = vu.create_aliases_for_selected(
-    list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_multiplicities 
-    + roe_nCharged + CSVariables + we + vertex_vars + TVVariables #+ cms_mc_kinematics
-    + extra_mcDaughters_vars + roe_cms_kinematics
-    #+ vc.flight_info + vc.mc_flight_info + roel_DOCA_Chi2 + cms_kinematics + vc.kinematics + vc.inv_mass
-    + ['vtxDDSig','roel_DistanceSig_dis','mcErrors','mcPDG','genParticleID'],#'DecayHash','DecayHashEx',
+    list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics
+    + CSVariables + we + vertex_vars + TVVariables + extra_mcDaughters_vars
+    + ['mcErrors','mcPDG','dr','vtxDDSig','D_l_DisSig','angle_0_1','CMS_angle_0_1'],
     decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
     prefix=['B0'])
 
 D_vars = vu.create_aliases_for_selected(
     list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
-    + Daughters_vars + vertex_vars #+ cms_mc_kinematics + cms_momentum_uncertainty
-    + ['genGMPDG','genMotherPDG','mcErrors','mcPDG','pErr','dM','BFM','A1FflightDistanceSig_IP'],
+    + Daughters_vars + vertex_vars
+    + ['genGMPDG','genMotherPDG','mcErrors','mcPDG',
+       'dr','pErr','dM','BFM','A1FflightDistanceSig_IP'],
     decay_string='anti-B0:Dl =norad=> ^D+:K2pi e-:corrected',
     prefix=['D'])
 
 for i in range(2):
     vm.addAlias(f'd{i}_mcPDG', f'daughter({i}, mcPDG)')
 l_vars = vu.create_aliases_for_selected(
-    list_of_variables= cms_kinematics + vc.kinematics #+ cms_mc_kinematics + cms_momentum_uncertainty #+ electron_id_weights
-    + ['genGMPDG','genMotherPDG',#'GMdaughter_0_PDG','GMdaughter_1_PDG','Mdaughter_0_PDG','Mdaughter_1_PDG',
-       'mcErrors','mcPDG','dM','isBremsCorrected','pValue','isCloneTrack','d0_mcPDG','d1_mcPDG',
+    list_of_variables= cms_kinematics + vc.kinematics
+    + ['genGMPDG','genMotherPDG','mcErrors','mcPDG','isBremsCorrected',
+       'dM','pValue','isCloneTrack','d0_mcPDG','d1_mcPDG',
        'cosTheta','theta','eID','charge','PDG'],
     decay_string='anti-B0:Dl =norad=> D+:K2pi ^e-:corrected',
     prefix=['ell'])

@@ -7,31 +7,26 @@ CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
                 "B0_KSFWV3",   "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
                 "B0_KSFWV7",   "B0_KSFWV8",     "B0_KSFWV9",     "B0_KSFWV10",
                 "B0_KSFWV13",  "B0_KSFWV14",    "B0_KSFWV15",    "B0_KSFWV16",
-                "B0_KSFWV17",  "B0_KSFWV18",    "B0_CC1",        "B0_CC2",
-                "B0_CC3",      "B0_CC4",        "B0_CC5",        "B0_CC6",
-                "B0_CC7",      "B0_CC8",        "B0_CC9",]
-                #"B0_thrustBm", "B0_KSFWV1",     "B0_KSFWV2",     "B0_KSFWV11",
-                #"B0_KSFWV12",] correlates with mm2 or p_D_l
+                "B0_KSFWV17",  "B0_KSFWV18",]   # "B0_CC1",        "B0_CC2",
+#                 "B0_CC3",      "B0_CC4",        "B0_CC5",        "B0_CC6",
+#                 "B0_CC7",      "B0_CC8",        "B0_CC9",]
+#                 "B0_thrustBm", "B0_KSFWV1",     "B0_KSFWV2",     "B0_KSFWV11", 
+#                 "B0_KSFWV12" correlates with mm2 or p_D_l
 
-DTC_variables = [#'D_K_kaonID_binary_noSVD',    'D_pi1_kaonID_binary_noSVD',
+DTC_variables = ['D_vtxReChi2',                'D_A1FflightDistanceSig_IP',
+                 'D_daughterInvM_1_2',         'D_daughterInvM_0_1',]
 #                  'D_K_kaonIDNN',               'D_K_pionIDNN',
 #                  'D_pi2_kaonIDNN',             'D_pi2_pionIDNN',
 #                  'D_pi1_kaonIDNN',             'D_pi1_pionIDNN',
-#                  'D_K_dr',                     'D_K_dz',
-#                  'D_pi1_dr',                   'D_pi2_dr',
-#                  'D_pi1_dz',                   'D_pi2_dz', 
-                 'D_pi1_pValue',               'D_pi2_pValue',
-                 'D_K_pValue',                 'D_vtxReChi2',               
-                 'D_A1FflightDistanceSig_IP',  'D_daughterInvM_0_1',
-                 'D_daughterInvM_1_2',         'B0_vtxDDSig',]
 
-B_variables = ['B0_Lab5_weMissPTheta',
-               'B0_vtxReChi2',               'B0_flightDistanceSig',
-               'B0_roel_DistanceSig_dis',    'B0_roeDeltae_my_mask',
-               'B0_roeEextra_my_mask',       'B0_roeMbc_my_mask',
-               'B0_roeCharge_my_mask',        'B0_TagVReChi2IP', ]
-                #'B0_nROE_Tracks_my_mask',     'B0_nROE_NeutralHadrons_my_mask',
-                #'B0_nROE_Photons_my_mask',    'B0_nROE_K',
+
+B_variables = ['B0_vtxReChi2',               'B0_flightDistanceSig',
+               'B0_vtxDDSig',
+               'B0_roeMbc_my_mask',          'B0_roeDeltae_my_mask',
+               'B0_roeEextra_my_mask',       'B0_TagVReChi2IP',]
+#                'B0_Lab5_weMissPTheta',       'B0_roeCharge_my_mask', 
+#                'B0_nROE_Tracks_my_mask',     'B0_nROE_Photons_my_mask',
+#                'B0_nROE_NeutralHadrons_my_mask',
 
 training_variables = CS_variables + DTC_variables + B_variables
 mva_variables = training_variables + spectators
@@ -39,22 +34,18 @@ mva_variables = training_variables + spectators
 analysis_variables=['__experiment__',     '__run__',       '__event__',      '__production__',
                     'B0_isContinuumEvent','B0_mcPDG',      'B0_mcErrors',    'B0_mcDaughter_0_PDG',
                     'B0_mcDaughter_1_PDG','B0_deltaE',     'B0_Mbc',         'B0_CMS2_weMbc', 
-                    'B0_CMS0_weDeltae',
-                    'D_mcErrors',         'D_genGMPDG',    'D_genMotherPDG',
-                    'D_mcPDG',            'D_BFM',         'D_M',            'D_px',
-                    'D_py',               'D_pz',          'D_p',            'D_CMS_p',
-                    'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_pValue', 
-                    'D_pi1_pValue',       'D_pi2_pValue',  'D_K_charge',     'D_K_cosTheta',
-                    'D_K_p',              'D_K_PDG',       'D_K_mcPDG',
+                    'B0_CMS0_weDeltae',   'B0_dr',         'B0_angle_0_1',   'B0_CMS_angle_0_1',
+                    'B0_D_l_DisSig',      
+                    'D_mcErrors',         'D_genGMPDG',    'D_genMotherPDG', 'D_mcPDG',
+                    'D_BFM',              'D_M',           'D_p',            'D_dr',
+                    'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_charge',
+                    'D_K_cosTheta',       'D_K_p',         'D_K_PDG',        'D_K_mcPDG',
                     'ell_genMotherPDG',   'ell_mcPDG',     'ell_mcErrors',   'ell_genGMPDG',
-                    'ell_px',             'ell_py',        'ell_pz',         'ell_p',
-                    'ell_CMS_p',          'ell_pSig',      'ell_pValue',     'ell_charge',
-                    'ell_theta',          'ell_PDG',       'ell_eID',
-#                     'ell_GMdaughter_0_PDG',                'ell_GMdaughter_1_PDG',
-#                     'ell_Mdaughter_0_PDG',                 'ell_Mdaughter_1_PDG'
+                    'ell_p',              'ell_pValue',    'ell_charge',     'ell_theta',
+                    'ell_PDG',            'ell_eID',
                     'mode',               'p_D_l',         'B_D_ReChi2',
-                    'D_daughter_pValue_min',           'D_daughter_pValue_mean',
-                    'signal_prob', 'fakeD_prob', 'continuum_prob', 'fakeB_prob']
+                    'Ecms',               'ROEeidBDT',     'ROEmuidBDT',
+                    'sig_prob',           'fakeD_prob',    'fakeB_prob',     'continuum_prob',]
 
 all_relevant_variables = mva_variables + analysis_variables
 
@@ -79,28 +70,26 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl'
 import numpy as np
 import pandas as pd
 from autogluon.tabular import TabularPredictor
+import lightgbm as lgb
 
-def apply_mva_bcs(df, features, cut):
+def apply_mva_bcs(df, features, cut, library='ag', version='',model=None):
     # load model
-    predictor = TabularPredictor.load("/home/belle/zhangboy/inclusive_R_D/AutogluonModels/ag-20241122_055446")
-    pred = predictor.predict_proba(df)
-    pred = pred.rename(columns={0: 'fakeTracks_prob', 
-                                1: 'fakeD_prob',
-                                2: 'fakeL_prob',
-                                3: 'continuum_prob',
-                                4: 'combinatorial_prob',
-                                5: 'singleBbkg_prob',
-                                8: 'sig_prob'})
-    df_pred = pd.concat([df, pred], axis=1)
+    if library=='ag':
+        predictor = TabularPredictor.load(f"/home/belle/zhangboy/inclusive_R_D/AutogluonModels/{version}")
+        pred = predictor.predict_proba(df, model)
+        pred = pred.rename(columns={0: 'sig_prob', 
+                                    1: 'fakeD_prob',
+                                    2: 'fakeB_prob',
+                                    3: 'continuum_prob'})
 
-#     bst_lgb = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
-#     # predict
-#     pred = bst_lgb.predict(df[features], num_iteration=50) #bst_lgb.best_iteration
-#     lgb_out = pd.DataFrame(pred, columns=['signal_prob','continuum_prob','fakeD_prob','fakeB_prob'])
-#     # combine the predict result
-#     df_lgb = pd.concat([df, lgb_out], axis=1)
-#     df_lgb['largest_prob'] = df_lgb[['signal_prob','continuum_prob','fakeD_prob','fakeB_prob']].max(axis=1)
-#     del pred,lgb_out
+    elif library=='lgbm':
+        predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
+        pred_array = predictor.predict(df[features], num_iteration=predictor.best_iteration)
+        pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
+                                                 'fakeB_prob','continuum_prob'])
+    # combine the predict result
+    pred['largest_prob'] = pred[['sig_prob','fakeD_prob','fakeB_prob','continuum_prob']].max(axis=1)
+    df_pred = pd.concat([df, pred], axis=1)
     
     # apply the MVA cut and BCS
     df_cut=df_pred.query(cut)

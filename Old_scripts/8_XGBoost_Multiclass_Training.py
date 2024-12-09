@@ -97,8 +97,8 @@ if __name__ == "__main__":
               'eval_metric': ['mlogloss','auc'], # 'auc' only works with 'multi:softprob' objective
               'num_parallel_tree': 1, # tune this if to train a boosted random forest
               'grow_policy': 'depthwise',
-              'lambda': 1.3241896566490976, 
-              'alpha': 0.002527788735862106,
+              'lambda': 1.3241, 
+              'alpha': 0.0025,
               'learning_rate': 0.1, # eta
               'max_depth': 6,
               'max_leaves': 0,

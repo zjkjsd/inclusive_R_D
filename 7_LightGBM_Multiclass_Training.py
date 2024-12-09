@@ -9,7 +9,7 @@ Usage: python3 7_LightGBM_Multiclass_Training.py (-o multiclassova -c)
 """
 
 import argparse
-import pandas
+import pandas as pd
 import uproot
 import lightgbm as lgb
 import gc
@@ -47,63 +47,35 @@ if __name__ == "__main__":
 
     # define training variables
     training_variables = util.training_variables
-    variables = util.variables
 
     # load data
     print(colored(f'Loading data and initializing configrations', 'blue'))
-#     signal = root_pandas.read_root('BDTs/MC14ri_signal.root', columns=variables)
-#     bkg_BFake = root_pandas.read_root('BDTs/MC14ri_BFake.root', columns=variables)
-#     bkg_DTCFake = root_pandas.read_root('BDTs/MC14ri_DTCFake.root', columns=variables)
-#     bkg_continuum = root_pandas.read_root(['BDTs/MC14ri_qqbar.root',
-#                                            'BDTs/MC14ri_taupair.root'], columns=variables)
-    bkg_continuum = uproot.concatenate(['BDTs/MC14ri_qqbar.root:B0','BDTs/MC14ri_taupair.root:B0'], variables, library="pd")
-    with uproot.open('BDTs/MC14ri_signal.root:B0') as file:
-        signal = pandas.DataFrame(file.arrays(library="np"), columns=variables)
-    with uproot.open('BDTs/MC14ri_DTCFake.root:B0') as file:
-        bkg_DTCFake = pandas.DataFrame(file.arrays(library="np"), columns=variables)
-    with uproot.open('BDTs/MC14ri_BFake.root:B0') as file:
-        bkg_BFake = pandas.DataFrame(file.arrays(library="np"), columns=variables)
-
-    # define multiclass label
-    signal['Signal'] = 0
-    bkg_continuum['Signal'] = 1
-    bkg_DTCFake['Signal'] = 2
-    bkg_BFake['Signal'] = 3
-    signal['__weight__'] = 40
-    bkg_continuum['__weight__'] = 1
-    bkg_BFake['__weight__'] = 3
-
-    df = pandas.concat([signal,
-                        bkg_continuum,
-                        bkg_DTCFake.sample(n=3000000, random_state=0),
-                        bkg_BFake], ignore_index=True)
+    train_sub = uproot.concatenate([f'AutogluonModels/train.root:B0'],library="np")
+    df_train_sub = pd.DataFrame({k:v for k, v in train_sub.items() if k!='index'})
     
     # train test split
     print(colored(f'Splitting training test samples', 'green'))
-    train, test = train_test_split(df, test_size=0.2, random_state=0, shuffle=True, stratify=df['Signal'])
+    train_data = df_train_sub.sample(frac=0.8, random_state=0)
+    validation_data = df_train_sub.drop(train_data.index)
 
-    lgb_train = lgb.Dataset(data=train[training_variables], label=train['Signal'],
-                            weight=train['__weight__'],free_raw_data=False)
-    lgb_eval = lgb_train.create_valid(data=test[training_variables], label=test['Signal'],
-                            weight=test['__weight__'])
-
-    del train,signal,bkg_continuum,bkg_DTCFake,bkg_BFake, df
-    gc.collect()
-
+    lgb_train = lgb.Dataset(data=train_data[training_variables], label=train_data['target'],
+                            weight=train_data['__weight__'],free_raw_data=False)
+    lgb_eval = lgb_train.create_valid(data=validation_data[training_variables], label=validation_data['target'],
+                            weight=validation_data['__weight__'])
 
     params = {'boosting_type': 'gbdt',
               'objective': args.objective,
               'metric': ['multi_logloss','auc_mu'],
               'num_class':4,
-              'learning_rate': 0.4,
-              'num_leaves': 70,
-              'min_child_samples': 9000,
+              'learning_rate': 0.5,
+              'num_leaves': 49,
+              'min_child_samples': 30000,
               'bagging_fraction': 0.8,
-              'bagging_freq': 20,
+              'bagging_freq': 5,
               'feature_fraction': 1,
               'feature_pre_filter':False,
-              'lambda_l1': 8,
-              'lambda_l2': 4.626876468793015e-07,
+              'lambda_l1': 0.7,
+              'lambda_l2': 0.007,
               'max_bin': 255,
               "seed":0,
               'force_col_wise': True,
@@ -114,7 +86,7 @@ if __name__ == "__main__":
     eval_result1 = {}
     gbm = lgb.train(params, 
                     lgb_train,
-                    num_boost_round=40,
+                    num_boost_round=20,
                     init_model=f'BDTs/LightGBM/lgbm_{args.objective}.txt' if args.continue_train else None,
                     valid_sets=[lgb_train, lgb_eval],
                     valid_names=['train', 'test'], 
@@ -122,7 +94,7 @@ if __name__ == "__main__":
                     callbacks=[lgb.early_stopping(5),
                                lgb.record_evaluation(eval_result1)])
 
-    print(colored('Finished first 40 rounds...', 'blue'))
+    print(colored('Finished first 20 rounds...', 'blue'))
 
     # continue training with decay learning rates
     # reset_parameter callback accepts:
@@ -131,16 +103,16 @@ if __name__ == "__main__":
     eval_result2 = {}
     gbm = lgb.train(params,
                     lgb_train,
-                    num_boost_round=10,
+                    num_boost_round=20,
                     init_model=gbm, # or the file name path 'BDTs/LightGBM/lgbm_model.txt'
                     valid_sets=[lgb_train, lgb_eval],
                     valid_names=['train', 'test'],
                     callbacks=[lgb.reset_parameter(learning_rate=lambda iter: params['learning_rate'] * (0.99 ** iter)),
-                               lgb.reset_parameter(bagging_fraction=[0.7] * 5 + [0.6] * 5),
+#                                lgb.reset_parameter(bagging_fraction=[0.7] * 10 + [0.6] * 10),
                                lgb.early_stopping(2),
                                lgb.record_evaluation(eval_result2)])
 
-    print(colored('Finished the last 10 rounds with decay learning rates...', 'blue'))
+    print(colored('Finished the last 20 rounds with decay learning rates...', 'blue'))
     
 
     # save model and metric plots
@@ -168,11 +140,11 @@ if __name__ == "__main__":
     plt.savefig(save_path+f"_{params['metric'][1]}.png")
 
     # can only predict with the best iteration (or the saving iteration)
-    pred = gbm.predict(test[training_variables], num_iteration=gbm.best_iteration)
+    pred = gbm.predict(validation_data[training_variables], num_iteration=gbm.best_iteration)
 
     # eval with loaded model
     if args.objective=='multiclassova': # convert raw predictions into class probabilities using softmax function
         pred = np.exp(pred) / np.sum(np.exp(pred), axis=1, keepdims=True)
-    auc_loaded_model = roc_auc_score(test['Signal'], pred, 
+    auc_loaded_model = roc_auc_score(validation_data['target'], pred, 
                                      multi_class='ovo' if args.objective=='multiclass' else 'ovr')
     print(colored(f"The ROC AUC of trained model's prediction is: {auc_loaded_model}", 'magenta'))
