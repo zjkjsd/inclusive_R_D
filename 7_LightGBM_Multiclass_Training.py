@@ -86,15 +86,15 @@ if __name__ == "__main__":
     eval_result1 = {}
     gbm = lgb.train(params, 
                     lgb_train,
-                    num_boost_round=20,
+                    num_boost_round=30,
                     init_model=f'BDTs/LightGBM/lgbm_{args.objective}.txt' if args.continue_train else None,
                     valid_sets=[lgb_train, lgb_eval],
                     valid_names=['train', 'test'], 
                     keep_training_booster=True,
-                    callbacks=[lgb.early_stopping(5),
+                    callbacks=[lgb.early_stopping(3),
                                lgb.record_evaluation(eval_result1)])
 
-    print(colored('Finished first 20 rounds...', 'blue'))
+    print(colored('Finished first 30 rounds...', 'blue'))
 
     # continue training with decay learning rates
     # reset_parameter callback accepts:

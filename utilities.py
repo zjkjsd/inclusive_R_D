@@ -7,26 +7,17 @@ CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
                 "B0_KSFWV3",   "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
                 "B0_KSFWV7",   "B0_KSFWV8",     "B0_KSFWV9",     "B0_KSFWV10",
                 "B0_KSFWV13",  "B0_KSFWV14",    "B0_KSFWV15",    "B0_KSFWV16",
-                "B0_KSFWV17",  "B0_KSFWV18",]   # "B0_CC1",        "B0_CC2",
-#                 "B0_CC3",      "B0_CC4",        "B0_CC5",        "B0_CC6",
-#                 "B0_CC7",      "B0_CC8",        "B0_CC9",]
+                "B0_KSFWV17",  "B0_KSFWV18",]   
 #                 "B0_thrustBm", "B0_KSFWV1",     "B0_KSFWV2",     "B0_KSFWV11", 
 #                 "B0_KSFWV12" correlates with mm2 or p_D_l
 
 DTC_variables = ['D_vtxReChi2',                'D_A1FflightDistanceSig_IP',
                  'D_daughterInvM_1_2',         'D_daughterInvM_0_1',]
-#                  'D_K_kaonIDNN',               'D_K_pionIDNN',
-#                  'D_pi2_kaonIDNN',             'D_pi2_pionIDNN',
-#                  'D_pi1_kaonIDNN',             'D_pi1_pionIDNN',
 
-
-B_variables = ['B0_vtxReChi2',               'B0_flightDistanceSig',
-               'B0_vtxDDSig',
+B_variables = ['B0_vtxReChi2',               'B0_dr',   
+               'B0_CMS_cos_angle_0_1',       'B0_D_l_DisSig',
                'B0_roeMbc_my_mask',          'B0_roeDeltae_my_mask',
                'B0_roeEextra_my_mask',       'B0_TagVReChi2IP',]
-#                'B0_Lab5_weMissPTheta',       'B0_roeCharge_my_mask', 
-#                'B0_nROE_Tracks_my_mask',     'B0_nROE_Photons_my_mask',
-#                'B0_nROE_NeutralHadrons_my_mask',
 
 training_variables = CS_variables + DTC_variables + B_variables
 mva_variables = training_variables + spectators
@@ -34,18 +25,19 @@ mva_variables = training_variables + spectators
 analysis_variables=['__experiment__',     '__run__',       '__event__',      '__production__',
                     'B0_isContinuumEvent','B0_mcPDG',      'B0_mcErrors',    'B0_mcDaughter_0_PDG',
                     'B0_mcDaughter_1_PDG','B0_deltaE',     'B0_Mbc',         'B0_CMS2_weMbc', 
-                    'B0_CMS0_weDeltae',   'B0_dr',         'B0_angle_0_1',   'B0_CMS_angle_0_1',
-                    'B0_D_l_DisSig',      
+                    'B0_CMS0_weDeltae',   'B0_cos_angle_0_1',   
                     'D_mcErrors',         'D_genGMPDG',    'D_genMotherPDG', 'D_mcPDG',
-                    'D_BFM',              'D_M',           'D_p',            'D_dr',
+                    'D_BFM',              'D_M',           'D_p',            
                     'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_charge',
                     'D_K_cosTheta',       'D_K_p',         'D_K_PDG',        'D_K_mcPDG',
                     'ell_genMotherPDG',   'ell_mcPDG',     'ell_mcErrors',   'ell_genGMPDG',
                     'ell_p',              'ell_pValue',    'ell_charge',     'ell_theta',
                     'ell_PDG',            'ell_eID',
-                    'mode',               'p_D_l',         'B_D_ReChi2',
-                    'Ecms',               'ROEeidBDT',     'ROEmuidBDT',
+                    'mode',               'Ecms',          'p_D_l',          'B_D_ReChi2',
                     'sig_prob',           'fakeD_prob',    'fakeB_prob',     'continuum_prob',]
+#                  'D_K_kaonIDNN',        'D_K_pionIDNN',  'D_pi2_kaonIDNN', 'D_pi2_pionIDNN',
+#                  'D_pi1_kaonIDNN',      'D_pi1_pionIDNN',] 'B0_Lab5_weMissPTheta','B0_roeCharge_my_mask', 
+#                'B0_nROE_Tracks_my_mask',  'B0_nROE_Photons_my_mask',  'B0_nROE_NeutralHadrons_my_mask',
 
 all_relevant_variables = mva_variables + analysis_variables
 
@@ -72,28 +64,36 @@ import pandas as pd
 from autogluon.tabular import TabularPredictor
 import lightgbm as lgb
 
-def apply_mva_bcs(df, features, cut, library='ag', version='',model=None):
+def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vtx'):
     # load model
-    if library=='ag':
-        predictor = TabularPredictor.load(f"/home/belle/zhangboy/inclusive_R_D/AutogluonModels/{version}")
-        pred = predictor.predict_proba(df, model)
-        pred = pred.rename(columns={0: 'sig_prob', 
-                                    1: 'fakeD_prob',
-                                    2: 'fakeB_prob',
-                                    3: 'continuum_prob'})
+    if library is not None:
+        if library=='ag':
+            predictor = TabularPredictor.load(f"/home/belle/zhangboy/inclusive_R_D/AutogluonModels/{version}")
+            pred = predictor.predict_proba(df, model)
+            pred = pred.rename(columns={0: 'sig_prob', 
+                                        1: 'fakeD_prob',
+                                        2: 'combinatorial_prob',
+                                        3: 'continuum_prob'})
 
-    elif library=='lgbm':
-        predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
-        pred_array = predictor.predict(df[features], num_iteration=predictor.best_iteration)
-        pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
-                                                 'fakeB_prob','continuum_prob'])
-    # combine the predict result
-    pred['largest_prob'] = pred[['sig_prob','fakeD_prob','fakeB_prob','continuum_prob']].max(axis=1)
-    df_pred = pd.concat([df, pred], axis=1)
-    
-    # apply the MVA cut and BCS
-    df_cut=df_pred.query(cut)
-    df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['B_D_ReChi2'].idxmin()]
+        elif library=='lgbm':
+            predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
+            pred_array = predictor.predict(df[features], num_iteration=predictor.best_iteration)
+            pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
+                                                     'combinatorial_prob','continuum_prob'])
+        # combine the predict result
+        pred['largest_prob'] = pred[['sig_prob','fakeD_prob','combinatorial_prob','continuum_prob']].max(axis=1)
+        df_pred = pd.concat([df, pred], axis=1)
+
+        # apply the MVA cut and BCS
+        df_cut=df_pred.query(cut)
+        
+    else:
+        df_cut = df.query(cut)
+        
+    if bcs=='vtx':
+        df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['B_D_ReChi2'].idxmin()]
+    elif bcs=='mva':
+        df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['sig_prob'].idxmax()]
     
     return df_bestSelected
 
@@ -536,7 +536,8 @@ class PID_corrections:
                 "data_collection": "proc13+prompt",
                 "mc_collection": "MC15ri",
                 "track_variables": ["p", "cosTheta", "charge"],
-                "precut": "",
+                "apply_std_constraints": False,
+                "precut": "abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nPXDHits>0 and nCDCHits>0",
                 "binning": [np.linspace(0.2, 4, 11),
                            [-0.866, -0.682, -0.4226, -0.1045, 0.225, 0.5, 0.766, 0.8829, 0.9563],
                            [-2, 0, 2]]
@@ -555,7 +556,8 @@ class PID_corrections:
                 "data_collection": "proc13+prompt",
                 "mc_collection": "MC15ri",
                 "track_variables": ["p", "cosTheta", "charge"],
-                "precut": "",
+                "apply_std_constraints": False,
+                "precut": "abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nPXDHits>0 and nCDCHits>0",
                 "binning": [np.linspace(0.2, 4, 11),
                            [-0.866, -0.682, -0.4226, -0.1045, 0.225, 0.5, 0.766, 0.8829, 0.9563],
                            [-2, 0, 2]]
@@ -811,24 +813,34 @@ class fit_iminuit:
 # +
 ## Plotting
 import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 from matplotlib import gridspec
 
-# import mplhep as hep
-plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors)
+#################### define my colormap ################
+# Original tab20 colors
+original_colors = plt.cm.tab20.colors
+# New order for the colors
+new_order_indices = [0,1,2,3,4,5,12,13,8,18,7,6]
+# Create a new ordered list of colors
+reordered_colors = [original_colors[i] for i in new_order_indices]
+# Add the rest of the colors that are not explicitly ordered
+remaining_indices = [i for i in range(len(original_colors)) if i not in new_order_indices]
+reordered_colors.extend([original_colors[i] for i in remaining_indices])
+# Create a new colormap
+my_cmap = mcolors.ListedColormap(reordered_colors, name='reordered_tab20')
+
 
 class mpl:
     def __init__(self, mc_samples, data=None):
         self.samples = mc_samples
         self.data = data
         self.kwarg={'histtype':'step','lw':2}
-        self.colors = plt.cm.tab20.colors
+        self.colors = my_cmap.colors
         # sort the components to plot in order of fitted templates_project size
         self.sorted_order = ['bkg_FakeD',    'bkg_continuum',    'bkg_combinatorial',
-                             'bkg_singleBbkg','bkg_TDFl',        r'$D\ell\nu$_gap',
-                             r'$D^{\ast\ast}\ell\nu$',           r'$D^\ast\ell\nu$',
-                             r'$D\ell\nu$',                 r'$D^{\ast\ast}\tau\nu$',
+                             'bkg_TDFl',     'bkg_singleBbkg',   r'$D\ell\nu$_gap',
+                             r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
+                             r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
     
     def statistics(self, df=None, hist=None, count_only=False):
@@ -898,70 +910,155 @@ class mpl:
         ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko',label=label)
 
         return data_counts
+    
+#     def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, 
+#                  sig_mask=False, scale=1, name='Data', density=False):
+#         # Provide either variable or hist
+#         if variable:
+#             # Apply signal mask if requested
+#             if sig_mask:
+#                 s_mask = 'D_M<1.855 or D_M>1.885'
+#                 data = sub_df.query(s_mask) if sub_df is not None else self.data.query(s_mask)
+#             else:
+#                 data = sub_df if sub_df is not None else self.data
 
-    def plot_mc_1d(self, bins, ax, sub_df=None,sub_name=None, variable=None, cut=None,
-                   scale=1,correction=None,mask=[],legend_count=False):
+#             # Apply scaling if requested
+#             if scale:
+#                 data.loc[:, '__weight__'] = scale
+
+#             var_col = data.query(cut)[variable] if cut else data[variable]
+
+#             # Compute histogram with weights
+#             counts, _ = np.histogram(var_col, bins=bins,
+#                                      weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
+#             staterr_squared, _ = np.histogram(var_col, bins=bins,
+#                                               weights=(data.query(cut)['__weight__'] if cut else data['__weight__'])**2)
+#             staterror = np.sqrt(staterr_squared)
+
+#             # Normalize to density if requested
+#             if density:
+#                 bin_widths = np.diff(bins)
+#                 integral = np.sum(counts * bin_widths)
+#                 if integral > 0:
+#                     factor = 1.0 / integral
+#                     counts *= factor
+#                     staterror *= factor
+
+#             label = f'{name} \n{self.statistics(df=var_col)}\n cut_eff={(len(var_col)/len(data)):.3f}'
+#             data_counts = unp.uarray(counts, staterror)
+
+#         else:
+#             # If hist is provided directly (data_counts as unp.uarray), we handle it similarly
+#             data_counts = hist
+
+#             if density and hist is not None:
+#                 # Normalize the provided histogram to density if needed
+#                 counts = unp.nominal_values(data_counts)
+#                 staterror = unp.std_devs(data_counts)
+#                 bin_widths = np.diff(bins)
+#                 integral = np.sum(counts * bin_widths)
+#                 if integral > 0:
+#                     factor = 1.0 / integral
+#                     counts *= factor
+#                     staterror *= factor
+#                     data_counts = unp.uarray(counts, staterror)
+
+#             label = f'{name} \n{self.statistics(hist=[data_counts,bins])}'
+
+#         bin_centers = (bins[:-1] + bins[1:]) / 2
+#         data_val = unp.nominal_values(data_counts)
+#         data_err = unp.std_devs(data_counts)
+
+#         # Plot using errorbar to show data with uncertainties
+#         ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko', label=label)
+
+#         return data_counts
+
+
+    def plot_mc_1d(self, bins, ax, sub_df=None, sub_name=None, variable=None, cut=None,
+               scale=1, correction=None, mask=[], legend_count=False, density=False):
+
+        def normalize_to_density(counts, bins):
+            # If density is True, normalize the counts so that the integral is 1
+            if density:
+                bin_widths = np.diff(bins)
+                integral = np.sum(counts * bin_widths)
+                if integral > 0:
+                    counts = counts / integral
+            return counts
+
         if correction:
             mc_combined = pd.concat(
                 [df for name, df in self.samples.items() if name not in mask],
                 ignore_index=True)
             if scale:
                 mc_combined.loc[:, '__weight__'] = scale
-            var_col= mc_combined.query(cut)[variable] if cut else mc_combined[variable]
+            var_col = mc_combined.query(cut)[variable] if cut else mc_combined[variable]
             (stacked_counts, _) = np.histogram(var_col, bins=bins,
-                                    weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
-            ax.hist(bins[:-1], bins, weights=stacked_counts,histtype='step',color='black',
-                    label=f'Unweighted MC \n{self.statistics(df=var_col,count_only=legend_count)} \
-\n cut_eff={(len(var_col)/len(mc_combined)):.3f}')
-        
+                                   weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
+            stacked_counts = normalize_to_density(stacked_counts, bins)
+
+            ax.hist(bins[:-1], bins, weights=stacked_counts, histtype='step', color='black',
+                    label=(f'Unweighted MC \n{self.statistics(df=var_col,count_only=legend_count)} '
+                           f'\n cut_eff={(len(var_col)/len(mc_combined)):.3f}'))
+
         if sub_df is not None:
             sample = sub_df
             if scale:
                 sample.loc[:, '__weight__'] = scale
-            var_col= sample.query(cut)[variable] if cut else sample[variable]
+            var_col = sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins,
-                                      weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
+                                       weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
             (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                                    weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
+                                 weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
             staterror = np.sqrt(staterr_squared)
+
+            counts = normalize_to_density(counts, bins)  # Normalize if density=True
+
             ax.hist(bins[:-1], bins, weights=counts, **self.kwarg,
-                    label=f'{sub_name} \n{self.statistics(df=var_col,count_only=legend_count)} \
-\n cut_eff={(len(var_col)/len(sample)):.3f}')
+                    label=(f'{sub_name} \n{self.statistics(df=var_col,count_only=legend_count)} '
+                           f'\n cut_eff={(len(var_col)/len(sample)):.3f}'))
+
             sample_counts = unp.uarray(counts, staterror)
             bottom = sample_counts
-        
+
         else:
             bottom = unp.uarray(np.zeros(len(bins)-1), np.zeros(len(bins)-1))
-            for i,name in enumerate(self.sorted_order):
+            for i, name in enumerate(self.sorted_order):
                 sample = self.samples[name]
                 sample_size = len(sample.query(cut)) if cut else len(sample)
-                if sample_size==0 or name in mask:
+                if sample_size == 0 or name in mask:
                     continue
                 if scale:
                     sample.loc[:, '__weight__'] = scale
-                var_col= sample.query(cut)[variable] if cut else sample[variable]
+                var_col = sample.query(cut)[variable] if cut else sample[variable]
                 (counts, _) = np.histogram(var_col, bins=bins,
-                                          weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
+                                           weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
                 (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                                        weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
+                                    weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
                 staterror = np.sqrt(staterr_squared)
-                
+
+                # Apply correction if needed
                 if correction:
                     (counts, _) = np.histogram(var_col, bins=bins,
-                                    weights=scale*sample.query(cut)['PIDWeight'] if cut else scale*sample['PIDWeight'])
+                                               weights=scale * sample.query(cut)['PIDWeight'] if cut else scale * sample['PIDWeight'])
                     (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                            weights=(scale*sample.query(cut)['PIDWeight'])**2 if cut else (scale*sample['PIDWeight'])**2)
+                                                        weights=(scale * sample.query(cut)['PIDWeight'])**2 if cut else (scale * sample['PIDWeight'])**2)
                     staterror = np.sqrt(staterr_squared)
-    
+
+                # Normalize if density=True
+                counts = normalize_to_density(counts, bins)
+
                 b = unp.nominal_values(bottom)
-                ax.hist(bins[:-1], bins, weights=counts, bottom=b,color = self.colors[i],
-                        label=f'{name} \n{self.statistics(df=var_col,count_only=legend_count)} \
-\n cut_eff={(sample_size/len(sample)):.3f}')
-                
+                ax.hist(bins[:-1], bins, weights=counts, bottom=b, color=self.colors[i],
+                        label=(f'{name} \n{self.statistics(df=var_col,count_only=legend_count)} '
+                               f'\n cut_eff={(sample_size/len(sample)):.3f}'))
+
                 sample_counts = unp.uarray(counts, staterror)
                 bottom += sample_counts
 
         return bottom
+
     
     def plot_single_2d(self, df, variables, bins,fig, ax,name,hist=None,cut=None):
         # Compute 2d hist
@@ -1056,14 +1153,15 @@ class mpl:
         ax.set_ylabel('Ratios')
     
     def plot_data_mc_stacked(self,variable,bins,cut=None,scale=[1,1],
-                             data_sig_mask=False,
+                             data_sig_mask=False, density=False,
                              correction=False,mask=[],figsize=(8,5),
                              ratio=False, legend_nc=2,legend_fs=12):
         # Create a figure with two subplots: one for the histogram, one for the residual plot
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
             
         # MC
-        mc_counts = self.plot_mc_1d(bins=bins, variable=variable, ax=ax1, cut=cut, 
+        mc_counts = self.plot_mc_1d(bins=bins, variable=variable, ax=ax1, cut=cut,
+                                    density=density, 
                                     scale=scale[1],correction=correction,mask=mask)
         # Data
         if self.data is None:
@@ -1583,13 +1681,13 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         bin_width = np.diff(bins)
         bin_centers = (bins[:-1] + bins[1:]) /2
         # plot the templates with defined colors
-        c = plt.cm.tab20.colors
+        c = my_cmap.colors
         # sort the components to plot in order of fitted templates_project size
         sorted_order = ['bkg_FakeD',    'bkg_continuum',    'bkg_combinatorial',
-                        'bkg_singleBbkg','bkg_TDFl',        r'$D\ell\nu$_gap',
-                        r'$D^{\ast\ast}\ell\nu$',      r'$D^{\ast\ast}\tau\nu$',
+                        'bkg_TDFl',     'bkg_singleBbkg',   r'$D\ell\nu$_gap',
+                        r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
                         r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
-                        r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',]
+                        r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
         
         # plot data and fitted values
         data_val = unp.nominal_values(data_1d)
