@@ -64,7 +64,7 @@ import pandas as pd
 from autogluon.tabular import TabularPredictor
 import lightgbm as lgb
 
-def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vtx'):
+def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vtx',importance=False):
     # load model
     if library is not None:
         if library=='ag':
@@ -80,6 +80,8 @@ def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vt
             pred_array = predictor.predict(df[features], num_iteration=predictor.best_iteration)
             pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
                                                      'combinatorial_prob','continuum_prob'])
+            if importance: # feature importances
+                lgb.plot_importance(predictor, figsize=(18,20))
         # combine the predict result
         pred['largest_prob'] = pred[['sig_prob','fakeD_prob','combinatorial_prob','continuum_prob']].max(axis=1)
         df_pred = pd.concat([df, pred], axis=1)
@@ -820,7 +822,7 @@ from matplotlib import gridspec
 # Original tab20 colors
 original_colors = plt.cm.tab20.colors
 # New order for the colors
-new_order_indices = [0,1,2,3,4,5,12,13,8,18,7,6]
+new_order_indices = [0,1,2,3,10,4,5,12,13,8,18,7,6]
 # Create a new ordered list of colors
 reordered_colors = [original_colors[i] for i in new_order_indices]
 # Add the rest of the colors that are not explicitly ordered
@@ -838,7 +840,8 @@ class mpl:
         self.colors = my_cmap.colors
         # sort the components to plot in order of fitted templates_project size
         self.sorted_order = ['bkg_FakeD',    'bkg_continuum',    'bkg_combinatorial',
-                             'bkg_TDFl',     'bkg_singleBbkg',   r'$D\ell\nu$_gap',
+                             'bkg_TDFl',     'bkg_fakeTracks',
+                             'bkg_singleBbkg',                   r'$D\ell\nu$_gap',
                              r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
@@ -873,9 +876,9 @@ class mpl:
         # Plotting the pie chart
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
         sizes = [len(self.samples[comp].query(cut)) for comp in self.sorted_order]
-        ax1.pie(sizes, labels=self.sorted_order, autopct='%1.1f%%', startangle=140)
+        ax1.pie(sizes, labels=self.sorted_order, autopct='%1.1f%%', startangle=140, colors=self.colors)
         ax1.set_title(f'All components in the region {cut=}')
-        ax2.pie(sizes[:5], labels=self.sorted_order[:5], autopct='%1.1f%%', startangle=140)
+        ax2.pie(sizes[:6], labels=self.sorted_order[:6], autopct='%1.1f%%', startangle=140, colors=self.colors)
         ax2.set_title(f'BKG components in the region {cut=}')
         plt.tight_layout()
         plt.show()
@@ -1084,7 +1087,7 @@ class mpl:
 
         # 2D Histogram
         im = ax.imshow(counts.T.round(0), origin='lower', aspect='auto', 
-                         cmap='rainbow', norm=colors.LogNorm(),
+                         cmap='rainbow', norm=mcolors.LogNorm(),
                          extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
         fig.colorbar(im, ax=ax)
         ax.set_xlabel('$M_{miss}^2$')
@@ -1112,10 +1115,15 @@ class mpl:
             # Compute chi-squared excluding those points
             chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
             ndf = len(res_val[mask])
+            
+            if ndf==0:
+                label = 'reChi2 not calculated'
+            else:
+                label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}'
 
             # Plot the residuals in ax
             ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',
-                       label=f'rechi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}')
+                       label=label)
             # Add a horizontal line at y=0 for reference
             ax.axhline(0, color='gray', linestyle='--')
             # Label the residual plot
@@ -1131,10 +1139,14 @@ class mpl:
             chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
             ndf = len(res_val[mask])
             
+            if ndf==0:
+                label = 'reChi2 not calculated'
+            else:
+                label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}'
+                
             # Plot the residuals in ax
             self.plot_single_2d(bins=bins, df=None, variables=None,
-                                hist=res_val, fig=fig, ax=ax,
-                        name=f'rechi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}')
+                                hist=res_val, fig=fig, ax=ax,name=label)
         
     def plot_ratios(self, bins, data, model, ax):
         # Compute ratios (Data / Model) and their errors
@@ -1486,6 +1498,50 @@ class mpl:
         plt.xlim(0,1)
         plt.ylim(bottom=0)
         plt.show()
+        
+        
+    def plot_all_2Dhist(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
+        variable_x, variable_y = var_list
+        xedges, yedges = bin_list
+       
+        # create a mask
+        mask_arr = np.ones((len(yedges)-1,len(xedges)-1)) # switch the shape for x,y as plotting counts.T
+        if mask:
+            # apply mask at mm2<1.6 and p_D_l>1 
+            mm2_split = mask[0]
+            pDl_split = mask[1]
+            mm2_split_index, = np.asarray(np.isclose(xedges,mm2_split,atol=0.2)).nonzero()
+            pDl_split_index, = np.asarray(np.isclose(yedges,pDl_split,atol=0.2)).nonzero()
+            mask_arr[:,mm2_split_index[0]:] = mask[2] # select the small mm2
+            mask_arr[:pDl_split_index[0],:] = mask[2] # select the large pDl
+            
+        fig = plt.figure(figsize=[16,20])
+        for i, name in enumerate(self.sorted_order):
+            sample = self.samples[name]
+            sample_size = len(sample.query(cut)) if cut else len(sample)
+            if sample_size==0:
+                continue
+            ax = fig.add_subplot(5,3,i+1)
+            (counts, xe, ye) = np.histogram2d(
+                            sample.query(cut)[variable_x] if cut else sample[variable_x], 
+                            sample.query(cut)[variable_y] if cut else sample[variable_y],
+                            bins=[xedges, yedges])
+
+            im = ax.imshow(counts.T, origin='lower', aspect='auto', 
+                     cmap='rainbow', norm=mcolors.LogNorm(),alpha=mask_arr,
+                     extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+            fig.colorbar(im, ax=ax)
+#             X, Y = np.meshgrid(xedges, yedges)
+#             im=ax.pcolormesh(X, Y, counts, cmap='rainbow', norm=mcolors.LogNorm(), alpha=mask_arr)
+            ax.grid()
+            ax.set_xlim(xedges.min(),xedges.max())
+            ax.set_ylim(yedges.min(),yedges.max())
+            ax.set_title(name,fontsize=14)
+
+        fig.suptitle(f'Generic MC 200/fb ({cut=})', y=0.92, fontsize=18)
+        fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
+        fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.08,fontsize=18)
+        
 
     def plot_data_mc_all(self, bins, variables, cut=None, scale=[1,1], figsize=(30, 100), fontsize=12):
         fig = plt.figure(figsize=figsize)
@@ -1547,47 +1603,6 @@ class mpl:
         axs.grid()
         plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
         
-
-    def plot_all_2Dhist(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
-        variable_x, variable_y = var_list
-        xedges, yedges = bin_list
-       
-        # create a mask
-        mask_arr = np.ones((len(yedges)-1,len(xedges)-1)) # switch the shape for x,y as plotting counts.T
-        if mask:
-            # apply mask at mm2<1.6 and p_D_l>1 
-            mm2_split = mask[0]
-            pDl_split = mask[1]
-            mm2_split_index, = np.asarray(np.isclose(xedges,mm2_split,atol=0.2)).nonzero()
-            pDl_split_index, = np.asarray(np.isclose(yedges,pDl_split,atol=0.2)).nonzero()
-            mask_arr[:,mm2_split_index[0]:] = mask[2] # select the small mm2
-            mask_arr[:pDl_split_index[0],:] = mask[2] # select the large pDl
-            
-        fig = plt.figure(figsize=[16,20])
-        for i, (name, sample) in enumerate(self.samples.items()):
-            sample_size = len(sample.query(cut)) if cut else len(sample)
-            if sample_size==0:
-                continue
-            ax = fig.add_subplot(5,3,i+1)
-            (counts, xe, ye) = np.histogram2d(
-                            sample.query(cut)[variable_x] if cut else sample[variable_x], 
-                            sample.query(cut)[variable_y] if cut else sample[variable_y],
-                            bins=[xedges, yedges])
-
-            im = ax.imshow(counts.T, origin='lower', aspect='auto', 
-                     cmap='rainbow', norm=colors.LogNorm(),alpha=mask_arr,
-                     extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
-            fig.colorbar(im, ax=ax)
-#             X, Y = np.meshgrid(xedges, yedges)
-#             im=ax.pcolormesh(X, Y, counts, cmap='rainbow', norm=colors.LogNorm(), alpha=mask_arr)
-            ax.grid()
-            ax.set_xlim(xedges.min(),xedges.max())
-            ax.set_ylim(yedges.min(),yedges.max())
-            ax.set_title(name,fontsize=14)
-
-        fig.suptitle(f'Signal MC ({cut=})', y=0.95, fontsize=18)
-        fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
-        fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.05,fontsize=18)
         
     def plot_2Dhist_and_projections(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None):
         variable_x, variable_y = var_list
@@ -1611,7 +1626,7 @@ class mpl:
 
             # 2D Histogram
             im = ax[0].imshow(counts.T, origin='lower', aspect='auto', 
-                             cmap='rainbow', norm=colors.LogNorm(),
+                             cmap='rainbow', norm=mcolors.LogNorm(),
                              extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
             fig.colorbar(im, ax=ax[0])
             ax[0].set_title(name)
@@ -1643,7 +1658,7 @@ class mpl:
             ax = fig.add_subplot(17,4,i+1)
             ax.hist2d(x=df.query(cut)[variables[i]] if cut else df[variables[i]], 
                       y=df.query(cut)[target] if cut else df[target], 
-                      bins=30,cmap='rainbow', norm=colors.LogNorm())
+                      bins=30,cmap='rainbow', norm=mcolors.LogNorm())
             ax.set_ylabel(target,fontsize=30)
             ax.set_xlabel(variables[i],fontsize=30)
             ax.grid()

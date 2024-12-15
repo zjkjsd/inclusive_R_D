@@ -48,5 +48,6 @@ if __name__ == "__main__":
     # Define and fit the AutoGluon classifier
     ag = TabularPredictor(label='target', eval_metric='f1_macro',sample_weight='balance_weight')
     predictor = ag.fit(df_train_sub, presets=args.presets, time_limit=args.time_limit,save_bag_folds=True,
+                       infer_limit=0.05, infer_limit_batch_size=10000,
 #                        hyperparameters={"GBM": ['GBMLarge']},
-                       excluded_model_types=['FASTAI','RF','XT','KNN','CAT','XGB','NN_TORCH'])
+                       excluded_model_types=['FASTAI','RF','XT','KNN','CAT','XGB'])
