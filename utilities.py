@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-# +
-# define BDT training variables
+# region
+############################## define relevant variables ########################
+
 spectators = ['__weight__', 'D_CMS_p', 'ell_CMS_p', 'B0_CMS3_weMissM2', 'B0_CMS3_weQ2lnuSimple']
 
 CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
@@ -41,24 +42,15 @@ analysis_variables=['__experiment__',     '__run__',       '__event__',      '__
 
 all_relevant_variables = mva_variables + analysis_variables
 
-
-# DecayMode = {'bkg_fakeD':0,           'bkg_continuum':1,    'bkg_combinatorial':2,
-#              'bkg_Odecay':3,          'bkg_fakeTC':4,       r'$D\tau\nu$':5,
-#              r'$D^\ast\tau\nu$':6,    r'$D\ell\nu$':7,      r'$D^\ast\ell\nu$':8,
-#              r'$D^{\ast\ast}\tau\nu$_mixed':9,              r'$D^{\ast\ast}\tau\nu$_charged':10,
-#              r'res_$D^{\ast\ast}\ell\nu$_mixed':11,         r'nonres_$D^{\ast\ast}\ell\nu$_mixed':12,
-#              r'gap_$D^{\ast\ast}\ell\nu$_mixed':13,         r'res_$D^{\ast\ast}\ell\nu$_charged':14,
-#              r'nonres_$D^{\ast\ast}\ell\nu$_charged':15,    'bkg_others':16}
-
-DecayMode_new = {'bkg_fakeTracks':0,         'bkg_FakeD':1,           'bkg_TDFl':2,
+DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl':2,
                  'bkg_continuum':3,          'bkg_combinatorial':4,   'bkg_singleBbkg':5,
                  'bkg_other_TDTl':6,         'bkg_other_signal':7,
                  r'$D\tau\nu$':8,            r'$D^\ast\tau\nu$':9,    r'$D\ell\nu$':10,
                  r'$D^\ast\ell\nu$':11,                r'$D^{\ast\ast}\tau\nu$':12,
                  r'$D^{\ast\ast}\ell\nu$':13,          r'$D\ell\nu$_gap':14}
 
-# +
-## dataframe samples
+
+################################ dataframe samples ###########################
 import numpy as np
 import pandas as pd
 from autogluon.tabular import TabularPredictor
@@ -98,7 +90,6 @@ def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vt
         df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['sig_prob'].idxmax()]
     
     return df_bestSelected
-
 
 def get_dataframe_samples_new(df, mode, template=True) -> dict:
     samples = {}
@@ -146,10 +137,10 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
     ######################### Apply selection ###########################
     
     # Fake bkg components
-    bkg_FakeD = df.query(FD).copy()
+    bkg_fakeD = df.query(FD).copy()
     bkg_TDFl = df.query(TDFl).copy()
     bkg_fakeTracks = df.query(fakeTracks).copy()
-    samples['bkg_FakeD'] = bkg_FakeD
+    samples['bkg_fakeD'] = bkg_fakeD
     samples['bkg_TDFl'] = bkg_TDFl
     samples['bkg_fakeTracks'] = bkg_fakeTracks
     
@@ -203,217 +194,6 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
     return samples
 
 
-# +
-# Function to rebin a histogram
-def rebin_histogram(counts, bin_edges, threshold):
-    new_counts = []
-    new_edges = [bin_edges[0]]
-    
-    i = 0
-    while i < len(counts):
-        bin_count = counts[i]
-        start_edge = bin_edges[i]
-        end_edge = bin_edges[i + 1]
-        
-        # Merge bins until bin_count is above the threshold
-        while bin_count < threshold and i < len(counts) - 1:
-            i += 1
-            bin_count += counts[i]
-            end_edge = bin_edges[i + 1]
-        
-        new_counts.append(bin_count)
-        new_edges.append(end_edge)
-        
-        i += 1
-    
-    return np.array(new_counts), np.array(new_edges)
-
-# new_counts, new_bin_edges = rebin_histogram(counts, bin_edges, threshold)
-
-# Function to rebin another histogram using new bin edges
-def rebin_histogram_with_new_edges_and_uncertainties(counts, uncertainties, old_bin_edges, new_bin_edges):
-    # Rebin the counts using np.histogram
-    new_counts, _ = np.histogram(np.repeat(old_bin_edges[:-1], counts), bins=new_bin_edges)
-    
-    # Initialize new uncertainties array
-    new_uncertainties = np.zeros_like(new_counts, dtype=float)
-    
-    # Combine uncertainties in the new bins
-    for i in range(len(old_bin_edges) - 1):
-        bin_value = old_bin_edges[i]
-        new_bin_index = np.digitize(bin_value, new_bin_edges) - 1
-        new_uncertainties[new_bin_index] += uncertainties[i] ** 2  # Sum uncertainties in quadrature
-
-    # Take the square root of the sum of squares
-    new_uncertainties = np.sqrt(new_uncertainties)
-    return new_counts, new_uncertainties
-
-# new_counts_B, new_uncertainties_B = rebin_histogram_with_new_edges_and_uncertainties(counts_B, uncertainties_B, bin_edges_B, new_bin_edges_A)
-
-def create_templates(samples:dict, bins:list, scale_lumi=False,
-                     variables=['B0_CMS3_weMissM2','p_D_l'],
-                     bin_threshold=1, merge_threshold=10,
-                     sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal']):
-    #################### Create template 2d histograms ################
-    histograms = {}
-    staterr = {}
-    for name, df in samples.items():
-        if name in sample_to_exclude:
-            continue
-
-        (counts, xedges, yedges) = np.histogram2d(df[variables[0]], 
-                                                  df[variables[1]],
-                                                  bins=bins,
-                                                  weights=df['__weight__'])
-
-        (staterr_squared, xedges, yedges) = np.histogram2d(df[variables[0]], 
-                                                           df[variables[1]],
-                                                           bins=bins,
-                                                           weights=df['__weight__']**2)
-        histograms[name] = counts.T
-        if scale_lumi:
-            staterr[name] = np.sqrt(counts.T)
-        else:
-            staterr[name] = np.sqrt(staterr_squared.T)
-
-    ################### Trimming and flattening ###############
-    # remove bins with count smaller than bin_threshold
-    indices_threshold = np.where(np.sum(list(histograms.values()),axis=0) >= bin_threshold)
-    template_flat = {name:t[indices_threshold].tolist() for name,t in histograms.items()}
-    staterr_flat = {name:se[indices_threshold].tolist() for name,se in staterr.items()}
-
-    asimov_data = np.sum(list(template_flat.values()),axis=0).tolist()
-
-    ################## Create a new set of templates whose adjacent bins are merged if <10 counts
-
-    dummy_bin_edges = np.arange(len(asimov_data)+1)
-    new_counts, new_dummy_bin_edges = rebin_histogram(counts=asimov_data, 
-                                                      bin_edges=dummy_bin_edges, 
-                                                      threshold=merge_threshold)
-    print(f'original template length = {len(asimov_data)}')
-    print(f'new template length = {len(new_counts)}')
-
-    template_flat_merged = {}
-    staterr_flat_merged = {}
-    for name, t in template_flat.items():
-        new_c, new_err = rebin_histogram_with_new_edges_and_uncertainties(counts=t,
-                                                                        uncertainties=staterr_flat[name], 
-                                                                        old_bin_edges=dummy_bin_edges,
-                                                                        new_bin_edges=new_dummy_bin_edges)
-        template_flat_merged[name] = new_c.tolist()
-        staterr_flat_merged[name] = new_err.tolist()
-
-    asimov_data_merged = np.sum(list(template_flat_merged.values()),axis=0).tolist()
-    
-    return indices_threshold,(template_flat,staterr_flat,asimov_data),(template_flat_merged,staterr_flat_merged,asimov_data_merged)
-
-def create_2d_template(template_flat: dict, staterror_flat: dict, data_flat,indices_threshold: tuple, bins: list):
-    """
-    Convert a flattened 1D template back to a 2D histogram based on provided binning.
-
-    Parameters:
-        template_flat (dict): Flattened 1D templates for different samples.
-        indices_threshold (tuple): The indices that correspond to the bins retained after applying the threshold.
-        bins (list): The bin edges for the 2D histogram.
-
-    Returns:
-        histograms (dict): 2D histograms for each sample.
-        staterr (dict): Statistical uncertainties for each 2D histogram.
-    """
-    histograms = {}
-    staterr = {}
-    
-    xbins, ybins = bins
-    for name, flat_data in template_flat.items():
-        # Initialize an empty 2D array for histogram and statistical error
-        hist_2d = np.zeros((len(xbins) - 1, len(ybins) - 1)).T
-        # Assign the flattened data back into the appropriate indices
-        hist_2d[indices_threshold] = flat_data
-        histograms[name] = hist_2d
-        
-    for name, flat_stat in staterror_flat.items():
-        # Initialize an empty 2D array for histogram and statistical error
-        staterr_2d = np.zeros((len(xbins) - 1, len(ybins) - 1)).T
-        # Assign the flattened data back into the appropriate indices
-        staterr_2d[indices_threshold] = flat_stat
-        staterr[name] = staterr_2d
-        
-    data_2d = np.zeros((len(xbins) - 1, len(ybins) - 1)).T
-    data_2d[indices_threshold] = data_flat
-    
-    return histograms, staterr, data_2d
-
-def update_workspace(workspace: dict, temp_asimov_sets: list, staterror: bool = True) -> dict:
-    names = list(temp_asimov_sets[0][0].keys())
-    
-    for ch_index in range(len(temp_asimov_sets)):
-        template_flat = temp_asimov_sets[ch_index][0]
-        staterr_flat = temp_asimov_sets[ch_index][1]
-        asimov_data = temp_asimov_sets[ch_index][2]
-        
-        # Update the number of samples to match the new names
-        current_samples = workspace['channels'][ch_index]['samples']
-        if len(current_samples) < len(names):
-            # Add missing samples
-            for _ in range(len(names) - len(current_samples)):
-                current_samples.append({'name': '', 'data': [], 'modifiers': []})
-        elif len(current_samples) > len(names):
-            # Remove extra samples
-            workspace['channels'][ch_index]['samples'] = current_samples[:len(names)]
-        
-        # Update samples
-        for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
-            sample['name'] = names[samp_index]
-            sample['data'] = template_flat[names[samp_index]]
-            
-            if 'staterror' not in [m['type'] for m in sample['modifiers']] and staterror:
-                sample['modifiers'].append({'type': 'staterror'})
-            
-            for mod_index, m in enumerate(sample['modifiers']):
-                if m['type'] == 'staterror':
-                    if staterror:
-                        m['data'] = staterr_flat[names[samp_index]]
-                        m['name'] = f'staterror_{ch_index}_channel'
-                    else:
-                        # Safely remove the 'staterror' modifier if not needed
-                        sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'staterror']
-                elif m['type'] == "normfactor":
-                    m['name'] = names[samp_index] + '_norm'
-                else:
-                    print(m['type'], 'is turned on')
-                    
-        workspace['observations'][ch_index]['data'] = asimov_data
-
-    # Update measurement parameters
-    current_parameters = workspace["measurements"][0]["config"]["parameters"]
-    if len(current_parameters) < len(names):
-        # Add missing parameters
-        for _ in range(len(names) - len(current_parameters)):
-            current_parameters.append({'name': '', 'bounds': [[0,2]], 'inits': [1]})
-    elif len(current_parameters) > len(names):
-        # Remove extra parameters
-        workspace["measurements"][0]["config"]["parameters"] = current_parameters[:len(names)]
-    for i, par in enumerate(workspace["measurements"][0]["config"]["parameters"]):
-        par['name'] = names[i] + '_norm'
-        if par['name'].startswith('bkg'):
-            par['bounds'] = [[0,2]]
-        else:
-            par['bounds'] = [[-5,5]]
-    
-    workspace["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
-
-    return workspace
-
-# for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
-#     sample = {'name': 'new_sample'}  # This would not update the list in `workspace`
-# Using sample as a reference to the list element is perfectly fine and will not cause bugs 
-# as long as you're modifying the contents of sample (like updating values or appending to a list). 
-# However, be cautious when assigning a completely new value to sample itself, 
-# as that won't update the original list.
-
-
-
-# +
 # Function to check for duplicate entries in a dictionary of Pandas DataFrames
 def check_duplicate_entries(data_dict):
     # Create an empty list to store duplicate pairs
@@ -437,46 +217,664 @@ def check_duplicate_entries(data_dict):
             print(pair)
     else:
         print("No duplicate pairs found.")
+        
+        
+############################### Templates and workspace ######################
+from uncertainties import ufloat, correlated_values
+import uncertainties.unumpy as unp
+from uncertainties import UFloat
+import copy
+from termcolor import colored
+
+def rebin_histogram(counts, threshold):
+    """
+    Rebins a histogram, merging bins until the count exceeds a threshold.
+    Handles uncertainties if `counts` is a uarray.
     
-def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
-    sig = pd.concat(sig_data)
-    bkg = pd.concat(bkg_data)
-    sig_tot = len(sig)
-    bkg_tot = len(bkg)
-    BDT_FOM = []
-    BDT_FOM_err = []
-    BDT_sigEff = []
-    BDT_sigEff_err = []
-    BDT_bkgEff = []
-    BDT_bkgEff_err = []
-    for i in test_points[0]:
-        for j in test_points[1]:
-            for k in test_points[2]:
-                nsig = len(sig.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
-                nbkg = len(bkg.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
-                tot = nsig+nbkg
-                tot_err = np.sqrt(tot)
-                FOM = nsig / tot_err # s / √(s+b)
-                FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
+    Parameters:
+        counts (array-like or unp.uarray): Counts with or without uncertainties.
+        threshold (float): Minimum count threshold to stop merging bins.
+        
+    Returns:
+        new_counts (array-like or unp.uarray): Rebinned counts (with propagated uncertainties if input has uncertainties).
+        new_bin_edges (array-like): New bin edges after rebinning.
+        old_bin_edges (array-like): The original dummy bin edges (0 to len(counts)).
+    """
+    # Generate dummy bin edges
+    dummy_bin_edges = np.arange(len(counts) + 1)
 
-                BDT_FOM.append(round(FOM,2))
-                BDT_FOM_err.append(round(FOM_err,2))
+    # Check if counts have uncertainties
+    has_uncertainties = isinstance(counts[0], UFloat)
 
-                sigEff = nsig / sig_tot
-                sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
-                bkgEff = nbkg / bkg_tot
-                bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
-                BDT_sigEff.append(round(sigEff,2))
-                BDT_sigEff_err.append(round(sigEff_err,2))
-                BDT_bkgEff.append(round(bkgEff,2))
-                BDT_bkgEff_err.append(round(bkgEff_err,2))
-    print(f'{BDT_FOM=}')
-    print(f'{BDT_sigEff=}')
-    print(f'{BDT_bkgEff=}')
+    # Extract nominal values and uncertainties if necessary
+    if has_uncertainties:
+        counts_nominal = unp.nominal_values(counts)
+        counts_uncertainties_squared = unp.std_devs(counts) ** 2
+    else:
+        counts_nominal = counts
+        counts_uncertainties_squared = None  # No uncertainties in this case
+
+    new_counts_nominal = []
+    new_uncertainties_squared = []
+    new_edges = [dummy_bin_edges[0]]
+    
+    i = 0
+    while i < len(counts_nominal):
+        bin_count_nominal = counts_nominal[i]
+        bin_uncertainty_squared = (
+            counts_uncertainties_squared[i] if counts_uncertainties_squared is not None else 0
+        )
+        start_edge = dummy_bin_edges[i]
+        end_edge = dummy_bin_edges[i + 1]
+        
+        # Merge bins until bin_count is above the threshold
+        while bin_count_nominal < threshold and i < len(counts_nominal) - 1:
+            i += 1
+            bin_count_nominal += counts_nominal[i]
+            if counts_uncertainties_squared is not None:
+                bin_uncertainty_squared += counts_uncertainties_squared[i]
+            end_edge = dummy_bin_edges[i + 1]
+        
+        new_counts_nominal.append(bin_count_nominal)
+        if counts_uncertainties_squared is not None:
+            new_uncertainties_squared.append(bin_uncertainty_squared)
+        new_edges.append(end_edge)
+        
+        i += 1
+
+    # Combine nominal values and uncertainties into uarray if applicable
+    if has_uncertainties:
+        new_counts = unp.uarray(
+            new_counts_nominal, np.sqrt(new_uncertainties_squared)
+        )
+    else:
+        new_counts = np.array(new_counts_nominal)
+    
+    return new_counts, np.array(new_edges), dummy_bin_edges
+
+# Function to rebin another histogram using new bin edges
+def rebin_histogram_with_new_edges(counts_with_uncertainties, old_bin_edges, new_bin_edges):
+    """
+    Rebins a histogram with counts and uncertainties grouped using unp.uarray.
+
+    Parameters:
+        counts_with_uncertainties (unp.uarray): Counts with uncertainties as a single uarray.
+        old_bin_edges (array-like): Original bin edges.
+        new_bin_edges (array-like): New bin edges for rebinning.
+
+    Returns:
+        new_counts_with_uncertainties (unp.uarray): Rebinned counts with uncertainties.
+    """
+    # Extract nominal values (counts) and standard deviations (uncertainties)
+    counts = unp.nominal_values(counts_with_uncertainties).round().astype(int)
+    uncertainties = unp.std_devs(counts_with_uncertainties)
+
+    # Repeat the bin centers based on counts for rebinning
+    new_counts, _ = np.histogram(
+        np.repeat(old_bin_edges[:-1], counts), bins=new_bin_edges
+    )
+    
+    # Initialize new uncertainties (sum in quadrature)
+    new_uncertainties_squared = np.zeros_like(new_counts, dtype=float)
+
+    # Combine uncertainties for the new bins
+    for i in range(len(old_bin_edges) - 1):
+        bin_value = old_bin_edges[i]
+        new_bin_index = np.digitize(bin_value, new_bin_edges) - 1  # Find new bin index
+        new_uncertainties_squared[new_bin_index] += uncertainties[i] ** 2  # Sum uncertainties in quadrature
+
+    # Take square root of summed uncertainties square
+    new_uncertainties = np.sqrt(new_uncertainties_squared)
+
+    # Combine counts and uncertainties into a single uarray
+    new_counts_with_uncertainties = unp.uarray(new_counts, new_uncertainties)
+    return new_counts_with_uncertainties
 
 
-# +
-## PID corrections
+def create_templates(samples:dict, bins:list, scale_lumi=1,
+                     variables=['B0_CMS3_weMissM2','p_D_l'],
+                     bin_threshold=1, merge_threshold=10,
+                     fakeD_from_sideband=False, data=None,
+                     sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal']):
+    """
+    Creates 2D templates with uncertainties from input samples and applies rebinning and flattening.
+
+    Parameters:
+        samples (dict): Dictionary of data samples, where keys are sample names and values are pandas DataFrames.
+        bins (list): List defining the bin edges for the 2D histogram.
+        scale_lumi (float, optional): Scaling factor for luminosity. Default is 1.
+        variables (list, optional): List of two variable names to use for the 2D histogram. Default is ['B0_CMS3_weMissM2', 'p_D_l'].
+        bin_threshold (float, optional): Minimum count threshold for trimming bins. Default is 1.
+        merge_threshold (float, optional): Minimum count threshold for merging adjacent bins. Default is 10.
+        fakeD_from_sideband (bool, optional): Whether to include fakeD templates derived from D_M sidebands. Default is False.
+        sample_to_exclude (list, optional): List of sample names to exclude from template creation. Default includes specific background samples.
+
+    Returns:
+        tuple:
+            - indices_threshold (np.ndarray): Indices of bins that pass the count threshold.
+            - temp_sig (tuple): Tuple containing:
+                - template_flat (dict): Flattened templates with keys as sample names and values as uarray of counts and uncertainties.
+                - asimov_data (unp.uarray): Summed template representing the Asimov dataset (counts and uncertainties).
+            - temp_merged (tuple): Tuple containing:
+                - template_flat_merged (dict): Re-binned templates with merged bins based on `merge_threshold`.
+                - asimov_data_merged (unp.uarray): Merged Asimov dataset.
+            - temp_with_sb (tuple): Tuple containing:
+                - template_flat_with_sb (dict): Templates including fakeD derived from sidebands (if applicable).
+                - asimov_data_with_sb (unp.uarray): Asimov dataset including fakeD contributions.
+
+    Notes:
+        - Templates are represented as `unp.uarray` objects that encapsulate counts and uncertainties.
+        - Bins with counts below `bin_threshold` are trimmed.
+        - Adjacent bins with counts below `merge_threshold` are merged.
+        - If `fakeD_from_sideband` is True, additional templates are created using sidebands of the D_M variable.
+    """
+
+    def round_uarray(uarray):
+        """Rounds a uarray to 4 decimal places."""
+        nominal = np.round(unp.nominal_values(uarray), 4)
+        std_dev = np.round(unp.std_devs(uarray), 4)
+        return unp.uarray(nominal, std_dev)
+
+    #################### Create template 2d histograms with uncertainties ################
+    histograms = {}
+    for name, df_sig_sb in samples.items():
+        if name in sample_to_exclude:
+            continue
+
+        df_sig_sb = df_sig_sb.copy()
+        df = df_sig_sb.query('1.855<D_M<1.885')
+
+        # Compute weighted histogram
+        counts, xedges, yedges = np.histogram2d(
+            df[variables[0]], df[variables[1]],
+            bins=bins, weights=df['__weight__'])
+
+        # Compute sum of weight^2 for uncertainties
+        staterr_squared, _, _ = np.histogram2d(
+            df[variables[0]], df[variables[1]],
+            bins=bins, weights=(df['__weight__']**2))
+
+        # Store as uarray: Transpose to have consistent shape (y,x) if needed
+        histograms[name] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+
+    ################### Trimming and flattening ###############
+    # Determine which bins pass the threshold based on sum of all templates
+    all_2dHists_sum = np.sum(list(histograms.values()), axis=0)  # uarray sum
+    indices_threshold = np.where(unp.nominal_values(all_2dHists_sum) >= bin_threshold)
+
+    # Flatten the templates after cutting
+    template_flat = {name: round_uarray(hist[indices_threshold]) for name, hist in histograms.items()}
+    # Asimov data is the sum of all templates
+    asimov_data = round_uarray(np.sum(list(template_flat.values()), axis=0))  # uarray
+
+    #################### Create additional templates for fakeD from sidebands ###################
+    if fakeD_from_sideband:
+        print('Creating the fakeD template from the sidebands')
+        if data is None: # MC
+            df_all = pd.concat(samples.values(), ignore_index=True)
+        else:
+            df_all = data
+        df_sidebands = df_all.query('D_M<1.83 or 1.91<D_M').copy()
+
+        # Compute the sideband histogram and assume poisson error
+        bin_D_M = np.linspace(1.79,1.95,40)
+        D_M_s2, _ = np.histogram(df_sidebands['D_M'], bins=bin_D_M)
+        D_M_side_count = round_uarray(unp.uarray(D_M_s2, np.sqrt(D_M_s2)))
+
+        # Fit a polynomial to the D_M sidebands
+        fitter = fit_iminuit(x_edges=bin_D_M, hist=D_M_side_count, poly_only=True)
+        m_ml, c_ml, result_ml = fitter.fit_gauss_poly_ML(deg=1)
+
+        yields_left = fitter.poly_integral(xrange=[1.79,1.82],result=result_ml)
+        yields_sig = fitter.poly_integral(xrange=[1.855,1.885],result=result_ml)
+        yields_right = fitter.poly_integral(xrange=[1.92,1.95],result=result_ml)
+        print(f'{yields_sig/yields_left=}, {yields_sig/yields_right=}')
+
+        # Construct the fakeD 2d template from sidebands
+        region_yield = {'D_M<1.83': yields_left, '1.91<D_M': yields_right}
+        hist_sbFakeD = 0
+        for region_i, yields_i in region_yield.items():
+            df_i = df_sidebands.query(region_i)
+            weights_i = df_i['__weight__']
+            (side_counts_i, _1, _2) = np.histogram2d(
+                df_i[variables[0]], df_i[variables[1]], bins=bins)
+
+            # compute the counts and errors, scale with the fit result
+            hist_side_i = unp.uarray(side_counts_i.T, np.sqrt(side_counts_i.T))
+            scaled_side_i = hist_side_i * (yields_sig/yields_i/2)
+            hist_sbFakeD += scaled_side_i
+
+        # Create new 2d hists with fakeD replaced by sideband
+        hists_with_sbFakeD = {k: v for k, v in histograms.items()}
+
+        r_D = 144/18618
+        r_Dst = 125/12007
+        r_Dstst = 71/6636
+        modified_hist_sbFakeD = hist_sbFakeD - r_D*hists_with_sbFakeD[r'$D\ell\nu$']
+        modified_hist_sbFakeD -= r_Dst*hists_with_sbFakeD[r'$D^\ast\ell\nu$']
+
+        # Replace negative nominal values with zero, retain uncertainties
+        n_mod_hist_side = unp.nominal_values(modified_hist_sbFakeD)
+        s_mod_hist_side = unp.std_devs(modified_hist_sbFakeD)
+        n2_mod_hist_side = np.where(n_mod_hist_side < 0, 0, n_mod_hist_side)
+        modified_hist_sbFakeD_2 = round_uarray(unp.uarray(n2_mod_hist_side, s_mod_hist_side))
+
+        hists_with_sbFakeD['bkg_fakeD'] = modified_hist_sbFakeD_2
+
+        ################### Trimming and flattening ###############
+        # Determine which bins pass the threshold based on sum of all templates
+        all_2dHists_with_sbFakeD_sum = np.sum(list(hists_with_sbFakeD.values()), axis=0)  # uarray sum
+        indices_threshold_with_sbFakeD = np.where(unp.nominal_values(all_2dHists_with_sbFakeD_sum) >= bin_threshold)
+
+        if np.array_equal(indices_threshold_with_sbFakeD, indices_threshold):
+            print(colored('fakeD template from sidebands and signal region have the same global 0-entry bins', "green"))
+
+        else:
+            # Combine row and column indices into a single structured array for both sets
+            combined_indices_with_sbFakeD = set(zip(indices_threshold_with_sbFakeD[0], indices_threshold_with_sbFakeD[1]))
+            combined_indices = set(zip(indices_threshold[0], indices_threshold[1]))
+
+            # Find the intersection of the two sets
+            common_indices = combined_indices_with_sbFakeD.intersection(combined_indices)
+
+            # Separate back into row and column indices
+            new_indices_threshold = (
+                np.array([idx[0] for idx in common_indices]),
+                np.array([idx[1] for idx in common_indices])
+            )
+            print(colored('fakeD template from sidebands and signal region have different global 0-entry bins', "red"))
+            print('created a new indices_threshold masking the 0-entry bins in sig OR sidebands')
+            print(colored(f'applying the new mask, number of bins was {len(asimov_data)}, now is {len(common_indices)}', "blue"))
+
+        # Flatten the templates after cutting
+        template_flat_with_sb = {name: round_uarray(hist[new_indices_threshold]) for name, hist in hists_with_sbFakeD.items()}
+        # Asimov data is the sum of all templates
+        asimov_data_with_sb = round_uarray(np.sum(list(template_flat_with_sb.values()), axis=0))
+
+        # Do the same for the signal region
+        template_flat = {name: round_uarray(hist[new_indices_threshold]) for name, hist in histograms.items()}
+        asimov_data = round_uarray(np.sum(list(template_flat.values()), axis=0))  # uarray
+        indices_threshold = new_indices_threshold
+
+    else:
+        template_flat_with_sb = {}
+        asimov_data_with_sb = []
+
+    ################## Create a new set of templates with merged bins ###########
+    # Rebin asimov_data according to merge_threshold
+    new_counts, new_dummy_bin_edges, old_dummy_bin_edges = rebin_histogram(asimov_data, merge_threshold)
+    print(f'creating a new template with merged bins, original template length = {len(asimov_data)}, new template (merge small bins) length = {len(new_counts)}')
+
+    template_flat_merged = {}
+    for name, t in template_flat.items():
+        # Rebin using new edges
+        # Note: old_dummy_bin_edges and new_dummy_bin_edges come from rebin_histogram
+        # For consistency, we must use the same old bin edges as for asimov_data:
+        rebinned = rebin_histogram_with_new_edges(t, old_dummy_bin_edges, new_dummy_bin_edges)
+        template_flat_merged[name] = round_uarray(rebinned)
+
+    asimov_data_merged = round_uarray(np.sum(list(template_flat_merged.values()), axis=0))
+
+    #################### Prepare return tuples: (template dict, asimov data)
+    temp_sig = (template_flat, asimov_data)
+    temp_with_sb = (template_flat_with_sb, asimov_data_with_sb)
+    temp_merged = (template_flat_merged, asimov_data_merged)
+
+    return indices_threshold, temp_sig, temp_with_sb, temp_merged
+
+
+
+def create_2d_template_from_1d(template_flat: dict, data_flat: unp.uarray,
+                               indices_threshold: tuple, bins: list):
+    """
+    Convert a flattened 1D template back to a 2D histogram with uncertainties based on provided binning.
+
+    Parameters:
+        template_flat (dict): Flattened 1D templates for different samples, with values as unp.array.
+        data_flat (unp.uarray): Flattened Asimov data as unp.array.
+        indices_threshold (tuple): The indices that correspond to the bins retained after applying the threshold.
+        bins (list): The bin edges for the 2D histogram.
+
+    Returns:
+        temp_2d (dict): 2D histograms for each sample as unp.array.
+        data_2d (unp.uarray): 2D Asimov dataset as unp.array.
+    """
+    temp_2d = {}
+    
+    # Extract bin dimensions
+    xbins, ybins = bins
+    shape_2d = (len(xbins) - 1, len(ybins) - 1)
+    
+    for name, flat_data in template_flat.items():
+        # Initialize an empty 2D array for the histogram
+        hist_2d = unp.uarray(np.zeros(shape_2d).T, np.zeros(shape_2d).T)
+        # Assign the flattened data back into the appropriate indices
+        hist_2d[indices_threshold] = flat_data
+        temp_2d[name] = hist_2d
+
+    # Initialize an empty 2D array for the Asimov data
+    data_2d = unp.uarray(np.zeros(shape_2d).T, np.zeros(shape_2d).T)
+    # Assign the flattened data back into the appropriate indices
+    data_2d[indices_threshold] = data_flat
+    
+    return temp_2d, data_2d
+
+def compare_2d_hist(data, model, bins_x, bins_y, 
+                    xlabel='X-axis', ylabel='Y-axis', 
+                    data_label='Data', model_label='Model'):
+    """
+    Compare two 2D histograms with residual plots by projecting onto x and y axes.
+    Parameters:
+        data (2D array): First 2D histogram values (data).
+        model (2D array): Second 2D histogram values (model).
+        bins_x (1D array): Bin edges for x-axis.
+        bins_y (1D array): Bin edges for y-axis.
+        xlabel (str): Label for the x-axis.
+        ylabel (str): Label for the y-axis.
+        data_label (str): Label for the first histogram (data).
+        model_label (str): Label for the second histogram (model).
+    """
+
+    def compute_residuals(data, model):
+        # Compute residuals and errors (assuming Poisson for data)
+        residuals = data - model
+        residuals[unp.nominal_values(data) == 0] = 0  # Mask bins with 0 data
+        res_val = unp.nominal_values(residuals)
+        res_err = unp.std_devs(residuals)
+        return res_val, res_err
+
+    def plot_residuals(ax, bin_centers, res_val, res_err):
+        # Mask bins with zero errors
+        mask = res_err != 0
+        chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
+        ndf = len(res_val[mask])
+        label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
+        ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok', label=label)
+        ax.axhline(0, color='gray', linestyle='--')
+        ax.set_ylabel('Residuals')
+        ax.legend()
+
+    # Project histograms onto x-axis
+    projData_x = np.sum(data, axis=0)
+    projModel_x = np.sum(model, axis=0)
+
+    # Project histograms onto y-axis
+    projData_y = np.sum(data, axis=1)
+    projModel_y = np.sum(model, axis=1)
+
+    # Bin centers
+    bin_centers_x = (bins_x[:-1] + bins_x[1:]) / 2
+    bin_centers_y = (bins_y[:-1] + bins_y[1:]) / 2
+
+    # Residuals
+    res_x, res_err_x = compute_residuals(projData_x, projModel_x)
+    res_y, res_err_y = compute_residuals(projData_y, projModel_y)
+
+    # Create the figure
+    fig, axes = plt.subplots(2, 2, figsize=(12, 7), gridspec_kw={'height_ratios': [4, 1]})
+
+    # X-axis projection (top-left)
+    axes[0, 0].hist(bin_centers_x, bins=bins_x, weights=unp.nominal_values(projModel_x), 
+                    histtype='step', label=model_label)
+    axes[0, 0].errorbar(bin_centers_x, unp.nominal_values(projData_x), 
+                        yerr=unp.std_devs(projData_x), fmt='ok', label=data_label)
+    axes[0, 0].set_ylabel('# of Events')
+    axes[0, 0].set_title(f'Projection onto {xlabel}')
+    axes[0, 0].grid()
+    axes[0, 0].legend()
+
+    # X-axis residuals (bottom-left)
+    plot_residuals(axes[1, 0], bin_centers_x, res_x, res_err_x)
+    axes[1, 0].set_xlabel(xlabel)
+
+    # Y-axis projection (top-right)
+    axes[0, 1].hist(bin_centers_y, bins=bins_y, weights=unp.nominal_values(projModel_y), 
+                    histtype='step', label=model_label)
+    axes[0, 1].errorbar(bin_centers_y, unp.nominal_values(projData_y), 
+                        yerr=unp.std_devs(projData_y), fmt='ok', label=data_label)
+    axes[0, 1].set_ylabel('# of Events')
+    axes[0, 1].set_title(f'Projection onto {ylabel}')
+    axes[0, 1].grid()
+    axes[0, 1].legend()
+
+    # Y-axis residuals (bottom-right)
+    plot_residuals(axes[1, 1], bin_centers_y, res_y, res_err_y)
+    axes[1, 1].set_xlabel(ylabel)
+
+    plt.tight_layout()
+    plt.show()
+
+def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool = True) -> dict:
+    """
+    Update a workspace with new templates, uncertainties, and Asimov data without modifying the original workspace.
+
+    Parameters:
+        workspace (dict): The original workspace to update.
+        temp_asimov_channels (list): List of tuples from `create_templates`, where each tuple contains:
+            - template_flat (dict): Flattened templates for each sample as unp.array.
+            - asimov_data (unp.array): Asimov data as unp.array.
+        staterror (bool, optional): Whether to include statistical error modifiers. Default is True.
+
+    Returns:
+        dict: Updated workspace.
+    """
+    # Make a deep copy of the workspace to avoid modifying the original
+    workspace_copy = copy.deepcopy(workspace)
+    
+    # Extract sample names from the first set of templates
+    names = list(temp_asimov_channels[0][0].keys())
+    
+    for ch_index in range(len(temp_asimov_channels)):
+        template_flat = temp_asimov_channels[ch_index][0]
+        asimov_data = temp_asimov_channels[ch_index][1]
+        
+        # Update the number of samples to match the new names
+        current_samples = workspace_copy['channels'][ch_index]['samples']
+        if len(current_samples) < len(names):
+            # Add missing samples
+            for _ in range(len(names) - len(current_samples)):
+                current_samples.append({'name': '', 'data': [], 'modifiers': []})
+        elif len(current_samples) > len(names):
+            # Remove extra samples
+            workspace_copy['channels'][ch_index]['samples'] = current_samples[:len(names)]
+        
+        # Update samples
+        for samp_index, sample in enumerate(workspace_copy['channels'][ch_index]['samples']):
+            sample['name'] = names[samp_index]
+            # Assign nominal values to the 'data' field
+            sample['data'] = unp.nominal_values(template_flat[names[samp_index]]).tolist()
+            
+            # Insert a modifier for the mc statistical uncertainty
+            if 'staterror' not in [m['type'] for m in sample['modifiers']] and mc_uncer:
+#                 if names[samp_index] == 'bkg_fakeD':
+#                     continue
+#                 else:
+                sample['modifiers'].append({'type': 'staterror'})
+            
+            for mod_index, m in enumerate(sample['modifiers']):
+                if m['type'] == 'staterror':
+                    if mc_uncer:
+                        # Assign uncertainties to the 'data' field of the modifier
+                        m['data'] = unp.std_devs(template_flat[names[samp_index]]).tolist()
+                        m['name'] = f'mc_uncer_channel{ch_index}'
+                    else:
+                        # Safely remove the 'staterror' modifier if not needed
+                        sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'staterror']
+#                 elif m['type'] == 'shapesys':
+#                     if mc_uncer:
+#                         # Assign uncertainties to the 'data' field of the modifier
+#                         m['data'] = unp.std_devs(template_flat[names[samp_index]]).tolist()
+#                         m['name'] = f'mc_uncer_channel{ch_index}'
+#                     else:
+#                         # Safely remove the 'shapesys' modifier if not needed
+#                         sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'shapesys']
+                elif m['type'] == "normfactor":
+                    m['name'] = names[samp_index] + '_norm'
+                else:
+                    print(m['type'], 'is turned on')
+                    
+        # Update the Asimov data in the workspace
+        workspace_copy['observations'][ch_index]['data'] = unp.nominal_values(asimov_data).tolist()
+
+    # Update measurement parameters
+    current_parameters = workspace_copy["measurements"][0]["config"]["parameters"]
+    if len(current_parameters) < len(names):
+        # Add missing parameters
+        for _ in range(len(names) - len(current_parameters)):
+            current_parameters.append({'name': '', 'bounds': [[0, 2]], 'inits': [1]})
+    elif len(current_parameters) > len(names):
+        # Remove extra parameters
+        workspace_copy["measurements"][0]["config"]["parameters"] = current_parameters[:len(names)]
+    
+    for i, par in enumerate(workspace_copy["measurements"][0]["config"]["parameters"]):
+        par['name'] = names[i] + '_norm'
+        if par['name'].startswith('bkg'):
+            par['bounds'] = [[0, 2]]
+        else:
+            par['bounds'] = [[-5, 5]]
+    
+    # Update the parameter of interest (POI)
+    workspace_copy["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
+
+    return workspace_copy
+
+# for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
+#     sample = {'name': 'new_sample'}  # This would not update the list in `workspace`
+# Using sample as a reference to the list element is perfectly fine and will not cause bugs 
+# as long as you're modifying the contents of sample (like updating values or appending to a list). 
+# However, be cautious when assigning a completely new value to sample itself, 
+# as that won't update the original list.
+
+def extract_temp_asimov_channels(workspace: dict, mc_uncer: bool = True) -> list:
+    """
+    Extracts `temp_asimov_channels` from a workspace.
+
+    Parameters:
+        workspace (dict): The workspace from which to extract templates and Asimov data.
+        mc_uncer (bool, optional): Whether to include statistical uncertainties. Default is True.
+
+    Returns:
+        list: A list of tuples for each channel:
+            - template_flat (dict): Flattened templates for each sample as unp.array.
+            - asimov_data (unp.array): Asimov data as unp.array.
+    """
+    temp_asimov_channels = []
+
+    for ch_index, channel in enumerate(workspace['channels']):
+        # Extract flattened templates
+        template_flat = {}
+        for sample in channel['samples']:
+            # Extract nominal values and uncertainties
+            nominal_values = np.array(sample['data'])
+            if mc_uncer:
+                # Find the staterror modifier for uncertainties
+                staterror_mod = next((m for m in sample['modifiers'] if m['type'] == 'staterror'), None)
+                if staterror_mod:
+                    uncertainties = np.array(staterror_mod['data'])
+                else:
+                    uncertainties = np.sqrt(nominal_values)
+            else:
+                uncertainties = np.sqrt(nominal_values)
+            # Store as unp.array
+            template_flat[sample['name']] = unp.uarray(nominal_values, uncertainties)
+
+        # Extract Asimov data
+        asimov_data_nominal = np.array(workspace['observations'][ch_index]['data'])
+        asimov_data_uncertainties = np.sqrt(asimov_data_nominal)  # Default uncertainties to poisson
+        asimov_data = unp.uarray(asimov_data_nominal, asimov_data_uncertainties)
+
+        # Append the reconstructed channel to the list
+        temp_asimov_channels.append((template_flat, asimov_data))
+
+    return temp_asimov_channels
+
+def inspect_temp_asimov_channels(t1, t2=None):
+    """
+    Inspect and compare the templates and Asimov data for multiple channels.
+
+    Parameters:
+        t1 (list): First list of channel data, where each element is a tuple:
+            - template_flat (dict): Flattened templates for each sample as unp.array.
+            - asimov_data (unp.array): Asimov data as unp.array.
+        t2 (list, optional): Second list of channel data for comparison, structured like `t1`. Default is None.
+
+    Returns:
+        None: Prints the inspection and comparison results to the console.
+
+    Notes:
+        - If `t2` is provided, the function compares the templates and Asimov data in `t1` and `t2`.
+        - The function checks for equality of `unp.array` objects in both inputs using `np.array_equal`.
+        - Outputs differences in templates and Asimov data for mismatched channels.
+    """
+    for ch_index, (template_flat, asimov_data) in enumerate(t1):
+        print(f"Channel {ch_index}:")
+        for name, data in template_flat.items():
+            print(f"  Sample: {name}, Data: {data}")
+            if t2 is not None:
+                nominal1 = unp.nominal_values(data)
+                nominal2 = unp.nominal_values(t2[ch_index][0][name])
+                std1 = unp.std_devs(data)
+                std2 = unp.std_devs(t2[ch_index][0][name])
+                if np.array_equal(nominal1, nominal2) and np.array_equal(std1, std2):
+                    print(colored(f'    {name} templates are equal in the 2 inputs','green'))
+                else:
+                    print(colored(f'    {name} templates are different in the 2 inputs','red'))
+                    print(colored(f'    {np.array_equal(nominal1, nominal2)=}, {np.array_equal(std1, std2)=}','red'))
+                    print(f"    Sample: {name}, Data (from t2): {t2[ch_index][0][name]}")
+        print(f"  Asimov Data: {asimov_data}")
+        if t2 is not None:
+            nominal1 = unp.nominal_values(asimov_data)
+            nominal2 = unp.nominal_values(t2[ch_index][1])
+            std1 = unp.std_devs(asimov_data)
+            std2 = unp.std_devs(t2[ch_index][1])
+            if np.array_equal(nominal1, nominal2) and np.array_equal(std1, std2):
+                print(colored('    Asimov data are equal in the 2 inputs','green'))
+            else:
+                print(colored('    Asimov data are different in the 2 inputs','red'))
+                print(colored(f'    {np.array_equal(nominal1, nominal2)=}, {np.array_equal(std1, std2)=}','red'))
+                print(f"    Asimov Data (from t2): {t2[ch_index][1]}")
+
+
+
+# def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
+#     sig = pd.concat(sig_data)
+#     bkg = pd.concat(bkg_data)
+#     sig_tot = len(sig)
+#     bkg_tot = len(bkg)
+#     BDT_FOM = []
+#     BDT_FOM_err = []
+#     BDT_sigEff = []
+#     BDT_sigEff_err = []
+#     BDT_bkgEff = []
+#     BDT_bkgEff_err = []
+#     for i in test_points[0]:
+#         for j in test_points[1]:
+#             for k in test_points[2]:
+#                 nsig = len(sig.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
+#                 nbkg = len(bkg.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
+#                 tot = nsig+nbkg
+#                 tot_err = np.sqrt(tot)
+#                 FOM = nsig / tot_err # s / √(s+b)
+#                 FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
+
+#                 BDT_FOM.append(round(FOM,2))
+#                 BDT_FOM_err.append(round(FOM_err,2))
+
+#                 sigEff = nsig / sig_tot
+#                 sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
+#                 bkgEff = nbkg / bkg_tot
+#                 bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
+#                 BDT_sigEff.append(round(sigEff,2))
+#                 BDT_sigEff_err.append(round(sigEff_err,2))
+#                 BDT_bkgEff.append(round(bkgEff,2))
+#                 BDT_bkgEff_err.append(round(bkgEff_err,2))
+#     print(f'{BDT_FOM=}')
+#     print(f'{BDT_sigEff=}')
+#     print(f'{BDT_bkgEff=}')
+
+
+# # +
+############################### PID corrections #########################
 import sys
 import os
 from datetime import date
@@ -603,13 +1001,11 @@ class PID_corrections:
 
 
 
-# +
-## 1d fit
+# # +
+################################ 1d fit #############################
 from iminuit import cost, Minuit
 from scipy.stats import norm
 from scipy.integrate import quad
-from uncertainties import ufloat, correlated_values
-import uncertainties.unumpy as unp
 
 class polynomial:
     def __init__(self, par, x_min, x_max):
@@ -696,12 +1092,12 @@ class fit_iminuit:
         if self.poly_only:
             m.values["x0"] = 0
         # temporarily mask out the signal
-        c.mask = (x < 1.82) | (x > 1.921)
+        c.mask = (x < 1.82) | (1.921 < x)
         m.simplex().migrad()
         
         if not self.poly_only:
             # fit the signal with the bkg fixed
-            c.mask = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885)) # include the signal
+            c.mask = (x < 1.82) | ((1.857 < x) & (x < 1.885)) | (1.921 < x) # include the signal
             m.fixed = False  # release all parameters
             m.fixed["x3","x4"] = True  # fix background amplitude
             m.simplex().migrad()
@@ -735,12 +1131,12 @@ class fit_iminuit:
             m.values["x0"] = 0
         # we temporarily mask out the signal
         cx = 0.5 * (xe[1:] + xe[:-1])
-        c.mask = (cx < 1.819) | (cx > 1.921)
+        c.mask = (cx < 1.819) | (1.921 < cx)
         m.simplex().migrad()
 
         if not self.poly_only:
             # fit the signal with the bkg fixed
-            c.mask = (cx < 1.819) | (cx > 1.921) | ((1.856 < cx) & (cx < 1.884)) # include the signal
+            c.mask = (cx < 1.819) | ((1.856 < cx) & (cx < 1.884)) | (1.921 < cx) # include the signal
             m.fixed = False  # release all parameters
             m.fixed["x3","x4","x5"] = True  # fix background amplitude
             m.simplex().migrad()
@@ -776,8 +1172,7 @@ class fit_iminuit:
             yields = round(float(yields),3)
             print(f"Yields from {xrange[0]} to {xrange[1]}: {yields}")
             return yields
-        
-        
+
 #     def plot_result(self, x, y, yerr, result):
 #         # Generate x, y values for plotting the fitted function
 #         x_plot = np.linspace(min(x), max(x), 500)
@@ -790,7 +1185,7 @@ class fit_iminuit:
 
 #         # Create a figure with two subplots: one for the histogram, one for the residual plot
 #         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(5, 5), gridspec_kw={'height_ratios': [5, 1]})
-    
+
 #         # Plot data points and fitted function in ax1
 #         ax1.errorbar(x, y, yerr, fmt='o', label='Data')
 #         ax1.plot(x_plot, unp.nominal_values(y_plot), label='Fitted polynomial', color='red')
@@ -806,19 +1201,19 @@ class fit_iminuit:
 #         # Label the residual plot
 #         ax2.set_ylabel('Residuals')
 #         # ax2.set_xlabel(f'{variable}')
-        
+
 #         # Adjust the layout to avoid overlapping of the subplots
 #         plt.tight_layout()
 #         # Show the plot
 #         plt.show()
 
-# +
-## Plotting
+# # +
+##################################### Plotting #################################
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib import gridspec
 
-#################### define my colormap ################
+######## define my colormap ########
 # Original tab20 colors
 original_colors = plt.cm.tab20.colors
 # New order for the colors
@@ -831,20 +1226,21 @@ reordered_colors.extend([original_colors[i] for i in remaining_indices])
 # Create a new colormap
 my_cmap = mcolors.ListedColormap(reordered_colors, name='reordered_tab20')
 
-
 class mpl:
     def __init__(self, mc_samples, data=None):
         self.samples = mc_samples
         self.data = data
-        self.kwarg={'histtype':'step','lw':2}
         self.colors = my_cmap.colors
         # sort the components to plot in order of fitted templates_project size
-        self.sorted_order = ['bkg_FakeD',    'bkg_continuum',    'bkg_combinatorial',
+        self.sorted_order = ['bkg_fakeD',    'bkg_continuum',    'bkg_combinatorial',
                              'bkg_TDFl',     'bkg_fakeTracks',
                              'bkg_singleBbkg',                   r'$D\ell\nu$_gap',
                              r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
+        self.bkg = self.sorted_order[:6]
+        self.norm = [r'$D\ell\nu$_gap', r'$D^{\ast\ast}\ell\nu$',r'$D^\ast\ell\nu$',r'$D\ell\nu$']
+        self.sig = [r'$D^{\ast\ast}\tau\nu$',r'$D^\ast\tau\nu$',r'$D\tau\nu$']
     
     def statistics(self, df=None, hist=None, count_only=False):
         if df is not None:
@@ -882,100 +1278,71 @@ class mpl:
         ax2.set_title(f'BKG components in the region {cut=}')
         plt.tight_layout()
         plt.show()
-
+        
+    
     def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, 
-                     sig_mask=False, scale=1, name='Data'):
+                 sig_mask=False, scale=1, name='Data', density=False):
         # Provide either variable or hist
         if variable:
+            # Apply signal mask if requested
             if sig_mask:
                 s_mask = 'D_M<1.855 or D_M>1.885'
                 data = sub_df.query(s_mask) if sub_df is not None else self.data.query(s_mask)
             else:
                 data = sub_df if sub_df is not None else self.data
+
+            # Apply scaling if requested
             if scale:
                 data.loc[:, '__weight__'] = scale
-            var_col= data.query(cut)[variable] if cut else data[variable]
-            (counts, _) = np.histogram(var_col, bins=bins,
-                                    weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
-            (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                                    weights=data.query(cut)['__weight__']**2 if cut else data['__weight__']**2)
-            staterror = np.sqrt(staterr_squared)
-            label=f'{name} \n{self.statistics(df=var_col)}\
-\n cut_eff={(len(var_col)/len(data)):.3f}'
-            data_counts = unp.uarray(counts, staterror)
-        else:
-            data_counts = hist
-            label=f'''{name} \n{self.statistics(hist=[data_counts,bins])}'''
 
-        bin_centers = (bins[:-1] + bins[1:]) /2
+            var_col = data.query(cut)[variable] if cut else data[variable]
+
+            # Compute histogram with weights
+            counts, _ = np.histogram(var_col, bins=bins,
+                                     weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
+            staterr_squared, _ = np.histogram(var_col, bins=bins,
+                                              weights=(data.query(cut)['__weight__'] if cut else data['__weight__'])**2)
+            staterror = np.sqrt(staterr_squared)
+
+            # Normalize to density if requested
+            if density:
+                bin_widths = np.diff(bins)
+                integral = np.sum(counts * bin_widths)
+                if integral > 0:
+                    factor = 1.0 / integral
+                    counts *= factor
+                    staterror *= factor
+
+            label = f'{name} \n{self.statistics(df=var_col)}\n cut_eff={(len(var_col)/len(data)):.3f}'
+            data_counts = unp.uarray(counts, staterror)
+
+        else:
+            # If hist is provided directly (data_counts as unp.uarray), we handle it similarly
+            data_counts = hist
+
+            if density and hist is not None:
+                # Normalize the provided histogram to density if needed
+                counts = unp.nominal_values(data_counts)
+                staterror = unp.std_devs(data_counts)
+                bin_widths = np.diff(bins)
+                integral = np.sum(counts * bin_widths)
+                if integral > 0:
+                    factor = 1.0 / integral
+                    counts *= factor
+                    staterror *= factor
+                    data_counts = unp.uarray(counts, staterror)
+
+            label = f'{name} \n{self.statistics(hist=[data_counts,bins])}'
+
+        bin_centers = (bins[:-1] + bins[1:]) / 2
         data_val = unp.nominal_values(data_counts)
         data_err = unp.std_devs(data_counts)
-        ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko',label=label)
+
+        if ax is not None:
+            # Plot using errorbar to show data with uncertainties
+            ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko', label=label)
 
         return data_counts
-    
-#     def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, 
-#                  sig_mask=False, scale=1, name='Data', density=False):
-#         # Provide either variable or hist
-#         if variable:
-#             # Apply signal mask if requested
-#             if sig_mask:
-#                 s_mask = 'D_M<1.855 or D_M>1.885'
-#                 data = sub_df.query(s_mask) if sub_df is not None else self.data.query(s_mask)
-#             else:
-#                 data = sub_df if sub_df is not None else self.data
-
-#             # Apply scaling if requested
-#             if scale:
-#                 data.loc[:, '__weight__'] = scale
-
-#             var_col = data.query(cut)[variable] if cut else data[variable]
-
-#             # Compute histogram with weights
-#             counts, _ = np.histogram(var_col, bins=bins,
-#                                      weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
-#             staterr_squared, _ = np.histogram(var_col, bins=bins,
-#                                               weights=(data.query(cut)['__weight__'] if cut else data['__weight__'])**2)
-#             staterror = np.sqrt(staterr_squared)
-
-#             # Normalize to density if requested
-#             if density:
-#                 bin_widths = np.diff(bins)
-#                 integral = np.sum(counts * bin_widths)
-#                 if integral > 0:
-#                     factor = 1.0 / integral
-#                     counts *= factor
-#                     staterror *= factor
-
-#             label = f'{name} \n{self.statistics(df=var_col)}\n cut_eff={(len(var_col)/len(data)):.3f}'
-#             data_counts = unp.uarray(counts, staterror)
-
-#         else:
-#             # If hist is provided directly (data_counts as unp.uarray), we handle it similarly
-#             data_counts = hist
-
-#             if density and hist is not None:
-#                 # Normalize the provided histogram to density if needed
-#                 counts = unp.nominal_values(data_counts)
-#                 staterror = unp.std_devs(data_counts)
-#                 bin_widths = np.diff(bins)
-#                 integral = np.sum(counts * bin_widths)
-#                 if integral > 0:
-#                     factor = 1.0 / integral
-#                     counts *= factor
-#                     staterror *= factor
-#                     data_counts = unp.uarray(counts, staterror)
-
-#             label = f'{name} \n{self.statistics(hist=[data_counts,bins])}'
-
-#         bin_centers = (bins[:-1] + bins[1:]) / 2
-#         data_val = unp.nominal_values(data_counts)
-#         data_err = unp.std_devs(data_counts)
-
-#         # Plot using errorbar to show data with uncertainties
-#         ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko', label=label)
-
-#         return data_counts
 
 
     def plot_mc_1d(self, bins, ax, sub_df=None, sub_name=None, variable=None, cut=None,
@@ -1000,8 +1367,9 @@ class mpl:
             (stacked_counts, _) = np.histogram(var_col, bins=bins,
                                    weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
             stacked_counts = normalize_to_density(stacked_counts, bins)
-
-            ax.hist(bins[:-1], bins, weights=stacked_counts, histtype='step', color='black',
+            
+            if ax is not None:
+                ax.hist(bins[:-1], bins, weights=stacked_counts, histtype='step', color='black',
                     label=(f'Unweighted MC \n{self.statistics(df=var_col,count_only=legend_count)} '
                            f'\n cut_eff={(len(var_col)/len(mc_combined)):.3f}'))
 
@@ -1018,7 +1386,8 @@ class mpl:
 
             counts = normalize_to_density(counts, bins)  # Normalize if density=True
 
-            ax.hist(bins[:-1], bins, weights=counts, **self.kwarg,
+            if ax is not None:
+                ax.hist(bins[:-1], bins, weights=counts,
                     label=(f'{sub_name} \n{self.statistics(df=var_col,count_only=legend_count)} '
                            f'\n cut_eff={(len(var_col)/len(sample)):.3f}'))
 
@@ -1051,9 +1420,10 @@ class mpl:
 
                 # Normalize if density=True
                 counts = normalize_to_density(counts, bins)
-
                 b = unp.nominal_values(bottom)
-                ax.hist(bins[:-1], bins, weights=counts, bottom=b, color=self.colors[i],
+                
+                if ax is not None:
+                    ax.hist(bins[:-1], bins, weights=counts, bottom=b, color=self.colors[i],
                         label=(f'{name} \n{self.statistics(df=var_col,count_only=legend_count)} '
                                f'\n cut_eff={(sample_size/len(sample)):.3f}'))
 
@@ -1061,6 +1431,37 @@ class mpl:
                 bottom += sample_counts
 
         return bottom
+    
+    
+    def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,density=False):
+        if show_only is not None:
+            # this will overwrite the mask argument
+            if show_only == 'sig':
+                mask = self.bkg + [r'$D^\ast\ell\nu$',r'$D\ell\nu$']
+            elif show_only == 'norm':
+                mask = self.bkg + self.sig
+            elif show_only == 'bkg':
+                mask = self.norm + self.sig
+            else:
+                print('Warning: show_only argument accepts sig, norm or bkg')
+            
+        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
+        for i, name in enumerate(self.sorted_order):
+            sample = self.samples[name]
+            sample_size = len(sample.query(cut)) if cut else len(sample)
+            if sample_size == 0 or name in mask:
+                continue
+            var_col= sample.query(cut)[variable] if cut else sample[variable]
+            (counts, _) = np.histogram(var_col, bins=bins)
+
+            axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,
+                    label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
+
+        axs.set_title(f'Overlaid components ({cut=})', fontsize=14)
+        axs.set_xlabel(f'{variable}', fontsize=14)
+        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=14)
+        axs.grid()
+        plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
 
     
     def plot_single_2d(self, df, variables, bins,fig, ax,name,hist=None,cut=None):
@@ -1102,10 +1503,9 @@ class mpl:
             # Compute residuals (Data - Model) and their errors
             # at bins where data is not 0
             bin_centers = (bins[:-1] + bins[1:]) /2
-            data_zero_i = data == 0
 
             residuals = data - model
-            residuals[data_zero_i] = 0
+            residuals[unp.nominal_values(data) == 0] = 0  # Mask bins with 0 data
 
             res_val = unp.nominal_values(residuals)
             res_err = unp.std_devs(residuals)
@@ -1115,15 +1515,10 @@ class mpl:
             # Compute chi-squared excluding those points
             chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
             ndf = len(res_val[mask])
-            
-            if ndf==0:
-                label = 'reChi2 not calculated'
-            else:
-                label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}'
+            label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
 
             # Plot the residuals in ax
-            ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',
-                       label=label)
+            ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',label=label)
             # Add a horizontal line at y=0 for reference
             ax.axhline(0, color='gray', linestyle='--')
             # Label the residual plot
@@ -1206,7 +1601,7 @@ class mpl:
         
         
     def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,scale={},mask=[],
-                            bkg_name='bkg_FakeD',merge_sidebands=False,samples_sig=None,
+                            bkg_name='bkg_fakeD',merge_sidebands=False,samples_sig=None,
                             figsize=(8,5),legend_nc=2,legend_fs=12):
         if type(variable)==str:
             # Create a figure with two subplots: one for the histogram, one for the residual plot
@@ -1215,11 +1610,15 @@ class mpl:
             # Create a figure with two subplots: one for sig, one for the control
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
         
-        if bkg_name=='bkg_FakeD':
-            sample = self.samples[bkg_name]
-            left = sample.query('D_M<1.83').copy()
-            sig = sample.query('1.84<D_M<1.9').copy()
-            right = sample.query('D_M>1.91').copy()
+        if bkg_name=='bkg_fakeD':
+            # fakeD in the signal region
+            fakeD = self.samples[bkg_name]
+            sig = fakeD.query('1.84<D_M<1.9').copy()
+            
+            # fakeD in sidebands, Concatenate all DataFrames into one
+            df_concatenated = pd.concat(self.samples.values(), ignore_index=True)
+            left = df_concatenated.query('D_M<1.83').copy()
+            right = df_concatenated.query('D_M>1.91').copy()
                 
             regions = {'left sideband': left,
                        'signal region': sig,
@@ -1299,13 +1698,13 @@ class mpl:
         plt.show()
 
     def plot_data_subtracted_and_mc(self,var_list,bin_list,cut=None,scale={},
-                                    correction=False,mask=['bkg_FakeD'],figsize=(10,10)):
+                                    correction=False,mask=['bkg_fakeD'],figsize=(10,10)):
         # get data in sig and sidebands regions
         data_left = self.data.query('D_M<1.83').copy()
         data_sig = self.data.query('1.84<D_M<1.9').copy()
         data_right = self.data.query('D_M>1.91').copy()
         # get mc in sig region without fake D
-        mc_sig = pd.concat([df.query('1.84<D_M<1.9').copy() for name, df in self.samples.items() if name != 'bkg_FakeD'], 
+        mc_sig = pd.concat([df.query('1.84<D_M<1.9').copy() for name, df in self.samples.items() if name != 'bkg_fakeD'], 
                            ignore_index=True)
 
         data_mc_regions = {'data left sideband': data_left,
@@ -1542,66 +1941,9 @@ class mpl:
         fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
         fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.08,fontsize=18)
         
-
-    def plot_data_mc_all(self, bins, variables, cut=None, scale=[1,1], figsize=(30, 100), fontsize=12):
-        fig = plt.figure(figsize=figsize)
-        dfs = [self.data, self.mc_samples]
-        names = ['Data', 'MC']
-
-#         for i in range(len(variables)):
-#             ax = fig.add_subplot(len(variables)//3 + 1, 3, i+1)
-#             bin1 = bins
-#             for j in range(len(names)):
-#                 dfs[j]['__weight__'] = scale[j]
-#                 var_col = dfs[j][variables[i]]
-#                 if cut is not None:
-#                     var_col = var_col.query(cut)
-#                 (counts, bin1) = np.histogram(var_col, bins=bin1,
-#                                            weights=dfs[j].query(cut)['__weight__'] if cut else dfs[j]['__weight__'])
-#                 kwarg={'histtype':'step','lw':2}
-
-#                 if names[j]=='MC':
-#                     ax.hist(bin1[:-1], bin1, weights=counts,
-#                         label=f'{names[j]} \n{statistics(var_col)} \n cut_eff={(len(var_col)/len(dfs[j])):.3f}',**kwarg)
-
-#                 elif names[j]=='Data':
-#                     bin_centers = (bin1[:-1] + bin1[1:]) /2
-#                     ax.errorbar(x=bin_centers, y=counts, yerr=np.sqrt(counts), fmt='ko',
-#                                 label=f'{names[j]} \n{statistics(var_col)} \n cut_eff={(len(var_col)/len(dfs[j])):.3f}')
-
-#             ax.set_ylabel(f'# of events per bin {(bin1[1]-bin1[0]):.3f} GeV',fontsize=fontsize)
-#             ax.set_xlabel(variables[i],fontsize=fontsize)
-#             ax.grid()
-#     #         ax.legend()
-#         fig.suptitle(f'Overlaid Data vs MC ({cut=})', fontsize=fontsize*2)
-#         plt.tight_layout()
-    
-    
-    
-    
-    
+       
         
-        
-    def plot_all_mc_overlaid(self,variable,bins,cut=None,mask=[],density=False):
-            
-        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
-        for name, sample in self.samples.items():
-            sample_size = len(sample.query(cut)) if cut else len(sample)
-            if sample_size==0 or name in mask:
-                continue
-            var_col= sample.query(cut)[variable] if cut else sample[variable]
-            (counts, _) = np.histogram(var_col, bins=bins)
 
-            kwarg=self.kwarg
-
-            axs.hist(bins[:-1], bins, weights=counts, density=density,
-                    label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''',**kwarg)
-
-        axs.set_title(f'Overlaid components ({cut=})', fontsize=14)
-        axs.set_xlabel(f'{variable}', fontsize=14)
-        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=14)
-        axs.grid()
-        plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
         
         
     def plot_2Dhist_and_projections(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None):
@@ -1685,8 +2027,8 @@ class mpl:
             plt.errorbar(x=bin_centers, y=efficiency, yerr=efficiency_err, label=name)
             plt.legend()
 
-
-# +
+# # +
+###################### fit projection plots #####################
 def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d, 
                                       edges_list, direction='mm2', slice_thresholds=None):
     assert direction in ['mm2', 'p_D_l'], 'direction must be mm2 or p_D_l'
@@ -1698,7 +2040,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         # plot the templates with defined colors
         c = my_cmap.colors
         # sort the components to plot in order of fitted templates_project size
-        sorted_order = ['bkg_FakeD',    'bkg_continuum',    'bkg_combinatorial',
+        sorted_order = ['bkg_fakeD',    'bkg_continuum',    'bkg_combinatorial',
                         'bkg_TDFl',     'bkg_singleBbkg',   r'$D\ell\nu$_gap',
                         r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
                         r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
@@ -1846,10 +2188,375 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
 
 
 
-# # plotting version: two residual plots, residual_signal = data - all_temp
-# def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2', plot_with='pltbar'):
-#     if direction not in ['mm2', 'p_D_l'] or plot_with not in ['mplhep', 'pltbar']:
-#         raise ValueError('direction in [mm2, p_D_l] and plot_with in [mplhep, pltbar]')
+# plotting version: two residual plots, residual_signal = data - all_temp
+def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2', plot_with='pltbar'):
+    if direction not in ['mm2', 'p_D_l'] or plot_with not in ['mplhep', 'pltbar']:
+        raise ValueError('direction in [mm2, p_D_l] and plot_with in [mplhep, pltbar]')
+    fitted_components_names = list(Minuit.parameters)
+    #### fitted_templates_2d = templates / normalization * yields
+    fitted_templates_2d = [templates_2d[i]/templates_2d[i].sum() * Minuit.values[i] for i in range(len(templates_2d))]
+    # fitted_templates_err = templates_2d_err, yields_err in quadrature
+                         # = fitted_templates_2d x sqrt( (1/templates_2d) + (yield_err/yield)**2 ) if templates_2d[i,j]!=0
+                         # = 0 if yield ==0 or templates_2d[i,j]==0
+    fitted_templates_err = np.zeros_like(templates_2d)
+    non_zero_masks = [np.where(t!= 0) for t in templates_2d]
+    for i in range(len(templates_2d)):
+        if Minuit.values[i]==0:
+            continue
+        else:
+            fitted_templates_err[i][non_zero_masks[i]] = fitted_templates_2d[i][non_zero_masks[i]] * \
+            np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)
+
+    def extend(x):
+        return np.append(x, x[-1])
+
+    def errorband(bins, template_sum, template_err, ax):
+        fitted_sum = np.sum(template_sum, axis=0)
+        fitted_err = np.sqrt(np.sum(np.array(template_err)**2, axis=0)) # assuming the correlations between each template are 0
+        ax.fill_between(bins, extend(fitted_sum - fitted_err), extend(fitted_sum + fitted_err),
+        step="post", color="black", alpha=0.3, linewidth=0, zorder=100,)   
+
+    def plot_with_hep(bins, templates_project, templates_project_err, data, signal_name, ax1, ax2, ax3):
+        data_project = data.sum(axis=axis_to_be_summed_over)
+        # plot the templates and data
+        hep.histplot(templates_project, bin_edges, stack=True, histtype='fill', sort='yield_r', label=fitted_components_names, ax=ax1)
+        # errorband(bin_edges, templates_project, templates_project_err, ax1)
+        hep.histplot(data_project, bin_edges, histtype='errorbar', color='black', w2=data_project, ax=ax1)
+        # plot the residual
+        signal_index = fitted_components_names.index(signal_name)
+        residual = data_project - np.sum(templates_project, axis=0)
+        residual_signal = residual + templates_project[signal_index]
+        # Error assuming the correlations between data and templates, between each template, are 0
+        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+        residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
+
+        pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
+        pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
+        #hep.histplot(residual, bin_edges, histtype='errorbar', color='black', yerr=residual_err, ax=ax2)
+        hep.histplot(residual, bin_edges, histtype='errorbar', color='black', ax=ax2)
+        ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
+        #hep.histplot(residual_signal, bin_edges, histtype='errorbar', color='black', yerr=residual_err_signal, ax=ax3)
+        hep.histplot(pull, bin_edges, histtype='errorbar', color='black', ax=ax3)
+        ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')
+
+        ax1.grid()
+        ax1.set_ylabel('# of counts per bin',fontsize=16)
+        ax1.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.set_ylim(0, data_project.max()*1.2)
+        ax2.set_ylabel('pull',fontsize=14)
+        ax2.set_xlim(bin_edges.min(), bin_edges.max())
+        ax3.set_ylabel('pull + signal',fontsize=10)
+        ax3.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1)
+
+    def plot_with_bar(bins, templates_project, templates_project_err, data, ax1, ax2, ax3,signal_name=None):        
+        # calculate the arguments for plotting
+        bin_width = bins[1]-bins[0]
+        bin_centers = (bins[:-1] + bins[1:]) /2
+        data_project = data.sum(axis=axis_to_be_summed_over)
+        data_err = np.sqrt(data_project)
+
+        # plot the templates with defined colors
+        c = plt.cm.tab20.colors
+        # sort the components to plot in order of fitted templates_project size
+        sorted_indices = sorted(range(len(templates_2d)), key=lambda i: np.sum(templates_project[i]), reverse = True)
+        bottom_hist = np.zeros(data.shape[1-axis_to_be_summed_over])
+        for i in sorted_indices:
+            binned_counts = templates_project[i]
+            ax1.bar(x=bins[:-1], height=binned_counts, bottom=bottom_hist, color = c[i],
+                    width=bin_width, align='edge', label=fitted_components_names[i])
+            bottom_hist = bottom_hist + binned_counts
+        # errorband(bin_edges, templates_project, templates_project_err, ax1)
+
+        # plot the data
+        ax1.errorbar(x=bin_centers, y=data_project, yerr=data_err, fmt='ko')
+        # plot the residual
+        residual = data_project - np.sum(templates_project, axis=0)
+        # Error assuming the correlations between data and templates, between each template, are 0
+        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+
+        pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
+        ax2.errorbar(x=bin_centers, y=residual, yerr=residual_err, fmt='ko')
+        ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
+        ax3.scatter(x=bin_centers, y=pull, c='black')
+        ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')            
+
+        ax1.grid()
+        ax1.set_ylabel('# of counts per bin',fontsize=16)
+        ax1.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.set_ylim(0, data_project.max()*1.2)
+        ax2.set_ylabel('residual',fontsize=14)
+        ax2.set_xlim(bin_edges.min(), bin_edges.max())
+        ax3.set_ylabel('pull',fontsize=14)
+        ax3.set_xlim(bin_edges.min(), bin_edges.max())
+        ax1.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1)
+
+#         signal_index = fitted_components_names.index(signal_name)
+#         residual_signal = residual + templates_project[signal_index]
+#         residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
+#         pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
+
+    if direction=='mm2':
+        direction_label = '$M_{miss}^2$'
+        direction_unit = '$[GeV^2/c^4]$'
+        other_direction_label = '$|p_D|\ +\ |p_l|$'
+        other_direction_unit = '[GeV]'
+        axis_to_be_summed_over = 0
+
+        bin_edges = edges[axis_to_be_summed_over] #xedges
+        slice_position = slices[1-axis_to_be_summed_over] #p_D_l
+        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.2)).nonzero()
+        first_slice_index = (slice_index[0]-1)
+        second_slice_index = (slice_index[0])
+
+        # parameters for slices==True
+        fitted_project_slice1 = [temp[:first_slice_index,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice2 = [temp[second_slice_index:,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice1_err = [np.sqrt((err**2)[:first_slice_index,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [np.sqrt((err**2)[second_slice_index:,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        data_slice1 = data_2d[:first_slice_index,:]
+        data_slice2 = data_2d[second_slice_index:,:]
+
+    elif direction=='p_D_l':
+        direction_label = '$|p_D|\ +\ |p_l|$'
+        direction_unit = '[GeV]'
+        other_direction_label = '$M_{miss}^2$'
+        other_direction_unit = '$[GeV^2/c^4]$'
+        axis_to_be_summed_over = 1
+
+        bin_edges = edges[axis_to_be_summed_over] #yedges
+        slice_position = slices[1-axis_to_be_summed_over] #mm2
+        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.2)).nonzero()
+        first_slice_index = (slice_index[0]-1)
+        second_slice_index = (slice_index[0])
+
+        # parameters for slices==True
+        fitted_project_slice1 = [temp[:,:first_slice_index].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice2 = [temp[:,second_slice_index:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
+        fitted_project_slice1_err = [np.sqrt((err**2)[:,:first_slice_index].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [np.sqrt((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        data_slice1 = data_2d[:,:first_slice_index]
+        data_slice2 = data_2d[:,second_slice_index:]
+
+    else:
+        raise ValueError('Current version only supports projection to either MM2 or p_D_l')
+
+    if not slices:
+        fig = plt.figure(figsize=(6.4,6.4))
+        gs = gridspec.GridSpec(3,1, height_ratios=[0.7,0.15,0.15])
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        ax3 = fig.add_subplot(gs[2])
+        gs.update(hspace=0.3) 
+        fitted_project = [temp.sum(axis=axis_to_be_summed_over) for temp in fitted_templates]
+        fitted_project_err = [temp.sum(axis=axis_to_be_summed_over) for temp in fitted_templates_err]
+
+        # plot the templates and data and templates_err
+        if plot_with=='mplhep':
+            plot_with_hep(bin_edges, fitted_project, fitted_project_err, counts, '$D\\tau\\nu$', ax1, ax2,ax3)
+        elif plot_with=='pltbar':
+            plot_with_bar(bin_edges, fitted_project, fitted_project_err, counts, '$D\\tau\\nu$', ax1, ax2,ax3)
+        ax1.set_title(f'Fitting projection to {direction_label}')
+        ax3.set_xlabel(direction_label)
+
+    elif slices:
+        fig = plt.figure(figsize=(16,9))
+        spec = gridspec.GridSpec(6,2, figure=fig, wspace=0.4, hspace=0.5)
+        ax1 = fig.add_subplot(spec[:-2, 0])
+        ax2 = fig.add_subplot(spec[:-2, 1])
+        ax3 = fig.add_subplot(spec[-2, 0])
+        ax4 = fig.add_subplot(spec[-2, 1])
+        ax5 = fig.add_subplot(spec[-1, 0])
+        ax6 = fig.add_subplot(spec[-1, 1])
+        #gs.update(hspace=0) 
+
+        # plot the templates and data and template_err
+        if plot_with=='mplhep':
+            plot_with_hep(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, slice1_signal, ax1, ax3, ax5)
+            plot_with_hep(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, slice2_signal, ax2, ax4, ax6)
+        elif plot_with=='pltbar':
+            plot_with_bar(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, ax1, ax3, ax5)
+            plot_with_bar(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, ax2, ax4, ax6)
+
+        ax1.set_title(f'{other_direction_label} < {slice_position}  {other_direction_unit}',fontsize=14)
+        ax2.set_title(f'{other_direction_label} > {slice_position}  {other_direction_unit}',fontsize=14)
+        fig.suptitle(f'Fitted projection to {direction_label} in slices of {other_direction_label}',fontsize=16)
+        fig.supxlabel(direction_label + '  ' + direction_unit,fontsize=16)
+
+
+######################### plotly #######################
+# import plotly.express as px
+# import plotly.graph_objects as go
+# from plotly.subplots import make_subplots
+
+# class ply:
+#     def __init__(self, df):
+#         self.df = df
+        
+#     def hist(self, variable='B0_CMS3_weMissM2', cut=None, facet=False):
+#         # Create a histogram
+#         fig=px.histogram(self.df.query(cut) if cut else self.df, 
+#                          x=variable, color='mode', nbins=60, 
+#                          marginal='box', #opacity=0.5, barmode='overlay',
+#                          color_discrete_sequence=px.colors.qualitative.Plotly,
+#                          template='simple_white', title='Signal MC',
+#                          facet_col='p_D_l_region' if facet else None)
+
+#         # Manage the layout
+#         fig.update_layout(font_family='Rockwell', hovermode='closest',
+#                           legend=dict(orientation='h',title='',x=1,y=1,xanchor='right',yanchor='bottom'))
+
+#         # Manage the hover labels
+#         count_by_color = self.df.groupby('mode')['__event__'].count()
+#         for i, (color, count) in enumerate(count_by_color.items()):
+#             fig.update_traces(hovertemplate='Bin_Count: %{y}<br>Overall_Count: '+str(count),selector={'name':color})
+#             #fig.add_annotation(x=1+i*3, y=8000, text=f'Total Count ({color}): {count}', showarrow=True)
+
+#         # Update axes labels
+#         if variable=='B0_CMS3_weMissM2':
+#             fig.update_xaxes(title_text="$M_{miss}^2\ \ [GeV^2/c^4]$", row=1)
+
+#         # Show the plot
+#         fig.show()
+        
+#     def hist2d(self, cut=None, facet=False):
+#         # Define number of colors to generate
+#         color_sequence = ['rgb(255,255,255)'] + px.colors.sequential.Rainbow[1:]
+#         num_colors = 9
+#         # Generate colors with uniform spacing and Rainbow color scale
+#         my_colors = [[i/(num_colors-1), color_sequence[i]] for i in range(num_colors)]
+
+#         # Create a 2d histogram
+#         fig = px.density_heatmap(self.df.query(cut) if cut else self.df, 
+#                                  x="B0_CMS3_weMissM2", y="p_D_l",
+#                                  marginal_x='histogram', marginal_y='histogram',
+#                                  nbinsx=40,nbinsy=40,color_continuous_scale=my_colors,
+#                                  template='simple_white', title='Signal MC',
+#                                  facet_col='mode' if facet else None,
+#                                  facet_col_wrap=3 if facet else None,)
+
+#         # Update axes labels
+#         fig.update_xaxes(title_text="$M_{miss}^2\ \ [GeV^2/c^4]$", row=1)
+#         fig.update_yaxes(title_text="$|p_D|+|p_l|\ \ [GeV/c]$",row=1, col=1)
+
+#         fig.show()
+        
+#     def plot_FOM(self, sigModes, bkgModes, variable, test_points,cut=None):
+#         # calculate the FOM, efficiencies
+#         sig = self.df.loc[self.df['mode'].isin(sigModes)]
+#         bkg = self.df.loc[self.df['mode'].isin(bkgModes)]
+#         sig_tot = len(sig)
+#         bkg_tot = len(bkg)
+#         BDT_FOM = []
+#         BDT_FOM_err = []
+#         BDT_sigEff = []
+#         BDT_sigEff_err = []
+#         BDT_bkgEff = []
+#         BDT_bkgEff_err = []
+#         for i in test_points:
+#             nsig = len(sig.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
+#             nbkg = len(bkg.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
+#             tot = nsig+nbkg
+#             tot_err = np.sqrt(tot)
+#             FOM = nsig / tot_err # s / √(s+b)
+#             FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
+
+#             BDT_FOM.append(FOM)
+#             BDT_FOM_err.append(FOM_err)
+
+#             sigEff = nsig / sig_tot
+#             sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
+#             bkgEff = nbkg / bkg_tot
+#             bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
+#             BDT_sigEff.append(sigEff)
+#             BDT_sigEff_err.append(sigEff_err)
+#             BDT_bkgEff.append(bkgEff)
+#             BDT_bkgEff_err.append(bkgEff_err)
+        
+
+#         # Create figure with secondary y-axis
+#         fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+#         # Add traces
+#         fig.add_trace(
+#             go.Scatter(x=test_points, y=BDT_FOM, name="FOM",
+#                        error_y=dict(type='data',array=BDT_FOM_err,visible=True)),
+#             secondary_y=True,
+#         )
+
+#         fig.add_trace(
+#             go.Scatter(x=test_points, y=BDT_sigEff, name="sig_eff",
+#                        error_y=dict(type='data',array=BDT_sigEff_err,visible=True)),
+#             secondary_y=False,
+#         )
+        
+#         fig.add_trace(
+#             go.Scatter(x=test_points, y=BDT_bkgEff, name="bkg_eff",
+#                        error_y=dict(type='data',array=BDT_bkgEff_err,visible=True)),
+#             secondary_y=False,
+#         )
+
+#         # Add figure title
+#         fig.update_layout(
+#             title_text="MVA Performance",
+#             template='simple_white',
+#             hovermode='x',
+#             legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom')
+#         )
+
+#         # Set x-axis title
+#         fig.update_xaxes(title_text=variable)
+
+#         # Set y-axes titles
+#         fig.update_yaxes(title_text="<b>FOM</b>", secondary_y=True)
+#         fig.update_yaxes(title_text="Efficiency", secondary_y=False)
+
+#         fig.show()
+        
+#     def plot_cut_efficiency(self, cut, variable='B0_CMS3_weQ2lnuSimple',bins=15):
+#         # Create figure with secondary y-axis
+#         fig = make_subplots()
+        
+#         for mode in self.df['mode'].unique():
+#             if mode in ['bkg_continuum','bkg_fakeDTC','bkg_fakeB','bkg_others']:
+#                 continue
+#             comp=self.df.loc[self.df['mode']==mode]
+#             (bc, bins1) = np.histogram(comp[variable], bins=bins)
+#             (ac, bins1) = np.histogram(comp.query(cut)[variable], bins=bins1)
+#             bc+=1
+#             ac+=1
+#             efficiency = ac / bc
+#             factor = [i if i<1 else 0 for i in 1/ac + 1/bc] # mannually set the uncertainty to 0 if bin count==0
+#             efficiency_err = efficiency * np.sqrt(factor)
+#             bin_centers = (bins1[:-1] + bins1[1:]) /2
+            
+#             # Add traces
+#             fig.add_trace(
+#                 go.Scatter(x=bin_centers, y=efficiency, name=mode,
+#                            error_y=dict(type='data',array=efficiency_err,visible=True))
+#             )
+        
+        
+#         # Add figure title
+#         fig.update_layout(
+#             title_text=f'Efficiency for {cut=}',
+#             template='simple_white',
+#             hovermode='closest',
+#             legend=dict(orientation='h',title='',x=1,y=1,xanchor='right',yanchor='bottom')
+#         )
+
+#         # Set x-axis title
+#         fig.update_xaxes(title_text=variable)
+
+#         # Set y-axes titles
+#         fig.update_yaxes(title_text="<b>Efficiency</b>")
+
+#         fig.show()
+
+# # plotting version: residual = data - all_temp
+# def ply_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2'):
+#     if direction not in ['mm2', 'p_D_l']:
+#         raise ValueError('direction in [mm2, p_D_l]')
 #     fitted_components_names = list(Minuit.parameters)
 #     #### fitted_templates_2d = templates / normalization * yields
 #     fitted_templates_2d = [templates_2d[i]/templates_2d[i].sum() * Minuit.values[i] for i in range(len(templates_2d))]
@@ -1863,96 +2570,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
 #             continue
 #         else:
 #             fitted_templates_err[i][non_zero_masks[i]] = fitted_templates_2d[i][non_zero_masks[i]] * \
-#             np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)
-
-#     def extend(x):
-#         return np.append(x, x[-1])
-
-#     def errorband(bins, template_sum, template_err, ax):
-#         fitted_sum = np.sum(template_sum, axis=0)
-#         fitted_err = np.sqrt(np.sum(np.array(template_err)**2, axis=0)) # assuming the correlations between each template are 0
-#         ax.fill_between(bins, extend(fitted_sum - fitted_err), extend(fitted_sum + fitted_err),
-#         step="post", color="black", alpha=0.3, linewidth=0, zorder=100,)   
-
-#     def plot_with_hep(bins, templates_project, templates_project_err, data, signal_name, ax1, ax2, ax3):
-#         data_project = data.sum(axis=axis_to_be_summed_over)
-#         # plot the templates and data
-#         hep.histplot(templates_project, bin_edges, stack=True, histtype='fill', sort='yield_r', label=fitted_components_names, ax=ax1)
-#         # errorband(bin_edges, templates_project, templates_project_err, ax1)
-#         hep.histplot(data_project, bin_edges, histtype='errorbar', color='black', w2=data_project, ax=ax1)
-#         # plot the residual
-#         signal_index = fitted_components_names.index(signal_name)
-#         residual = data_project - np.sum(templates_project, axis=0)
-#         residual_signal = residual + templates_project[signal_index]
-#         # Error assuming the correlations between data and templates, between each template, are 0
-#         residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
-#         residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
-
-#         pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
-#         pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
-#         #hep.histplot(residual, bin_edges, histtype='errorbar', color='black', yerr=residual_err, ax=ax2)
-#         hep.histplot(residual, bin_edges, histtype='errorbar', color='black', ax=ax2)
-#         ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
-#         #hep.histplot(residual_signal, bin_edges, histtype='errorbar', color='black', yerr=residual_err_signal, ax=ax3)
-#         hep.histplot(pull, bin_edges, histtype='errorbar', color='black', ax=ax3)
-#         ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')
-
-#         ax1.grid()
-#         ax1.set_ylabel('# of counts per bin',fontsize=16)
-#         ax1.set_xlim(bin_edges.min(), bin_edges.max())
-#         ax1.set_ylim(0, data_project.max()*1.2)
-#         ax2.set_ylabel('pull',fontsize=14)
-#         ax2.set_xlim(bin_edges.min(), bin_edges.max())
-#         ax3.set_ylabel('pull + signal',fontsize=10)
-#         ax3.set_xlim(bin_edges.min(), bin_edges.max())
-#         ax1.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1)
-
-#     def plot_with_bar(bins, templates_project, templates_project_err, data, ax1, ax2, ax3,signal_name=None):        
-#         # calculate the arguments for plotting
-#         bin_width = bins[1]-bins[0]
-#         bin_centers = (bins[:-1] + bins[1:]) /2
-#         data_project = data.sum(axis=axis_to_be_summed_over)
-#         data_err = np.sqrt(data_project)
-
-#         # plot the templates with defined colors
-#         c = plt.cm.tab20.colors
-#         # sort the components to plot in order of fitted templates_project size
-#         sorted_indices = sorted(range(len(templates_2d)), key=lambda i: np.sum(templates_project[i]), reverse = True)
-#         bottom_hist = np.zeros(data.shape[1-axis_to_be_summed_over])
-#         for i in sorted_indices:
-#             binned_counts = templates_project[i]
-#             ax1.bar(x=bins[:-1], height=binned_counts, bottom=bottom_hist, color = c[i],
-#                     width=bin_width, align='edge', label=fitted_components_names[i])
-#             bottom_hist = bottom_hist + binned_counts
-#         # errorband(bin_edges, templates_project, templates_project_err, ax1)
-
-#         # plot the data
-#         ax1.errorbar(x=bin_centers, y=data_project, yerr=data_err, fmt='ko')
-#         # plot the residual
-#         residual = data_project - np.sum(templates_project, axis=0)
-#         # Error assuming the correlations between data and templates, between each template, are 0
-#         residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
-                        
-#         pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
-#         ax2.errorbar(x=bin_centers, y=residual, yerr=residual_err, fmt='ko')
-#         ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
-#         ax3.scatter(x=bin_centers, y=pull, c='black')
-#         ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')            
-
-#         ax1.grid()
-#         ax1.set_ylabel('# of counts per bin',fontsize=16)
-#         ax1.set_xlim(bin_edges.min(), bin_edges.max())
-#         ax1.set_ylim(0, data_project.max()*1.2)
-#         ax2.set_ylabel('residual',fontsize=14)
-#         ax2.set_xlim(bin_edges.min(), bin_edges.max())
-#         ax3.set_ylabel('pull',fontsize=14)
-#         ax3.set_xlim(bin_edges.min(), bin_edges.max())
-#         ax1.legend(bbox_to_anchor=(1,1),ncol=1, fancybox=True, shadow=True,labelspacing=1)
-        
-# #         signal_index = fitted_components_names.index(signal_name)
-# #         residual_signal = residual + templates_project[signal_index]
-# #         residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
-# #         pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
+#             np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)        
 
 #     if direction=='mm2':
 #         direction_label = '$M_{miss}^2$'
@@ -1963,7 +2581,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
 
 #         bin_edges = edges[axis_to_be_summed_over] #xedges
 #         slice_position = slices[1-axis_to_be_summed_over] #p_D_l
-#         slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.2)).nonzero()
+#         slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
 #         first_slice_index = (slice_index[0]-1)
 #         second_slice_index = (slice_index[0])
 
@@ -1985,7 +2603,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
 
 #         bin_edges = edges[axis_to_be_summed_over] #yedges
 #         slice_position = slices[1-axis_to_be_summed_over] #mm2
-#         slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.2)).nonzero()
+#         slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
 #         first_slice_index = (slice_index[0]-1)
 #         second_slice_index = (slice_index[0])
 
@@ -1997,838 +2615,81 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
 #         data_slice1 = data_2d[:,:first_slice_index]
 #         data_slice2 = data_2d[:,second_slice_index:]
 
-
 #     else:
-#         raise ValueError('Current version only supports projection to either MM2 or p_D_l')
-
-
-#     if not slices:
-#         fig = plt.figure(figsize=(6.4,6.4))
-#         gs = gridspec.GridSpec(3,1, height_ratios=[0.7,0.15,0.15])
-#         ax1 = fig.add_subplot(gs[0])
-#         ax2 = fig.add_subplot(gs[1])
-#         ax3 = fig.add_subplot(gs[2])
-#         gs.update(hspace=0.3) 
-#         fitted_project = [temp.sum(axis=axis_to_be_summed_over) for temp in fitted_templates]
-#         fitted_project_err = [temp.sum(axis=axis_to_be_summed_over) for temp in fitted_templates_err]
-
-#         # plot the templates and data and templates_err
-#         if plot_with=='mplhep':
-#             plot_with_hep(bin_edges, fitted_project, fitted_project_err, counts, '$D\\tau\\nu$', ax1, ax2,ax3)
-#         elif plot_with=='pltbar':
-#             plot_with_bar(bin_edges, fitted_project, fitted_project_err, counts, '$D\\tau\\nu$', ax1, ax2,ax3)
-#         ax1.set_title(f'Fitting projection to {direction_label}')
-#         ax3.set_xlabel(direction_label)
-
-#     elif slices:
-#         fig = plt.figure(figsize=(16,9))
-#         spec = gridspec.GridSpec(6,2, figure=fig, wspace=0.4, hspace=0.5)
-#         ax1 = fig.add_subplot(spec[:-2, 0])
-#         ax2 = fig.add_subplot(spec[:-2, 1])
-#         ax3 = fig.add_subplot(spec[-2, 0])
-#         ax4 = fig.add_subplot(spec[-2, 1])
-#         ax5 = fig.add_subplot(spec[-1, 0])
-#         ax6 = fig.add_subplot(spec[-1, 1])
-#         #gs.update(hspace=0) 
-
-#         # plot the templates and data and template_err
-#         if plot_with=='mplhep':
-#             plot_with_hep(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, slice1_signal, ax1, ax3, ax5)
-#             plot_with_hep(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, slice2_signal, ax2, ax4, ax6)
-#         elif plot_with=='pltbar':
-#             plot_with_bar(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, ax1, ax3, ax5)
-#             plot_with_bar(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, ax2, ax4, ax6)
-
-#         ax1.set_title(f'{other_direction_label} < {slice_position}  {other_direction_unit}',fontsize=14)
-#         ax2.set_title(f'{other_direction_label} > {slice_position}  {other_direction_unit}',fontsize=14)
-#         fig.suptitle(f'Fitted projection to {direction_label} in slices of {other_direction_label}',fontsize=16)
-#         fig.supxlabel(direction_label + '  ' + direction_unit,fontsize=16)
-
-# +
-# import plotly.express as px
-# import plotly.graph_objects as go
-# from plotly.subplots import make_subplots
-
-class ply:
-    def __init__(self, df):
-        self.df = df
-        
-    def hist(self, variable='B0_CMS3_weMissM2', cut=None, facet=False):
-        # Create a histogram
-        fig=px.histogram(self.df.query(cut) if cut else self.df, 
-                         x=variable, color='mode', nbins=60, 
-                         marginal='box', #opacity=0.5, barmode='overlay',
-                         color_discrete_sequence=px.colors.qualitative.Plotly,
-                         template='simple_white', title='Signal MC',
-                         facet_col='p_D_l_region' if facet else None)
-
-        # Manage the layout
-        fig.update_layout(font_family='Rockwell', hovermode='closest',
-                          legend=dict(orientation='h',title='',x=1,y=1,xanchor='right',yanchor='bottom'))
-
-        # Manage the hover labels
-        count_by_color = self.df.groupby('mode')['__event__'].count()
-        for i, (color, count) in enumerate(count_by_color.items()):
-            fig.update_traces(hovertemplate='Bin_Count: %{y}<br>Overall_Count: '+str(count),selector={'name':color})
-            #fig.add_annotation(x=1+i*3, y=8000, text=f'Total Count ({color}): {count}', showarrow=True)
-
-        # Update axes labels
-        if variable=='B0_CMS3_weMissM2':
-            fig.update_xaxes(title_text="$M_{miss}^2\ \ [GeV^2/c^4]$", row=1)
-
-        # Show the plot
-        fig.show()
-        
-    def hist2d(self, cut=None, facet=False):
-        # Define number of colors to generate
-        color_sequence = ['rgb(255,255,255)'] + px.colors.sequential.Rainbow[1:]
-        num_colors = 9
-        # Generate colors with uniform spacing and Rainbow color scale
-        my_colors = [[i/(num_colors-1), color_sequence[i]] for i in range(num_colors)]
-
-        # Create a 2d histogram
-        fig = px.density_heatmap(self.df.query(cut) if cut else self.df, 
-                                 x="B0_CMS3_weMissM2", y="p_D_l",
-                                 marginal_x='histogram', marginal_y='histogram',
-                                 nbinsx=40,nbinsy=40,color_continuous_scale=my_colors,
-                                 template='simple_white', title='Signal MC',
-                                 facet_col='mode' if facet else None,
-                                 facet_col_wrap=3 if facet else None,)
-
-        # Update axes labels
-        fig.update_xaxes(title_text="$M_{miss}^2\ \ [GeV^2/c^4]$", row=1)
-        fig.update_yaxes(title_text="$|p_D|+|p_l|\ \ [GeV/c]$",row=1, col=1)
-
-        fig.show()
-        
-    def plot_FOM(self, sigModes, bkgModes, variable, test_points,cut=None):
-        # calculate the FOM, efficiencies
-        sig = self.df.loc[self.df['mode'].isin(sigModes)]
-        bkg = self.df.loc[self.df['mode'].isin(bkgModes)]
-        sig_tot = len(sig)
-        bkg_tot = len(bkg)
-        BDT_FOM = []
-        BDT_FOM_err = []
-        BDT_sigEff = []
-        BDT_sigEff_err = []
-        BDT_bkgEff = []
-        BDT_bkgEff_err = []
-        for i in test_points:
-            nsig = len(sig.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
-            nbkg = len(bkg.query(f"{cut} and {variable}>{i}" if cut else f"{variable}>{i}"))
-            tot = nsig+nbkg
-            tot_err = np.sqrt(tot)
-            FOM = nsig / tot_err # s / √(s+b)
-            FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
-
-            BDT_FOM.append(FOM)
-            BDT_FOM_err.append(FOM_err)
-
-            sigEff = nsig / sig_tot
-            sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
-            bkgEff = nbkg / bkg_tot
-            bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
-            BDT_sigEff.append(sigEff)
-            BDT_sigEff_err.append(sigEff_err)
-            BDT_bkgEff.append(bkgEff)
-            BDT_bkgEff_err.append(bkgEff_err)
-        
-
-        # Create figure with secondary y-axis
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-        # Add traces
-        fig.add_trace(
-            go.Scatter(x=test_points, y=BDT_FOM, name="FOM",
-                       error_y=dict(type='data',array=BDT_FOM_err,visible=True)),
-            secondary_y=True,
-        )
-
-        fig.add_trace(
-            go.Scatter(x=test_points, y=BDT_sigEff, name="sig_eff",
-                       error_y=dict(type='data',array=BDT_sigEff_err,visible=True)),
-            secondary_y=False,
-        )
-        
-        fig.add_trace(
-            go.Scatter(x=test_points, y=BDT_bkgEff, name="bkg_eff",
-                       error_y=dict(type='data',array=BDT_bkgEff_err,visible=True)),
-            secondary_y=False,
-        )
-
-        # Add figure title
-        fig.update_layout(
-            title_text="MVA Performance",
-            template='simple_white',
-            hovermode='x',
-            legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom')
-        )
-
-        # Set x-axis title
-        fig.update_xaxes(title_text=variable)
-
-        # Set y-axes titles
-        fig.update_yaxes(title_text="<b>FOM</b>", secondary_y=True)
-        fig.update_yaxes(title_text="Efficiency", secondary_y=False)
-
-        fig.show()
-        
-    def plot_cut_efficiency(self, cut, variable='B0_CMS3_weQ2lnuSimple',bins=15):
-        # Create figure with secondary y-axis
-        fig = make_subplots()
-        
-        for mode in self.df['mode'].unique():
-            if mode in ['bkg_continuum','bkg_fakeDTC','bkg_fakeB','bkg_others']:
-                continue
-            comp=self.df.loc[self.df['mode']==mode]
-            (bc, bins1) = np.histogram(comp[variable], bins=bins)
-            (ac, bins1) = np.histogram(comp.query(cut)[variable], bins=bins1)
-            bc+=1
-            ac+=1
-            efficiency = ac / bc
-            factor = [i if i<1 else 0 for i in 1/ac + 1/bc] # mannually set the uncertainty to 0 if bin count==0
-            efficiency_err = efficiency * np.sqrt(factor)
-            bin_centers = (bins1[:-1] + bins1[1:]) /2
-            
-            # Add traces
-            fig.add_trace(
-                go.Scatter(x=bin_centers, y=efficiency, name=mode,
-                           error_y=dict(type='data',array=efficiency_err,visible=True))
-            )
-        
-        
-        # Add figure title
-        fig.update_layout(
-            title_text=f'Efficiency for {cut=}',
-            template='simple_white',
-            hovermode='closest',
-            legend=dict(orientation='h',title='',x=1,y=1,xanchor='right',yanchor='bottom')
-        )
-
-        # Set x-axis title
-        fig.update_xaxes(title_text=variable)
-
-        # Set y-axes titles
-        fig.update_yaxes(title_text="<b>Efficiency</b>")
-
-        fig.show()
-        
-    
-# plotting version: residual = data - all_temp
-def ply_projection_residual(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2'):
-    if direction not in ['mm2', 'p_D_l']:
-        raise ValueError('direction in [mm2, p_D_l]')
-    fitted_components_names = list(Minuit.parameters)
-    #### fitted_templates_2d = templates / normalization * yields
-    fitted_templates_2d = [templates_2d[i]/templates_2d[i].sum() * Minuit.values[i] for i in range(len(templates_2d))]
-    # fitted_templates_err = templates_2d_err, yields_err in quadrature
-                         # = fitted_templates_2d x sqrt( (1/templates_2d) + (yield_err/yield)**2 ) if templates_2d[i,j]!=0
-                         # = 0 if yield ==0 or templates_2d[i,j]==0
-    fitted_templates_err = np.zeros_like(templates_2d)
-    non_zero_masks = [np.where(t!= 0) for t in templates_2d]
-    for i in range(len(templates_2d)):
-        if Minuit.values[i]==0:
-            continue
-        else:
-            fitted_templates_err[i][non_zero_masks[i]] = fitted_templates_2d[i][non_zero_masks[i]] * \
-            np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)        
-
-    if direction=='mm2':
-        direction_label = '$M_{miss}^2$'
-        direction_unit = '$[GeV^2/c^4]$'
-        other_direction_label = '$|p_D|\ +\ |p_l|$'
-        other_direction_unit = '[GeV]'
-        axis_to_be_summed_over = 0
-
-        bin_edges = edges[axis_to_be_summed_over] #xedges
-        slice_position = slices[1-axis_to_be_summed_over] #p_D_l
-        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
-        first_slice_index = (slice_index[0]-1)
-        second_slice_index = (slice_index[0])
-
-        # parameters for slices==True
-        fitted_project_slice1 = [temp[:first_slice_index,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
-        fitted_project_slice2 = [temp[second_slice_index:,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
-        fitted_project_slice1_err = [np.sqrt((err**2)[:first_slice_index,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
-        fitted_project_slice2_err = [np.sqrt((err**2)[second_slice_index:,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
-        data_slice1 = data_2d[:first_slice_index,:]
-        data_slice2 = data_2d[second_slice_index:,:]
-
-
-    elif direction=='p_D_l':
-        direction_label = '$|p_D|\ +\ |p_l|$'
-        direction_unit = '[GeV]'
-        other_direction_label = '$M_{miss}^2$'
-        other_direction_unit = '$[GeV^2/c^4]$'
-        axis_to_be_summed_over = 1
-
-        bin_edges = edges[axis_to_be_summed_over] #yedges
-        slice_position = slices[1-axis_to_be_summed_over] #mm2
-        slice_index, = np.asarray(np.isclose(edges[1-axis_to_be_summed_over],slice_position,atol=0.1)).nonzero()
-        first_slice_index = (slice_index[0]-1)
-        second_slice_index = (slice_index[0])
-
-        # parameters for slices==True
-        fitted_project_slice1 = [temp[:,:first_slice_index].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
-        fitted_project_slice2 = [temp[:,second_slice_index:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
-        fitted_project_slice1_err = [np.sqrt((err**2)[:,:first_slice_index].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
-        fitted_project_slice2_err = [np.sqrt((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
-        data_slice1 = data_2d[:,:first_slice_index]
-        data_slice2 = data_2d[:,second_slice_index:]
-
-    else:
-        raise ValueError('Current version only supports projection to either mm2 or p_D_l')
+#         raise ValueError('Current version only supports projection to either mm2 or p_D_l')
 
         
-    def plot(bins, templates_project, templates_project_err, data, column):        
-        # calculate the arguments for plotting
-        bin_width = bins[1]-bins[0]
-        bin_centers = (bins[:-1] + bins[1:]) /2
-        data_project = data.sum(axis=axis_to_be_summed_over)
-        data_err = np.sqrt(data_project)
+#     def plot(bins, templates_project, templates_project_err, data, column):        
+#         # calculate the arguments for plotting
+#         bin_width = bins[1]-bins[0]
+#         bin_centers = (bins[:-1] + bins[1:]) /2
+#         data_project = data.sum(axis=axis_to_be_summed_over)
+#         data_err = np.sqrt(data_project)
 
-        # sort the components to plot in order of fitted templates_project size
-        c = px.colors.qualitative.Light24
-        sorted_indices = sorted(range(len(templates_2d)), key=lambda i: np.sum(templates_project[i]), reverse = True)
-        bottom_hist = np.zeros(data.shape[1-axis_to_be_summed_over])
-        for i in sorted_indices:
-            binned_counts = templates_project[i]
-            fig.add_trace(go.Bar(x=bins[:-1], y=binned_counts, width=bin_width,
-                                 alignmentgroup=1, name=fitted_components_names[i],
-                                 legendgroup=fitted_components_names[i],
-                                 marker=dict(color=c[i]),
-                                 showlegend=True if column==1 else False), 
-                          row=1, col=column)
+#         # sort the components to plot in order of fitted templates_project size
+#         c = px.colors.qualitative.Light24
+#         sorted_indices = sorted(range(len(templates_2d)), key=lambda i: np.sum(templates_project[i]), reverse = True)
+#         bottom_hist = np.zeros(data.shape[1-axis_to_be_summed_over])
+#         for i in sorted_indices:
+#             binned_counts = templates_project[i]
+#             fig.add_trace(go.Bar(x=bins[:-1], y=binned_counts, width=bin_width,
+#                                  alignmentgroup=1, name=fitted_components_names[i],
+#                                  legendgroup=fitted_components_names[i],
+#                                  marker=dict(color=c[i]),
+#                                  showlegend=True if column==1 else False), 
+#                           row=1, col=column)
 
-        # plot the data
-        fig.add_trace(go.Scatter(x=bin_centers, y=data_project, name='data',mode='markers',
-                                error_y=dict(type='data',array=data_err,visible=True),
-                                legendgroup='data',marker=dict(color=c[11]),
-                                showlegend=True if column==1 else False),
-                      row=1, col=column)
+#         # plot the data
+#         fig.add_trace(go.Scatter(x=bin_centers, y=data_project, name='data',mode='markers',
+#                                 error_y=dict(type='data',array=data_err,visible=True),
+#                                 legendgroup='data',marker=dict(color=c[11]),
+#                                 showlegend=True if column==1 else False),
+#                       row=1, col=column)
 
-        # plot the residual
-        residual = data_project - np.sum(templates_project, axis=0)
-        # Error assuming the correlations between data and templates, between each template, are 0
-        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+#         # plot the residual
+#         residual = data_project - np.sum(templates_project, axis=0)
+#         # Error assuming the correlations between data and templates, between each template, are 0
+#         residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
                         
-        pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
-        fig.add_trace(go.Scatter(x=bin_centers, y=residual,name='residual',mode='markers',
-                        error_y=dict(type='data',array=residual_err,visible=True),
-                                legendgroup='residual',marker=dict(color=c[12]),
-                                showlegend=True if column==1 else False),
-              row=2, col=column)
-        fig.add_trace(go.Scatter(x=bin_centers, y=pull,name='pull',mode='markers',
-                                legendgroup='pull',marker=dict(color=c[13]),
-                                showlegend=True if column==1 else False),
-              row=3, col=column)
+#         pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
+#         fig.add_trace(go.Scatter(x=bin_centers, y=residual,name='residual',mode='markers',
+#                         error_y=dict(type='data',array=residual_err,visible=True),
+#                                 legendgroup='residual',marker=dict(color=c[12]),
+#                                 showlegend=True if column==1 else False),
+#               row=2, col=column)
+#         fig.add_trace(go.Scatter(x=bin_centers, y=pull,name='pull',mode='markers',
+#                                 legendgroup='pull',marker=dict(color=c[13]),
+#                                 showlegend=True if column==1 else False),
+#               row=3, col=column)
         
 
-    # create subplots
-    fig = make_subplots(rows=3, cols=2, row_heights=[0.7, 0.15,0.15],vertical_spacing=0.05,
-                    subplot_titles=(f'{other_direction_label} < {slice_position}  {other_direction_unit}',
-                                    f'{other_direction_label} > {slice_position}  {other_direction_unit}',
-                                    '','','',''))
+#     # create subplots
+#     fig = make_subplots(rows=3, cols=2, row_heights=[0.7, 0.15,0.15],vertical_spacing=0.05,
+#                     subplot_titles=(f'{other_direction_label} < {slice_position}  {other_direction_unit}',
+#                                     f'{other_direction_label} > {slice_position}  {other_direction_unit}',
+#                                     '','','',''))
 
-    # plot the templates and data and template_err
-    plot(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, column=1)
-    plot(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, column=2)
+#     # plot the templates and data and template_err
+#     plot(bin_edges, fitted_project_slice1, fitted_project_slice1_err, data_slice1, column=1)
+#     plot(bin_edges, fitted_project_slice2, fitted_project_slice2_err, data_slice2, column=2)
     
-    # Set x/y-axis title
-    fig.update_xaxes(title_text=direction_label + direction_unit,row=3)
-    fig.update_yaxes(title_text='# of counts per bin', row=1, col=1)
-    fig.update_yaxes(title_text='residual', row=2, col=1)
-    fig.update_yaxes(title_text='pull', row=3, col=1)
-
-    # Add figure title
-    fig.update_layout(
-        width=850,height=650,
-        title_text=f'Fitted projection to {direction_label} in slices of {other_direction_label}',
-        template='simple_white',
-        hovermode='closest',
-        barmode='stack',
-        legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom'),
-        shapes=[dict(type='line', y0=0, y1=0, xref='paper', 
-                     x0=bin_edges.min(), x1=bin_edges.max())],
-    )
-
-    fig.show()
-
-# +
-# from enum import Enum
-
-# # define DecayModes from DecayHash
-# class DecayMode(Enum):
-#     bkg = 0
-#     sig_D_tau_nu = 1
-#     sig_D_l_nu = 2
-#     sig_Dst_tau_nu = 3
-#     sig_Dst_l_nu = 4
-#     Dstst_tau_nu_mixed = 5
-#     Dstst_tau_nu_charged = 6
-#     res_Dstst_l_nu_mixed = 7
-#     nonres_Dstst_l_nu_mixed = 8
-#     gap_Dstst_l_nu_mixed = 9
-#     res_Dstst_l_nu_charged = 10
-#     nonres_Dstst_l_nu_charged = 11
-
-# DecayMode = Enum('DecayMode', ['bkg_fakeD',           'bkg_continuum',    'bkg_combinatorial',
-#                                'bkg_Odecay',          'bkg_fakeTC',       r'$D\tau\nu$',
-#                                r'$D^\ast\tau\nu$',    r'$D\ell\nu$',      r'$D^\ast\ell\nu$',
-#                                r'$D^{\ast\ast}\tau\nu$_mixed',            r'$D^{\ast\ast}\tau\nu$_charged',
-#                                r'res_$D^{\ast\ast}\ell\nu$_mixed',        r'nonres_$D^{\ast\ast}\ell\nu$_mixed',
-#                                r'gap_$D^{\ast\ast}\ell\nu$_mixed',        r'res_$D^{\ast\ast}\ell\nu$_charged',
-#                                r'nonres_$D^{\ast\ast}\ell\nu$_charged'],
-#                  start=0)
-
-# DecayMode(0).name
-
-#     if not new:
-#         # Sig components
-#         sig_D_tau_nu=df.query(f'DecayMode=={DecayMode["sig_D_tau_nu"].value} and \
-#         {true_B0} and {true_D_tau} and {DecayErrors["D_tau_errors"]}').copy()
-
-#         sig_D_l_nu=df.query(f'DecayMode=={DecayMode[f"sig_D_l_nu"].value} and \
-#         {true_B0} and {true_D_ell} and {DecayErrors["D_l_errors"]}').copy()
-
-#         sig_Dst_tau_nu=df.query(f'DecayMode=={DecayMode["sig_Dst_tau_nu"].value} and \
-#         {true_B0} and {true_D_tau} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#         sig_Dst_l_nu=df.query(f'DecayMode=={DecayMode[f"sig_Dst_l_nu"].value} and \
-#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_l_errors"]}').copy()
-
-#         Dstst_tau_nu_mixed=df.query(f'DecayMode=={DecayMode["Dstst_tau_nu_mixed"].value} and \
-#         {true_B0} and {true_D_tau} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#         res_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"res_Dstst_l_nu_mixed"].value} and \
-#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#         nonres_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"nonres_Dstst_l_nu_mixed"].value} and \
-#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#         gap_Dstst_l_nu_mixed=df.query(f'DecayMode=={DecayMode[f"gap_Dstst_l_nu_mixed"].value} and \
-#         {true_B0} and {true_D_ell} and {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#         Dstst_tau_nu_charged=df.query(f'DecayMode=={DecayMode["Dstst_tau_nu_charged"].value} and \
-#         {B_charged} and {true_D_tau} and {DecayErrors["Bcharged_errors"]}').copy()
-
-#         res_Dstst_l_nu_charged=df.query(f'DecayMode=={DecayMode[f"res_Dstst_l_nu_charged"].value} and \
-#         {B_charged} and {true_D_ell} and {DecayErrors["Bcharged_errors"]}').copy()
-
-#         nonres_Dstst_l_nu_charged=df.query(f'DecayMode=={DecayMode[f"nonres_Dstst_l_nu_charged"].value} and \
-#         {B_charged} and {true_D_ell} and {DecayErrors["Bcharged_errors"]}').copy()
-
-# +
-# ## DecayHash
-
-# from collections import OrderedDict
-
-# # the order of keys might be important, try to keep the muon modes at the bottom for e reconstruction
-# # the e modes will be kept at the bottom for a muon reconstruction
-# mode_dict = {}
-# mode_dict['e'] = OrderedDict()
-# mode_dict['e']['sig_D_tau_nu']=[
-#     '511 (-> -411 (-> 321 -211 -211) -15 (-> -11 12 -16) 16)',
-#     '-511 (-> 411 (-> -321 211 211) 15 (-> 11 -12 16) -16)']
-
-# mode_dict['e']['sig_D_l_nu']=[
-#     '511 (-> -411 (-> 321 -211 -211) -11 12)',
-#     '-511 (-> 411 (-> -321 211 211) 11 -12)']
-
-# mode_dict['e']['sig_Dst_tau_nu']=[
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -15 (-> -11 12 -16) 16)',
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -15 (-> -11 12 -16) 16)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 15 (-> 11 -12 16) -16)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 15 (-> 11 -12 16) -16)']
-
-# mode_dict['e']['sig_Dst_l_nu']=[
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -11 12)',
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -11 12)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 11 -12)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 11 -12)']
-
-# mode_dict['e']['Dstst_tau_nu_mixed']=[
-#     '511 (-> -10413 -15 (-> -11 12 -16) 16)','-511 (-> 10413 15 (-> 11 -12 16) -16)',
-#     '511 (-> -10411 -15 (-> -11 12 -16) 16)','-511 (-> 10411 15 (-> 11 -12 16) -16)',
-#     '511 (-> -20413 -15 (-> -11 12 -16) 16)','-511 (-> 20413 15 (-> 11 -12 16) -16)',
-#     '511 (-> -415 -15 (-> -11 12 -16) 16)',  '-511 (-> 415 15 (-> 11 -12 16) -16)']
-
-# mode_dict['e']['Dstst_tau_nu_charged']=[
-#     '521 (-> -10423 -15 (-> -11 12 -16) 16)','-521 (-> 10423 15 (-> 11 -12 16) -16)',
-#     '521 (-> -10421 -15 (-> -11 12 -16) 16)','-521 (-> 10421 15 (-> 11 -12 16) -16)',
-#     '521 (-> -20423 -15 (-> -11 12 -16) 16)','-521 (-> 20423 15 (-> 11 -12 16) -16)',
-#     '521 (-> -425 -15 (-> -11 12 -16) 16)',  '-521 (-> 425 15 (-> 11 -12 16) -16)']
-
-# mode_dict['e']['res_Dstst_l_nu_mixed']=[
-#     '511 (-> -10413 -11 12)','-511 (-> 10413 11 -12)',
-#     '511 (-> -10411 -11 12)','-511 (-> 10411 11 -12)',
-#     '511 (-> -20413 -11 12)','-511 (-> 20413 11 -12)',
-#     '511 (-> -415 -11 12)',  '-511 (-> 415 11 -12)']
-
-# mode_dict['e']['res_Dstst_l_nu_charged']=[
-#     '521 (-> -10423 -11 12)','-521 (-> 10423 11 -12)',
-#     '521 (-> -10421 -11 12)','-521 (-> 10421 11 -12)',
-#     '521 (-> -20423 -11 12)','-521 (-> 20423 11 -12)',
-#     '521 (-> -425 -11 12)',  '-521 (-> 425 11 -12)']
-
-# mode_dict['e']['nonres_Dstst_l_nu_mixed']=[
-#     '511 (-> -411 111 -11 12)',     '-511 (-> 411 111 11 -12)',
-#     '511 (-> -411 111 111 -11 12)', '-511 (-> 411 111 111 11 -12)',
-#     '511 (-> -411 211 -211 -11 12)','-511 (-> 411 211 -211 11 -12)',
-#     '511 (-> -411 -211 211 -11 12)','-511 (-> 411 -211 211 11 -12)',
-#     '511 (-> -413 111 -11 12)',     '-511 (-> 413 111 11 -12)',
-#     '511 (-> -413 111 111 -11 12)', '-511 (-> 413 111 111 11 -12)',
-#     '511 (-> -413 211 -211 -11 12)','-511 (-> 413 211 -211 11 -12)',
-#     '511 (-> -413 -211 211 -11 12)','-511 (-> 413 -211 211 11 -12)']
-
-# mode_dict['e']['nonres_Dstst_l_nu_charged']=[
-#     '521 (-> -411 211 -11 12)',    '-521 (-> 411 -211 11 -12)',
-#     '521 (-> -411 211 111 -11 12)','-521 (-> 411 -211 111 11 -12)',
-#     '521 (-> -411 111 211 -11 12)','-521 (-> 411 111 -211 11 -12)',
-#     '521 (-> -413 211 -11 12)',    '-521 (-> 413 -211 11 -12)',
-#     '521 (-> -413 211 111 -11 12)','-521 (-> 413 -211 111 11 -12)',
-#     '521 (-> -413 111 211 -11 12)','-521 (-> 413 111 -211 11 -12)']
-
-# mode_dict['e']['gap_Dstst_l_nu_mixed']=[
-#     '511 (-> -411 221 -11 12)','-511 (-> 411 221 11 -12)',
-#     '511 (-> -413 221 -11 12)','-511 (-> 413 221 11 -12)']
-
-
-# #################################
-
-# mode_dict['mu'] = OrderedDict()
-# mode_dict['mu']['sig_D_tau_nu']=[
-#     '511 (-> -411 (-> 321 -211 -211) -15 (-> -13 14 -16) 16)',
-#     '-511 (-> 411 (-> -321 211 211) 15 (-> 13 -14 16) -16)']
-
-# mode_dict['mu']['sig_D_l_nu']=[
-#     '511 (-> -411 (-> 321 -211 -211) -13 14)',
-#     '-511 (-> 411 (-> -321 211 211) 13 -14)']
-
-# mode_dict['mu']['sig_Dst_tau_nu']=[
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -15 (-> -13 14 -16) 16)',
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -15 (-> -13 14 -16) 16)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 15 (-> 13 -14 16) -16)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 15 (-> 13 -14 16) -16)']
-
-# mode_dict['mu']['sig_Dst_l_nu']=[
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 111) -13 14)',
-#     '511 (-> -413 (-> -411 (-> 321 -211 -211) 22) -13 14)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 111) 13 -14)',
-#     '-511 (-> 413 (-> 411 (-> -321 211 211) 22) 13 -14)']
-
-# mode_dict['mu']['Dstst_tau_nu_mixed']=[
-#     '511 (-> -10413 -15 (-> -13 14 -16) 16)','-511 (-> 10413 15 (-> 13 -14 16) -16)',
-#     '511 (-> -10411 -15 (-> -13 14 -16) 16)','-511 (-> 10411 15 (-> 13 -14 16) -16)',
-#     '511 (-> -20413 -15 (-> -13 14 -16) 16)','-511 (-> 20413 15 (-> 13 -14 16) -16)',
-#     '511 (-> -415 -15 (-> -13 14 -16) 16)',  '-511 (-> 415 15 (-> 13 -14 16) -16)']
-
-# mode_dict['mu']['Dstst_tau_nu_charged']=[
-#     '521 (-> -10423 -15 (-> -13 14 -16) 16)','-521 (-> 10423 15 (-> 13 -14 16) -16)',
-#     '521 (-> -10421 -15 (-> -13 14 -16) 16)','-521 (-> 10421 15 (-> 13 -14 16) -16)',
-#     '521 (-> -20423 -15 (-> -13 14 -16) 16)','-521 (-> 20423 15 (-> 13 -14 16) -16)',
-#     '521 (-> -425 -15 (-> -13 14 -16) 16)',  '-521 (-> 425 15 (-> 13 -14 16) -16)']
-
-# mode_dict['mu']['res_Dstst_l_nu_mixed']=[
-#     '511 (-> -10413 -13 14)','-511 (-> 10413 13 -14)',
-#     '511 (-> -10411 -13 14)','-511 (-> 10411 13 -14)',
-#     '511 (-> -20413 -13 14)','-511 (-> 20413 13 -14)',
-#     '511 (-> -415 -13 14)',  '-511 (-> 415 13 -14)',]
-
-# mode_dict['mu']['res_Dstst_l_nu_charged']=[
-#     '521 (-> -10423 -13 14)','-521 (-> 10423 13 -14)',
-#     '521 (-> -10421 -13 14)','-521 (-> 10421 13 -14)',
-#     '521 (-> -20423 -13 14)','-521 (-> 20423 13 -14)',
-#     '521 (-> -425 -13 14)',  '-521 (-> 425 13 -14)',]
-
-# mode_dict['mu']['nonres_Dstst_l_nu_mixed']=[
-#     '511 (-> -411 111 -13 14)',     '-511 (-> 411 111 13 -14)',
-#     '511 (-> -411 111 111 -13 14)', '-511 (-> 411 111 111 13 -14)',
-#     '511 (-> -411 211 -211 -13 14)','-511 (-> 411 211 -211 13 -14)',
-#     '511 (-> -411 -211 211 -13 14)','-511 (-> 411 -211 211 13 -14)',
-#     '511 (-> -413 111 -13 14)',     '-511 (-> 413 111 13 -14)',
-#     '511 (-> -413 111 111 -13 14)', '-511 (-> 413 111 111 13 -14)',
-#     '511 (-> -413 211 -211 -13 14)','-511 (-> 413 211 -211 13 -14)',
-#     '511 (-> -413 -211 211 -13 14)','-511 (-> 413 -211 211 13 -14)',]
-
-# mode_dict['mu']['nonres_Dstst_l_nu_charged']=[
-#     '521 (-> -411 211 -13 14)',    '-521 (-> 411 -211 13 -14)',
-#     '521 (-> -411 211 111 -13 14)','-521 (-> 411 -211 111 13 -14)',
-#     '521 (-> -413 211 -13 14)',    '-521 (-> 413 -211 13 -14)',
-#     '521 (-> -413 211 111 -13 14)','-521 (-> 413 -211 111 13 -14)']
-
-# mode_dict['mu']['gap_Dstst_l_nu_mixed']=[
-#     '511 (-> -411 221 -13 14)','-511 (-> 411 221 13 -14)',
-#     '511 (-> -413 221 -13 14)','-511 (-> 413 221 13 -14)']
-
-# +
-# def get_dataframe_samples_new_inclusiveD(df, mode, template=True):
-#     samples = {}
-#     lepton_PDG = {'e':11, 'mu':13}
-    
-#     ################## Define lepton #################
-#     truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
-#     fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]} and ell_mcErrors!=512'
-#     fakeTrack = 'ell_mcErrors==512'
-    
-#     ################# Define B ####################
-    
-#     D_Dst_list = [411, 413, -411, -413]
-#     Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
-#                  -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
-#     D_list = D_Dst_list + Dstst_list
-#     Pi_eta_list = [111, 211, -211, 221]
-    
-    
-#     # more categories with truel
-#     continuum = f'{truel} and B0_isContinuumEvent==1'
-    
-#     signals = f'{truel} and (abs(ell_genGMPDG)==511 or abs(ell_genGMPDG)==521) and \
-#     abs(ell_genMotherPDG)==15 and (ell_GMdaughter_0_PDG in @D_list)'
-    
-#     norms = f'{truel} and (abs(ell_genMotherPDG)==511 or abs(ell_genMotherPDG)==521) and \
-#     (ell_Mdaughter_0_PDG in @D_list)'
-    
-#     BBbkg = f'{truel} and B0_isContinuumEvent==0 and \
-#     ( (abs(ell_genGMPDG)!=511 and abs(ell_genGMPDG)!=521) or abs(ell_genMotherPDG)!=15 or (ell_GMdaughter_0_PDG not in @D_list) ) and \
-#     ( (abs(ell_genMotherPDG)!=511 and abs(ell_genMotherPDG)!=521)) or (ell_Mdaughter_0_PDG not in @D_list)'
-# #     combinatorial = f'{TDTl} and B0_mcPDG==300553'
-# #     singleBbkg = f'{TDTl} and B0_isContinuumEvent==0 and B0_mcPDG!=300553 and \
-# #     ( (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521) or \
-# #     ( ell_genMotherPDG!=B0_mcPDG and (ell_genGMPDG!=B0_mcPDG or abs(ell_genMotherPDG)!=15) ) )'
-    
-#     # more categories with signals and norms
-#     B2D_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==411*15'
-#     B2D_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==411*{lepton_PDG[mode]}'
-#     B2Dst_tau = f'{signals} and ell_GMdaughter_0_PDG*ell_GMdaughter_1_PDG==413*15'
-#     B2Dst_ell = f'{norms} and ell_Mdaughter_0_PDG*ell_Mdaughter_1_PDG==413*{lepton_PDG[mode]}'
-
-#     B2Dstst_tau = f'{signals} and (ell_GMdaughter_0_PDG in @Dstst_list) and abs(ell_GMdaughter_1_PDG)==15'
-#     B2Dstst_ell_res = f'{norms} and (ell_Mdaughter_0_PDG in @Dstst_list) and abs(ell_Mdaughter_1_PDG)=={lepton_PDG[mode]}'
-
-#     B2Dstst_ell_gap_non = f'{norms} and (ell_Mdaughter_0_PDG in @D_Dst_list) and ell_Mdaughter_1_PDG in @Pi_eta_list'
-
-#     ######################### Apply selection ###########################
-    
-#     # Fake bkg components
-#     bkg_fakel = df.query(fakel).copy()
-#     bkg_fakeTrack = df.query(fakeTrack).copy()
-#     samples[r'bkg_fakel'] = bkg_fakel
-#     samples[r'bkg_fakeTrack'] = bkg_fakeTrack
-    
-#     # True Dl bkg components
-#     bkg_continuum = df.query(continuum).copy()
-#     bkg_BB = df.query(BBbkg).copy()
-#     signals_all = df.query(signals).copy()
-#     norms_all = df.query(norms).copy()
-#     bkg_other_truel = pd.concat([df.query(truel).copy(),
-#                                  bkg_continuum,
-#                                  bkg_BB,
-#                                  signals_all,
-#                                  norms_all]).drop_duplicates(
-#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    
-#     samples[r'bkg_continuum'] = bkg_continuum
-#     samples[r'bkg_BB'] = bkg_BB
-#     samples[r'bkg_other_truel'] = bkg_other_truel
-    
-#     # True Dl Signal components
-#     D_tau_nu=df.query(B2D_tau).copy()
-#     D_l_nu=df.query(B2D_ell).copy()
-#     Dst_tau_nu=df.query(B2Dst_tau).copy()
-#     Dst_l_nu=df.query(B2Dst_ell).copy()
-#     Dstst_tau_nu=df.query(B2Dstst_tau).copy()
-#     Dstst_l_nu_res=df.query(B2Dstst_ell_res).copy()
-#     Dstst_l_nu_gap_non=df.query(B2Dstst_ell_gap_non).copy()
-    
-#     bkg_other_signal = pd.concat([signals_all,
-#                                   norms_all,
-#                                   D_tau_nu,
-#                                   Dst_tau_nu,
-#                                   D_l_nu,
-#                                   Dst_l_nu,
-#                                   Dstst_tau_nu,
-#                                   Dstst_l_nu_res,
-#                                   Dstst_l_nu_gap_non]).drop_duplicates(
-#         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    
-#     samples[r'$D\tau\nu$'] = D_tau_nu
-#     samples[r'$D^\ast\tau\nu$'] = Dst_tau_nu
-#     samples[r'$D\ell\nu$'] = D_l_nu
-#     samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
-#     samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
-#     samples[r'$D^{\ast\ast}\ell\nu$_res'] = Dstst_l_nu_res
-#     samples[r'$D^{\ast\ast}\ell\nu$_gap_non'] = Dstst_l_nu_gap_non
-#     samples['bkg_other_signal'] = bkg_other_signal
-    
-#     for name, df in samples.items():
-#         df['mode']=DecayMode_inclusiveD[name]
-#     return samples
-    
-# def get_dataframe_samples_old(df, mode, template=True):
-#     samples = {}
-#     lepton_PDG = {'e':11, 'mu':13}
-    
-#     # Define Truth matching criteria
-#     true_D_tau = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genGMPDG==B0_mcPDG and abs(ell_genMotherPDG)==15'
-    
-#     true_D_ell = f'D_mcErrors<8 and D_mcPDG*ell_mcPDG==411*{lepton_PDG[mode]} and ell_genMotherPDG==B0_mcPDG'
-    
-#     true_B0 = 'B0_mcPDG*D_mcPDG==-511*411'
-#     B_charged = 'B0_mcPDG*D_mcPDG==-521*411'
-    
-#     lepton_misID = f'abs(ell_mcPDG)!={lepton_PDG[mode]}'
-#     lepton_wrong_mother = f'ell_genMotherPDG!=B0_mcPDG and \
-#     (abs(ell_genMotherPDG)!=15 or abs(ell_genMotherPDG)==15 and ell_genGMPDG!=B0_mcPDG)'
-    
-# ###################### mcErrors need to be handled carefully
-# ###################### apparently correct e mcPDG==11 could have large mcErrors, 128, 2048; mcSecPhysProc need to be checked later
-#     DecayErrors = {}
-#     # norm modes, signal modes, D** mixed modes
-#     for key, value in {'D_l':[8,16],'Dst_l':[8,64],'D_tau':[8,32],'Dst_Dstst_mixed':[8,64]}.items():
-#                     # tau to e has a 1% radiative mode, thus 32
-#         correct_decay = f'({value[0]}+ell_mcErrors)<=B0_mcErrors<({value[1]}+ell_mcErrors)'
-#         missing_photon = f'({value[0]+1024}+ell_mcErrors)<=B0_mcErrors<({value[1]+1024}+ell_mcErrors)'
-        
-# #         wrongBremsDaughter = f'{value[0]+2048}<=B0_mcErrors<{value[1]+2048+128}'
-# #         missing_photon_wrongBrems = f'{value[0]+2048+1024}<=B0_mcErrors<{value[1]+2048+1024+128}'
-        
-#         DecayErrors[f'{key}_errors'] = f'({correct_decay} or {missing_photon})'
-#         # note that the parentheses in the `or` statement is very important when using `and` in front
-#         if template and (key in ['D_l', 'Dst_l']):
-#             DecayErrors[f'{key}_errors'] = correct_decay
-        
-            
-#     # D** charged modes
-#     Bcharged_errors = f'({8+256}+ell_mcErrors)<=B0_mcErrors<({64+256}+ell_mcErrors)'
-#     missing_photon_Bcharged = f'({8+1024+256}+ell_mcErrors)<=B0_mcErrors<({64+1024+256}+ell_mcErrors)'
-    
-#     # a charged particle (e.g. pi,e,mu) is added as a Brems daughter by the correctBrem module
-#     # however, this mistake doesn't change the MM2 and p_D_l much, still within the signal window
-#     # B0_mcErrors is offset by 128 due to the misID of the Brems daughter
-# #     wrongBremsDaughter_Bcharged = f'{8+2048+256}<=B0_mcErrors<{64+2048+256+128}'
-# #     missing_photon_wrongBrems_Bcharged = f'{8+2048+1024+256}<=B0_mcErrors<{64+2048+1024+256+128}'
-
-#     DecayErrors[f'Bcharged_errors'] = f'({Bcharged_errors} or {missing_photon_Bcharged})'
-# #         if template:
-# #             DecayErrors[f'Bcharged_errors'] = Bcharged_errors
-
-
-#     B2D_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*15'
-#     B2D_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
-#     B2Dst_tau = 'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
-#     B2Dst_ell = f'B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
-
-#     Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
-#                  -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
-#     B2Dstst_tau = 'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
-#     B2Dstst_ell_res = f'B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
-
-#     D_Dst_list = [411, 413, -411, -413]
-#     Pi_list = [111, 211, -211]
-#     B2Dstst_ell_non = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_list'
-#     B2Dstst_ell_gap = 'B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG==221'
-
-
-#     # Sig components
-#     sig_D_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2D_tau} and \
-#     {DecayErrors["D_tau_errors"]}').copy()
-
-#     sig_D_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2D_ell} and \
-#     {DecayErrors["D_l_errors"]}').copy()
-
-#     sig_Dst_tau_nu=df.query(f'{true_B0} and {true_D_tau} and {B2Dst_tau} and \
-#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#     sig_Dst_l_nu=df.query(f'{true_B0} and {true_D_ell} and {B2Dst_ell} and \
-#     {DecayErrors["Dst_l_errors"]}').copy()
-
-#     Dstst_tau_nu_mixed=df.query(f'{true_B0} and {true_D_tau} and {B2Dstst_tau} and \
-#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#     res_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_res} and \
-#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#     nonres_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_non} and \
-#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#     gap_Dstst_l_nu_mixed=df.query(f'{true_B0} and {true_D_ell} and {B2Dstst_ell_gap} and \
-#     {DecayErrors["Dst_Dstst_mixed_errors"]}').copy()
-
-#     Dstst_tau_nu_charged=df.query(f'{B_charged} and {true_D_tau} and {B2Dstst_tau} and \
-#     {DecayErrors["Bcharged_errors"]}').copy()
-
-#     res_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_res} and \
-#     {DecayErrors["Bcharged_errors"]}').copy()
-
-#     nonres_Dstst_l_nu_charged=df.query(f'{B_charged} and {true_D_ell} and {B2Dstst_ell_non} and \
-#     {DecayErrors["Bcharged_errors"]}').copy()
-    
-#     samples[r'$D\tau\nu$'] = sig_D_tau_nu
-#     samples[r'$D^\ast\tau\nu$'] = sig_Dst_tau_nu
-#     samples[r'$D^{\ast\ast}\tau\nu$_mixed'] = Dstst_tau_nu_mixed
-#     samples[r'$D^{\ast\ast}\tau\nu$_charged'] = Dstst_tau_nu_charged
-#     samples[r'$D\ell\nu$'] = sig_D_l_nu
-#     samples[r'$D^\ast\ell\nu$'] = sig_Dst_l_nu
-#     samples[r'res_$D^{\ast\ast}\ell\nu$_mixed'] = res_Dstst_l_nu_mixed
-#     samples[r'nonres_$D^{\ast\ast}\ell\nu$_mixed'] = nonres_Dstst_l_nu_mixed
-#     samples[r'gap_$D^{\ast\ast}\ell\nu$_mixed'] = gap_Dstst_l_nu_mixed
-#     samples[r'res_$D^{\ast\ast}\ell\nu$_charged'] = res_Dstst_l_nu_charged
-#     samples[r'nonres_$D^{\ast\ast}\ell\nu$_charged'] = nonres_Dstst_l_nu_charged
-   
-    
-#     #Bkg components
-#     bkg_fakeTracksClusters = df.query('B0_mcErrors==512 and B0_isContinuumEvent!=1').copy()
-#     samples[r'bkg_fakeTC'] = bkg_fakeTracksClusters
-    
-#     bkg_continuum = df.query('B0_isContinuumEvent==1').copy()
-#     samples[r'bkg_continuum'] = bkg_continuum
-    
-#     bkg_BBbar = df.query('B0_mcErrors!=512 and B0_isContinuumEvent!=1')
-#     bkg_fakeD = bkg_BBbar.query('(abs(D_mcPDG)!=411 or D_mcErrors>=8)').copy()
-#     samples[r'bkg_fakeD'] = bkg_fakeD
-
-#     bkg_trueD = bkg_BBbar.query('abs(D_mcPDG)==411 and D_mcErrors<8')
-#     bkg_combinatorial = bkg_trueD.query('B0_mcPDG==300553').copy()
-#     samples[r'bkg_combinatorial'] = bkg_combinatorial
-    
-#     bkg_sigOtherBDTaudecay = bkg_trueD.query(f'B0_mcPDG!=300553 and \
-#                 (abs(B0_mcPDG)!=511 and abs(B0_mcPDG)!=521 or \
-#                 {lepton_misID} or {lepton_wrong_mother})').copy()
-#                 # reconstruct a non-B particle or lepton_misID or lepton from B daughter decay
-#     samples[r'bkg_Odecay'] = bkg_sigOtherBDTaudecay
-    
-    
-#     bkg_others = pd.concat([df,
-#                             sig_D_tau_nu,
-#                             sig_D_l_nu,
-#                             sig_Dst_tau_nu,
-#                             sig_Dst_l_nu,
-#                             Dstst_tau_nu_mixed,
-#                             Dstst_tau_nu_charged,
-#                             res_Dstst_l_nu_mixed,
-#                             nonres_Dstst_l_nu_mixed,
-#                             gap_Dstst_l_nu_mixed,
-#                             res_Dstst_l_nu_charged,
-#                             nonres_Dstst_l_nu_charged,
-#                             bkg_fakeTracksClusters,
-#                             bkg_fakeD,
-#                             bkg_sigOtherBDTaudecay,
-#                             bkg_combinatorial,
-#                             bkg_continuum]).drop_duplicates(
-#                 subset=['__experiment__','__run__','__event__','__production__'],keep=False)
-    
-#     samples['bkg_others'] = bkg_others
-
-    
-#     for name, df in samples.items():
-#         df['mode']=DecayMode[name]
-
-#     df = pd.concat([df for df in samples.values()],ignore_index=True).reset_index(drop=True)
-#     df['p_D_l_region'] = np.where(df['p_D_l']>2.5,1,0)
-    
-#     return df, samples
-
-#     # the bkg_others contains events with wrong bremsstralung corrected electrons
-#     # The added daughter to the electron are pions, electrons, muons
-#     # so the 130<B0_mcErrors<160, e_mcErrors==128, 2176, 2180
+#     # Set x/y-axis title
+#     fig.update_xaxes(title_text=direction_label + direction_unit,row=3)
+#     fig.update_yaxes(title_text='# of counts per bin', row=1, col=1)
+#     fig.update_yaxes(title_text='residual', row=2, col=1)
+#     fig.update_yaxes(title_text='pull', row=3, col=1)
+
+#     # Add figure title
+#     fig.update_layout(
+#         width=850,height=650,
+#         title_text=f'Fitted projection to {direction_label} in slices of {other_direction_label}',
+#         template='simple_white',
+#         hovermode='closest',
+#         barmode='stack',
+#         legend=dict(orientation='h',title='',x=1,y=1.1,xanchor='right',yanchor='bottom'),
+#         shapes=[dict(type='line', y0=0, y1=0, xref='paper', 
+#                      x0=bin_edges.min(), x1=bin_edges.max())],
+#     )
+
+#     fig.show()
+# endregion

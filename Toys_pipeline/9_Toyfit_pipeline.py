@@ -59,17 +59,12 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
-    workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
+    temp_workspace = b2luigi.Parameter(default='',
                                        hashed=True,
-                                       description='relative path to pyhf workspace')
-    
-    test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=True)
-    
-    signalRegion_workspace_fakeDTest = b2luigi.Parameter(
-        default='R_D_2d_workspace_withFakeDinSR_forSidebandTest_reweight.json',
-        significant=False,
-        hashed=True,
-        description='relative path to pyhf workspace')
+                                       description='relative path to the template workspace')
+    test_workspace = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       description='relative path to the test workspace')
     
     init_toy_pars = b2luigi.ListParameter(default=[1]*7, 
                                           hashed=True,
@@ -100,9 +95,9 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
 
     def run(self):
         
-        # load workspace
-        spec = cabinetry.workspace.load(self.workspace_path)
-        model, _ = cabinetry.model_utils.model_and_data(spec)
+        # load templates
+        spec_temp = cabinetry.workspace.load(self.temp_workspace)
+        model, _ = cabinetry.model_utils.model_and_data(spec_temp)
         
         # Get the list of all sample names from the model
         all_sample_names = model.config.samples
@@ -115,8 +110,15 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
         minos_parameters = [param for param, fix in zip(all_parameter_names, fix_mask) if not fix]
         
         
-        if self.test_fakeD_sideband:
-            spec_test = cabinetry.workspace.load(self.signalRegion_workspace_fakeDTest)
+        # Generate toys
+        if self.test_workspace == '':
+            # initialize toys from temp workspace
+            toy_pars = model.config.suggested_init()
+            toy_pars[:len(self.init_toy_pars)] = self.init_toy_pars
+            pdf_toy = model.make_pdf(pyhf.tensorlib.astensor(toy_pars))
+        else:
+            # load test model from test workspace
+            spec_test = cabinetry.workspace.load(self.test_workspace)
             model_test, _ = cabinetry.model_utils.model_and_data(spec_test)
             
             # set initialisation for generating toys     
@@ -124,12 +126,6 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
             toy_pars[:len(self.init_toy_pars)] = self.init_toy_pars
             # generate the toys:
             pdf_toy = model_test.make_pdf(pyhf.tensorlib.astensor(toy_pars))
-            
-        else:
-            # initialize toys
-            toy_pars = model.config.suggested_init()
-            toy_pars[:len(self.init_toy_pars)] = self.init_toy_pars
-            pdf_toy = model.make_pdf(pyhf.tensorlib.astensor(toy_pars))
         
         toys = pdf_toy.sample((self.n_toys,))
         
@@ -232,12 +228,12 @@ class pyhf_toy_fitTask(b2luigi.Task):
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
-    workspace_path = b2luigi.Parameter(default='R_D_2d_workspace.json',
-                                       significant=True,
+    temp_workspace = b2luigi.Parameter(default='',
                                        hashed=True,
-                                       description='relative path to pyhf workspace')
-    
-    test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=True)
+                                       description='relative path to the template workspace')
+    test_workspace = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       description='relative path to the test workspace')
     
     init_toy_pars = b2luigi.ListParameter(default=[1]*7, 
                                           hashed=True,
@@ -260,9 +256,9 @@ class pyhf_toy_fitTask(b2luigi.Task):
         n_max_toys_per_job = 10
         for part in range(int(np.ceil(self.n_total_toys / n_max_toys_per_job))):
             yield self.clone(pyhf_toy_mle_part_fitTask,
-                             workspace_path = self.workspace_path,
+                             temp_workspace = self.temp_workspace,
+                             test_workspace = self.test_workspace,
                              samples_toFix = self.samples_toFix,
-                             test_fakeD_sideband = self.test_fakeD_sideband,
                              init_toy_pars = self.init_toy_pars,
                              part=part,
                              n_toys=n_max_toys_per_job)
@@ -369,11 +365,12 @@ class pyhf_linearity_fitTask(b2luigi.Task):
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
-    workspace_path = b2luigi.Parameter(default='',
+    temp_workspace = b2luigi.Parameter(default='',
                                        hashed=True,
-                                       significant=True, description='relative path to pyhf workspace')
-    
-    test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=True)
+                                       description='relative path to the template workspace')
+    test_workspace = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       description='relative path to the test workspace')
     
     n_toys_per_point = b2luigi.IntParameter(default=10, 
                                             significant=False,
@@ -408,9 +405,9 @@ class pyhf_linearity_fitTask(b2luigi.Task):
             
             for part in range(int(np.ceil(self.n_toys_per_point / n_max_toys_per_job))):
                 yield self.clone(pyhf_toy_mle_part_fitTask,
-                                 workspace_path = self.workspace_path,
+                                 temp_workspace = self.temp_workspace,
+                                 test_workspace = self.test_workspace,
                                  samples_toFix = self.samples_toFix,
-                                 test_fakeD_sideband = self.test_fakeD_sideband,
                                  init_toy_pars = toy_pars,
                                  part=part,
                                  n_toys=n_max_toys_per_job)
@@ -691,11 +688,13 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
     samples_toFix = b2luigi.ListParameter(default=[], significant=True,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
-    workspace_path = b2luigi.Parameter(default='',
+    temp_workspace = b2luigi.Parameter(default='',
                                        hashed=True,
-                                       description='relative path to pyhf workspace')
-    test_fakeD_sideband = b2luigi.BoolParameter(default=False, significant=False)
-
+                                       description='relative path to the template workspace')
+    test_workspace = b2luigi.Parameter(default='',
+                                       hashed=True,
+                                       description='relative path to the test workspace')
+    
     def requires(self):
     
 #         yield self.clone(pyhf_binning_fitTask,
@@ -707,18 +706,18 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 #                          staterror = True)
     
         yield self.clone(pyhf_toy_fitTask,
-                         workspace_path = self.workspace_path,
+                         temp_workspace = self.temp_workspace,
+                         test_workspace = self.test_workspace,
                          samples_toFix = self.samples_toFix,
-                         test_fakeD_sideband = self.test_fakeD_sideband,
                          n_total_toys = 2000,
-                         init_toy_pars = [0.4]*12,
+                         init_toy_pars = [1]*12,
                          normalise_by_uncertainty = True)
         
         yield self.clone(pyhf_linearity_fitTask,
-                         workspace_path = self.workspace_path,
+                         temp_workspace = self.temp_workspace,
+                         test_workspace = self.test_workspace,
                          samples_toFix = self.samples_toFix,
-                         test_fakeD_sideband = self.test_fakeD_sideband,
-                         linearity_parameter_bonds = [0.2,0.6],
+                         linearity_parameter_bonds = [0.8,1.2],
                          n_toys_per_point = 30,
                          n_test_parameters = 12,
                          n_test_points = 40)
@@ -729,10 +728,14 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
     
     b2luigi.process(
-        pyhf_toys_wrapper(workspace_path='2d_ws_SR_e_60_60_1ab.json',
-                          samples_toFix = ['bkg_FakeD','bkg_TDFl','bkg_continuum','bkg_combinatorial','bkg_singleBbkg'
-                                          ],
-                          test_fakeD_sideband = False),
+        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_60_60_noMCUncer.json',
+                          temp_workspace='2d_ws_SR_e_60_60_SBFakeD_noMCUncer.json',
+                          samples_toFix = ['bkg_fakeD','bkg_TDFl',
+                                           'bkg_continuum',
+                                           'bkg_combinatorial',
+                                           'bkg_singleBbkg',
+                                           #'bkg_fakeTracks',
+                                          ]),
         workers=int(1e4),
         batch=True,
         ignore_additional_command_line_args=False
