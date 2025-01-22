@@ -1486,15 +1486,16 @@ class mpl:
             counts = hist
             counts_err = hist.round(0)
 
-        # 2D Histogram
-        im = ax.imshow(counts.T.round(0), origin='lower', aspect='auto', 
-                         cmap='rainbow', norm=mcolors.LogNorm(),
-                         extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
-        fig.colorbar(im, ax=ax)
-        ax.set_xlabel('$M_{miss}^2$')
-        ax.set_ylabel('$|p_D| + |p_{\ell}|$')
-        ax.set_title(name)
-        ax.grid()
+        if fig is not None and ax is not None:
+            # 2D Histogram
+            im = ax.imshow(counts.T.round(0), origin='lower', aspect='auto', 
+                             cmap='rainbow', norm=mcolors.LogNorm(),
+                             extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
+            fig.colorbar(im, ax=ax)
+            ax.set_xlabel('$M_{miss}^2$')
+            ax.set_ylabel('$|p_D| + |p_{\ell}|$')
+            ax.set_title(name)
+            ax.grid()
         
         return counts_err
 
@@ -1602,7 +1603,7 @@ class mpl:
         
     def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,scale={},mask=[],
                             bkg_name='bkg_fakeD',merge_sidebands=False,samples_sig=None,
-                            figsize=(8,5),legend_nc=2,legend_fs=12):
+                            norm_tail_subt=False,figsize=(8,5),legend_nc=2,legend_fs=12):
         if type(variable)==str:
             # Create a figure with two subplots: one for the histogram, one for the residual plot
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
@@ -1611,6 +1612,13 @@ class mpl:
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
         
         if bkg_name=='bkg_fakeD':
+            # norm in sig region, for tail removal
+            Dellnu = self.samples[r'$D\ell\nu$'].query('1.84<D_M<1.9').copy()
+            Dstellnu = self.samples[r'$D^\ast\ell\nu$'].query('1.84<D_M<1.9').copy()
+            r_D = 144/18618
+            r_Dst = 125/12007
+            r_Dstst = 71/6636
+                    
             # fakeD in the signal region
             fakeD = self.samples[bkg_name]
             sig = fakeD.query('1.84<D_M<1.9').copy()
@@ -1634,6 +1642,11 @@ class mpl:
             sb_total = 0 # total counts in sidebands used in residual calculation
             sig_total = 0
             if type(variable)==str:
+                D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=region, variable=variable, 
+                                        ax=None, cut=cut, scale=None,correction=correction,mask=mask)
+                Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=region, variable=variable, 
+                                        ax=None, cut=cut, scale=None,correction=correction,mask=mask)
+                    
                 for region, df in regions.items():
                     if region=='signal region':
                         counts = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
@@ -1641,9 +1654,15 @@ class mpl:
                         sig_total += counts
 
                     elif region in ['sidebands','left sideband', 'right sideband']:
-                        counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
-                                        ax=ax1, cut=cut, scale=None,correction=correction,mask=mask)
-                        sb_total += counts
+                        fakeD_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
+                                        ax=None, cut=cut, scale=None,correction=correction,mask=mask)
+                        
+                        fakeD_counts -= r_D * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
+                        fakeD_counts -= r_Dst * Dst_counts
+                        sb_total += fakeD_counts
+                        
+                        ax1.hist(bins[:-1], bins, weights=unp.nominal_values(fakeD_counts),histtype='step',
+                    label=f'{region} \n{self.statistics(hist=[fakeD_counts, bins],count_only=False)} ')
 
                 # Residuals (Data - Model) and their errors
                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
@@ -1657,7 +1676,25 @@ class mpl:
                                                         fig=fig, ax=ax1, cut=cut, name=region)
                     elif region in ['sidebands']:
                         sb_total = self.plot_single_2d(bins=bins, df=df, variables=variable, 
-                                        fig=fig, ax=ax2, cut=cut, name=region)
+                                        fig=None, ax=None, cut=cut, name=region)
+                        D_counts = self.plot_single_2d(bins=bins, df=Dellnu, variables=variable, 
+                                        fig=None, ax=None, cut=cut, name=region)
+                        Dst_counts = self.plot_single_2d(bins=bins, df=Dstellnu, variables=variable, 
+                                        fig=None, ax=None, cut=cut, name=region)
+                        sb_total -= r_D * D_counts
+                        sb_total -= r_Dst * Dst_counts
+                        
+                        
+                        # 2D Histogram
+                        im = ax2.imshow(unp.nominal_values(sb_total).T.round(0), origin='lower', aspect='auto', 
+                                         cmap='rainbow', norm=mcolors.LogNorm(),
+                                         extent=[bins[0][0], bins[0][-1], bins[1][0], bins[1][-1]])
+                        fig.colorbar(im, ax=ax2)
+                        ax2.set_xlabel('$M_{miss}^2$')
+                        ax2.set_ylabel('$|p_D| + |p_{\ell}|$')
+                        ax2.set_title(region)
+                        ax2.grid()
+                        
                 # Residuals (Data - Model) and their errors
                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, fig=fig, ax=ax3)
             

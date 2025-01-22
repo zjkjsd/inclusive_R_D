@@ -728,8 +728,8 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
     
     b2luigi.process(
-        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_60_60_noMCUncer.json',
-                          temp_workspace='2d_ws_SR_e_60_60_SBFakeD_noMCUncer.json',
+        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_60_60.json',
+                          temp_workspace='2d_ws_SR_e_60_60_SBFakeD.json',
                           samples_toFix = ['bkg_fakeD','bkg_TDFl',
                                            'bkg_continuum',
                                            'bkg_combinatorial',
