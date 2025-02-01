@@ -47,7 +47,8 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl'
                  'bkg_other_TDTl':6,         'bkg_other_signal':7,
                  r'$D\tau\nu$':8,            r'$D^\ast\tau\nu$':9,    r'$D\ell\nu$':10,
                  r'$D^\ast\ell\nu$':11,                r'$D^{\ast\ast}\tau\nu$':12,
-                 r'$D^{\ast\ast}\ell\nu$':13,          r'$D\ell\nu$_gap':14}
+                 r'$D^{\ast\ast}\ell\nu$_narrow':13,   r'$D^{\ast\ast}\ell\nu$_broad':14,
+                 r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16}
 
 
 ################################ dataframe samples ###########################
@@ -125,14 +126,21 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
     B2Dst_tau = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
     B2Dst_ell = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
 
-    Dstst_list = [10413, 10411, 20413, 415, 10423, 10421, 20423, 425,
-                 -10413, -10411, -20413, -415, -10423, -10421, -20423, -425]
+    Dstst_narrow = [10413, 10423, 415, 425,
+                   -10413, -10423, -415, -425]
+    Dstst_broad  = [10411, 10421, 20413, 20423,
+                   -10411, -10421, -20413, -20423]
+    Dstst_list   = Dstst_narrow + Dstst_broad
+    
     B2Dstst_tau = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
-    B2Dstst_ell = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
+    B2Dstst_ell_narrow = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_narrow and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
+    B2Dstst_ell_broad = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_broad and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
 
     D_Dst_list = [411, 413, -411, -413]
-    Pi_eta_list = [111, 211, -211, 221]
-    B2D_ell_gap = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @Pi_eta_list'
+    pi_list = [111, 211, -211]
+    eta_list = [221]
+    B2D_ell_gap_pi = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @pi_list'
+    B2D_ell_gap_eta = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @eta_list'
     
     ######################### Apply selection ###########################
     
@@ -167,8 +175,10 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
     Dst_tau_nu=df.query(B2Dst_tau).copy()
     Dst_l_nu=df.query(B2Dst_ell).copy()
     Dstst_tau_nu=df.query(B2Dstst_tau).copy()
-    Dstst_l_nu=df.query(B2Dstst_ell).copy()
-    D_l_nu_gap=df.query(B2D_ell_gap).copy()
+    Dstst_l_nu_narrow=df.query(B2Dstst_ell_narrow).copy()
+    Dstst_l_nu_broad=df.query(B2Dstst_ell_broad).copy()
+    D_l_nu_gap_pi=df.query(B2D_ell_gap_pi).copy()
+    D_l_nu_gap_eta=df.query(B2D_ell_gap_eta).copy()
     
     bkg_other_signal = pd.concat([signals_all,
                                   D_tau_nu,
@@ -176,8 +186,10 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
                                   D_l_nu,
                                   Dst_l_nu,
                                   Dstst_tau_nu,
-                                  Dstst_l_nu,
-                                  D_l_nu_gap]).drop_duplicates(
+                                  Dstst_l_nu_narrow,
+                                  Dstst_l_nu_broad,
+                                  D_l_nu_gap_pi,
+                                  D_l_nu_gap_eta]).drop_duplicates(
         subset=['__experiment__','__run__','__event__','__production__'],keep=False)
     
     samples[r'$D\tau\nu$'] = D_tau_nu
@@ -185,8 +197,10 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
     samples[r'$D\ell\nu$'] = D_l_nu
     samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
     samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
-    samples[r'$D^{\ast\ast}\ell\nu$'] = Dstst_l_nu
-    samples[r'$D\ell\nu$_gap'] = D_l_nu_gap
+    samples[r'$D^{\ast\ast}\ell\nu$_narrow'] = Dstst_l_nu_narrow
+    samples[r'$D^{\ast\ast}\ell\nu$_broad'] = Dstst_l_nu_broad
+    samples[r'$D\ell\nu$_gap_pi'] = D_l_nu_gap_pi
+    samples[r'$D\ell\nu$_gap_eta'] = D_l_nu_gap_eta
     samples['bkg_other_signal'] = bkg_other_signal
     
     for name, df in samples.items():
@@ -644,7 +658,8 @@ def compare_2d_hist(data, model, bins_x, bins_y,
     plt.tight_layout()
     plt.show()
 
-def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool = True) -> dict:
+
+def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool = True, fakeD_uncer: bool = True) -> dict:
     """
     Update a workspace with new templates, uncertainties, and Asimov data without modifying the original workspace.
 
@@ -652,22 +667,21 @@ def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool
         workspace (dict): The original workspace to update.
         temp_asimov_channels (list): List of tuples from `create_templates`, where each tuple contains:
             - template_flat (dict): Flattened templates for each sample as unp.array.
-            - asimov_data (unp.array): Asimov data as unp.array.
-        staterror (bool, optional): Whether to include statistical error modifiers. Default is True.
+            - asimov_data (unp.uarray): Asimov data as unp.array.
+        mc_uncer (bool, optional): Whether to include statistical uncertainties for non-fakeD samples. Default is True.
+        fakeD_uncer (bool, optional): Whether to include statistical uncertainties for the fakeD sample. Default is True.
 
     Returns:
         dict: Updated workspace.
     """
+
     # Make a deep copy of the workspace to avoid modifying the original
     workspace_copy = copy.deepcopy(workspace)
     
     # Extract sample names from the first set of templates
     names = list(temp_asimov_channels[0][0].keys())
     
-    for ch_index in range(len(temp_asimov_channels)):
-        template_flat = temp_asimov_channels[ch_index][0]
-        asimov_data = temp_asimov_channels[ch_index][1]
-        
+    for ch_index, (template_flat, asimov_data) in enumerate(temp_asimov_channels):
         # Update the number of samples to match the new names
         current_samples = workspace_copy['channels'][ch_index]['samples']
         if len(current_samples) < len(names):
@@ -684,35 +698,23 @@ def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool
             # Assign nominal values to the 'data' field
             sample['data'] = unp.nominal_values(template_flat[names[samp_index]]).tolist()
             
-            # Insert a modifier for the mc statistical uncertainty
-            if 'staterror' not in [m['type'] for m in sample['modifiers']] and mc_uncer:
-#                 if names[samp_index] == 'bkg_fakeD':
-#                     continue
-#                 else:
-                sample['modifiers'].append({'type': 'staterror'})
-            
-            for mod_index, m in enumerate(sample['modifiers']):
-                if m['type'] == 'staterror':
-                    if mc_uncer:
-                        # Assign uncertainties to the 'data' field of the modifier
-                        m['data'] = unp.std_devs(template_flat[names[samp_index]]).tolist()
-                        m['name'] = f'mc_uncer_channel{ch_index}'
-                    else:
-                        # Safely remove the 'staterror' modifier if not needed
-                        sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'staterror']
-#                 elif m['type'] == 'shapesys':
-#                     if mc_uncer:
-#                         # Assign uncertainties to the 'data' field of the modifier
-#                         m['data'] = unp.std_devs(template_flat[names[samp_index]]).tolist()
-#                         m['name'] = f'mc_uncer_channel{ch_index}'
-#                     else:
-#                         # Safely remove the 'shapesys' modifier if not needed
-#                         sample['modifiers'] = [mod for mod in sample['modifiers'] if mod['type'] != 'shapesys']
-                elif m['type'] == "normfactor":
-                    m['name'] = names[samp_index] + '_norm'
-                else:
-                    print(m['type'], 'is turned on')
-                    
+            # Determine whether to include staterrors
+            is_fakeD = names[samp_index] == 'bkg_fakeD'
+            mc_staterr = mc_uncer and not is_fakeD
+            fakeD_staterr = fakeD_uncer and is_fakeD
+
+            # Update the modifiers
+            sample['modifiers'] = [
+                mod for mod in sample['modifiers'] if mod['type'] != 'staterror'
+            ]
+            if mc_staterr or fakeD_staterr:
+                sample['modifiers'].append({
+                    'type': 'staterror',
+                    'data': unp.std_devs(template_flat[names[samp_index]]).tolist(),
+                    'name': f"mc_uncer_channel{ch_index}"
+                    # 'name': f"{'fakeD' if is_fakeD else 'mc'}_uncer_channel{ch_index}"
+                })
+        
         # Update the Asimov data in the workspace
         workspace_copy['observations'][ch_index]['data'] = unp.nominal_values(asimov_data).tolist()
 
@@ -737,6 +739,7 @@ def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool
     workspace_copy["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
 
     return workspace_copy
+
 
 # for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
 #     sample = {'name': 'new_sample'}  # This would not update the list in `workspace`
@@ -1217,7 +1220,7 @@ from matplotlib import gridspec
 # Original tab20 colors
 original_colors = plt.cm.tab20.colors
 # New order for the colors
-new_order_indices = [0,1,2,3,10,4,5,12,13,8,18,7,6]
+new_order_indices = [0,1,2,3,16,10,4,5,12,13,19,8,18,7,6]
 # Create a new ordered list of colors
 reordered_colors = [original_colors[i] for i in new_order_indices]
 # Add the rest of the colors that are not explicitly ordered
@@ -1234,13 +1237,18 @@ class mpl:
         # sort the components to plot in order of fitted templates_project size
         self.sorted_order = ['bkg_fakeD',    'bkg_continuum',    'bkg_combinatorial',
                              'bkg_TDFl',     'bkg_fakeTracks',
-                             'bkg_singleBbkg',                   r'$D\ell\nu$_gap',
-                             r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
+                             'bkg_singleBbkg',                   
+                             r'$D\ell\nu$_gap_pi',               r'$D\ell\nu$_gap_eta',
+                             r'$D^{\ast\ast}\ell\nu$_narrow',    r'$D^{\ast\ast}\ell\nu$_broad',      
+                             r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
         self.bkg = self.sorted_order[:6]
-        self.norm = [r'$D\ell\nu$_gap', r'$D^{\ast\ast}\ell\nu$',r'$D^\ast\ell\nu$',r'$D\ell\nu$']
+        self.norm = [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta',
+                     r'$D^{\ast\ast}\ell\nu$_narrow', r'$D^{\ast\ast}\ell\nu$_broad',
+                     r'$D^\ast\ell\nu$',r'$D\ell\nu$']
         self.sig = [r'$D^{\ast\ast}\tau\nu$',r'$D^\ast\tau\nu$',r'$D\tau\nu$']
+       
     
     def statistics(self, df=None, hist=None, count_only=False):
         if df is not None:
@@ -1454,7 +1462,7 @@ class mpl:
             var_col= sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins)
 
-            axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,
+            axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,color=self.colors[i],
                     label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
 
         axs.set_title(f'Overlaid components ({cut=})', fontsize=14)
@@ -1813,10 +1821,10 @@ class mpl:
 
         # Top-left: 2D histogram of Data (p_D_l vs B0_CMS3_weMissM2)
         im = ax1.imshow(abs(unp.nominal_values(data_subtracted_2d)).T, origin='lower', aspect='auto', 
-                         cmap='rainbow', norm=colors.LogNorm(),
+                         cmap='rainbow', norm=mcolors.LogNorm(),
                          extent=[edges_x[0], edges_x[-1], edges_y[0], edges_y[-1]])
         fig.colorbar(im, ax=ax1)
-        ax1.set_title('Data, background subtracted')
+        ax1.set_title('Data, D_M sidebands subtracted')
         ax1.set_xlabel(var_x_label)
         ax1.set_ylabel(var_y_label)
         ax1.grid()
@@ -1856,10 +1864,10 @@ class mpl:
         
         # Bottom-right: 2D histogram of MC (B0_CMS3_weMissM2 vs p_D_l)
         im = ax6.imshow(unp.nominal_values(mc_sig_2d).T, origin='lower', aspect='auto', 
-                         cmap='rainbow', norm=colors.LogNorm(),
+                         cmap='rainbow', norm=mcolors.LogNorm(),
                          extent=[edges_x[0], edges_x[-1], edges_y[0], edges_y[-1]])
         fig.colorbar(im, ax=ax6)
-        ax6.set_title('MC, background removed')
+        ax6.set_title('MC, fakeD removed')
         ax6.set_xlabel(var_x_label)
         ax6.set_ylabel(var_y_label)
         ax6.grid()

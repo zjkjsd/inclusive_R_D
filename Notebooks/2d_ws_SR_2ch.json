@@ -1427,11 +1427,11 @@
                         },
                         {
                             "data": null,
-                            "name": "bkg_FakeD_norm",
+                            "name": "bkg_fakeD_norm",
                             "type": "normfactor"
                         }
                     ],
-                    "name": "bkg_FakeD"
+                    "name": "bkg_fakeD"
                 },
                 {
                     "data": [
@@ -18592,11 +18592,11 @@
                         },
                         {
                             "data": null,
-                            "name": "bkg_FakeD_norm",
+                            "name": "bkg_fakeD_norm",
                             "type": "normfactor"
                         }
                     ],
-                    "name": "bkg_FakeD"
+                    "name": "bkg_fakeD"
                 },
                 {
                     "data": [
@@ -34345,7 +34345,7 @@
                         "inits": [
                             1
                         ],
-                        "name": "bkg_FakeD_norm"
+                        "name": "bkg_fakeD_norm"
                     },
                     {
                         "bounds": [

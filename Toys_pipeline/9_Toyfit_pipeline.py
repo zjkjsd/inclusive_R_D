@@ -278,7 +278,13 @@ class pyhf_toy_fitTask(b2luigi.Task):
         failed_fits = 0
         for input_file in tqdm(self.get_input_file_names('toy_part_results.json')):
             with open(input_file, 'r') as f:
-                in_dict = json.load(f)
+                try: 
+                    in_dict = json.load(f)
+                except json.JSONDecodeError as e:
+                    failed_fits += 10
+                    print(f"Error decoding JSON: {e}")
+                    continue
+                    
                 failed_fits += in_dict['failed_fits']
                 merged_toy_results_dict['poi'] = in_dict['poi']
                 merged_toy_results_dict['toy_pars'] = in_dict['toy_pars']
@@ -312,15 +318,16 @@ class pyhf_toy_fitTask(b2luigi.Task):
             # calculate pulls
             if self.normalise_by_uncertainty:
                 hesse_error = np.array(merged_toy_results_dict['uncertainty'])[:,poi_index]
-                percent_error = hesse_error / fitted # will show in the plot
                 if 'minos_uncertainty_up' in merged_toy_results_dict.keys():
                     # minos errors
                     minos_up = np.array(merged_toy_results_dict['minos_uncertainty_up'])[:,poi_index]
                     minos_down = np.array(merged_toy_results_dict['minos_uncertainty_down'])[:,poi_index]
                     pulls = np.where(diff > 0, diff / minos_up, diff / minos_down)
+                    percent_error = np.where(diff > 0, minos_up / fitted, minos_down / fitted) # will show in the plot
                 else:
                     # hesse error
                     pulls = diff / hesse_error
+                    percent_error = hesse_error / fitted # will show in the plot
             else:
                 pulls = diff
 
@@ -426,34 +433,61 @@ class pyhf_linearity_fitTask(b2luigi.Task):
         failed_fits = 0
         for input_file in tqdm(self.get_input_file_names('toy_part_results.json')):
             with open(input_file, 'r') as f:
-                in_dict = json.load(f)
+                try: 
+                    in_dict = json.load(f)
+                except json.JSONDecodeError as e:
+                    failed_fits += 10
+                    print(f"Error decoding JSON: {e}")
+                    continue
+                    
                 failed_fits += in_dict['failed_fits']
                 par_names = in_dict['poi']
-                # Convert the list to a tuple to make it hashable, keys in a dict
+                
+                # Convert the list to a tuple to make it hashable, as keys in a dict
                 truth = tuple(in_dict['toy_pars'])
-                fitted = in_dict['results']['best_fit']
-
+                fitted = np.array(in_dict['results']['best_fit'])
+                diff = fitted - np.array(truth)
+                
+                # choose hesse or minos error
+                if 'minos_uncertainty_up' in in_dict['results'].keys():
+                    # minos errors
+                    minos_up = np.array(in_dict['results']['minos_uncertainty_up'])
+                    minos_down = np.array(in_dict['results']['minos_uncertainty_down'])
+                    error = np.where(diff > 0, minos_up, minos_down)
+                else:
+                    # hesse error
+                    error = np.array(in_dict['results']['uncertainty'])
+                
                 # Check if the truth value already exists in the merged data
                 if truth in merged_toy_results_dict:
-                    # If it exists, append the fitted value to the existing entry
-                    merged_toy_results_dict[truth].extend(fitted)
+                    # If it exists, extend the fitted value to the existing entry
+                    merged_toy_results_dict[truth]['fitted'] = np.concatenate((merged_toy_results_dict[truth]['fitted'], fitted))
+                    merged_toy_results_dict[truth]['error']  = np.concatenate((merged_toy_results_dict[truth]['error'], error))
                 else:
                     # If it doesn't exist, create a new key,value with the truth and the fitted
-                    merged_toy_results_dict[truth] = fitted
+                    merged_toy_results_dict[truth] = {'fitted':fitted,
+                                                      'error' :error}
         
         # average results for each test point
-        processed_results = {'fitted':[],
-                             'error':[],
+        processed_results = {'weighted_mean_fit':[],
+                             'SEM_fit':[],
                              'truth':[],
                              'poi': par_names}
         
-        for truth, fits in merged_toy_results_dict.items():
+        for truth, fit_result in merged_toy_results_dict.items():
+            fitted = np.array(fit_result['fitted'])
+            error  = np.array(fit_result['error'])
             processed_results['truth'].append(truth)
-            avg = np.mean(fits,axis=0).tolist()
-            err = np.std(fits,axis=0).tolist()
             
-            processed_results['fitted'].append(avg)
-            processed_results['error'].append(err)
+            # Calculate weighted mean
+            weights = 1/error**2 # Inverse variance as weights
+            weighted_mean = np.sum(fitted / error**2, axis=0) / np.sum(weights,axis=0)
+
+            # Calculate SEM
+            SEM = np.sqrt(1 / np.sum(weights,axis=0))
+
+            processed_results['weighted_mean_fit'].append(weighted_mean.tolist())
+            processed_results['SEM_fit'].append(SEM.tolist())
             
 
         out_dict = {
@@ -472,8 +506,8 @@ class pyhf_linearity_fitTask(b2luigi.Task):
                 continue
                 
             truth = np.array(processed_results['truth'])[:,poi_index]
-            fitted = np.array(processed_results['fitted'])[:,poi_index]
-            error = np.array(processed_results['error'])[:,poi_index]
+            fitted = np.array(processed_results['weighted_mean_fit'])[:,poi_index]
+            error = np.array(processed_results['SEM_fit'])[:,poi_index]
 
             slope, intercept = fit_utils.minuit_linear(truth, fitted, error)
 
@@ -728,8 +762,8 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
     
     b2luigi.process(
-        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_60_60.json',
-                          temp_workspace='2d_ws_SR_e_60_60_SBFakeD.json',
+        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_50_50_allUncer.json',
+                          temp_workspace='2d_ws_SR_e_50_50_SBFakeD_allUncer.json',
                           samples_toFix = ['bkg_fakeD','bkg_TDFl',
                                            'bkg_continuum',
                                            'bkg_combinatorial',
