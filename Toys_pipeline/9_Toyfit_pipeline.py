@@ -10,7 +10,6 @@ Usage: python3 9_Toyfit_pipeline.py
 import plotting
 import plotting_style
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
@@ -24,38 +23,81 @@ import json
 import yaml
 # import logging
 # import pickle
+# import matplotlib.pyplot as plt
 
 
 def to_string(x):
+    """
+    Convert various data types to a string format.
+
+    Args:
+        x (int, float, str, or any object): The object to convert.
+
+    Returns:
+        str: The formatted string representation.
+    """
     if isinstance(x, float):
         return f'{x:.3f}'
     if isinstance(x, int):
         return f'{x:d}'
     if isinstance(x, str):
         return x
-    # default and hope the instance has an inbuilt __str__
-    return str(x)
+    return str(x)  # Default to string conversion
 
 
 def join_list_hash_function(x):
+    """
+    Create a hashable string representation of a list.
+
+    Args:
+        x (list or None): A list of elements to convert.
+
+    Returns:
+        str: A string where elements are joined by underscores.
+    """
     if x is None:
         return 'None'
     return '_'.join([to_string(y) for y in x])
 
 
 def hash_function_dict_name_key(x):
-    if not 'name' in x.keys():
-        raise ValueError
+    """
+    Extracts the 'name' key from a dictionary for hashing.
+
+    Args:
+        x (dict): Dictionary containing a 'name' key.
+
+    Returns:
+        str: The value associated with the 'name' key.
+
+    Raises:
+        ValueError: If the key 'name' is missing.
+    """
+    if 'name' not in x:
+        raise ValueError("Dictionary must contain a 'name' key.")
     return x['name']
+
 
 
 class pyhf_toy_mle_part_fitTask(b2luigi.Task):
     """
-    Task to perform an mle fit on toys of the asimov sample on a prepared pyhf spec.
+    Task to perform an MLE fit on toy datasets using a pyhf model.
+
+    This task generates toy datasets and performs a likelihood fit
+    while fixing certain parameters as specified.
+
+    Attributes:
+        samples_toFix (List[str]): List of samples whose parameters will be fixed.
+        temp_workspace (str): Path to the template workspace JSON file.
+        test_workspace (str): Path to the test workspace JSON file.
+        toy_lumi_pars (List[float]): Scaling factors for each toy sample.
+        n_toys (int): Number of toy datasets to generate.
+        part (int): Partition index for parallel jobs.
+        binning (List[int]): Binning configuration.
     """
     queue = 'l'
     
-    samples_toFix = b2luigi.ListParameter(default=[],significant=True,
+    samples_toFix = b2luigi.ListParameter(default=[],significant=False,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
@@ -66,9 +108,10 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
                                        hashed=True,
                                        description='relative path to the test workspace')
     
-    init_toy_pars = b2luigi.ListParameter(default=[1]*7, 
+    toy_lumi_pars = b2luigi.ListParameter(default=[1]*7, 
                                           hashed=True,
-                                          hash_function=join_list_hash_function)
+                                          hash_function=join_list_hash_function,
+                                          description='ratio of toy events to 1/ab MC for each sample')
     
     n_toys = b2luigi.IntParameter(default=10, significant=False,description='Number of toys to generate')
 
@@ -91,30 +134,65 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
 
 
     def output(self):
+        """
+        Define the expected output file for this task.
+
+        Returns:
+            luigi.LocalTarget: Path to the JSON file storing fit results.
+        """
         yield self.add_to_output('toy_part_results.json')
 
     def run(self):
+        """
+        Execute the MLE fitting process on toy datasets.
+
+        This function:
+        - Loads a pyhf workspace.
+        - Creates toy datasets using a model PDF.
+        - Performs an MLE fit for each toy.
+        - Stores the results in a JSON file.
+
+        Raises:
+            ValueError: If an error occurs during fitting.
+        """
         
         # load templates
         spec_temp = cabinetry.workspace.load(self.temp_workspace)
         model, _ = cabinetry.model_utils.model_and_data(spec_temp)
         
-        # Get the list of all sample names from the model
+        # Get all sample names in the correct order
         all_sample_names = model.config.samples
         # Create a boolean list for fixing parameters
         fix_mask = [sample in self.samples_toFix for sample in all_sample_names]
+        float_mask = [not v for v in fix_mask]
         
-        # Retrieve all parameter names in the correct order
+        # Get all parameter names in the correct order
         all_parameter_names = model.config.par_order
         # Create a list of parameter names for samples that are not fixed
-        minos_parameters = [param for param, fix in zip(all_parameter_names, fix_mask) if not fix]
+        minos_parameters = [param for param, floating in zip(all_parameter_names, float_mask) if floating]
         
+        # Set the initial pars for generating toys
+        # ratios are calculated from 1/ab generic MC / signal MC
+        init_toy_pars = list(self.toy_lumi_pars)
+#         for i,name in enumerate(all_sample_names):
+#             if name==r'$D\tau\nu$':
+#                 init_toy_pars[i] *= 4431/19505
+#             elif name==r'$D^\ast\tau\nu$':
+#                 init_toy_pars[i] *= 2629/10179
+#             elif name==r'$D^{\ast\ast}\tau\nu$':
+#                 init_toy_pars[i] *= 1571/18450
+                
+        # Set the expected fit results
+        expected_results = init_toy_pars
+        for i,name in enumerate(all_sample_names):
+            if name=='bkg_fakeD':
+                expected_results[i] /= 1
         
         # Generate toys
         if self.test_workspace == '':
             # initialize toys from temp workspace
             toy_pars = model.config.suggested_init()
-            toy_pars[:len(self.init_toy_pars)] = self.init_toy_pars
+            toy_pars[:len(init_toy_pars)] = init_toy_pars
             pdf_toy = model.make_pdf(pyhf.tensorlib.astensor(toy_pars))
         else:
             # load test model from test workspace
@@ -123,7 +201,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
             
             # set initialisation for generating toys     
             toy_pars = model_test.config.suggested_init()
-            toy_pars[:len(self.init_toy_pars)] = self.init_toy_pars
+            toy_pars[:len(init_toy_pars)] = init_toy_pars
             # generate the toys:
             pdf_toy = model_test.make_pdf(pyhf.tensorlib.astensor(toy_pars))
         
@@ -147,19 +225,22 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
         successful_fits = 0
         
         # fit toys
+        max_attempts = self.toy_safety_factor * self.n_toys
         with tqdm(total=self.n_toys, desc='Fitting toys') as pbar:
-            while attempted_fits < self.n_toys:
+            while successful_fits < self.n_toys and attempted_fits < max_attempts:
+                if attempted_fits >= len(toys):
+                    break  # Prevent index error if toys are exhausted
                 data = toys[attempted_fits]
-                
                 try:
+                    # Attempt fit with different backends
                     try:
                         pyhf.set_backend('jax', 'scipy')
                         init_pars = pyhf.infer.mle.fit(data=data, pdf=model,
-                                                       init_pars=toy_pars,
-                                                       fixed_params=fix_par).tolist()
+                                                       init_pars=expected_results,#toy_pars,#expected_results
+                                                       fixed_params=fix_mask).tolist()
 
-                    except:
-                        init_pars = toy_pars
+                    except Exception as e:
+                        init_pars = expected_results #toy_pars #expected_results
 
 
                     pyhf.set_backend('jax', 'minuit')
@@ -176,10 +257,10 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
                     # save fit results
                     fit_results['best_twice_nll'].append(res.best_twice_nll)
                     fit_results['pval'].append(res.goodness_of_fit)
-                    bes = res.bestfit[:len(self.init_toy_pars)].tolist()
-                    err = res.uncertainty[:len(self.init_toy_pars)].tolist()
-                    fit_results['best_fit'].append(bes)
-                    fit_results['uncertainty'].append(err)
+                    fit_results['best_fit'].append(
+                        res.bestfit[:len(init_toy_pars)][float_mask].tolist() )
+                    fit_results['uncertainty'].append(
+                        res.uncertainty[:len(init_toy_pars)][float_mask].tolist() )
 
 #                     main_data, aux_data = model.fullpdf_tv.split(pyhf.tensorlib.astensor(data))
 #                     fit_results['main_data'].append(main_data.tolist())
@@ -193,7 +274,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
                     successful_fits += 1
                     pbar.update(1)
 
-                except:
+                except Exception as e:
                     failed_fits += 1
                 attempted_fits += 1
             pbar.close()
@@ -203,13 +284,15 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
             fit_results[key] = np.array(fit_results[key]).tolist()
 
         out_dict = {
-            'poi': all_parameter_names[:len(self.init_toy_pars)],
-            'toy_pars': self.init_toy_pars,
+            # save the floating parameters only
+            'poi': [par for par,floating in zip(all_parameter_names[:len(init_toy_pars)],float_mask) if floating],
+            'toy_pars': [par for par,floating in zip(init_toy_pars,float_mask) if floating],
+            'expected_results': [res for res,floating in zip(expected_results,float_mask) if floating],
             'n_toys': self.n_toys,
             'part': self.part,
             'results': fit_results,
             'failed_fits': failed_fits,
-            'atempted_fits': attempted_fits,
+            'attempted_fits': attempted_fits,
             'binning': self.binning,
         }
 
@@ -220,11 +303,20 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
 
 class pyhf_toy_fitTask(b2luigi.Task):
     """
-    Task to summarise mle fits on toys of the asimov sample on a prepared pyhf spec.
+    Task to aggregate toy MLE fits and compute summary statistics.
+
+    Attributes:
+        samples_toFix (List[str]): List of fixed sample parameters.
+        temp_workspace (str): Path to the template workspace JSON file.
+        test_workspace (str): Path to the test workspace JSON file.
+        toy_lumi_pars (List[float]): Scaling factors for each toy sample.
+        n_total_toys (int): Total number of toy datasets.
+        normalise_by_uncertainty (bool): Whether to normalize fits by uncertainty.
     """
+    
     queue = 'l'
     
-    samples_toFix = b2luigi.ListParameter(default=[], significant=True,
+    samples_toFix = b2luigi.ListParameter(default=[], significant=False,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
@@ -235,9 +327,10 @@ class pyhf_toy_fitTask(b2luigi.Task):
                                        hashed=True,
                                        description='relative path to the test workspace')
     
-    init_toy_pars = b2luigi.ListParameter(default=[1]*7, 
+    toy_lumi_pars = b2luigi.ListParameter(default=[1]*7, 
                                           hashed=True,
-                                          hash_function=join_list_hash_function)
+                                          hash_function=join_list_hash_function,
+                                          description='ratio of toy events to 1/ab MC for each sample')
     
     n_total_toys = b2luigi.IntParameter(default=1000, significant=False,description='Number of toys to generate')
 
@@ -253,20 +346,32 @@ class pyhf_toy_fitTask(b2luigi.Task):
     }
 
     def requires(self):
+        """
+        Define dependencies for this task by spawning multiple part-fitting jobs.
+
+        Returns:
+            List[pyhf_toy_mle_part_fitTask]: Required fit tasks.
+        """
         n_max_toys_per_job = 10
         for part in range(int(np.ceil(self.n_total_toys / n_max_toys_per_job))):
             yield self.clone(pyhf_toy_mle_part_fitTask,
                              temp_workspace = self.temp_workspace,
                              test_workspace = self.test_workspace,
                              samples_toFix = self.samples_toFix,
-                             init_toy_pars = self.init_toy_pars,
+                             toy_lumi_pars = self.toy_lumi_pars,
                              part=part,
                              n_toys=n_max_toys_per_job)
       
             
     def output(self):
+        """
+        Define the expected output files.
+
+        Returns:
+            List[luigi.LocalTarget]: JSON summary file and plots.
+        """
         yield self.add_to_output('toy_results.json')
-        n_plot = len(self.init_toy_pars) - len(self.samples_toFix)
+        n_plot = len(self.toy_lumi_pars) - len(self.samples_toFix)
         for i in range(n_plot):
             yield self.add_to_output(f'toy_fit_pulls_{i}.pdf')
 
@@ -288,6 +393,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 failed_fits += in_dict['failed_fits']
                 merged_toy_results_dict['poi'] = in_dict['poi']
                 merged_toy_results_dict['toy_pars'] = in_dict['toy_pars']
+                merged_toy_results_dict['expected_results'] = in_dict['expected_results']
                 
                 for k, v in in_dict['results'].items():
                     if not k in merged_toy_results_dict.keys():
@@ -310,9 +416,9 @@ class pyhf_toy_fitTask(b2luigi.Task):
         for poi_index, poi in enumerate(merged_toy_results_dict['poi']):
             if poi in par_to_ignore:
                 continue
-                
+            
             fitted = np.array(merged_toy_results_dict['best_fit'])[:,poi_index]
-            truth = merged_toy_results_dict['toy_pars'][poi_index]
+            truth = merged_toy_results_dict['expected_results'][poi_index]
             diff = fitted - truth
             
             # calculate pulls
@@ -363,12 +469,20 @@ class pyhf_toy_fitTask(b2luigi.Task):
 
 class pyhf_linearity_fitTask(b2luigi.Task):
     """
-    Task to summarise mle fits on toys of the asimov sample on a prepared pyhf spec.
+    Task to evaluate the linearity of MLE fits across different toy dataset inputs.
+
+    Attributes:
+        samples_toFix (List[str]): List of samples to fix.
+        temp_workspace (str): Path to the template workspace.
+        test_workspace (str): Path to the test workspace.
+        n_toys_per_point (int): Number of toys per test point.
+        linearity_parameter_bonds (List[float]): Range of test parameters.
+        n_test_points (int): Number of test points.
     """
     
     queue = 'l'
     
-    samples_toFix = b2luigi.ListParameter(default=[], significant=True,
+    samples_toFix = b2luigi.ListParameter(default=[], significant=False,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     
@@ -399,23 +513,31 @@ class pyhf_linearity_fitTask(b2luigi.Task):
     }
 
     def requires(self):
+        """
+        Generate required toy fitting tasks for different test points.
+
+        Returns:
+            List[pyhf_toy_mle_part_fitTask]: Required fit tasks.
+        """
+        
         lin_start = self.linearity_parameter_bonds[0]
         lin_end = self.linearity_parameter_bonds[1]
         
         n_max_toys_per_job = 10
-        n_parameters = 12 - len(self.samples_toFix)
+        n_pars = 12
         
         # randomize the initial parameters
         for test_point in range(self.n_test_points):
             rng = np.random.default_rng(test_point)
-            toy_pars = list(rng.uniform(lin_start,lin_end,n_parameters))
+            toy_pars = list(rng.uniform(lin_start,lin_end,n_pars))
+#             toy_pars += [0.4] * n_fixed_pars
             
             for part in range(int(np.ceil(self.n_toys_per_point / n_max_toys_per_job))):
                 yield self.clone(pyhf_toy_mle_part_fitTask,
                                  temp_workspace = self.temp_workspace,
                                  test_workspace = self.test_workspace,
                                  samples_toFix = self.samples_toFix,
-                                 init_toy_pars = toy_pars,
+                                 toy_lumi_pars = toy_pars,
                                  part=part,
                                  n_toys=n_max_toys_per_job)
 
@@ -444,7 +566,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
                 par_names = in_dict['poi']
                 
                 # Convert the list to a tuple to make it hashable, as keys in a dict
-                truth = tuple(in_dict['toy_pars'])
+                truth = tuple(in_dict['expected_results'])
                 fitted = np.array(in_dict['results']['best_fit'])
                 diff = fitted - np.array(truth)
                 
@@ -508,6 +630,19 @@ class pyhf_linearity_fitTask(b2luigi.Task):
             truth = np.array(processed_results['truth'])[:,poi_index]
             fitted = np.array(processed_results['weighted_mean_fit'])[:,poi_index]
             error = np.array(processed_results['SEM_fit'])[:,poi_index]
+            
+#             if poi == r'$D\tau\nu$_norm':
+#                 truth /= 4431/19505
+#                 fitted /= 4431/19505
+#                 error /= 4431/19505
+#             elif poi == r'$D^\ast\tau\nu$_norm':
+#                 truth /= 2629/10179
+#                 fitted /= 2629/10179
+#                 error /= 2629/10179
+#             elif poi == r'$D^{\ast\ast}\tau\nu$_norm':
+#                 truth /= 1571/18450
+#                 fitted /= 1571/18450
+#                 error /= 1571/18450
 
             slope, intercept = fit_utils.minuit_linear(truth, fitted, error)
 
@@ -680,7 +815,7 @@ class pyhf_binning_fitTask(b2luigi.Task):
         for input_file in tqdm(self.get_input_file_names('toy_part_results.json')):
             with open(input_file, 'r') as f:
                 in_dict = json.load(f)
-                successful_fits = in_dict['atempted_fits'] - in_dict['failed_fits']
+                successful_fits = in_dict['attempted_fits'] - in_dict['failed_fits']
                 
                 # calculate the mean and error of hesse
                 hesse = in_dict['results']['uncertainty']
@@ -719,7 +854,7 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
     Wrapper for submitting all the pyhf asimov toys tasks.
     """
 
-    samples_toFix = b2luigi.ListParameter(default=[], significant=True,
+    samples_toFix = b2luigi.ListParameter(default=[], significant=False,
                                           hashed=True,
                                           hash_function=join_list_hash_function)
     temp_workspace = b2luigi.Parameter(default='',
@@ -743,8 +878,8 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
                          temp_workspace = self.temp_workspace,
                          test_workspace = self.test_workspace,
                          samples_toFix = self.samples_toFix,
-                         n_total_toys = 2000,
-                         init_toy_pars = [1]*12,
+                         n_total_toys = 20,
+                         toy_lumi_pars = [1]*12,
                          normalise_by_uncertainty = True)
         
         yield self.clone(pyhf_linearity_fitTask,
@@ -753,7 +888,6 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
                          samples_toFix = self.samples_toFix,
                          linearity_parameter_bonds = [0.8,1.2],
                          n_toys_per_point = 30,
-                         n_test_parameters = 12,
                          n_test_points = 40)
 
 
@@ -762,12 +896,14 @@ if __name__ == '__main__':
     # set_b2luigi_settings('weak_annihilation_settings/weak_annihilation_settings.yaml')
     
     b2luigi.process(
-        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_50_50_allUncer.json',
-                          temp_workspace='2d_ws_SR_e_50_50_SBFakeD_allUncer.json',
-                          samples_toFix = ['bkg_fakeD','bkg_TDFl',
+        pyhf_toys_wrapper(test_workspace='2d_ws_SR_e_50_50_noUncer.json',
+                          temp_workspace='2d_ws_SR_e_50_50_SBFakeD_noUncer.json',
+                          samples_toFix = ['bkg_TDFl',
                                            'bkg_continuum',
                                            'bkg_combinatorial',
                                            'bkg_singleBbkg',
+#                                            r'$D^\ast\tau\nu$',
+#                                            r'$D^{\ast\ast}\tau\nu$',
                                            #'bkg_fakeTracks',
                                           ]),
         workers=int(1e4),

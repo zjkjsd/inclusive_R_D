@@ -131,7 +131,6 @@ vertex_vars = ['vtxReChi2',]#'vtxNDF','flightDistanceSig','flightTimeSig',]
 # the mass cut is needed again because the treefit updates the daughters
 ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {DMcut2}', path=main_path)
 
-
 # --------------------------
 # Reconstruct B, vertex fit
 # --------------------------
@@ -149,6 +148,10 @@ vm.addAlias('CMS_cos_angle_0_1', 'useCMSFrame( cos_angle_0_1 )')
 # Calculate DOCA(D,l)
 ma.calculateDistance('anti-B0:Dl', 'anti-B0:Dl -> ^D+:K2pi ^e-:corrected', "vertextrack", path=main_path)
 vm.addAlias('D_l_DisSig', 'formula( extraInfo(CalculatedDistance) / extraInfo(CalculatedDistanceError) )')
+
+# define the total reChi2 and p_D_l
+vm.addAlias('D_ReChi2', 'formula( vtxReChi2 + daughter(0, vtxReChi2) )')
+vm.addAlias('p_0_1', 'formula( daughter(0, CMS_p) + daughter(1, CMS_p) )')
 
 ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and CMS_E<5.4', path=main_path)
 
@@ -404,7 +407,7 @@ CSVariables = [
 b_vars = vu.create_aliases_for_selected(
     list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics
     + CSVariables + we + vertex_vars + TVVariables + extra_mcDaughters_vars
-    + ['mcErrors','mcPDG','dr','D_l_DisSig','cos_angle_0_1','CMS_cos_angle_0_1'],
+    + ['mcErrors','mcPDG','dr','D_l_DisSig','CMS_cos_angle_0_1','D_ReChi2','p_0_1'],
     decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
     prefix=['B0'])
 

@@ -349,7 +349,10 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
                      variables=['B0_CMS3_weMissM2','p_D_l'],
                      bin_threshold=1, merge_threshold=10,
                      fakeD_from_sideband=False, data=None,
-                     sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal']):
+                     sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal'],
+                     sample_weights={r'$D^{\ast\ast}\ell\nu$_broad':1,
+                                     r'$D\ell\nu$_gap_pi':1, 
+                                     r'$D\ell\nu$_gap_eta':1}):
     """
     Creates 2D templates with uncertainties from input samples and applies rebinning and flattening.
 
@@ -361,7 +364,15 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         bin_threshold (float, optional): Minimum count threshold for trimming bins. Default is 1.
         merge_threshold (float, optional): Minimum count threshold for merging adjacent bins. Default is 10.
         fakeD_from_sideband (bool, optional): Whether to include fakeD templates derived from D_M sidebands. Default is False.
+        data (pandas.DataFrame, optional): Data to be used for fakeD sidebands if `fakeD_from_sideband` is True. Default is None.
         sample_to_exclude (list, optional): List of sample names to exclude from template creation. Default includes specific background samples.
+        sample_weights (dict, optional): Dictionary specifying custom weights for specific samples.
+            Keys are sample names, and values are weight factors. Default is:
+            {
+                '$D^{\ast\ast}\ell\nu$_broad': 1,
+                '$D\ell\nu$_gap_pi': 1,
+                '$D\ell\nu$_gap_eta': 1
+            }
 
     Returns:
         tuple:
@@ -378,6 +389,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
 
     Notes:
         - Templates are represented as `unp.uarray` objects that encapsulate counts and uncertainties.
+        - Sample weights are applied when computing weighted histograms.
         - Bins with counts below `bin_threshold` are trimmed.
         - Adjacent bins with counts below `merge_threshold` are merged.
         - If `fakeD_from_sideband` is True, additional templates are created using sidebands of the D_M variable.
@@ -397,7 +409,10 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
 
         df_sig_sb = df_sig_sb.copy()
         df = df_sig_sb.query('1.855<D_M<1.885')
-
+        
+        if name in sample_weights.keys():
+            df.loc[:, '__weight__'] = sample_weights[name]
+            
         # Compute weighted histogram
         counts, xedges, yedges = np.histogram2d(
             df[variables[0]], df[variables[1]],
@@ -409,7 +424,21 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
             bins=bins, weights=(df['__weight__']**2))
 
         # Store as uarray: Transpose to have consistent shape (y,x) if needed
-        histograms[name] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+        if name in [r'$D^{\ast\ast}\ell\nu$_narrow',r'$D^{\ast\ast}\ell\nu$_broad']:
+            # merge the 2 resonant D** modes
+            if r'$D^{\ast\ast}\ell\nu$' in histograms:
+                histograms[r'$D^{\ast\ast}\ell\nu$'] += round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+            else:
+                histograms[r'$D^{\ast\ast}\ell\nu$'] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+        elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
+            # merge the 2 Dellnu gap modes
+            if r'$D\ell\nu$_gap' in histograms:
+                histograms[r'$D\ell\nu$_gap'] += round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+            else:
+                histograms[r'$D\ell\nu$_gap'] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+        else:
+            # store other modes individually
+            histograms[name] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
 
     ################### Trimming and flattening ###############
     # Determine which bins pass the threshold based on sum of all templates
@@ -422,7 +451,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
     asimov_data = round_uarray(np.sum(list(template_flat.values()), axis=0))  # uarray
 
     #################### Create additional templates for fakeD from sidebands ###################
-    if fakeD_from_sideband:
+    if fakeD_from_sideband and 'bkg_fakeD' not in sample_to_exclude:
         print('Creating the fakeD template from the sidebands')
         if data is None: # MC
             df_all = pd.concat(samples.values(), ignore_index=True)
@@ -431,7 +460,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         df_sidebands = df_all.query('D_M<1.83 or 1.91<D_M').copy()
 
         # Compute the sideband histogram and assume poisson error
-        bin_D_M = np.linspace(1.79,1.95,40)
+        bin_D_M = np.linspace(1.79,1.95,81)
         D_M_s2, _ = np.histogram(df_sidebands['D_M'], bins=bin_D_M)
         D_M_side_count = round_uarray(unp.uarray(D_M_s2, np.sqrt(D_M_s2)))
 
@@ -461,9 +490,8 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         # Create new 2d hists with fakeD replaced by sideband
         hists_with_sbFakeD = {k: v for k, v in histograms.items()}
 
-        r_D = 144/18618
-        r_Dst = 125/12007
-        r_Dstst = 71/6636
+        r_D = 788/93479
+        r_Dst = 580/59821
         modified_hist_sbFakeD = hist_sbFakeD - r_D*hists_with_sbFakeD[r'$D\ell\nu$']
         modified_hist_sbFakeD -= r_Dst*hists_with_sbFakeD[r'$D^\ast\ell\nu$']
 
@@ -698,21 +726,29 @@ def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool
             # Assign nominal values to the 'data' field
             sample['data'] = unp.nominal_values(template_flat[names[samp_index]]).tolist()
             
-            # Determine whether to include staterrors
+            # Determine whether to include modifiers
             is_fakeD = names[samp_index] == 'bkg_fakeD'
             mc_staterr = mc_uncer and not is_fakeD
-            fakeD_staterr = fakeD_uncer and is_fakeD
+            fakeD_shapesys = fakeD_uncer and is_fakeD
 
             # Update the modifiers
-            sample['modifiers'] = [
-                mod for mod in sample['modifiers'] if mod['type'] != 'staterror'
-            ]
-            if mc_staterr or fakeD_staterr:
+            sample['modifiers'] = []
+            sample['modifiers'].append({
+                    "data": None,
+                    "name": f"{names[samp_index]}_norm",
+                    "type": "normfactor"
+                })
+            if mc_staterr:
                 sample['modifiers'].append({
                     'type': 'staterror',
                     'data': unp.std_devs(template_flat[names[samp_index]]).tolist(),
                     'name': f"mc_uncer_channel{ch_index}"
-                    # 'name': f"{'fakeD' if is_fakeD else 'mc'}_uncer_channel{ch_index}"
+                })
+            elif fakeD_shapesys:
+                sample['modifiers'].append({
+                    'type': 'shapesys',
+                    'data': unp.std_devs(template_flat[names[samp_index]]).tolist(),
+                    'name': f"fakeD_uncer_channel{ch_index}"
                 })
         
         # Update the Asimov data in the workspace
@@ -1046,8 +1082,6 @@ class fit_iminuit:
         self.x_min = min(x_edges)
         self.x_max = max(x_edges)
         self.poly_only = poly_only
-        # self.x_mask_bkg = (x < 1.82) | (x > 1.921)
-        # self.x_mask_sig_bkg = (x < 1.82) | (x > 1.921) | ((1.857 < x) & (x < 1.885))
 
     # np.polynomial.Polynomial.fit and np.polyval handle the order of polynomial coefficients differently.
     # np.polyval expects the coefficients in decreasing order of powers, i.e., from the highest degree term to the constant term.
@@ -1060,11 +1094,12 @@ class fit_iminuit:
     def gauss_poly_cdf(self, x, *par):
         sig_gauss = par[0] * norm.cdf(x, par[1], par[2])
         bkg_poly = par[3] * polynomial(par[4:],self.x_min,self.x_max).cdf(x)
-        return sig_gauss + bkg_poly
+        return bkg_poly + sig_gauss
         
     def estimate_init(self, x, y, deg):
         # polynomial
-        p = np.polynomial.Polynomial.fit(x, y, deg=deg)
+        sideband_mask = (x < 1.822) | (1.92 < x)
+        p = np.polynomial.Polynomial.fit(x[sideband_mask], y[sideband_mask], deg=deg)
         init = p.convert().coef[::-1] # Reverse the coefficient order
         p_init = tuple([round(i,1) for i in init])
         # gaussian
@@ -1077,7 +1112,7 @@ class fit_iminuit:
     def fit_gauss_poly_LS(self, deg,loss='linear', x=None, y_val=None, y_err=None):#'soft_l1'
         # get starting values
         if x is None:
-            x = self.x_edges[:-1] + np.diff(self.x_edges)[0]
+            x = self.x_edges[1:]
         if y_val is None:
             y_val = self.y_val
             y_err = self.y_err
@@ -1095,12 +1130,12 @@ class fit_iminuit:
         if self.poly_only:
             m.values["x0"] = 0
         # temporarily mask out the signal
-        c.mask = (x < 1.82) | (1.921 < x)
+        c.mask = (x < 1.822) | (1.92 < x)
         m.simplex().migrad()
         
         if not self.poly_only:
             # fit the signal with the bkg fixed
-            c.mask = (x < 1.82) | ((1.857 < x) & (x < 1.885)) | (1.921 < x) # include the signal
+            c.mask = (x < 1.822) | ((1.854 < x) & (x < 1.886)) | (1.92 < x) # include the signal
             m.fixed = False  # release all parameters
             m.fixed["x3","x4"] = True  # fix background amplitude
             m.simplex().migrad()
@@ -1119,7 +1154,7 @@ class fit_iminuit:
             xe = self.x_edges
         if hist is None:
             hist = self.y_val
-        g_mean, g_std, p_init = self.estimate_init(xe[:-1],hist,deg)
+        g_mean, g_std, p_init = self.estimate_init(xe[1:],hist,deg)
         init = np.array([round(hist.sum()/10,1), g_mean, g_std, round(hist.sum(),1),*p_init])
         print('initial parameters=', init)
             
@@ -1132,14 +1167,14 @@ class fit_iminuit:
         m.fixed["x0", "x1", "x2"] = True
         if self.poly_only:
             m.values["x0"] = 0
-        # we temporarily mask out the signal
-        cx = 0.5 * (xe[1:] + xe[:-1])
-        c.mask = (cx < 1.819) | (1.921 < cx)
+        # temporarily mask out the signal
+        x_re = xe[1:] # right edge
+        c.mask = (x_re < 1.822) | (1.92 < x_re)
         m.simplex().migrad()
 
         if not self.poly_only:
             # fit the signal with the bkg fixed
-            c.mask = (cx < 1.819) | ((1.856 < cx) & (cx < 1.884)) | (1.921 < cx) # include the signal
+            c.mask = (x_re < 1.822) | ((1.854 < x_re) & (x_re < 1.886)) | (1.92 < x_re) # include the signal
             m.fixed = False  # release all parameters
             m.fixed["x3","x4","x5"] = True  # fix background amplitude
             m.simplex().migrad()
@@ -1640,7 +1675,7 @@ class mpl:
                        'signal region': sig,
                        'right sideband': right}
             for region, df in regions.items():
-                df['__weight__'] = scale[region]
+                df.loc[:, '__weight__'] = scale[region]
             
             if merge_sidebands:
                 sides = pd.concat([left, right])
@@ -1717,7 +1752,7 @@ class mpl:
             regions = {'control region': sample_control,
                        'signal region': sample_sig}
             for region, df in regions.items():
-                df['__weight__'] = scale[region]
+                df.loc[:, '__weight__'] = scale[region]
             
             sig_total = self.plot_data_1d(bins=bins, sub_df=sample_sig, variable=variable, 
                                           ax=ax1,cut=cut, scale=None,name='signal region')
@@ -1758,7 +1793,7 @@ class mpl:
                            'mc signal region': mc_sig}
 
         for region, df in data_mc_regions.items():
-                df['__weight__'] = scale[region]
+            df.loc[:, '__weight__'] = scale[region]
             
         # calculate the 2d hists
         data_sb_2d = 0 
