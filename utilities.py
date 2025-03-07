@@ -50,6 +50,9 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl'
                  r'$D^{\ast\ast}\ell\nu$_narrow':13,   r'$D^{\ast\ast}\ell\nu$_broad':14,
                  r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16}
 
+# sidebands / signal region
+r_D = 753/89529
+r_Dst = 557/57253
 
 ################################ dataframe samples ###########################
 import numpy as np
@@ -471,7 +474,8 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         yields_left = fitter.poly_integral(xrange=[1.79,1.82],result=result_ml)
         yields_sig = fitter.poly_integral(xrange=[1.855,1.885],result=result_ml)
         yields_right = fitter.poly_integral(xrange=[1.92,1.95],result=result_ml)
-        print(f'{yields_sig/yields_left=}, {yields_sig/yields_right=}')
+        print(f'sig/left = {round_uarray(yields_sig/yields_left)}, \
+        sig/right = {round_uarray(yields_sig/yields_right)}')
 
         # Construct the fakeD 2d template from sidebands
         region_yield = {'D_M<1.83': yields_left, '1.91<D_M': yields_right}
@@ -490,8 +494,6 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         # Create new 2d hists with fakeD replaced by sideband
         hists_with_sbFakeD = {k: v for k, v in histograms.items()}
 
-        r_D = 788/93479
-        r_Dst = 580/59821
         modified_hist_sbFakeD = hist_sbFakeD - r_D*hists_with_sbFakeD[r'$D\ell\nu$']
         modified_hist_sbFakeD -= r_Dst*hists_with_sbFakeD[r'$D^\ast\ell\nu$']
 
@@ -687,94 +689,100 @@ def compare_2d_hist(data, model, bins_x, bins_y,
     plt.show()
 
 
-def update_workspace(workspace: dict, temp_asimov_channels: list, mc_uncer: bool = True, fakeD_uncer: bool = True) -> dict:
+def create_workspace(temp_asimov_channels: list, 
+                     mc_uncer: bool = True, fakeD_uncer: bool = True) -> dict:
     """
-    Update a workspace with new templates, uncertainties, and Asimov data without modifying the original workspace.
+    Create a structured workspace dictionary for statistical analysis and fitting.
 
-    Parameters:
-        workspace (dict): The original workspace to update.
-        temp_asimov_channels (list): List of tuples from `create_templates`, where each tuple contains:
-            - template_flat (dict): Flattened templates for each sample as unp.array.
-            - asimov_data (unp.uarray): Asimov data as unp.array.
-        mc_uncer (bool, optional): Whether to include statistical uncertainties for non-fakeD samples. Default is True.
-        fakeD_uncer (bool, optional): Whether to include statistical uncertainties for the fakeD sample. Default is True.
+    Args:
+        temp_asimov_channels (list): A list of tuples, where each tuple contains:
+                                     - A dictionary of sample templates with bin data.
+                                     - The corresponding Asimov dataset.
+        mc_uncer (bool, optional): If True, includes statistical uncertainties for all MC backgrounds. Default is True.
+        fakeD_uncer (bool, optional): If True, includes statistical uncertainties for the 'bkg_fakeD' sample. Default is True.
 
     Returns:
-        dict: Updated workspace.
+        dict: A structured dictionary containing:
+              - 'channels': A list of channels with their respective samples and uncertainties.
+              - 'measurements': A list defining the measurement setup.
+              - 'observations': The observed data for each channel.
+              - 'version': The version identifier of the workspace format.
     """
 
-    # Make a deep copy of the workspace to avoid modifying the original
-    workspace_copy = copy.deepcopy(workspace)
-    
+    # Initialize key workspace components
+    channels = []
+    observations = []
+    measurements = [{"name": "R_D", "config": {"poi": "$D\\tau\\nu$_norm", "parameters": []}}]
+    version = "1.0.0"
+
     # Extract sample names from the first set of templates
-    names = list(temp_asimov_channels[0][0].keys())
-    
+    sample_names = list(temp_asimov_channels[0][0].keys())
+
+    # Loop over each channel (index, tuple of template_flat and asimov_data)
     for ch_index, (template_flat, asimov_data) in enumerate(temp_asimov_channels):
-        # Update the number of samples to match the new names
-        current_samples = workspace_copy['channels'][ch_index]['samples']
-        if len(current_samples) < len(names):
-            # Add missing samples
-            for _ in range(len(names) - len(current_samples)):
-                current_samples.append({'name': '', 'data': [], 'modifiers': []})
-        elif len(current_samples) > len(names):
-            # Remove extra samples
-            workspace_copy['channels'][ch_index]['samples'] = current_samples[:len(names)]
         
-        # Update samples
-        for samp_index, sample in enumerate(workspace_copy['channels'][ch_index]['samples']):
-            sample['name'] = names[samp_index]
-            # Assign nominal values to the 'data' field
-            sample['data'] = unp.nominal_values(template_flat[names[samp_index]]).tolist()
-            
-            # Determine whether to include modifiers
-            is_fakeD = names[samp_index] == 'bkg_fakeD'
-            mc_staterr = mc_uncer and not is_fakeD
-            fakeD_shapesys = fakeD_uncer and is_fakeD
+        # Store observed data for the channel
+        observations.append({
+            'name': f'channel_{ch_index}',
+            'data': unp.nominal_values(asimov_data).tolist()  # Extract nominal values from uncertainties
+        })
+        
+        # Initialize channel structure
+        channels.append({
+            'name': f'channel_{ch_index}',
+            'samples': []
+        })
 
-            # Update the modifiers
-            sample['modifiers'] = []
-            sample['modifiers'].append({
-                    "data": None,
-                    "name": f"{names[samp_index]}_norm",
-                    "type": "normfactor"
-                })
-            if mc_staterr:
-                sample['modifiers'].append({
-                    'type': 'staterror',
-                    'data': unp.std_devs(template_flat[names[samp_index]]).tolist(),
-                    'name': f"mc_uncer_channel{ch_index}"
-                })
-            elif fakeD_shapesys:
-                sample['modifiers'].append({
+        # Loop over each sample in the channel
+        for sample_index, sample_name in enumerate(sample_names):
+            # Add the nominal template data for the sample
+            channels[ch_index]['samples'].append({
+                'name': sample_name,
+                'data': unp.nominal_values(template_flat[sample_name]).tolist(),
+                'modifiers': [
+                    {
+                        'name': sample_name+'_norm',
+                        'type': 'normfactor',
+                        'data': None  # Normalization factor modifier
+                    }
+                ]
+            })
+
+            # Add uncertainty modifiers for statistical errors
+            if sample_name == 'bkg_fakeD' and fakeD_uncer:
+                # Add statistical uncertainty for 'bkg_fakeD' using shapesys
+                channels[ch_index]['samples'][sample_index]['modifiers'].append({
+                    'name': f'fakeD_stat_uncer_ch{ch_index}',
                     'type': 'shapesys',
-                    'data': unp.std_devs(template_flat[names[samp_index]]).tolist(),
-                    'name': f"fakeD_uncer_channel{ch_index}"
+                    'data': unp.std_devs(template_flat[sample_name]).tolist()
                 })
-        
-        # Update the Asimov data in the workspace
-        workspace_copy['observations'][ch_index]['data'] = unp.nominal_values(asimov_data).tolist()
+            elif sample_name != 'bkg_fakeD' and mc_uncer:
+                # Add statistical uncertainty for all other MC backgrounds using staterror
+                channels[ch_index]['samples'][sample_index]['modifiers'].append({
+                    'name': f'mc_stat_uncer_ch{ch_index}',
+                    'type': 'staterror',
+                    'data': unp.std_devs(template_flat[sample_name]).tolist()
+                })
 
-    # Update measurement parameters
-    current_parameters = workspace_copy["measurements"][0]["config"]["parameters"]
-    if len(current_parameters) < len(names):
-        # Add missing parameters
-        for _ in range(len(names) - len(current_parameters)):
-            current_parameters.append({'name': '', 'bounds': [[0, 2]], 'inits': [1]})
-    elif len(current_parameters) > len(names):
-        # Remove extra parameters
-        workspace_copy["measurements"][0]["config"]["parameters"] = current_parameters[:len(names)]
-    
-    for i, par in enumerate(workspace_copy["measurements"][0]["config"]["parameters"]):
-        par['name'] = names[i] + '_norm'
-        if par['name'].startswith('bkg'):
-            par['bounds'] = [[0, 2]]
-        else:
-            par['bounds'] = [[-5, 5]]
-    
-    # Update the parameter of interest (POI)
-    workspace_copy["measurements"][0]["config"]['poi'] = "$D\\tau\\nu$_norm"
+            # Define parameter bounds based on whether it's a background or signal sample
+            if sample_name.startswith('bkg'):
+                par_config = {"name": sample_name+'_norm', "bounds": [[0, 2]], "inits": [1.0], "fixed":True}
+            else:
+                par_config = {"name": sample_name+'_norm', "bounds": [[-5, 5]], "inits": [1.0]}
 
-    return workspace_copy
+            # Add parameter configuration if it doesn't already exist
+            if par_config not in measurements[0]['config']['parameters']:
+                measurements[0]['config']['parameters'].append(par_config)
+    
+    # Construct the final workspace dictionary
+    workspace = {
+        'channels': channels,
+        'measurements': measurements,
+        'observations': observations,
+        'version': version
+    }
+
+    return workspace
 
 
 # for samp_index, sample in enumerate(workspace['channels'][ch_index]['samples']):
@@ -1072,9 +1080,48 @@ class polynomial:
         # Apply the cumulative_value function to each element of x
         return np.array([cumulative_value(val) for val in np.atleast_1d(x)])
 
-        
 
-class fit_iminuit:
+def poly_integral_ufloat(coeffs, x0, x1):
+    """
+    Given polynomial coefficients in decreasing order of powers, 
+    compute the definite integral from x0 to x1 analytically.
+
+    For coeffs = [a0, a1, a2, ..., aN] (a0 * x^N + a1 * x^(N-1) + ... + aN),
+    the indefinite integral F(x) is:
+      a0/(N+1) * x^(N+1) + a1/(N) * x^N + ... + aN * x
+    We return F(x1) - F(x0).
+
+    coeffs can be either floats or ufloat's (with correlations).
+    The returned value is float or ufloat accordingly.
+    """
+    # Highest power is len(coeffs)-1
+    N = len(coeffs) - 1
+
+    def F(x):
+        # Build sum_{k=0..N} [ coeffs[k] * x^(N-k+1)/(N-k+1) ]
+        # indexing: k=0 => power = N
+        # So the exponent in x is (N-k+1), the coefficient is coeffs[k] / (N-k+1).
+        s = 0
+        for k, ak in enumerate(coeffs):
+            power = N - k + 1
+            # If power == 0, that means the constant's integral => ak * x
+            # but in practice power should go from N+1 down to 1
+            s += ak * (x**power) / power
+        return s
+
+    return F(x1) - F(x0)
+
+    
+def poly_coeffs_from_result(result, num_poly_params):
+    """
+    Extract the last 'num_poly_params' coefficients from `result` as a list 
+    in decreasing power order, suitable for np.polyval.
+    """
+    # e.g. if num_poly_params == 2, we extract result[-2:] in decreasing order
+    return list(result[-num_poly_params:])  # already in decreasing order in your code
+
+
+class fit_Dmass:
     def __init__(self,x_edges, hist, poly_only):
         self.x_edges = x_edges
         self.y_val = unp.nominal_values(hist)
@@ -1117,7 +1164,8 @@ class fit_iminuit:
             y_val = self.y_val
             y_err = self.y_err
         g_mean, g_std, p_init = self.estimate_init(x,y_val,deg)
-        init = np.array([round(y_val.sum()/5000,1), g_mean, g_std, *p_init])
+        norm_estimate = round(y_val.sum() * np.diff(x)[0], 1)
+        init = np.array([norm_estimate, g_mean, g_std, *p_init])
         print('initial parameters=', init)
         
         # cost function and minuit
@@ -1155,7 +1203,8 @@ class fit_iminuit:
         if hist is None:
             hist = self.y_val
         g_mean, g_std, p_init = self.estimate_init(xe[1:],hist,deg)
-        init = np.array([round(hist.sum()/10,1), g_mean, g_std, round(hist.sum(),1),*p_init])
+        norm_estimate = round(hist.sum() * np.diff(xe)[0], 1)
+        init = np.array([norm_estimate, g_mean, g_std, round(hist.sum(),1),*p_init])
         print('initial parameters=', init)
             
         # cost function and minuit
@@ -1186,30 +1235,73 @@ class fit_iminuit:
         result = correlated_values(m.values, m.covariance)
         return m, c, result
 
+    
     def poly_integral(self, xrange, result):
-        if len(result)==5:
-            # Define a wrapper for the fitted polynomial
-            def fitted_poly(x, *par):
-                return np.polyval(par[-2:], x)
+        """
+        Compute the integral over 'xrange' of the polynomial part 
+        (with full uncertainty propagation) using the fitted parameters `result`.
+        """
+        x0, x1 = xrange
 
-            par = unp.nominal_values(result)
-            # Perform the integration over the range [x_min, x_max]
-            area, error = quad(fitted_poly, xrange[0], xrange[1], args=tuple(par))
-            area, error = (round(area,3), round(error,3))
+        # --------------------
+        # Case 1: len(result) == 5
+        # --------------------
+        # Typically means: [A_gauss, mu, sigma, p0, p1]
+        # i.e. only 2 polynomial coefficients -> a linear polynomial
+        if len(result) == 5:
+            # Extract the polynomial part (the last 2 parameters)
+            poly_pars = poly_coeffs_from_result(result, num_poly_params=2)  # p0, p1 in decreasing order
+            # Do the exact integral of that polynomial from x0 to x1
+            area_ufloat = poly_integral_ufloat(poly_pars, x0, x1)
 
-            print(f"Area under the curve from {xrange[0]} to {xrange[1]}: {area}")
-            return area, error
+            # area_ufloat is a ufloat, so you can extract nominal value and std dev as needed:
+            area_nom  = unp.nominal_values(area_ufloat)
+            area_std  = unp.std_devs(area_ufloat)
 
-        elif len(result)==6:
-            def fitted_poly_cdf(x, par):
-                return par[-3] * polynomial(par[-2:],self.x_min,self.x_max).cdf(x)
+            print(f"Area under polynomial from {x0} to {x1} = {area_nom:.3f} ± {area_std:.3f}")
+            return area_ufloat
 
-            par = unp.nominal_values(result)
-            # integral of pdf is the difference of cdf (scaled)
-            yields = fitted_poly_cdf(xrange[1], par) - fitted_poly_cdf(xrange[0], par)
-            yields = round(float(yields),3)
-            print(f"Yields from {xrange[0]} to {xrange[1]}: {yields}")
-            return yields
+        # --------------------
+        # Case 2: len(result) == 6
+        # --------------------
+        # Typically means: [A_gauss, mu, sigma, N_poly, p0, p1]
+        # i.e. 2 polynomial coefficients plus an amplitude factor par[-3]
+        # Then your code uses: yields = par[-3]* polynomial(par[-2:], ...).cdf(x)
+        else:
+            # The "amplitude" scaling factor in front of the polynomial:
+            scale = result[-3]  
+            # The actual polynomial coefficients:
+            poly_pars = poly_coeffs_from_result(result, num_poly_params=2)
+
+            # We want the fraction of the *normalized polynomial* between x0 and x1.
+            #   cdf(x) = [ ∫(p(x') dx' from x_min to x ) ] / [ ∫(p(x') dx' from x_min to x_max ) ]
+            # Then multiplied by 'scale'.
+            #
+            # We'll do that analytically as well:
+            # Let F(x) = ∫(p(x') dx') from x_min up to x (the indefinite integral minus F(x_min)).
+            # Let DEN = F(x_max) - F(x_min).
+            # cdf(x) = [F(x) - F(x_min)] / DEN.
+            # The "yield" from x0 to x1 is scale * [cdf(x1) - cdf(x0)].
+
+            # 1) Compute total polynomial integral from x_min to x_max
+            poly_total = poly_integral_ufloat(poly_pars, self.x_min, self.x_max)
+
+            # 2) Function that returns the integral from x_min up to x
+            def F(x):
+                return poly_integral_ufloat(poly_pars, self.x_min, x)
+
+            # cdf(x)
+            def poly_cdf(x):
+                return (F(x) / poly_total)
+
+            # The yield from x0..x1 is scale * [cdf(x1) - cdf(x0)]
+            yields_ufloat = scale * (poly_cdf(x1) - poly_cdf(x0))
+
+            yield_nom = unp.nominal_values(yields_ufloat)
+            yield_std = unp.std_devs(yields_ufloat)
+            print(f"Yields from {x0} to {x1} = {yield_nom:.3f} ± {yield_std:.3f}")
+            return yields_ufloat
+
 
 #     def plot_result(self, x, y, yerr, result):
 #         # Generate x, y values for plotting the fitted function
@@ -1244,6 +1336,414 @@ class fit_iminuit:
 #         plt.tight_layout()
 #         # Show the plot
 #         plt.show()
+
+
+class fit_pull_linearity:
+    @classmethod
+    def gauss(cls, x, mu, sigma):  # cls refers to the class itself
+        return norm.pdf(x, mu, sigma)
+
+    @classmethod
+    def polyno(cls, x, par):
+        return np.polyval(par, x)  # for len(par) == 2, this is a line
+
+    @classmethod
+    def line(cls, x, x0, x1):
+        return x0 + x1*x
+
+    @staticmethod
+    def fit_gauss(x):
+        # get starting values:
+        mean = np.mean(x)
+        std = np.std(x)
+
+        # cost function and minuit
+        cost_gauss = cost.UnbinnedNLL(data=x, pdf=fit_pull_linearity.gauss)
+        m_gauss = Minuit(fcn=cost_gauss, mu=round(mean,1), sigma=round(std,1))
+        m_gauss.migrad()
+
+        # fit result
+        result = correlated_values(m_gauss.values, m_gauss.covariance)
+        # correlated_values will keep the correlation between mu, sigma
+        return result # mu, sigma
+
+    @staticmethod
+    def fit_linear(x, y, yerr):
+        # get starting values
+        p = np.polynomial.Polynomial.fit(x, y, deg=1)
+        y_intercept, slope = p.convert().coef
+
+        # cost function and minuit
+        cost_poly = cost.LeastSquares(x,y,yerr,model=fit_pull_linearity.polyno,loss='soft_l1')
+        m_line = Minuit(cost_poly, (round(y_intercept,1),round(slope,1)) )
+        m_line.migrad()
+
+        # fit result
+        result = correlated_values(m_line.values, m_line.covariance)
+        return result # slope, y_int if model==polyno; y_int, slope if model==line
+
+
+
+############################### pyhf utils ####################################
+import pyhf
+import cabinetry
+import json
+from tqdm.auto import tqdm
+
+class pyhf_utils:
+    def __init__(self, toy_temp, fit_temp, fit_inits = [0.4]*12,
+                 toy_pars=[1]*12, par_fix=[False]*12):
+        
+        # load toy and fit templates
+        tt = cabinetry.workspace.load(toy_temp)
+        ft = cabinetry.workspace.load(fit_temp)
+        model_toy, _ = cabinetry.model_utils.model_and_data(tt)
+        model_fit, _ = cabinetry.model_utils.model_and_data(ft)
+        
+        # Get norm parameter names in the correct order
+        norm_parameter_names = [par for par in model_toy.config.par_order if par.endswith('_norm')]
+        # Create a boolean list for fixing parameters
+        fix_mask = [par in par_fix for par in norm_parameter_names]
+        
+        # set up the parameter configuration
+        for i, par_name in enumerate(norm_parameter_names):
+            model_toy.config.par_map[par_name]['paramset'].suggested_init=[toy_pars[i]]
+            model_toy.config.par_map[par_name]['paramset'].suggested_fixed=fix_mask[i]
+            model_fit.config.par_map[par_name]['paramset'].suggested_init=[fit_inits[i]]
+            model_fit.config.par_map[par_name]['paramset'].suggested_fixed=fix_mask[i]
+
+        # setup init attributes
+        self.model_toy = model_toy
+        self.model_fit = model_fit
+        # Set the pars for generating toys
+        self.toy_pars = cabinetry.model_utils.asimov_parameters(model_toy)
+        # Create a list of parameter names for samples that are not fixed
+        self.minos_pars = [par for par in norm_parameter_names if par not in par_fix]
+        
+    def toy_generator(self, n_toys):
+        pdf_toy = self.model_toy.make_pdf(pyhf.tensorlib.astensor(self.toy_pars))
+        toys = pdf_toy.sample((n_toys,))
+
+        return toys
+        
+    def fit_scipy_minuit(self, data):
+        try: # fit with scipy for an initial guess
+            pyhf.set_backend('jax', 'scipy')
+            init_pars = pyhf.infer.mle.fit(pdf=self.model_fit, data=data).tolist()
+
+        except Exception as e: # use the suggested init
+            init_pars = self.model_fit.config.suggested_init()
+
+        # fit with minuit
+        pyhf.set_backend('jax', 'minuit')
+        result = cabinetry.fit.fit(model=self.model_fit,data=data,
+                                   init_pars=init_pars,goodness_of_fit=True,
+                                   minos=self.minos_pars
+                                  )
+        
+        return result
+        
+
+class toy_utils:
+    def __init__(self,pars_toFix=[],toy_workspace='',
+                 part=0,binning=[],fit_workspace=''):
+        
+        self.part = part
+        self.binning = binning
+        self.pars_toFix = pars_toFix
+        self.toy_workspace = toy_workspace
+        self.fit_workspace = toy_workspace if fit_workspace=='' else fit_workspace
+        
+    def generate_fit_toys(self,toy_pars,fit_inits,n_toys):
+        # initialize util tools for pyhf
+        pyhf_tools = pyhf_utils(toy_temp=self.toy_workspace,
+                                     par_fix=self.pars_toFix,
+                                     fit_temp=self.fit_workspace,
+                                     toy_pars=toy_pars,
+                                     fit_inits = fit_inits
+                                   )
+        # generate toys
+        toys = pyhf_tools.toy_generator(n_toys=n_toys)
+        
+        # prepare containers for fit results
+        fit_results = {
+            'best_twice_nll': [],
+            'pval': [],
+            'expected_results':[],
+            'best_fit': [],
+            'hesse_uncertainty': [],
+            'minos_uncertainty_up': [],
+            'minos_uncertainty_down': []
+        }
+                
+        failed_fits = 0
+        attempted_fits = 0
+        successful_fits = 0
+        
+        # fit toys
+        with tqdm(total=n_toys, desc='Fitting toys') as pbar:
+            while attempted_fits < n_toys:
+                data = toys[attempted_fits]
+                try:
+                    # fit
+                    res = pyhf_tools.fit_scipy_minuit(data=data)
+                    
+                    # save fit results
+                    fit_results['best_twice_nll'].append(res.best_twice_nll)
+                    fit_results['pval'].append(res.goodness_of_fit)
+                    fit_results['expected_results'].append(fit_inits)
+                    fit_results['best_fit'].append(res.bestfit[:len(fit_inits)])
+                    fit_results['hesse_uncertainty'].append(res.uncertainty[:len(fit_inits)])
+#                     main_data, aux_data = model.fullpdf_tv.split(pyhf.tensorlib.astensor(data))
+#                     fit_results['main_data'].append(main_data.tolist())
+#                     fit_results['aux_data'].append(aux_data.tolist())
+                    
+                    # save minos results
+                    all_pars = res.labels[:len(fit_inits)]
+                    # get minos if res.minos_unc has keys in all_pars, otherwise get 1
+                    fit_results['minos_uncertainty_up'].append(
+                        [abs(res.minos_uncertainty.get(x,[1,1])[1]) for x in all_pars])
+                    fit_results['minos_uncertainty_down'].append(
+                        [abs(res.minos_uncertainty.get(x,[1,1])[0]) for x in all_pars])
+
+                    successful_fits += 1
+                    pbar.update(1)
+
+                except Exception as e:
+                    failed_fits += 1
+                    print(f"Fit failed: {e}")
+                attempted_fits += 1
+            pbar.close()
+
+        for key in fit_results.keys():
+            # convert to json safe lists (these are much quicker to load then the yaml files later)
+            fit_results[key] = np.array(fit_results[key]).tolist()
+
+        out_dict = {
+            'poi': res.labels[:len(fit_inits)],
+            'toy_pars': toy_pars,
+            'n_toys': n_toys,
+            'results': fit_results,
+            'failed_fits': failed_fits,
+            'attempted_fits': attempted_fits,
+            'part': self.part,
+            'binning': self.binning,
+        }
+        
+        return out_dict
+    
+    @staticmethod
+    def merge_toy_results(result_files):
+        merged_toy_results_dict = {}
+        failed_fits = 0
+        for input_file in tqdm(result_files):
+            with open(input_file, 'r') as f:
+                try: 
+                    in_dict = json.load(f)
+                except json.JSONDecodeError as e:
+                    failed_fits += 10
+                    print(f"Error decoding JSON: {e}")
+                    continue
+                    
+                failed_fits += in_dict['failed_fits']
+                merged_toy_results_dict['poi'] = in_dict['poi']
+                
+                for k, v in in_dict['results'].items():
+                    if not k in merged_toy_results_dict.keys():
+                        merged_toy_results_dict[k] = v
+                    else:
+                        merged_toy_results_dict[k].extend(v)
+                        
+        out_dict = {
+            'toy_results': merged_toy_results_dict,
+            'failed_fits': failed_fits
+        }
+        
+        return out_dict
+    
+    @staticmethod
+    def calculate_pulls(merged_dict, normalize=True, minos_error=True):
+        merged_results = merged_dict['toy_results']
+        
+        fitted = np.array(merged_results['best_fit'])
+        truth = np.array(merged_results['expected_results'])
+        diff = fitted - truth
+
+        # calculate pulls
+        if minos_error:
+            # minos errors
+            minos_up = np.array(merged_results['minos_uncertainty_up'])
+            minos_down = np.array(merged_results['minos_uncertainty_down'])
+            pulls = np.where(diff > 0, diff / minos_up, diff / minos_down)
+            percent_error = np.where(diff > 0, minos_up / fitted, minos_down / fitted) # will show in the plot
+        else:
+            # hesse error
+            hesse_error = np.array(merged_results['hesse_uncertainty'])
+            pulls = diff / hesse_error
+            percent_error = hesse_error / fitted # will show in the plot
+        
+        if not normalize:
+            pulls = diff
+            
+        # save
+        merged_dict['toy_results']['pulls']=pulls.tolist()
+        merged_dict['toy_results']['percent_error']=percent_error.tolist()
+        
+        return merged_dict
+    
+    @staticmethod
+    def calculate_linear_xy(merged_dict, minos_error=True):
+        merged_results = merged_dict['toy_results']
+        
+        truth = np.array(merged_results['expected_results'])
+        fitted = np.array(merged_results['best_fit'])
+        diff = fitted - truth
+        
+        # choose hesse or minos error
+        if minos_error:
+            # minos errors
+            minos_up = np.array(merged_results['minos_uncertainty_up'])
+            minos_down = np.array(merged_results['minos_uncertainty_down'])
+            error = np.where(diff > 0, minos_up, minos_down)
+        else:
+            # hesse error
+            error = np.array(merged_results['hesse_uncertainty'])
+        
+        # Find unique rows in truth, every N toys share the same truth
+        unique_truth, unique_indices_in_truth, inverse_indices = np.unique(truth,axis=0, 
+                                                                           return_index=True, 
+                                                                           return_inverse=True)
+
+        # Compute weighted mean and SEM for each unique truth value
+        weighted_means = []
+        SEM_values = []
+
+        for i in range(len(unique_truth)):
+            mask = (inverse_indices == i)  # Get indices for each unique row
+            fitted_group = fitted[mask]
+            error_group = error[mask]
+
+            # Compute weights (w = 1 / sigma^2)
+            weights = 1 / (error_group**2)
+
+            # Weighted mean
+            weighted_mean = np.sum(fitted_group * weights, axis=0) / np.sum(weights, axis=0)
+
+            # Standard error of the mean (SEM)
+            SEM = np.sqrt(1 / np.sum(weights, axis=0))
+
+            weighted_means.append(weighted_mean)
+            SEM_values.append(SEM)
+        
+        # Convert and save
+        merged_dict['toy_results']['truth']=unique_truth.tolist()
+        merged_dict['toy_results']['weighted_means']=np.array(weighted_means).tolist()
+        merged_dict['toy_results']['SEM']=np.array(SEM_values).tolist()
+        
+        return merged_dict
+    
+    @staticmethod
+    def plot_toy_gaussian(x: list, mu:ufloat,sigma: ufloat,
+                          file_name: str,vertical_lines: list = [0],
+                          extra_info=None, title_info=None, ylabel='Trials',
+                          xlabel: str = '$(\mu-\mu_{in}) /\sigma_{\mu}$',
+                          figsize=(6, 6 / 1.618), show: bool = False):
+        # set up the figure
+        fig = plt.figure(figsize=figsize)
+        bins = np.linspace(-5 * sigma.n, +5 * sigma.n, 101)
+        bin_centers = 0.5 * (bins[1:] + bins[:-1])
+        bin_width = bins[1] - bins[0]
+        
+        # set up the fitted gaussian
+        def gaussian(x, mu, sig): # user defined gauss for uncertainties
+            return 1. / (((2. * np.pi)**0.5) * sig) * np.e**(-(((x - mu) / sig)**2) / 2)
+        gauss_x = np.linspace(bins[0], bins[-1], 2001)
+        gauss_y = gaussian(gauss_x, mu, sigma)
+        gauss_y_nominal = unp.nominal_values(gauss_y)
+        gauss_y_std = unp.std_devs(gauss_y)
+
+        # calculate the error band
+        hist, _ = np.histogram(x, bins=bins)
+        norm_nominal = hist.sum() * bin_width * gauss_y_nominal
+        norm_up = hist.sum() * bin_width * (gauss_y_nominal + gauss_y_std)
+        norm_down = hist.sum() * bin_width * (gauss_y_nominal - gauss_y_std)
+        
+        # plot the gauss curve, error band, and data points with errorbar
+        gauss_curve = plt.plot(gauss_x, norm_nominal, lw=1)
+        plt.fill_between(gauss_x, norm_up, norm_down, color=gauss_curve[0].get_color(), alpha=0.3)
+        plt.errorbar(x=bin_centers,y=hist,yerr=np.sqrt(hist),fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5)
+
+        # set up reference line and text
+        for v in vertical_lines:
+            plt.axvline(v, color='gray', ls='--', zorder=-100)
+
+        plt.text(0.95,0.95, fr'$\mu_{{G}}=${round(mu.n,3)}$\pm${round(mu.s,3)}',
+                 va='top',ha='right',usetex=False, transform=plt.gca().transAxes)
+        plt.text(0.95, 0.88, fr'$\sigma_{{G}}=${round(sigma.n,3)}$\pm${round(sigma.s,3)}',
+                 va='top', ha='right', usetex=False, transform=plt.gca().transAxes)
+
+        if title_info is not None:
+            plt.title(title_info, loc='right')
+        if extra_info is not None:
+            plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, 
+                     transform=plt.gca().transAxes, fontsize=12)
+        
+        plt.ylabel(ylabel)
+        plt.xlabel(xlabel)
+        plt.ylim(0)
+        plt.xlim(bins[0], bins[-1])
+        plt.savefig(file_name, bbox_inches='tight')
+        
+        if show:
+            plt.show()
+        plt.close()
+
+    @staticmethod
+    def plot_linearity_test(x:list, y: list, yerr: list,
+                            slope: ufloat,intercept: ufloat,
+                            file_name: str, bonds: list = [0,1],
+                            x_offset: list = [0],
+                            extra_info=None, title_info=None,
+                            xlabel= r'$\mu_{in}$', ylabel=r'$\mu$',
+                            figsize=(6, 6 / 1.618), show: bool = False):
+        # set up the figure
+        plt.figure(figsize=figsize)
+        x_array_line = np.linspace(bonds[0], bonds[1], 1001)
+
+        # plot the fitted line and data point with errorbar
+        y_line = x_array_line * slope + intercept
+        y_nominal = unp.nominal_values(y_line)
+        y_std = unp.std_devs(y_line)
+        line = plt.plot(np.array([x_array_line[0], x_array_line[-1]]) + x_offset,
+                        np.array([y_nominal[0], y_nominal[-1]]), lw=1.0)
+        plt.fill_between(x=x_array_line+x_offset, y1=y_nominal+y_std, y2=y_nominal-y_std,
+                         color=line[0].get_color(),alpha=0.3)
+        plt.errorbar(np.array(x) + x_offset, np.array(y), yerr=yerr, label=None, fmt='.', color='k')
+        
+        # set up extra reference line and text
+        plt.plot(np.array([bonds[0], bonds[1]]) + x_offset, [bonds[0], bonds[1]], color='gray', label='Diagonal', lw=0.5, zorder=-100, ls='--')
+        plusminus = '+' if intercept >= 0 else '-'
+        eq = f"""({round(slope.n,3)}$\pm${round(slope.s,3)})$\mu_{{in}}$${plusminus}$({abs(round(intercept.n,3))}$\pm${round(intercept.s,3)})"""
+        plt.text(0.02, 0.85, eq, usetex=False,color=line[0].get_color(),
+                 transform=plt.gca().transAxes, fontsize=9)
+
+        if extra_info is not None:
+            plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, 
+                     transform=plt.gca().transAxes, fontsize=12)
+
+        left, right = plt.xlim()
+        plt.xlim(left, right + 0.1 * (right - left))
+        plt.ylabel(ylabel)
+        plt.xlabel(xlabel)
+        if title_info is not None:
+            plt.title(title_info, loc='right')
+        plt.legend()
+        plt.savefig(file_name, bbox_inches='tight')
+        
+        if show:
+            plt.show()
+        plt.close()
 
 # # +
 ##################################### Plotting #################################
@@ -1658,9 +2158,6 @@ class mpl:
             # norm in sig region, for tail removal
             Dellnu = self.samples[r'$D\ell\nu$'].query('1.84<D_M<1.9').copy()
             Dstellnu = self.samples[r'$D^\ast\ell\nu$'].query('1.84<D_M<1.9').copy()
-            r_D = 144/18618
-            r_Dst = 125/12007
-            r_Dstst = 71/6636
                     
             # fakeD in the signal region
             fakeD = self.samples[bkg_name]
@@ -1700,8 +2197,8 @@ class mpl:
                         fakeD_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
                                         ax=None, cut=cut, scale=None,correction=correction,mask=mask)
                         
-                        fakeD_counts -= r_D * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
-                        fakeD_counts -= r_Dst * Dst_counts
+#                         fakeD_counts -= r_D * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
+#                         fakeD_counts -= r_Dst * Dst_counts
                         sb_total += fakeD_counts
                         
                         ax1.hist(bins[:-1], bins, weights=unp.nominal_values(fakeD_counts),histtype='step',
@@ -1724,8 +2221,8 @@ class mpl:
                                         fig=None, ax=None, cut=cut, name=region)
                         Dst_counts = self.plot_single_2d(bins=bins, df=Dstellnu, variables=variable, 
                                         fig=None, ax=None, cut=cut, name=region)
-                        sb_total -= r_D * D_counts
-                        sb_total -= r_Dst * Dst_counts
+#                         sb_total -= r_D * D_counts
+#                         sb_total -= r_Dst * Dst_counts
                         
                         
                         # 2D Histogram
