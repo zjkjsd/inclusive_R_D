@@ -468,7 +468,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         D_M_side_count = round_uarray(unp.uarray(D_M_s2, np.sqrt(D_M_s2)))
 
         # Fit a polynomial to the D_M sidebands
-        fitter = fit_iminuit(x_edges=bin_D_M, hist=D_M_side_count, poly_only=True)
+        fitter = fit_Dmass(x_edges=bin_D_M, hist=D_M_side_count, poly_only=True)
         m_ml, c_ml, result_ml = fitter.fit_gauss_poly_ML(deg=1)
 
         yields_left = fitter.poly_integral(xrange=[1.79,1.82],result=result_ml)

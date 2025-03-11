@@ -180,7 +180,6 @@ class pyhf_toy_fitTask(b2luigi.Task):
         merged_dict['gauss_results'] = {}
         
         for poi_index, poi in enumerate(merged_dict['toy_results']['poi']):
-            nplot+=1
             if poi in self.pars_toFix:
                 continue
 
@@ -207,7 +206,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 extra_info=f'Percent Error: {percent_error.mean():.3f}' if abs(sigma.n)<5 else 'Fit failed',
                 file_name=self.get_output_file_name(f'toy_fit_pulls_{nplot}.pdf'),
             )
-
+            nplot+=1
         with open(self.get_output_file_name('toy_results.json'), 'w') as f:
             json.dump(merged_dict, f, indent=4)
         return
@@ -277,7 +276,6 @@ class pyhf_linearity_fitTask(b2luigi.Task):
         merged_dict['linearity_results'] = {}
         
         for poi_index, poi in enumerate(merged_dict['toy_results']['poi']):
-            nplot+=1
             if poi in self.pars_toFix:
                 continue
 
@@ -316,7 +314,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
                                                bonds=[0,self.linearity_parameter_bonds[1]],
                                                x_offset=[0],title_info= poi,
                                                file_name=self.get_output_file_name(f'toy_fit_linearity_{nplot}.pdf') )
-
+            nplot+=1
         with open(self.get_output_file_name('linearity_toy_results.yaml'), 'w') as f:
             yaml.dump(merged_dict, f)
         return
@@ -527,7 +525,7 @@ if __name__ == '__main__':
     
     b2luigi.process(
         pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_50_50_noUncer_400fb.json',
-                          fit_workspace='2d_ws_SR_e_50_50_SBFakeD_noUncer_400fb.json',
+#                           fit_workspace='2d_ws_SBFakeD_e_50_50_noUncer_400fb.json',
                           pars_toFix = ['bkg_TDFl_norm',
                                            'bkg_fakeD_norm',
                                            'bkg_continuum_norm',

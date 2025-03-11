@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # +
 import basf2 as b2
 import modularAnalysis as ma
@@ -19,7 +20,7 @@ b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 main_path = b2.Path()
 
 input_file = '../Samples/Signal_MC_ROEx1/B2Dstst_l_nu/MC/MC_1193710005_mod.root'
-output_file = 'MC_e_control_test.root'
+output_file = 'MC_e_test.root'
 
 ma.inputMdstList(filelist=input_file, path=main_path)
 
@@ -136,7 +137,7 @@ ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {DMcut2}', path=main_path)
 # Reconstruct B, vertex fit
 # --------------------------
 ma.reconstructDecay('anti-B0:Dl =norad=> D+:K2pi e-:corrected ?addbrems', cut='', path=main_path)
-vx.treeFit('anti-B0:Dl', conf_level=0.00, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
+vx.treeFit('anti-B0:Dl', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
 
 # Get the distance between vertices De/IP and D+
 # vm.addAlias('vtxDDSig', 'vertexDistanceOfDaughterSignificance(0,0)')
@@ -201,56 +202,37 @@ ma.updateROEMask("B0:Dl","my_mask",tight_track, tight_gamma, path=main_path)
 # ----------------
 # Create ROE path
 # ----------------
-# roe_path = b2.Path()
-# deadEndPath = b2.Path()
-# ma.signalSideParticleFilter('anti-B0:Dl', '', roe_path, deadEndPath)
-# ma.discardFromROEMasks('pi+:all', ['my_mask'], '[isCurl==1 or pt==0 or E>5.5] and isInRestOfEvent==1', path=roe_path)
-# ma.fillParticleList('pi+:roe', 'isInRestOfEvent>0 and passesROEMask(my_mask)', path = roe_path)
+from stdPi0s import stdPi0s
 
-# Virtual particles are place holders for the calculateDistance module to work
-# These distances below will be used to suppress the combinatorial bkg(in MVAs)
-# DOCA between \ell and any track in the ROE
+# create paths
+roe_path = b2.Path()
+deadEndPath = b2.Path()
+ma.signalSideParticleFilter('anti-B0:Dl', '', roe_path, deadEndPath)
 
-# ma.fillSignalSideParticleList('e-:sig', 'anti-B0:Dl -> D+:K2pi ^e-:corrected ?addbrems', path=roe_path)
-# ma.reconstructDecay('K_L0:virtual -> pi+:roe e-:sig ?addbrems', cut='', path=roe_path)
-# vx.treeFit('K_L0:virtual', conf_level=-1, updateAllDaughters=False, massConstraint=[], ipConstraint=False, path=roe_path)
-# ma.calculateDistance('K_L0:virtual', 'K_L0:virtual -> ^pi+:roe ^e-:sig ?addbrems', "2tracks", path=roe_path)
+# create a pi0
+stdPi0s(listtype='eff40_May2020', path=roe_path)
+pi0_list ='eff40_May2020'
+ma.cutAndCopyList('pi0:roe','pi0:eff40_May2020', cut='isInRestOfEvent==1',path=roe_path)
 
-# ma.rankByLowest('K_L0:virtual', 'DistanceSig', numBest=1, path=roe_path)
-# roel_DOCA_dis_dic = Distance_dic('roel_','_dis')
-# ma.variableToSignalSideExtraInfo('K_L0:virtual', roel_DOCA_dis_dic, path=roe_path)
-# ma.variableToSignalSideExtraInfo('K_L0:virtual', {'vtxReChi2':'roel_vtxReChi2_dis'}, path=roe_path)
+# get the D± from the signal side
+ma.fillSignalSideParticleList('D+:sig', 'anti-B0:Dl -> ^D+:K2pi e-:corrected', path=roe_path)
+ma.reconstructDecay('D*+:veto -> D+:sig pi0:roe', cut='', path=roe_path)
+vx.treeFit('D*+:veto', conf_level=0, updateAllDaughters =True, massConstraint=['pi0'], path=roe_path)
 
-# roel_DOCA_Chi2 = []
-# for key, value in roel_DOCA_dis_dic.items():
-#     vm.addAlias(value, f'ifNANgiveX(extraInfo({value}), -1.0)')
-#     roel_DOCA_Chi2.append(value)
-    
-# vm.addAlias('roel_vtxReChi2_dis', f'ifNANgiveX(extraInfo(roel_vtxReChi2_dis), -1.0)')
-# roel_DOCA_Chi2.append('roel_vtxReChi2_dis')
+# BCS and save
+ma.rankByLowest('D*+:veto', 'vtxReChi2', numBest=1, path=roe_path)
+ma.matchMCTruth(list_name='D*+:veto',path=roe_path)
 
-# # lepton veto 2
-# ma.applyChargedPidMVA(['pi+:roe'], path=roe_path, trainingMode=1, 
-#                       chargeIndependent=False, binaryHypoPDGCodes=(0, 0))
+veto_dict = {'vtxReChi2':'DstVeto_vtxReChi2',
+             'dM': 'DstVeto_dM',
+             'isSignal': 'DstVeto_isDst'}
+ma.variableToSignalSideExtraInfo('D*+:veto', veto_dict, path=roe_path)
+veto_vars = []
+for key, value in veto_dict.items():
+    vm.addAlias(value, f'ifNANgiveX(extraInfo({value}), -1.0)')
+    veto_vars.append(value)
 
-# ma.applyChargedPidMVA(['pi+:roe'], path=roe_path, trainingMode=1, 
-#                       chargeIndependent=False, binaryHypoPDGCodes=(0, 0))
-
-# # according to sphinx, call this in the main_path first to enable the vToEventExtraInfo function in the roe_path
-# # dummy variable here
-# ma.variablesToEventExtraInfo('B0:Dl', {'p':'B0_p'}, option=2, path=main_path)
-
-# ma.copyList('pi+:roe2', 'pi+:roe', writeOut=False, path=roe_path)
-# ma.applyCuts(f"pi+:roe", "pidChargedBDTScore(11, ALL)>0.5 and p>0.2 and thetaInCDCAcceptance and nCDCHits>0 and nPXDHits>0", path=roe_path)
-# ma.applyCuts(f"pi+:roe2", "pidChargedBDTScore(13, ALL)>0.5 and thetaInCDCAcceptance and inKLMAcceptance", path=roe_path)
-
-# ma.variablesToEventExtraInfo('pi+:roe', {'pidChargedBDTScore(11, ALL)':'ROEeidBDT'}, option=1, path=roe_path)
-# ma.variablesToEventExtraInfo('pi+:roe2', {'pidChargedBDTScore(13, ALL)':'ROEmuidBDT'}, option=1, path=roe_path)
-
-# for var in ['ROEeidBDT','ROEmuidBDT']:
-#     vm.addAlias(var, f'ifNANgiveX(eventExtraInfo({var}),-1)')
-
-# main_path.for_each('RestOfEvent', 'RestOfEvents', roe_path)
+main_path.for_each('RestOfEvent', 'RestOfEvents', roe_path)
 
 
 # ----------
@@ -403,7 +385,7 @@ CSVariables = [
 
 b_vars = vu.create_aliases_for_selected(
     list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics
-    + CSVariables + we + vertex_vars + TVVariables + extra_mcDaughters_vars
+    + CSVariables + we + vertex_vars + TVVariables + extra_mcDaughters_vars + veto_vars
     + ['mcErrors','mcPDG','dr','D_l_DisSig','cos_angle_0_1','CMS_cos_angle_0_1'],
     decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
     prefix=['B0'])
