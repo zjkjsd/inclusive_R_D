@@ -30,7 +30,17 @@ i=0
 for file in /group/belle2/dataprod/MC/MC15ri/${EventType}/sub0?/*root
 do
     echo -e "Submitting local job $i"
-    bsub -q s "basf2 ${steering} -i ${file} -o ${destination_folder}/${EventType}/${EventType}_${i}.root"
+
+    # Check if EventType is 'mixed' or 'charged'
+    if [[ "$EventType" == "mixed" || "$EventType" == "charged" ]]; then
+        extra_args="-- -dc"
+    else
+        extra_args=""
+    fi
+
+    # Submit the job with or without extra arguments
+    bsub -q s "basf2 ${steering} -i ${file} -o ${destination_folder}/${EventType}/${EventType}_${i}.root ${extra_args}"
+
     ((i++))
 done
 

@@ -40,7 +40,19 @@ analysis_variables=['__experiment__',     '__run__',       '__event__',      '__
 #                  'D_pi1_kaonIDNN',      'D_pi1_pionIDNN',] 'B0_Lab5_weMissPTheta','B0_roeCharge_my_mask', 
 #                'B0_nROE_Tracks_my_mask',  'B0_nROE_Photons_my_mask',  'B0_nROE_NeutralHadrons_my_mask',
 
-all_relevant_variables = mva_variables + analysis_variables
+combinatorial_vars = [
+        'D_511_0_daughterPDG', 'D_511_1_daughterPDG', 'D_511_2_daughterPDG',
+        'D_511_3_daughterPDG', 'D_511_4_daughterPDG', 'D_511_5_daughterPDG',
+        'D_511_6_daughterPDG', 'D_521_0_daughterPDG', 'D_521_1_daughterPDG', 
+        'D_521_2_daughterPDG', 'D_521_3_daughterPDG', 'D_521_4_daughterPDG',
+        'D_521_5_daughterPDG', 'D_521_6_daughterPDG'
+    ]
+
+veto_vars = ['B0_DstVeto_massDiff_0','B0_DstVeto_massDiffErr_0',
+             'B0_DstVeto_massDiffSignif_0','B0_DstVeto_vtxReChi2',
+             'B0_DstVeto_isDst']
+
+all_relevant_variables = mva_variables + analysis_variables + combinatorial_vars + veto_vars
 
 DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl':2,
                  'bkg_continuum':3,          'bkg_combinatorial':4,   'bkg_singleBbkg':5,
@@ -53,6 +65,31 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl'
 # sidebands / signal region
 r_D = 753/89529
 r_Dst = 557/57253
+
+# for event classification
+pi_pdg = [111, 211, -211]
+eta_pdg = [221]
+
+D_Dst_pdg = [411, 413, -411, -413]
+Dstst_narrow_pdg = [10413, 10423, 415, 425, -10413, -10423, -415, -425]
+Dstst_broad_pdg  = [10411, 10421, 20413, 20423, -10411, -10421, -20413, -20423]
+Dstst_pdg   = Dstst_narrow_pdg + Dstst_broad_pdg
+
+# for combinatorial classification
+D_mesons_pdg = D_Dst_pdg + Dstst_pdg + [421,-421,423,-423,431,-431] # D0, D*0, D_s
+charm_baryons_pdg = [4122, -4122, # Lambda_c
+                     4112, -4112, 4212, -4212, # Sigma_c
+                     4132, -4132, 4232, -4232, # Xi_c
+                     4332, -4332, # Omega_c0
+                    ]
+single_charm_pdg = D_mesons_pdg + charm_baryons_pdg
+
+double_charm_pdg = {30443, 9010443, # psi
+                    4412, -4412, 4422, -4422, # Xi_cc+
+                    4432, -4432, # Omega_cc+
+                   }
+leptons = {11, -11, 13, -13}
+Bpdg = {511, -511, 521, -521}
 
 ################################ dataframe samples ###########################
 import numpy as np
@@ -95,7 +132,8 @@ def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vt
     
     return df_bestSelected
 
-def get_dataframe_samples_new(df, mode, template=True) -> dict:
+
+def classify_mc_dict(df, mode, template=True) -> dict:
     samples = {}
     lepton_PDG = {'e':11, 'mu':13}
     
@@ -128,87 +166,131 @@ def get_dataframe_samples_new(df, mode, template=True) -> dict:
     B2D_ell = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==411*{lepton_PDG[mode]}'
     B2Dst_tau = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*15'
     B2Dst_ell = f'{signals} and B0_mcDaughter_0_PDG*B0_mcDaughter_1_PDG==413*{lepton_PDG[mode]}'
-
-    Dstst_narrow = [10413, 10423, 415, 425,
-                   -10413, -10423, -415, -425]
-    Dstst_broad  = [10411, 10421, 20413, 20423,
-                   -10411, -10421, -20413, -20423]
-    Dstst_list   = Dstst_narrow + Dstst_broad
     
-    B2Dstst_tau = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_list and abs(B0_mcDaughter_1_PDG)==15'
-    B2Dstst_ell_narrow = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_narrow and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
-    B2Dstst_ell_broad = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_broad and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
+    B2Dstst_tau = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_pdg and abs(B0_mcDaughter_1_PDG)==15'
+    B2Dstst_ell_narrow = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_narrow_pdg and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
+    B2Dstst_ell_broad = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_broad_pdg and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
 
-    D_Dst_list = [411, 413, -411, -413]
-    pi_list = [111, 211, -211]
-    eta_list = [221]
-    B2D_ell_gap_pi = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @pi_list'
-    B2D_ell_gap_eta = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_list and B0_mcDaughter_1_PDG in @eta_list'
+    B2D_ell_gap_pi = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_pdg and B0_mcDaughter_1_PDG in @pi_pdg'
+    B2D_ell_gap_eta = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_pdg and B0_mcDaughter_1_PDG in @eta_pdg'
     
     ######################### Apply selection ###########################
     
-    # Fake bkg components
-    bkg_fakeD = df.query(FD).copy()
-    bkg_TDFl = df.query(TDFl).copy()
-    bkg_fakeTracks = df.query(fakeTracks).copy()
-    samples['bkg_fakeD'] = bkg_fakeD
-    samples['bkg_TDFl'] = bkg_TDFl
-    samples['bkg_fakeTracks'] = bkg_fakeTracks
+    # Fake background components:
+    samples.update({
+        'bkg_fakeD': df.query(FD).copy(),
+        'bkg_TDFl':  df.query(TDFl).copy(),
+        'bkg_fakeTracks': df.query(fakeTracks).copy(),
+    })
     
-    # True Dl bkg components
-    bkg_continuum = df.query(continuum).copy()
+    # True Dl background components:
+    bkg_continuum     = df.query(continuum).copy()
     bkg_combinatorial = df.query(combinatorial).copy()
-    bkg_singleBbkg = df.query(singleBbkg).copy()
-    signals_all = df.query(signals).copy()
-    bkg_other_TDTl = pd.concat([df.query(TDTl).copy(),
-                                bkg_singleBbkg,
-                                bkg_combinatorial,
-                                bkg_continuum,
-                                signals_all]).drop_duplicates(
-        subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    bkg_singleBbkg    = df.query(singleBbkg).copy()
+    df_signals_all    = df.query(signals).copy()
+    df_TDTl_all       = df.query(TDTl).copy()
     
-    samples['bkg_continuum'] = bkg_continuum
-    samples['bkg_combinatorial'] = bkg_combinatorial
-    samples['bkg_singleBbkg'] = bkg_singleBbkg
-    samples['bkg_other_TDTl'] = bkg_other_TDTl
+    classified_TDTl_indices = pd.concat([bkg_continuum,bkg_combinatorial,
+                                         bkg_singleBbkg,df_signals_all]).index
     
-    # True Dl Signal components
-    D_tau_nu=df.query(B2D_tau).copy()
-    D_l_nu=df.query(B2D_ell).copy()
-    Dst_tau_nu=df.query(B2Dst_tau).copy()
-    Dst_l_nu=df.query(B2Dst_ell).copy()
-    Dstst_tau_nu=df.query(B2Dstst_tau).copy()
-    Dstst_l_nu_narrow=df.query(B2Dstst_ell_narrow).copy()
-    Dstst_l_nu_broad=df.query(B2Dstst_ell_broad).copy()
-    D_l_nu_gap_pi=df.query(B2D_ell_gap_pi).copy()
-    D_l_nu_gap_eta=df.query(B2D_ell_gap_eta).copy()
+    bkg_other_TDTl = df_TDTl_all.loc[~df_TDTl_all.index.isin(classified_TDTl_indices)].copy()
+#     bkg_other_TDTl = pd.concat([]).drop_duplicates(subset=['__experiment__', '__run__', '__event__', '__production__'], keep=False)
     
-    bkg_other_signal = pd.concat([signals_all,
-                                  D_tau_nu,
-                                  Dst_tau_nu,
-                                  D_l_nu,
-                                  Dst_l_nu,
-                                  Dstst_tau_nu,
-                                  Dstst_l_nu_narrow,
-                                  Dstst_l_nu_broad,
-                                  D_l_nu_gap_pi,
-                                  D_l_nu_gap_eta]).drop_duplicates(
-        subset=['__experiment__','__run__','__event__','__production__'],keep=False)
+    samples.update({
+        'bkg_continuum': bkg_continuum,
+        'bkg_combinatorial': bkg_combinatorial,
+        'bkg_singleBbkg': bkg_singleBbkg,
+        'bkg_other_TDTl': bkg_other_TDTl,
+    })
     
-    samples[r'$D\tau\nu$'] = D_tau_nu
-    samples[r'$D^\ast\tau\nu$'] = Dst_tau_nu
-    samples[r'$D\ell\nu$'] = D_l_nu
-    samples[r'$D^\ast\ell\nu$'] = Dst_l_nu
-    samples[r'$D^{\ast\ast}\tau\nu$'] = Dstst_tau_nu
-    samples[r'$D^{\ast\ast}\ell\nu$_narrow'] = Dstst_l_nu_narrow
-    samples[r'$D^{\ast\ast}\ell\nu$_broad'] = Dstst_l_nu_broad
-    samples[r'$D\ell\nu$_gap_pi'] = D_l_nu_gap_pi
-    samples[r'$D\ell\nu$_gap_eta'] = D_l_nu_gap_eta
-    samples['bkg_other_signal'] = bkg_other_signal
+    # True Dl signal components:
+    D_tau_nu     = df.query(B2D_tau).copy()
+    D_l_nu       = df.query(B2D_ell).copy()
+    Dst_tau_nu   = df.query(B2Dst_tau).copy()
+    Dst_l_nu     = df.query(B2Dst_ell).copy()
+    Dstst_tau_nu = df.query(B2Dstst_tau).copy()
+    Dstst_l_nu_narrow = df.query(B2Dstst_ell_narrow).copy()
+    Dstst_l_nu_broad  = df.query(B2Dstst_ell_broad).copy()
+    D_l_nu_gap_pi = df.query(B2D_ell_gap_pi).copy()
+    D_l_nu_gap_eta = df.query(B2D_ell_gap_eta).copy()
     
-    for name, df in samples.items():
-        df['mode']=DecayMode_new[name]
+    classified_signal_indices = pd.concat([D_tau_nu, Dst_tau_nu, D_l_nu,
+                                           Dst_l_nu, Dstst_tau_nu,
+                                           Dstst_l_nu_narrow,
+                                           Dstst_l_nu_broad,
+                                           D_l_nu_gap_pi, D_l_nu_gap_eta,]).index
+    
+    bkg_other_signal = df_signals_all.loc[~df_signals_all.index.isin(classified_signal_indices)].copy()
+ 
+    # Assign signal samples with LaTeX style names:
+    samples.update({
+        r'$D\tau\nu$':      D_tau_nu,
+        r'$D^\ast\tau\nu$': Dst_tau_nu,
+        r'$D\ell\nu$':      D_l_nu,
+        r'$D^\ast\ell\nu$': Dst_l_nu,
+        r'$D^{\ast\ast}\tau\nu$': Dstst_tau_nu,
+        r'$D^{\ast\ast}\ell\nu$_narrow': Dstst_l_nu_narrow,
+        r'$D^{\ast\ast}\ell\nu$_broad': Dstst_l_nu_broad,
+        r'$D\ell\nu$_gap_pi': D_l_nu_gap_pi,
+        r'$D\ell\nu$_gap_eta': D_l_nu_gap_eta,
+        'bkg_other_signal': bkg_other_signal,
+    })
+    
+    # Finally, assign a 'mode' to each sample based on an external mapping (DecayMode_new)
+    # (Make sure that DecayMode_new is defined in your namespace.)
+    for name, subset_df in samples.items():
+        subset_df['mode'] = DecayMode_new.get(name, -1)
+    
     return samples
+    
+    
+def classify_combinatorial(df):
+    """
+    Classifies combinatorial background into 7 distinct classes based on:
+      1. D mother decay type.
+      2. Lepton mother PDG classification.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame containing necessary columns.
+
+    Returns:
+        dict: A dictionary where keys are class names and values are sub-DataFrames.
+    """
+    # Define relevant columns for D mother decay classification
+    study_cols = combinatorial_vars
+
+    # 1. Semileptonic B: at least one lepton appears in the study columns
+    mask_sl = df[study_cols].isin(leptons).any(axis=1)
+
+    # 2. Hadronic single charm: no leptons and exactly one value in the D_mesons
+    charm_mask1 = df[study_cols].abs().isin(single_charm_pdg)
+    mask_cx = (~mask_sl) & (charm_mask1.sum(axis=1) == 1)
+
+    # 3. Hadronic double charm: no leptons and two values in the D_mesons or 1 value in psi
+    charm_mask2 = df[study_cols].abs().isin(double_charm_pdg)
+    mask_ccx = (~mask_sl) & ( (charm_mask1.sum(axis=1) == 2) | (charm_mask2.sum(axis=1) == 1) )
+
+    # Lepton classification:
+    mask_primary_ell = (df['ell_genMotherPDG'].abs().isin(Bpdg)) | (
+        (df['ell_genGMPDG'].abs().isin(Bpdg)) & (df['ell_genMotherPDG'].abs() == 15)
+    )
+    mask_secondary_ell = ~mask_primary_ell
+
+    # Build dictionary of classified samples:
+    class_dict = {
+        'DSemiB_ellPri': df[mask_sl & mask_primary_ell].copy(),
+        'DSemiB_ellSec': df[mask_sl & mask_secondary_ell].copy(),
+        'DHad1Charm_ellPri': df[mask_cx & mask_primary_ell].copy(),
+        'DHad1Charm_ellSec': df[mask_cx & mask_secondary_ell].copy(),
+        'DHad2Charm_ellPri': df[mask_ccx & mask_primary_ell].copy(),
+        'DHad2Charm_ellSec': df[mask_ccx & mask_secondary_ell].copy(),
+    }
+
+    # Catch unclassified rows
+    classified_indices = pd.concat(class_dict.values()).index
+    class_dict['others'] = df.loc[~df.index.isin(classified_indices)].copy()
+
+    return class_dict
 
 
 # Function to check for duplicate entries in a dictionary of Pandas DataFrames

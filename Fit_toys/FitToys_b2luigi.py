@@ -525,14 +525,14 @@ if __name__ == '__main__':
     
     b2luigi.process(
         pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_50_50_noUncer_400fb.json',
-#                           fit_workspace='2d_ws_SBFakeD_e_50_50_noUncer_400fb.json',
+                          fit_workspace='2d_ws_SBFakeD_e_50_50_noUncer_400fb.json',
                           pars_toFix = ['bkg_TDFl_norm',
                                            'bkg_fakeD_norm',
                                            'bkg_continuum_norm',
                                            'bkg_combinatorial_norm',
                                            'bkg_singleBbkg_norm',
-#                                            r'$D^\ast\tau\nu$_norm',
-#                                            r'$D^{\ast\ast}\tau\nu$_norm',
+                                           r'$D^\ast\tau\nu$_norm',
+                                           r'$D^{\ast\ast}\tau\nu$_norm',
                                            #'bkg_fakeTracks_norm',
                                           ]),
         workers=int(1e4),
