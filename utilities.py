@@ -817,6 +817,9 @@ def create_workspace(temp_asimov_channels: list,
 
         # Loop over each sample in the channel
         for sample_index, sample_name in enumerate(sample_names):
+            if np.sum(template_flat[sample_name])==0:
+                continue # skip samples with 0 events
+                
             # Add the nominal template data for the sample
             channels[ch_index]['samples'].append({
                 'name': sample_name,
@@ -834,8 +837,8 @@ def create_workspace(temp_asimov_channels: list,
             if sample_name == 'bkg_fakeD' and fakeD_uncer:
                 # Add statistical uncertainty for 'bkg_fakeD' using shapesys
                 channels[ch_index]['samples'][sample_index]['modifiers'].append({
-                    'name': f'fakeD_stat_uncer_ch{ch_index}',
-                    'type': 'shapesys',
+                    'name': f'mc_stat_uncer_ch{ch_index}', # fakeD_stat
+                    'type': 'staterror', # 'shapesys'
                     'data': unp.std_devs(template_flat[sample_name]).tolist()
                 })
             elif sample_name != 'bkg_fakeD' and mc_uncer:

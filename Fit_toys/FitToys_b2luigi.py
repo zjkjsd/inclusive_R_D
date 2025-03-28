@@ -162,7 +162,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
       
             
     def output(self):
-        yield self.add_to_output('toy_results.json')
+        yield self.add_to_output('pulls_toy_results.json')
         n_plot = len(self.toy_pars)
         for i in range(n_plot):
             yield self.add_to_output(f'toy_fit_pulls_{i}.pdf')
@@ -207,7 +207,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 file_name=self.get_output_file_name(f'toy_fit_pulls_{nplot}.pdf'),
             )
             nplot+=1
-        with open(self.get_output_file_name('toy_results.json'), 'w') as f:
+        with open(self.get_output_file_name('pulls_toy_results.json'), 'w') as f:
             json.dump(merged_dict, f, indent=4)
         return
 
@@ -505,8 +505,8 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
             toy_workspace = self.toy_workspace,
             fit_workspace = self.fit_workspace,
             pars_toFix = self.pars_toFix,
-            toy_pars = [1]*12,
-            fit_inits = [1]*12,
+            toy_pars = [1]*12, # set it to [1]*11 if no gap mode
+            fit_inits = [1]*12, # set it to [1]*11 if no gap mode
             n_total_toys = 1000,
             normalize_by_uncertainty = True)
         
@@ -514,7 +514,7 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
             toy_workspace = self.toy_workspace,
             fit_workspace = self.fit_workspace,
             pars_toFix = self.pars_toFix,
-            n_pars = 12,
+            n_pars = 12, # set it to 11 if no gap mode
             linearity_parameter_bonds = [0.8,1.2],
             n_toys_per_point = 10,
             n_test_points = 30
@@ -524,15 +524,15 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 if __name__ == '__main__':
     
     b2luigi.process(
-        pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_50_50_noUncer_400fb.json',
-                          fit_workspace='2d_ws_SBFakeD_e_50_50_noUncer_400fb.json',
+        pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_testBinning_noUncer_400fb.json',
+                          fit_workspace='2d_ws_SBFakeD_e_testBinning_noUncer_400fb.json',
                           pars_toFix = ['bkg_TDFl_norm',
                                            'bkg_fakeD_norm',
                                            'bkg_continuum_norm',
                                            'bkg_combinatorial_norm',
                                            'bkg_singleBbkg_norm',
-                                           r'$D^\ast\tau\nu$_norm',
-                                           r'$D^{\ast\ast}\tau\nu$_norm',
+#                                            r'$D^\ast\tau\nu$_norm',
+#                                            r'$D^{\ast\ast}\tau\nu$_norm',
                                            #'bkg_fakeTracks_norm',
                                           ]),
         workers=int(1e4),
