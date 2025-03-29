@@ -1492,10 +1492,10 @@ class pyhf_utils:
         
         # set up the parameter configuration
         for i, par_name in enumerate(norm_parameter_names):
-            model_toy.config.par_map[par_name]['paramset'].suggested_init=[toy_pars[i]]
-            model_toy.config.par_map[par_name]['paramset'].suggested_fixed=fix_mask[i]
-            model_fit.config.par_map[par_name]['paramset'].suggested_init=[fit_inits[i]]
-            model_fit.config.par_map[par_name]['paramset'].suggested_fixed=fix_mask[i]
+            model_toy.config.param_set(par_name).suggested_init=[toy_pars[i]]
+            model_toy.config.param_set(par_name).suggested_fixed=fix_mask[i]
+            model_fit.config.param_set(par_name).suggested_init=[fit_inits[i]]
+            model_fit.config.param_set(par_name).suggested_fixed=fix_mask[i]
 
         # setup init attributes
         self.model_toy = model_toy
