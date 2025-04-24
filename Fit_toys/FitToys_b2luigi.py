@@ -139,6 +139,8 @@ class pyhf_toy_fitTask(b2luigi.Task):
                                       hash_function=join_list_hash_function)
     
     n_total_toys = b2luigi.IntParameter(default=1000, significant=False)
+    
+    n_toys_per_job = b2luigi.IntParameter(default=5,significant=False)
 
     normalize_by_uncertainty = b2luigi.BoolParameter(default=True,significant=False,
                             description='Whether to calculate mean or (mean-mu)/err')
@@ -147,8 +149,8 @@ class pyhf_toy_fitTask(b2luigi.Task):
 
 
     def requires(self):
-        n_max_toys_per_job = 10
-        for part in range(int(np.ceil(self.n_total_toys / n_max_toys_per_job))):
+
+        for part in range(int(np.ceil(self.n_total_toys / self.n_toys_per_job))):
             yield pyhf_toy_mle_part_fitTask(
                 toy_workspace = self.toy_workspace,
                 fit_workspace = self.fit_workspace,
@@ -156,7 +158,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 toy_pars = self.toy_pars,
                 fit_inits = self.fit_inits,
                 part=part,
-                n_toys=n_max_toys_per_job
+                n_toys=self.n_toys_per_job
             )                                   
 #             yield self.clone(pyhf_toy_mle_part_fitTask,
       
@@ -226,6 +228,8 @@ class pyhf_linearity_fitTask(b2luigi.Task):
     
     n_toys_per_point = b2luigi.IntParameter(default=10,significant=False)
     
+    n_toys_per_job = b2luigi.IntParameter(default=5,significant=False)
+    
     linearity_parameter_bonds = b2luigi.ListParameter(default=[0,1],hashed=True,
                                             hash_function=join_list_hash_function)
     
@@ -238,14 +242,13 @@ class pyhf_linearity_fitTask(b2luigi.Task):
         # generate random signal strengths 
         lin_start = self.linearity_parameter_bonds[0]
         lin_end = self.linearity_parameter_bonds[1]
-        n_max_toys_per_job = 10
         
         for test_point in range(self.n_test_points):
             rng = np.random.default_rng(test_point)
             toy_pars = list(rng.uniform(lin_start,lin_end,self.n_pars).round(3))
 #             toy_pars += [0.4] * n_fixed_pars
             
-            for part in range(int(np.ceil(self.n_toys_per_point / n_max_toys_per_job))):
+            for part in range(int(np.ceil(self.n_toys_per_point / self.n_toys_per_job))):
                 yield pyhf_toy_mle_part_fitTask(
                     toy_workspace = self.toy_workspace,
                     fit_workspace = self.fit_workspace,
@@ -253,7 +256,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
                     toy_pars = toy_pars,
                     fit_inits = toy_pars,
                     part=part,
-                    n_toys=n_max_toys_per_job
+                    n_toys=self.n_toys_per_job
                 )             
 #                 yield self.clone(pyhf_toy_mle_part_fitTask,
 
@@ -282,23 +285,6 @@ class pyhf_linearity_fitTask(b2luigi.Task):
             truth = np.array(merged_dict['toy_results']['truth'])[:,poi_index]
             fitted = np.array(merged_dict['toy_results']['weighted_means'])[:,poi_index]
             error = np.array(merged_dict['toy_results']['SEM'])[:,poi_index]
-#             if poi == r'$D\tau\nu$_norm':
-#                 truth /= 4431/19505
-#                 fitted /= 4431/19505
-#                 error /= 4431/19505
-#             elif poi == r'$D^\ast\tau\nu$_norm':
-#                 truth /= 2629/10179
-#                 fitted /= 2629/10179
-#                 error /= 2629/10179
-#             elif poi == r'$D^{\ast\ast}\tau\nu$_norm':
-#                 truth /= 1571/18450
-#                 fitted /= 1571/18450
-#                 error /= 1571/18450
-
-            print(poi)
-            print('truth',truth)
-            print('fitted',fitted)
-            print('error',error)
         
             # fit the line with a linear function
             slope, intercept = util.fit_pull_linearity.fit_linear(truth, fitted, error)
@@ -507,35 +493,37 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
             pars_toFix = self.pars_toFix,
             toy_pars = [1]*12, # set it to [1]*11 if no gap mode
             fit_inits = [1]*12, # set it to [1]*11 if no gap mode
-            n_total_toys = 1000,
+            n_total_toys = 2000,
+            n_toys_per_job = 5,
             normalize_by_uncertainty = True)
         
-        yield pyhf_linearity_fitTask(
-            toy_workspace = self.toy_workspace,
-            fit_workspace = self.fit_workspace,
-            pars_toFix = self.pars_toFix,
-            n_pars = 12, # set it to 11 if no gap mode
-            linearity_parameter_bonds = [0.8,1.2],
-            n_toys_per_point = 10,
-            n_test_points = 30
-        )
+#         yield pyhf_linearity_fitTask(
+#             toy_workspace = self.toy_workspace,
+#             fit_workspace = self.fit_workspace,
+#             pars_toFix = self.pars_toFix,
+#             n_pars = 12, # set it to 11 if no gap mode
+#             linearity_parameter_bonds = [0.8,1.2],
+#             n_toys_per_point = 10,
+#             n_toys_per_job = 5,
+#             n_test_points = 30
+#         )
 
 
 if __name__ == '__main__':
     
     b2luigi.process(
-        pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_testBinning_noUncer_400fb.json',
-                          fit_workspace='2d_ws_SBFakeD_e_testBinning_noUncer_400fb.json',
+        pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_testBinning_allUncer_sigMC.json',
+                          fit_workspace='2d_ws_SBFakeD_e_testBinning_allUncer_sigMC.json',
                           pars_toFix = ['bkg_TDFl_norm',
                                            'bkg_fakeD_norm',
                                            'bkg_continuum_norm',
                                            'bkg_combinatorial_norm',
                                            'bkg_singleBbkg_norm',
-#                                            r'$D^\ast\tau\nu$_norm',
-#                                            r'$D^{\ast\ast}\tau\nu$_norm',
+                                           r'$D^\ast\tau\nu$_norm',
+                                           r'$D^{\ast\ast}\tau\nu$_norm',
                                            #'bkg_fakeTracks_norm',
                                           ]),
-        workers=int(1e4),
+        workers=int(1e3),
         batch=True,
         show_output=False,
         dry_run=False,

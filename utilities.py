@@ -62,9 +62,11 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl'
                  r'$D^{\ast\ast}\ell\nu$_narrow':13,   r'$D^{\ast\ast}\ell\nu$_broad':14,
                  r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16}
 
+
+############################## define relevant constants ########################
 # sidebands / signal region
-r_D = 753/89529
-r_Dst = 557/57253
+ratio_Dell_sb_sig = 753/89529
+ratio_Dstell_sb_sig = 557/57253
 
 # for event classification
 pi_pdg = [111, 211, -211]
@@ -319,9 +321,8 @@ def check_duplicate_entries(data_dict):
         
         
 ############################### Templates and workspace ######################
-from uncertainties import ufloat, correlated_values
+from uncertainties import ufloat, correlated_values, UFloat
 import uncertainties.unumpy as unp
-from uncertainties import UFloat
 import copy
 from termcolor import colored
 
@@ -481,12 +482,14 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
     """
 
     def round_uarray(uarray):
-        """Rounds a uarray to 4 decimal places."""
-        nominal = np.round(unp.nominal_values(uarray), 4)
-        std_dev = np.round(unp.std_devs(uarray), 4)
+        """Rounds a uarray to 3 decimal places."""
+        nominal = np.round(unp.nominal_values(uarray), 2)
+        std_dev = np.round(unp.std_devs(uarray), 2)
         return unp.uarray(nominal, std_dev)
 
     #################### Create template 2d histograms with uncertainties ################
+    if len(bins)!=len(variables):
+        raise ValueError('Dimensions of variables and bins are not equal')
     histograms = {}
     for name, df_sig_sb in samples.items():
         if name in sample_to_exclude:
@@ -498,15 +501,22 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         if name in sample_weights.keys():
             df.loc[:, '__weight__'] = sample_weights[name]
             
-        # Compute weighted histogram
-        counts, xedges, yedges = np.histogram2d(
-            df[variables[0]], df[variables[1]],
-            bins=bins, weights=df['__weight__'])
+        # Compute weighted histogram, event by event weight
+        if len(variables)==2:
+            counts, xedges, yedges = np.histogram2d(
+                df[variables[0]], df[variables[1]],
+                bins=bins, weights=df['__weight__'])
 
-        # Compute sum of weight^2 for uncertainties
-        staterr_squared, _, _ = np.histogram2d(
-            df[variables[0]], df[variables[1]],
-            bins=bins, weights=(df['__weight__']**2))
+            # Compute sum of weight^2 for uncertainties
+            staterr_squared, _, _ = np.histogram2d(
+                df[variables[0]], df[variables[1]],
+                bins=bins, weights=(df['__weight__']**2))
+        elif len(variables)==1:
+            counts, edges = np.histogram(
+                df[variables[0]],bins=bins[0], weights=df['__weight__'])
+
+            staterr_squared, _ = np.histogram(
+                df[variables[0]],bins=bins[0], weights=(df['__weight__']**2))
 
         # Store as uarray: Transpose to have consistent shape (y,x) if needed
         if name in [r'$D^{\ast\ast}\ell\nu$_narrow',r'$D^{\ast\ast}\ell\nu$_broad']:
@@ -527,8 +537,13 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
 
     ################### Trimming and flattening ###############
     # Determine which bins pass the threshold based on sum of all templates
-    all_2dHists_sum = np.sum(list(histograms.values()), axis=0)  # uarray sum
-    indices_threshold = np.where(unp.nominal_values(all_2dHists_sum) >= bin_threshold)
+    all_Hists_sum = np.sum(list(histograms.values()), axis=0)  # uarray sum
+    indices_threshold = np.where(unp.nominal_values(all_Hists_sum) >= bin_threshold)
+
+    # remove sample name if no events
+    histograms = {name:hist for name,hist in histograms.items() if np.sum(hist)!=0}
+    if sample_weights[r'$D\ell\nu$_gap_pi']==0 and sample_weights[r'$D\ell\nu$_gap_eta']==0:
+        histograms[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms.pop(r'$D^{\ast\ast}\ell\nu$')
 
     # Flatten the templates after cutting
     template_flat = {name: round_uarray(hist[indices_threshold]) for name, hist in histograms.items()}
@@ -564,20 +579,25 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         hist_sbFakeD = 0
         for region_i, yields_i in region_yield.items():
             df_i = df_sidebands.query(region_i)
-            weights_i = df_i['__weight__']
-            (side_counts_i, _1, _2) = np.histogram2d(
-                df_i[variables[0]], df_i[variables[1]], bins=bins)
+#             weights_i = df_i['__weight__']
+            if len(variables)==2:
+                (side_counts_i, _1, _2) = np.histogram2d(
+                    df_i[variables[0]], df_i[variables[1]], bins=bins)
+            elif len(variables)==1:
+                (side_counts_i, _) = np.histogram(
+                    df_i[variables[0]], bins=bins[0])
 
             # compute the counts and errors, scale with the fit result
             hist_side_i = unp.uarray(side_counts_i.T, np.sqrt(side_counts_i.T))
-            scaled_side_i = hist_side_i * (yields_sig/yields_i/2)
+            scaled_side_i = hist_side_i * (yields_sig/yields_i/2) # overall scaling weight
             hist_sbFakeD += scaled_side_i
 
         # Create new 2d hists with fakeD replaced by sideband
         hists_with_sbFakeD = {k: v for k, v in histograms.items()}
 
-        modified_hist_sbFakeD = hist_sbFakeD - r_D*hists_with_sbFakeD[r'$D\ell\nu$']
-        modified_hist_sbFakeD -= r_Dst*hists_with_sbFakeD[r'$D^\ast\ell\nu$']
+        # subtract the D_ell_nu and D*_ell_nu leaked in the sideband
+        modified_hist_sbFakeD = hist_sbFakeD - ratio_Dell_sb_sig*hists_with_sbFakeD[r'$D\ell\nu$']
+        modified_hist_sbFakeD -= ratio_Dstell_sb_sig*hists_with_sbFakeD[r'$D^\ast\ell\nu$']
 
         # Replace negative nominal values with zero, retain uncertainties
         n_mod_hist_side = unp.nominal_values(modified_hist_sbFakeD)
@@ -589,58 +609,70 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
 
         ################### Trimming and flattening ###############
         # Determine which bins pass the threshold based on sum of all templates
-        all_2dHists_with_sbFakeD_sum = np.sum(list(hists_with_sbFakeD.values()), axis=0)  # uarray sum
-        indices_threshold_with_sbFakeD = np.where(unp.nominal_values(all_2dHists_with_sbFakeD_sum) >= bin_threshold)
+        all_Hists_with_sbFakeD_sum = np.sum(list(hists_with_sbFakeD.values()), axis=0)  # uarray sum
+        indices_threshold_with_sbFakeD = np.where(unp.nominal_values(all_Hists_with_sbFakeD_sum) >= bin_threshold)
 
         if np.array_equal(indices_threshold_with_sbFakeD, indices_threshold):
+            print(colored(f'number of bins = {len(template_flat)}','green'))
             print(colored('fakeD template from sidebands and signal region have the same global 0-entry bins', "green"))
 
         else:
-            # Combine row and column indices into a single structured array for both sets
-            combined_indices_with_sbFakeD = set(zip(indices_threshold_with_sbFakeD[0], indices_threshold_with_sbFakeD[1]))
-            combined_indices = set(zip(indices_threshold[0], indices_threshold[1]))
+            if len(variables)==2:
+                # Combine row and column indices into a single structured array for both sets
+                combined_indices_with_sbFakeD = set(zip(indices_threshold_with_sbFakeD[0], indices_threshold_with_sbFakeD[1]))
+                combined_indices = set(zip(indices_threshold[0], indices_threshold[1]))
+            
+                # Find the intersection of the two sets
+                common_indices = combined_indices_with_sbFakeD.intersection(combined_indices)
 
-            # Find the intersection of the two sets
-            common_indices = combined_indices_with_sbFakeD.intersection(combined_indices)
-
-            # Separate back into row and column indices
-            new_indices_threshold = (
-                np.array([idx[0] for idx in common_indices]),
-                np.array([idx[1] for idx in common_indices])
-            )
+                # Separate back into row and column indices
+                indices_threshold = (
+                    np.array([idx[0] for idx in common_indices]),
+                    np.array([idx[1] for idx in common_indices])
+                )
+                
+            elif len(variables)==1:
+                set1 = set(indices_threshold_with_sbFakeD)
+                set2 = set(indices_threshold)
+                common_indices = set1.intersection(set2)
+                indices_threshold = np.array(common_indices)
+                
             print(colored('fakeD template from sidebands and signal region have different global 0-entry bins', "red"))
             print('created a new indices_threshold masking the 0-entry bins in sig OR sidebands')
             print(colored(f'applying the new mask, number of bins was {len(asimov_data)}, now is {len(common_indices)}', "blue"))
 
         # Flatten the templates after cutting
-        template_flat_with_sb = {name: round_uarray(hist[new_indices_threshold]) for name, hist in hists_with_sbFakeD.items()}
+        template_flat_with_sb = {name: round_uarray(hist[indices_threshold]) for name, hist in hists_with_sbFakeD.items()}
         # Asimov data is the sum of all templates
         asimov_data_with_sb = round_uarray(np.sum(list(template_flat_with_sb.values()), axis=0))
 
         # Do the same for the signal region
-        template_flat = {name: round_uarray(hist[new_indices_threshold]) for name, hist in histograms.items()}
+        template_flat = {name: round_uarray(hist[indices_threshold]) for name, hist in histograms.items()}
         asimov_data = round_uarray(np.sum(list(template_flat.values()), axis=0))  # uarray
-        indices_threshold = new_indices_threshold
 
     else:
         template_flat_with_sb = {}
         asimov_data_with_sb = []
 
-    ################## Create a new set of templates with merged bins ###########
-    # Rebin asimov_data according to merge_threshold
-    new_counts, new_dummy_bin_edges, old_dummy_bin_edges = rebin_histogram(asimov_data, merge_threshold)
-    print(f'creating a new template with merged bins, original template length = {len(asimov_data)}, new template (merge small bins) length = {len(new_counts)}')
+    if len(variables)==2:
+        ################## Create a new set of templates with merged bins ###########
+        # Rebin asimov_data according to merge_threshold
+        new_counts, new_dummy_bin_edges, old_dummy_bin_edges = rebin_histogram(asimov_data, merge_threshold)
+        print(f'creating a new template with merged bins, original template length = {len(asimov_data)}, new template (merge small bins) length = {len(new_counts)}')
 
-    template_flat_merged = {}
-    for name, t in template_flat.items():
-        # Rebin using new edges
-        # Note: old_dummy_bin_edges and new_dummy_bin_edges come from rebin_histogram
-        # For consistency, we must use the same old bin edges as for asimov_data:
-        rebinned = rebin_histogram_with_new_edges(t, old_dummy_bin_edges, new_dummy_bin_edges)
-        template_flat_merged[name] = round_uarray(rebinned)
+        template_flat_merged = {}
+        for name, t in template_flat.items():
+            # Rebin using new edges
+            # Note: old_dummy_bin_edges and new_dummy_bin_edges come from rebin_histogram
+            # For consistency, we must use the same old bin edges as for asimov_data:
+            rebinned = rebin_histogram_with_new_edges(t, old_dummy_bin_edges, new_dummy_bin_edges)
+            template_flat_merged[name] = round_uarray(rebinned)
 
-    asimov_data_merged = round_uarray(np.sum(list(template_flat_merged.values()), axis=0))
-
+        asimov_data_merged = round_uarray(np.sum(list(template_flat_merged.values()), axis=0))
+    elif len(variables)==1:
+        template_flat_merged = None
+        asimov_data_merged = None
+    
     #################### Prepare return tuples: (template dict, asimov data)
     temp_sig = (template_flat, asimov_data)
     temp_with_sb = (template_flat_with_sb, asimov_data_with_sb)
@@ -834,17 +866,18 @@ def create_workspace(temp_asimov_channels: list,
             })
 
             # Add uncertainty modifiers for statistical errors
-            if sample_name == 'bkg_fakeD' and fakeD_uncer:
-                # Add statistical uncertainty for 'bkg_fakeD' using shapesys
+            sig_comp = [r'$D\tau\nu$', r'$D^\ast\tau\nu$', r'$D^{\ast\ast}\tau\nu$']
+            if (sample_name in sig_comp) and mc_uncer:
+                # Add statistical uncertainty for signals using shapesys
                 channels[ch_index]['samples'][sample_index]['modifiers'].append({
-                    'name': f'mc_stat_uncer_ch{ch_index}', # fakeD_stat
+                    'name': f'mcStat_ch{ch_index}', # fakeD_stat
                     'type': 'staterror', # 'shapesys'
                     'data': unp.std_devs(template_flat[sample_name]).tolist()
                 })
-            elif sample_name != 'bkg_fakeD' and mc_uncer:
-                # Add statistical uncertainty for all other MC backgrounds using staterror
+            elif (sample_name not in sig_comp) and mc_uncer:
+                # Add statistical uncertainty for all other components using staterror
                 channels[ch_index]['samples'][sample_index]['modifiers'].append({
-                    'name': f'mc_stat_uncer_ch{ch_index}',
+                    'name': f'mcStat_ch{ch_index}',
                     'type': 'staterror',
                     'data': unp.std_devs(template_flat[sample_name]).tolist()
                 })
@@ -2061,11 +2094,14 @@ class mpl:
         return bottom
     
     
-    def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,density=False):
+    def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,
+                            density=False, weights={}):
         if show_only is not None:
             # this will overwrite the mask argument
-            if show_only == 'sig':
+            if show_only == 'sig_and_gap':
                 mask = self.bkg + [r'$D^\ast\ell\nu$',r'$D\ell\nu$']
+            elif show_only == 'sig':
+                mask = self.bkg + self.norm
             elif show_only == 'norm':
                 mask = self.bkg + self.sig
             elif show_only == 'bkg':
@@ -2079,8 +2115,11 @@ class mpl:
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size == 0 or name in mask:
                 continue
+                
+            sample.loc[:, '__weight__'] = weights.get(name, 1)
             var_col= sample.query(cut)[variable] if cut else sample[variable]
-            (counts, _) = np.histogram(var_col, bins=bins)
+            (counts, _) = np.histogram(var_col, bins=bins, 
+                                       weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
 
             axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,color=self.colors[i],
                     label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
@@ -2282,8 +2321,8 @@ class mpl:
                         fakeD_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
                                         ax=None, cut=cut, scale=None,correction=correction,mask=mask)
                         
-#                         fakeD_counts -= r_D * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
-#                         fakeD_counts -= r_Dst * Dst_counts
+#                         fakeD_counts -= ratio_Dell_sb_sig * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
+#                         fakeD_counts -= ratio_Dstell_sb_sig * Dst_counts
                         sb_total += fakeD_counts
                         
                         ax1.hist(bins[:-1], bins, weights=unp.nominal_values(fakeD_counts),histtype='step',
