@@ -15,8 +15,8 @@ def argparser():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-dc', "--printMCDecayChain",action="store_true",
-                        help="print the MC truth decay chain for each event")
+    parser.add_argument('-pdt', "--printMCDecayTree",action="store_true",
+                        help="print the MC truth decay tree for each event")
     return parser
 
 
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     # Define the path
     main_path = b2.Path()
 
-    input_file = '../Samples/Signal_MC_ROEx1/B2Dstst_l_nu/MC/MC_1193710005_mod.root'
+    input_file = '/group/belle2/dataprod/MC/MC15ri/mixed/sub00/mdst_000001_prod00024821_task10020000001.root'
     output_file = 'MC_e_control.root'
 
     ma.inputMdstList(filelist=input_file, path=main_path)
@@ -150,11 +150,41 @@ if __name__ == "__main__":
     ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {DMcut2}', path=main_path)
 
 
+    # ----------------
+    # D* Veto
+    # ----------------
+    from stdPi0s import stdPi0s
+
+    # create a pi0
+    pi0_list ='eff50_May2020Fit'
+    stdPi0s(listtype=pi0_list, beamBackgroundMVAWeight='MC15ri',
+            fakePhotonMVAWeight='MC15ri', path=main_path)
+    pi0_daughter_cut = '''daughter(0, beamBackgroundSuppression)>0.5 and daughter(1, beamBackgroundSuppression)>0.5
+     and daughter(0, fakePhotonSuppression)>0.1 and daughter(1, fakePhotonSuppression)>0.1'''
+    ma.cutAndCopyList('pi0:slow',f'pi0:{pi0_list}', cut=pi0_daughter_cut, path=main_path)
+
+    # use good D± from the correct mass window
+    ma.cutAndCopyList('D+:good', 'D+:K2pi', cut='1.855 <M< 1.885',path=main_path)
+    ma.reconstructDecay('D*+:veto -> D+:good pi0:slow', cut='', path=main_path)
+    
+    # BCS and save
+    vm.addAlias('massDiff_0', 'massDifference(0)')
+    vm.addAlias('dis_massDiff_0','abs( massDiff_0 - 0.14065 )')
+    ma.rankByLowest('D*+:veto', 'dis_massDiff_0', numBest=1, path=main_path)   
+    
+    veto_dict = {'massDiff_0': 'DstVeto_massDiff_0'}
+    ma.variablesToEventExtraInfo('D*+:veto', veto_dict, path=main_path)
+    veto_vars = []
+    for key, value in veto_dict.items():
+        vm.addAlias(value, f'ifNANgiveX(eventExtraInfo({value}), -1.0)')
+        veto_vars.append(value)
+    
+    
     # --------------------------
     # Reconstruct B, vertex fit
     # --------------------------
     ma.reconstructDecay('anti-B0:Dl =norad=> D+:K2pi e-:corrected ?addbrems', cut='', path=main_path)
-    vx.treeFit('anti-B0:Dl', conf_level=0.00, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
+    vx.treeFit('anti-B0:Dl', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
 
     # Get the distance between vertices De/IP and D+
     # vm.addAlias('vtxDDSig', 'vertexDistanceOfDaughterSignificance(0,0)')
@@ -230,44 +260,6 @@ if __name__ == "__main__":
                              apply_mass_fit=True, fitter='treefit', path=main_path)
 
     ma.updateROEMask("B0:Dl","my_mask",tight_track, tight_gamma, path=main_path)
-
-
-    # ----------------
-    # Create ROE path
-    # ----------------
-    from stdPi0s import stdPi0s
-
-    # create paths
-    roe_path = b2.Path()
-    deadEndPath = b2.Path()
-    ma.signalSideParticleFilter('anti-B0:Dl', '', roe_path, deadEndPath)
-
-    # create a pi0
-    pi0_list ='eff60_May2020'
-    stdPi0s(listtype=pi0_list, path=roe_path)
-    ma.cutAndCopyList('pi0:roe',f'pi0:{pi0_list}', cut='isInRestOfEvent==1',path=roe_path)
-
-    # get the D± from the signal side, select good D+ from the correct mass window
-    ma.fillSignalSideParticleList('D+:sig', 'anti-B0:Dl -> ^D+:K2pi e-:corrected', path=roe_path)
-    ma.cutAndCopyList('D+:good', 'D+:sig', cut='1.855 <M< 1.885',path=roe_path)
-    ma.reconstructDecay('D*+:veto -> D+:good pi0:roe', cut='', path=roe_path)
-    vx.treeFit('D*+:veto', conf_level=0, updateAllDaughters =True, massConstraint=['pi0'], path=roe_path)
-
-    # BCS and save
-    vm.addAlias('massDiff_0', 'massDifference(0)')
-    vm.addAlias('massDiffErr_0', 'massDifferenceError(0)')
-    vm.addAlias('massDiffSignif_0', 'massDifferenceSignificance(0)')
-    ma.rankByLowest('D*+:veto', 'abs(massDiff_0)', numBest=1, path=roe_path)
-
-    veto_dict = {#'vtxReChi2':'DstVeto_vtxReChi2',
-                 'massDiff_0': 'DstVeto_massDiff_0'}
-    ma.variableToSignalSideExtraInfo('D*+:veto', veto_dict, path=roe_path)
-    veto_vars = []
-    for key, value in veto_dict.items():
-        vm.addAlias(value, f'ifNANgiveX(extraInfo({value}), -1.0)')
-        veto_vars.append(value)
-
-    main_path.for_each('RestOfEvent', 'RestOfEvents', roe_path)
 
 
     # ----------
@@ -414,14 +406,14 @@ if __name__ == "__main__":
     # ---------------------
     # Save to ntuples
     # ---------------------
-    if args.printMCDecayChain:
+    if args.printMCDecayTree:
         ma.printMCParticles(onlyPrimaries=False, maxLevel=-1, path=main_path,
                             showProperties=False, showMomenta=False, showVertices=False, showStatus=False, 
                             suppressPrint=True)
 
     b_vars = vu.create_aliases_for_selected(
         list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics
-        + CSVariables + we + vertex_vars + TVVariables + B_mcDaughters_vars + veto_vars
+        + CSVariables + we + vertex_vars + TVVariables + B_mcDaughters_vars
         + ['mcErrors','mcPDG','dr','D_l_DisSig','CMS_cos_angle_0_1'],
         decay_string='^anti-B0:Dl =norad=> D+:K2pi e-:corrected',
         prefix=['B0'])
@@ -451,7 +443,7 @@ if __name__ == "__main__":
     #    decay_string='^B0:tagFromROE',
     #    prefix=['tag'])
 
-    candidate_vars = ['Ecms'] + b_vars + D_vars + l_vars
+    candidate_vars = ['Ecms'] + veto_vars + b_vars + D_vars + l_vars
 
     ma.variablesToNtuple('anti-B0:Dl', candidate_vars, useFloat=True,
                          filename=output_file, treename='B0', path=main_path, basketsize=1_000_000)

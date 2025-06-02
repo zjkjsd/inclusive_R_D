@@ -13,13 +13,13 @@ EventType=$2
 
 # Save the output Ntuples into different folders
 if [ "$steering" == "2_Reconstruction_e_test.py" ]; then
-    destination_folder='../Samples/Generic_MC15ri/e_channel/MC15ri_local_200fb_test'
+    destination_folder='../Samples/MC15ri/e_channel/local_200fb_test'
 elif [ "$steering" == "2_Reconstruction_e_control.py" ]; then
-    destination_folder='../Samples/Generic_MC15ri/e_channel/MC15ri_local_200fb_control'
+    destination_folder='../Samples/MC15ri/e_channel/local_200fb_control'
 elif [ "$steering" == "3_Reconstruction_e_wrongCharge.py" ]; then
-    destination_folder='../Samples/Generic_MC15ri/e_channel/MC15ri_local_wrongCharge_200fb'
+    destination_folder='../Samples/MC15ri/e_channel/local_wrongCharge_200fb'
 elif [ "$steering" == "4_Reconstruction_mu.py" ]; then
-    destination_folder='../Samples/Generic_MC15ri/mu_channel/MC15ri_local_200fb'
+    destination_folder='../Samples/MC15ri/mu_channel/local_200fb'
 fi
 
 echo "Selected folder: $destination_folder"
@@ -33,7 +33,7 @@ do
 
     # Check if EventType is 'mixed' or 'charged'
     if [[ "$EventType" == "mixed" || "$EventType" == "charged" ]]; then
-        extra_args="-- -dc"
+        extra_args="-- -pdt"
     else
         extra_args=""
     fi

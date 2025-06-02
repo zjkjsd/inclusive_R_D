@@ -185,17 +185,25 @@ class pyhf_toy_fitTask(b2luigi.Task):
             if poi in self.pars_toFix:
                 continue
 
-            pulls = np.array(merged_dict['toy_results']['pulls'])[:,poi_index]
+            # get percent error for each fit
             percent_error = np.array(merged_dict['toy_results']['percent_error'])[:,poi_index]
             
+            # method 2: toy percent error = std(best_fit)/truth
+            fitted = np.array(merged_dict['toy_results']['best_fit'])[:,poi_index]
+            truth = np.array(merged_dict['toy_results']['expected_results'])[0,poi_index]
+            toys_percent_error = np.std(fitted) / truth
+            
             # fit pulls with a gaussian
+            pulls = np.array(merged_dict['toy_results']['pulls'])[:,poi_index]
             mu, sigma = util.fit_pull_linearity.fit_gauss(pulls)
             merged_dict['gauss_results'][poi] = {
                 'mu': [float(mu.n), float(mu.s)],
                 'sigma': [float(sigma.n), float(sigma.s)],
                 'corr': uncertainties.correlation_matrix([mu, sigma]).tolist(),
                 'simple_mean': np.mean(pulls),
-                'simple_std': np.std(pulls)
+                'simple_std': np.std(pulls),
+                'avg_percent_error': np.mean(percent_error),
+                'toys_percent_error': toys_percent_error
             }
 
             # make plots
@@ -205,7 +213,8 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 sigma=sigma if abs(sigma.n)<5 else uncertainties.ufloat(1, 0.1),
                 vertical_lines=([0,]), title_info= poi,
                 xlabel='$(\mu-\mu_{in}) /\sigma_{\mu}$' if self.normalize_by_uncertainty else r'$\mu-\mu_{in}$',
-                extra_info=f'Percent Error: {percent_error.mean():.3f}' if abs(sigma.n)<5 else 'Fit failed',
+                extra_info=f'''Avg percent error: {percent_error.mean():.3f}
+Toys percent error: {toys_percent_error:.3f}''' if abs(sigma.n)<5 else 'Fit failed',
                 file_name=self.get_output_file_name(f'toy_fit_pulls_{nplot}.pdf'),
             )
             nplot+=1
@@ -501,7 +510,7 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 #             toy_workspace = self.toy_workspace,
 #             fit_workspace = self.fit_workspace,
 #             pars_toFix = self.pars_toFix,
-#             n_pars = 12, # set it to 11 if no gap mode
+#             n_pars = 12,
 #             linearity_parameter_bonds = [0.8,1.2],
 #             n_toys_per_point = 10,
 #             n_toys_per_job = 5,
@@ -512,16 +521,16 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 if __name__ == '__main__':
     
     b2luigi.process(
-        pyhf_toys_wrapper(toy_workspace='2d_ws_SR_e_testBinning_allUncer_sigMC.json',
-                          fit_workspace='2d_ws_SBFakeD_e_testBinning_allUncer_sigMC.json',
-                          pars_toFix = ['bkg_TDFl_norm',
-                                           'bkg_fakeD_norm',
-                                           'bkg_continuum_norm',
-                                           'bkg_combinatorial_norm',
-                                           'bkg_singleBbkg_norm',
-                                           r'$D^\ast\tau\nu$_norm',
-                                           r'$D^{\ast\ast}\tau\nu$_norm',
-                                           #'bkg_fakeTracks_norm',
+        pyhf_toys_wrapper(toy_workspace='2dws_SR_e_gapDststTau_noerror_sigMC.json',
+                          fit_workspace='2dws_SBFakeD_e_gapDststTau_noerror_sigMC.json',
+                          pars_toFix = ['bkg_fakeTracks_norm',
+                                        'bkg_TDFl_norm',
+                                        'bkg_fakeD_norm',
+                                        'bkg_continuum_norm',
+                                        'bkg_combinatorial_norm',
+                                        'bkg_singleBbkg_norm',
+                                        r'$D^\ast\tau\nu$_norm',
+                                        r'$D^{\ast\ast}\tau\nu$_norm',
                                           ]),
         workers=int(1e3),
         batch=True,

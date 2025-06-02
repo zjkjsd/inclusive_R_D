@@ -48,9 +48,7 @@ combinatorial_vars = [
         'D_521_5_daughterPDG', 'D_521_6_daughterPDG'
     ]
 
-veto_vars = ['B0_DstVeto_massDiff_0','B0_DstVeto_massDiffErr_0',
-             'B0_DstVeto_massDiffSignif_0','B0_DstVeto_vtxReChi2',
-             'B0_DstVeto_isDst']
+veto_vars = ['DstVeto_massDiff_0']
 
 all_relevant_variables = mva_variables + analysis_variables + combinatorial_vars + veto_vars
 
@@ -144,13 +142,12 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
     
     fakeD = '0<D_mcErrors<512'
-    fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]} and ell_mcErrors!=512'
+    fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]}'
     
-    fakeTracks = 'B0_mcErrors==512'
+    fakeTracks = 'D_mcErrors==512'
     
     ################# Define B ####################
     
-    FD = f'{fakeD} and ({fakel} or {truel})' # i.e. Not a fakeTrack lepton
     TDFl = f'{trueD} and {fakel}'
     TDTl = f'{trueD} and {truel}'
     
@@ -180,7 +177,7 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     
     # Fake background components:
     samples.update({
-        'bkg_fakeD': df.query(FD).copy(),
+        'bkg_fakeD': df.query(fakeD).copy(),
         'bkg_TDFl':  df.query(TDFl).copy(),
         'bkg_fakeTracks': df.query(fakeTracks).copy(),
     })
@@ -326,6 +323,25 @@ import uncertainties.unumpy as unp
 import copy
 from termcolor import colored
 
+
+def binom_error(n_sig, n_tot):
+    """
+    for an efficiency = nSig/nTrueSig or purity = nSig / (nSig + nBckgrd), this function calculates the
+    standard deviation according to http://arxiv.org/abs/physics/0701199 .
+    """
+    variance = np.where(n_tot > 0, (n_sig + 1) * (n_sig + 2) / ((n_tot + 2) * (n_tot + 3)) -
+                           (n_sig + 1) ** 2 / ((n_tot + 2) ** 2), 0)
+    return unp.sqrt(variance)
+
+
+def poisson_error(n_tot):
+    """
+    use poisson error, except for 0 we use an 68% CL upper limit
+    p_poisson(x=0; l) = e^-l = 1-CL --> l = ln (1/ (1-CL) )
+    """
+    return np.where(n_tot > 0, unp.sqrt(n_tot), np.log(1 / (1 - 0.6827)))
+
+
 def rebin_histogram(counts, threshold):
     """
     Rebins a histogram, merging bins until the count exceeds a threshold.
@@ -385,7 +401,7 @@ def rebin_histogram(counts, threshold):
     # Combine nominal values and uncertainties into uarray if applicable
     if has_uncertainties:
         new_counts = unp.uarray(
-            new_counts_nominal, np.sqrt(new_uncertainties_squared)
+            new_counts_nominal, poisson_error(new_uncertainties_squared)
         )
     else:
         new_counts = np.array(new_counts_nominal)
@@ -424,7 +440,7 @@ def rebin_histogram_with_new_edges(counts_with_uncertainties, old_bin_edges, new
         new_uncertainties_squared[new_bin_index] += uncertainties[i] ** 2  # Sum uncertainties in quadrature
 
     # Take square root of summed uncertainties square
-    new_uncertainties = np.sqrt(new_uncertainties_squared)
+    new_uncertainties = poisson_error(new_uncertainties_squared)
 
     # Combine counts and uncertainties into a single uarray
     new_counts_with_uncertainties = unp.uarray(new_counts, new_uncertainties)
@@ -452,7 +468,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         fakeD_from_sideband (bool, optional): Whether to include fakeD templates derived from D_M sidebands. Default is False.
         data (pandas.DataFrame, optional): Data to be used for fakeD sidebands if `fakeD_from_sideband` is True. Default is None.
         sample_to_exclude (list, optional): List of sample names to exclude from template creation. Default includes specific background samples.
-        sample_weights (dict, optional): Dictionary specifying custom weights for specific samples.
+        sample_weights (dict, optional): Dictionary specifying custom weights for specific samples (in D_M signal region).
             Keys are sample names, and values are weight factors. Default is:
             {
                 '$D^{\ast\ast}\ell\nu$_broad': 1,
@@ -511,6 +527,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
             staterr_squared, _, _ = np.histogram2d(
                 df[variables[0]], df[variables[1]],
                 bins=bins, weights=(df['__weight__']**2))
+            
         elif len(variables)==1:
             counts, edges = np.histogram(
                 df[variables[0]],bins=bins[0], weights=df['__weight__'])
@@ -518,22 +535,23 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
             staterr_squared, _ = np.histogram(
                 df[variables[0]],bins=bins[0], weights=(df['__weight__']**2))
 
+     
         # Store as uarray: Transpose to have consistent shape (y,x) if needed
         if name in [r'$D^{\ast\ast}\ell\nu$_narrow',r'$D^{\ast\ast}\ell\nu$_broad']:
             # merge the 2 resonant D** modes
             if r'$D^{\ast\ast}\ell\nu$' in histograms:
-                histograms[r'$D^{\ast\ast}\ell\nu$'] += round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+                histograms[r'$D^{\ast\ast}\ell\nu$'] += round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
             else:
-                histograms[r'$D^{\ast\ast}\ell\nu$'] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+                histograms[r'$D^{\ast\ast}\ell\nu$'] = round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
         elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
             # merge the 2 Dellnu gap modes
             if r'$D\ell\nu$_gap' in histograms:
-                histograms[r'$D\ell\nu$_gap'] += round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+                histograms[r'$D\ell\nu$_gap'] += round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
             else:
-                histograms[r'$D\ell\nu$_gap'] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+                histograms[r'$D\ell\nu$_gap'] = round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
         else:
             # store other modes individually
-            histograms[name] = round_uarray(unp.uarray(counts.T, np.sqrt(staterr_squared.T)))
+            histograms[name] = round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
 
     ################### Trimming and flattening ###############
     # Determine which bins pass the threshold based on sum of all templates
@@ -562,7 +580,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         # Compute the sideband histogram and assume poisson error
         bin_D_M = np.linspace(1.79,1.95,81)
         D_M_s2, _ = np.histogram(df_sidebands['D_M'], bins=bin_D_M)
-        D_M_side_count = round_uarray(unp.uarray(D_M_s2, np.sqrt(D_M_s2)))
+        D_M_side_count = round_uarray(unp.uarray(D_M_s2, poisson_error(D_M_s2)))
 
         # Fit a polynomial to the D_M sidebands
         fitter = fit_Dmass(x_edges=bin_D_M, hist=D_M_side_count, poly_only=True)
@@ -588,7 +606,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
                     df_i[variables[0]], bins=bins[0])
 
             # compute the counts and errors, scale with the fit result
-            hist_side_i = unp.uarray(side_counts_i.T, np.sqrt(side_counts_i.T))
+            hist_side_i = unp.uarray(side_counts_i.T, poisson_error(side_counts_i.T))
             scaled_side_i = hist_side_i * (yields_sig/yields_i/2) # overall scaling weight
             hist_sbFakeD += scaled_side_i
 
@@ -747,7 +765,8 @@ def compare_2d_hist(data, model, bins_x, bins_y,
         chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
         ndf = len(res_val[mask])
         label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
-        ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok', label=label)
+        ax.errorbar(x=bin_centers,y=res_val,yerr=res_err,fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5, label=label)
         ax.axhline(0, color='gray', linestyle='--')
         ax.set_ylabel('Residuals')
         ax.legend()
@@ -774,8 +793,9 @@ def compare_2d_hist(data, model, bins_x, bins_y,
     # X-axis projection (top-left)
     axes[0, 0].hist(bin_centers_x, bins=bins_x, weights=unp.nominal_values(projModel_x), 
                     histtype='step', label=model_label)
-    axes[0, 0].errorbar(bin_centers_x, unp.nominal_values(projData_x), 
-                        yerr=unp.std_devs(projData_x), fmt='ok', label=data_label)
+    axes[0, 0].errorbar(x=bin_centers_x,y=unp.nominal_values(projData_x),
+                        yerr=unp.std_devs(projData_x),fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5, label=label)
     axes[0, 0].set_ylabel('# of Events')
     axes[0, 0].set_title(f'Projection onto {xlabel}')
     axes[0, 0].grid()
@@ -937,15 +957,15 @@ def extract_temp_asimov_channels(workspace: dict, mc_uncer: bool = True) -> list
                 if staterror_mod:
                     uncertainties = np.array(staterror_mod['data'])
                 else:
-                    uncertainties = np.sqrt(nominal_values)
+                    uncertainties = poisson_error(nominal_values)
             else:
-                uncertainties = np.sqrt(nominal_values)
+                uncertainties = poisson_error(nominal_values)
             # Store as unp.array
             template_flat[sample['name']] = unp.uarray(nominal_values, uncertainties)
 
         # Extract Asimov data
         asimov_data_nominal = np.array(workspace['observations'][ch_index]['data'])
-        asimov_data_uncertainties = np.sqrt(asimov_data_nominal)  # Default uncertainties to poisson
+        asimov_data_uncertainties = poisson_error(asimov_data_nominal)  # Default uncertainties to poisson
         asimov_data = unp.uarray(asimov_data_nominal, asimov_data_uncertainties)
 
         # Append the reconstructed channel to the list
@@ -998,44 +1018,6 @@ def inspect_temp_asimov_channels(t1, t2=None):
                 print(colored('    Asimov data are different in the 2 inputs','red'))
                 print(colored(f'    {np.array_equal(nominal1, nominal2)=}, {np.array_equal(std1, std2)=}','red'))
                 print(f"    Asimov Data (from t2): {t2[ch_index][1]}")
-
-
-
-# def calculate_FOM3d(sig_data, bkg_data, variables, test_points):
-#     sig = pd.concat(sig_data)
-#     bkg = pd.concat(bkg_data)
-#     sig_tot = len(sig)
-#     bkg_tot = len(bkg)
-#     BDT_FOM = []
-#     BDT_FOM_err = []
-#     BDT_sigEff = []
-#     BDT_sigEff_err = []
-#     BDT_bkgEff = []
-#     BDT_bkgEff_err = []
-#     for i in test_points[0]:
-#         for j in test_points[1]:
-#             for k in test_points[2]:
-#                 nsig = len(sig.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
-#                 nbkg = len(bkg.query(f"{variables[0]}>{i} and {variables[1]}>{j} and {variables[2]}>{k}"))
-#                 tot = nsig+nbkg
-#                 tot_err = np.sqrt(tot)
-#                 FOM = nsig / tot_err # s / √(s+b)
-#                 FOM_err = np.sqrt( (tot_err - FOM/2)**2 /tot**2 * nsig + nbkg**3/(4*tot**3) + 9*nbkg**2*np.sqrt(nsig*nbkg)/(4*tot**5) )
-
-#                 BDT_FOM.append(round(FOM,2))
-#                 BDT_FOM_err.append(round(FOM_err,2))
-
-#                 sigEff = nsig / sig_tot
-#                 sigEff_err = sigEff * np.sqrt(1/nsig + 1/sig_tot)
-#                 bkgEff = nbkg / bkg_tot
-#                 bkgEff_err = bkgEff * np.sqrt(1/nbkg + 1/bkg_tot)
-#                 BDT_sigEff.append(round(sigEff,2))
-#                 BDT_sigEff_err.append(round(sigEff_err,2))
-#                 BDT_bkgEff.append(round(bkgEff,2))
-#                 BDT_bkgEff_err.append(round(bkgEff_err,2))
-#     print(f'{BDT_FOM=}')
-#     print(f'{BDT_sigEff=}')
-#     print(f'{BDT_bkgEff=}')
 
 
 # # +
@@ -1270,7 +1252,7 @@ class fit_Dmass:
         # gaussian
         mean = np.average(x, weights=y)
         variance = np.average((x - mean)**2, weights=y)
-        std = np.sqrt(variance)
+        std = poisson_error(variance)
         
         return round(mean,2), round(std,2), p_init
     
@@ -1748,7 +1730,7 @@ class toy_utils:
             weighted_mean = np.sum(fitted_group * weights, axis=0) / np.sum(weights, axis=0)
 
             # Standard error of the mean (SEM)
-            SEM = np.sqrt(1 / np.sum(weights, axis=0))
+            SEM = poisson_error(1 / np.sum(weights, axis=0))
 
             weighted_means.append(weighted_mean)
             SEM_values.append(SEM)
@@ -1789,13 +1771,14 @@ class toy_utils:
         # plot the gauss curve, error band, and data points with errorbar
         gauss_curve = plt.plot(gauss_x, norm_nominal, lw=1)
         plt.fill_between(gauss_x, norm_up, norm_down, color=gauss_curve[0].get_color(), alpha=0.3)
-        plt.errorbar(x=bin_centers,y=hist,yerr=np.sqrt(hist),fmt='.',color='black',
+        plt.errorbar(x=bin_centers,y=hist,yerr=poisson_error(hist),fmt='.',color='black',
                      markeredgecolor='white',markeredgewidth=0.5)
 
         # set up reference line and text
         for v in vertical_lines:
             plt.axvline(v, color='gray', ls='--', zorder=-100)
 
+        # display text for fitted parameters
         plt.text(0.95,0.95, fr'$\mu_{{G}}=${round(mu.n,3)}$\pm${round(mu.s,3)}',
                  va='top',ha='right',usetex=False, transform=plt.gca().transAxes)
         plt.text(0.95, 0.88, fr'$\sigma_{{G}}=${round(sigma.n,3)}$\pm${round(sigma.s,3)}',
@@ -1805,7 +1788,7 @@ class toy_utils:
             plt.title(title_info, loc='right')
         if extra_info is not None:
             plt.text(0.05, 0.95, extra_info, va='top', ha='left', usetex=False, 
-                     transform=plt.gca().transAxes, fontsize=12)
+                     transform=plt.gca().transAxes, fontsize=10)
         
         plt.ylabel(ylabel)
         plt.xlabel(xlabel)
@@ -1837,7 +1820,8 @@ class toy_utils:
                         np.array([y_nominal[0], y_nominal[-1]]), lw=1.0)
         plt.fill_between(x=x_array_line+x_offset, y1=y_nominal+y_std, y2=y_nominal-y_std,
                          color=line[0].get_color(),alpha=0.3)
-        plt.errorbar(np.array(x) + x_offset, np.array(y), yerr=yerr, label=None, fmt='.', color='k')
+        plt.errorbar(x=np.array(x) + x_offset, y=np.array(y),yerr=yerr,fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5, label=None)
         
         # set up extra reference line and text
         plt.plot(np.array([bonds[0], bonds[1]]) + x_offset, [bonds[0], bonds[1]], color='gray', label='Diagonal', lw=0.5, zorder=-100, ls='--')
@@ -1923,7 +1907,7 @@ class mpl:
             variance = np.average((bin_centers - mean)**2, weights=bin_counts)
             
             # Step 4: Use the uncertainties package's sqrt if variance has uncertainties
-            std = unp.sqrt(variance)
+            std = poisson_error(variance)
         if count_only:
             return f'{counts=:d}'
         else:
@@ -1963,7 +1947,7 @@ class mpl:
                                      weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
             staterr_squared, _ = np.histogram(var_col, bins=bins,
                                               weights=(data.query(cut)['__weight__'] if cut else data['__weight__'])**2)
-            staterror = np.sqrt(staterr_squared)
+            staterror = poisson_error(staterr_squared)
 
             # Normalize to density if requested
             if density:
@@ -2001,8 +1985,9 @@ class mpl:
 
         if ax is not None:
             # Plot using errorbar to show data with uncertainties
-            ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko', label=label)
-
+            ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5, label=label)
+        
         return data_counts
 
 
@@ -2043,7 +2028,7 @@ class mpl:
                                        weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
             (staterr_squared, _) = np.histogram(var_col, bins=bins,
                                  weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
-            staterror = np.sqrt(staterr_squared)
+            staterror = poisson_error(staterr_squared)
 
             counts = normalize_to_density(counts, bins)  # Normalize if density=True
 
@@ -2069,7 +2054,7 @@ class mpl:
                                            weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
                 (staterr_squared, _) = np.histogram(var_col, bins=bins,
                                     weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
-                staterror = np.sqrt(staterr_squared)
+                staterror = poisson_error(staterr_squared)
 
                 # Apply correction if needed
                 if correction:
@@ -2077,7 +2062,7 @@ class mpl:
                                                weights=scale * sample.query(cut)['PIDWeight'] if cut else scale * sample['PIDWeight'])
                     (staterr_squared, _) = np.histogram(var_col, bins=bins,
                                                         weights=(scale * sample.query(cut)['PIDWeight'])**2 if cut else (scale * sample['PIDWeight'])**2)
-                    staterror = np.sqrt(staterr_squared)
+                    staterror = poisson_error(staterr_squared)
 
                 # Normalize if density=True
                 counts = normalize_to_density(counts, bins)
@@ -2095,7 +2080,7 @@ class mpl:
     
     
     def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,
-                            density=False, weights={}):
+                            density=False, errorbars=False, weights={}):
         if show_only is not None:
             # this will overwrite the mask argument
             if show_only == 'sig_and_gap':
@@ -2106,8 +2091,10 @@ class mpl:
                 mask = self.bkg + self.sig
             elif show_only == 'bkg':
                 mask = self.norm + self.sig
+            elif isinstance(show_only, list):
+                mask = [x for x in self.sorted_order if x not in show_only]
             else:
-                print('Warning: show_only argument accepts sig, norm or bkg')
+                print('Warning: show_only accepts sig, norm, bkg or a list')
             
         fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
         for i, name in enumerate(self.sorted_order):
@@ -2123,6 +2110,10 @@ class mpl:
 
             axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,color=self.colors[i],
                     label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
+            if errorbars:
+                bin_centers = (bins[:-1]+bins[1:])/2
+                axs.errorbar(x=bin_centers, y=counts, yerr=poisson_error(counts), fmt='.',
+                        color=self.colors[i],markeredgecolor='white',markeredgewidth=0.5)
 
         axs.set_title(f'Overlaid components ({cut=})', fontsize=14)
         axs.set_xlabel(f'{variable}', fontsize=14)
@@ -2145,7 +2136,7 @@ class mpl:
                             df.query(cut)[variables[1]] if cut else df[variables[1]],
                             bins=bins,
                     weights=df.query(cut)['__weight__']**2 if cut else df['__weight__']**2)
-            staterror = np.sqrt(staterr_squared)
+            staterror = poisson_error(staterr_squared)
 
             counts_err = unp.uarray(counts.round(0), staterror.round(0))
         else:
@@ -2186,7 +2177,9 @@ class mpl:
             label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
 
             # Plot the residuals in ax
-            ax.errorbar(bin_centers, res_val, yerr=res_err, fmt='ok',label=label)
+            ax.errorbar(x=bin_centers, y=res_val, yerr=res_err, fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5, label=label)
+            
             # Add a horizontal line at y=0 for reference
             ax.axhline(0, color='gray', linestyle='--')
             # Label the residual plot
@@ -2221,7 +2214,8 @@ class mpl:
         rat_err = unp.std_devs(ratios)
 
         # Plot the ratios in ax
-        ax.errorbar(bin_centers, rat_val, yerr=rat_err, fmt='ok')
+        ax.errorbar(x=bin_centers, y=rat_val, yerr=rat_err, fmt='.',color='black',
+                     markeredgecolor='white',markeredgewidth=0.5)
         # Add a horizontal line at y=0 for reference
         ax.axhline(1, color='gray', linestyle='--')
         # Label the residual plot
@@ -2440,7 +2434,7 @@ class mpl:
                 df.query(cut)[variable_y] if cut else df[variable_y],
                 bins=[edges_x, edges_y],
                 weights=df.query(cut)['__weight__']**2 if cut else df['__weight__']**2)
-            staterr_2d = np.sqrt(staterr_squared_2d)
+            staterr_2d = poisson_error(staterr_squared_2d)
 
             # Ensure that both arrays have the same shape
             assert counts_2d.shape == staterr_2d.shape, \
@@ -2531,76 +2525,10 @@ class mpl:
         # Adjust layout to avoid overlap
         fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, hspace=0.4, wspace=0.4)
         plt.show()
-
-    def plot_FOM(self, sigModes, bkgModes, variable, test_points, cut=None, reverse=False):
-        # define signal / bkg sample
-        sig = pd.concat([self.samples[i] for i in sigModes])
-        bkg = pd.concat([self.samples[i] for i in bkgModes])
-        # of events before cut
-        sig_tot = ufloat( len(sig), np.sqrt(len(sig)) )
-        bkg_tot = ufloat( len(bkg), np.sqrt(len(bkg)) )
-        
-        FOM_list = []
-        sigEff_list = []
-        bkgEff_list = []
-
-        for i in test_points:
-            # of events after cut
-            if reverse:
-                x = f'{variable}<{i}'
-            else:
-                x = f'{variable}>{i}'
-            
-            nsig_val = len(sig.query(f"{cut} and {x}" if cut else f"{x}"))
-            nbkg_val = len(bkg.query(f"{cut} and {x}" if cut else f"{x}"))
-            
-            nsig = ufloat(nsig_val, np.sqrt(nsig_val))
-            nbkg = ufloat(nbkg_val, np.sqrt(nbkg_val))
-            ntot = nsig+nbkg
-            # calculation
-            if ntot==0:
-                FOM = ufloat(0,0)
-            else:
-                FOM = nsig / ntot**0.5 # s / √(s+b)
-            sigEff = nsig / sig_tot
-            bkgEff = nbkg / bkg_tot
-
-            FOM_list.append(FOM)
-            sigEff_list.append(sigEff)
-            bkgEff_list.append(bkgEff)
-
-
-        fig, ax1 = plt.subplots(figsize=(8, 6))
-        
-        color = 'tab:blue'
-        ax1.set_ylabel('Efficiency', color=color)  # we already handled the x-label with ax1
-        ax1.errorbar(x=test_points, y=[E.n for E in sigEff_list], yerr=[E.s for E in sigEff_list],
-                     marker='o',label='Signal Efficiency',color=color)
-        ax1.errorbar(x=test_points, y=[E.n for E in bkgEff_list], yerr=[E.s for E in bkgEff_list],
-                     marker='o',label='Bkg Efficiency',color='green')
-        ax1.tick_params(axis='y', labelcolor=color)
-        ax1.legend(loc='upper left')
-        ax1.grid()
-        ax1.set_xlabel('Signal Probability')
-        
-        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
-        
-        color = 'tab:red'
-        ax2.set_ylabel('FOM', color=color)
-        ax2.errorbar(x=test_points, y=[F.n for F in FOM_list], yerr=[F.s for F in FOM_list],
-                     marker='o',label='FOM',color=color)
-        ax2.tick_params(axis='y', labelcolor=color)
-        #ax2.grid()
-        ax2.legend(loc='upper right')
-
-        fig.tight_layout()  # otherwise the right y-label is slightly clipped
-        plt.title(f'FOM for {variable=}')
-        plt.xlim(0,1)
-        plt.ylim(bottom=0)
-        plt.show()
         
         
-    def plot_all_2Dhist(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None, mask=[1.6,1]):
+    def plot_all_2Dhist(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], 
+                        title='Generic MC 1/ab',cut=None, mask=[1.6,1]):
         variable_x, variable_y = var_list
         xedges, yedges = bin_list
        
@@ -2638,14 +2566,10 @@ class mpl:
             ax.set_ylim(yedges.min(),yedges.max())
             ax.set_title(name,fontsize=14)
 
-        fig.suptitle(f'Generic MC 200/fb ({cut=})', y=0.92, fontsize=18)
+        fig.suptitle(f'{title} ({cut=})', y=0.92, fontsize=18)
         fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
         fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.08,fontsize=18)
-        
-       
-        
 
-        
         
     def plot_2Dhist_and_projections(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None):
         variable_x, variable_y = var_list
@@ -2706,28 +2630,80 @@ class mpl:
             ax.set_xlabel(variables[i],fontsize=30)
             ax.grid()
         
-    def plot_cut_efficiency(self, cut, variable='B0_CMS3_weQ2lnuSimple',bins=15,xlim=[2,12],comp=[r'$D\tau\nu$',r'$D\ell\nu$']):
-        plt.title(f'Efficiency for {cut=}', y=1,fontsize=16);
-        plt.xlabel(f'{variable}',fontsize=16)
-        plt.ylabel('Efficiency',x=0.06,fontsize=16)
-        plt.grid()
-        plt.xlim(xlim);
-        plt.ylim(0,1);
-        #fig.supxlabel('$|\\vec{p_D}|\ +\ |\\vec{p_l}|$  [GeV/c]')
-        #fig.supxlabel('$M_{miss}^2 \ [GeV^2/c^4]$')
-        
-        sub_samples={key:value for key, value in self.samples.items() if key in comp}
-        for name, df in sub_samples.items():
-            (bc, bins1) = np.histogram(df[variable], bins=bins)
-            (ac, bins1) = np.histogram(df.query(cut)[variable], bins=bins1)
-            bc+=1
-            ac+=1
-            efficiency = ac / bc
-            efficiency_err = efficiency * np.sqrt(1/ac + 1/bc)
-            bin_centers = (bins1[:-1] + bins1[1:]) /2
-            plt.errorbar(x=bin_centers, y=efficiency, yerr=efficiency_err, label=name)
-            plt.legend()
 
+    def plot_FOM(self, sigModes, bkgModes, variable, bins, cut=None, 
+                 reverse_selection=False, weight_column=None):
+        # define signal / bkg sample
+        sig = pd.concat([self.samples[i] for i in sigModes])
+        bkg = pd.concat([self.samples[i] for i in bkgModes])
+        
+        # create histograms
+        sig_hist, _ = np.histogram(sig[variable], bins=bins,
+                                   weights=None if weight_column is None else sig[weight_column])
+        bkg_hist, _ = np.histogram(bkg[variable], bins=bins,
+                                   weights=None if weight_column is None else bkg[weight_column])
+        
+        # define statistics
+        sig_hist = unp.uarray( sig_hist, binom_error( sig_hist, sig_hist+bkg_hist ) )
+        bkg_hist = unp.uarray( bkg_hist, binom_error( bkg_hist, sig_hist+bkg_hist ) )
+        tot_hist = sig_hist + bkg_hist
+        
+        if reverse_selection: # x = f'{variable}<{i}'
+            cumsignal = sig_hist.cumsum()
+            cumbckgrd = bkg_hist.cumsum()
+        else: # x = f'{variable}>{i}'
+            cumsignal = sig_hist.sum() - sig_hist.cumsum()
+            cumbckgrd = bkg_hist.sum() - bkg_hist.cumsum()
+
+
+
+            nsig_cut = len(sig.query(f"{cut} and {x}" if cut else f"{x}"))
+            nbkg_cut = len(bkg.query(f"{cut} and {x}" if cut else f"{x}"))
+            
+            nsig = ufloat(nsig_val, np.sqrt(nsig_val))
+            nbkg = ufloat(nbkg_val, np.sqrt(nbkg_val))
+            ntot = nsig+nbkg
+            # calculation
+            if ntot==0:
+                FOM = ufloat(0,0)
+            else:
+                FOM = nsig / ntot**0.5 # s / √(s+b)
+            sigEff = nsig / sig_tot
+            bkgEff = nbkg / bkg_tot
+
+            FOM_list.append(FOM)
+            sigEff_list.append(sigEff)
+            bkgEff_list.append(bkgEff)
+
+
+        fig, ax1 = plt.subplots(figsize=(8, 6))
+        
+        color = 'tab:blue'
+        ax1.set_ylabel('Efficiency', color=color)  # we already handled the x-label with ax1
+        ax1.errorbar(x=test_points, y=[E.n for E in sigEff_list], yerr=[E.s for E in sigEff_list], 
+                     fmt='.',color=color,markeredgecolor='white',markeredgewidth=0.5, label='Signal Efficiency')
+        ax1.errorbar(x=test_points, y=[E.n for E in bkgEff_list], yerr=[E.s for E in bkgEff_list], 
+                     fmt='.',color='green',markeredgecolor='white',markeredgewidth=0.5, label='Bkg Efficiency')
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax1.legend(loc='upper left')
+        ax1.grid()
+        ax1.set_xlabel('Signal Probability')
+        
+        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+        
+        color = 'tab:red'
+        ax2.set_ylabel('FOM', color=color)
+        ax2.errorbar(x=test_points, y=[F.n for F in FOM_list], yerr=[F.s for F in FOM_list], 
+                     fmt='.',color=color,markeredgecolor='white',markeredgewidth=0.5, label='FOM')
+        ax2.tick_params(axis='y', labelcolor=color)
+        #ax2.grid()
+        ax2.legend(loc='upper right')
+
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.title(f'FOM for {variable=}')
+        plt.xlim(0,1)
+        plt.ylim(bottom=0)
+        plt.show()
 # # +
 ###################### fit projection plots #####################
 def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d, 
@@ -2750,7 +2726,8 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         # plot data and fitted values
         data_val = unp.nominal_values(data_1d)
         data_err = unp.std_devs(data_1d)
-        ax1.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ko')
+        ax1.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='.',
+                    color='black',markeredgecolor='white',markeredgewidth=0.5)
         
         bottom_hist = np.zeros_like(data_1d)
         for i,name in enumerate(sorted_order):
@@ -2771,7 +2748,8 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         residual_err = unp.std_devs(residual)
         pull = np.array([0 if residual_err[i]==0 else (residual_val[i]/residual_err[i]) for i in range(len(residual))])
                         
-        ax2.errorbar(x=bin_centers, y=residual_val, yerr=residual_err, fmt='ko')
+        ax2.errorbar(x=bin_centers, y=residual_val, yerr=residual_err, fmt='.',
+                    color='black',markeredgecolor='white',markeredgewidth=0.5)
         ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
         ax3.scatter(x=bin_centers, y=pull, c='black')
         ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')            
@@ -2808,7 +2786,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
     # get 2d templates and data
     components_names = [n.rstrip('norm').rstrip('_') for n in fit_result.labels[:12]]
     combined_templates_2d = combine_templates_with_uncertainties(templates_2d, staterror_2d)
-    data_2d = unp.uarray(data_2d, np.sqrt(data_2d))
+    data_2d = unp.uarray(data_2d, poisson_error(data_2d))
     fitted_2d = {}
     
     # Calculate fitted values, 2d
@@ -2906,14 +2884,14 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
             continue
         else:
             fitted_templates_err[i][non_zero_masks[i]] = fitted_templates_2d[i][non_zero_masks[i]] * \
-            np.sqrt(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)
+            poisson_error(1/templates_2d[i][non_zero_masks[i]] + (Minuit.errors[i]/Minuit.values[i])**2)
 
     def extend(x):
         return np.append(x, x[-1])
 
     def errorband(bins, template_sum, template_err, ax):
         fitted_sum = np.sum(template_sum, axis=0)
-        fitted_err = np.sqrt(np.sum(np.array(template_err)**2, axis=0)) # assuming the correlations between each template are 0
+        fitted_err = poisson_error(np.sum(np.array(template_err)**2, axis=0)) # assuming the correlations between each template are 0
         ax.fill_between(bins, extend(fitted_sum - fitted_err), extend(fitted_sum + fitted_err),
         step="post", color="black", alpha=0.3, linewidth=0, zorder=100,)   
 
@@ -2928,8 +2906,8 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         residual = data_project - np.sum(templates_project, axis=0)
         residual_signal = residual + templates_project[signal_index]
         # Error assuming the correlations between data and templates, between each template, are 0
-        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
-        residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
+        residual_err = poisson_error(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+        residual_err_signal = poisson_error(residual_err**2 - np.array(templates_project_err[signal_index]))
 
         pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
         pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
@@ -2955,7 +2933,7 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         bin_width = bins[1]-bins[0]
         bin_centers = (bins[:-1] + bins[1:]) /2
         data_project = data.sum(axis=axis_to_be_summed_over)
-        data_err = np.sqrt(data_project)
+        data_err = poisson_error(data_project)
 
         # plot the templates with defined colors
         c = plt.cm.tab20.colors
@@ -2970,14 +2948,16 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         # errorband(bin_edges, templates_project, templates_project_err, ax1)
 
         # plot the data
-        ax1.errorbar(x=bin_centers, y=data_project, yerr=data_err, fmt='ko')
+        ax1.errorbar(x=bin_centers, y=data_project, yerr=data_err, fmt='.',
+                    color='black',markeredgecolor='white',markeredgewidth=0.5)
         # plot the residual
         residual = data_project - np.sum(templates_project, axis=0)
         # Error assuming the correlations between data and templates, between each template, are 0
-        residual_err = np.sqrt(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
+        residual_err = poisson_error(data_project + np.sum(np.array(templates_project_err)**2, axis=0))
 
         pull = [0 if residual_err[i]==0 else (residual[i]/residual_err[i]) for i in range(len(residual))]
-        ax2.errorbar(x=bin_centers, y=residual, yerr=residual_err, fmt='ko')
+        ax2.errorbar(x=bin_centers, y=residual, yerr=residual_err, fmt='.',
+                    color='black',markeredgecolor='white',markeredgewidth=0.5)
         ax2.axhline(y=0, linestyle='-', linewidth=1, color='r')
         ax3.scatter(x=bin_centers, y=pull, c='black')
         ax3.axhline(y=0, linestyle='-', linewidth=1, color='r')            
@@ -2994,7 +2974,7 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
 
 #         signal_index = fitted_components_names.index(signal_name)
 #         residual_signal = residual + templates_project[signal_index]
-#         residual_err_signal = np.sqrt(residual_err**2 - np.array(templates_project_err[signal_index]))
+#         residual_err_signal = poisson_error(residual_err**2 - np.array(templates_project_err[signal_index]))
 #         pull_signal = [0 if residual_err_signal[i]==0 else (residual_signal[i]/residual_err_signal[i]) for i in range(len(residual_signal))]
 
     if direction=='mm2':
@@ -3013,8 +2993,8 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         # parameters for slices==True
         fitted_project_slice1 = [temp[:first_slice_index,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
         fitted_project_slice2 = [temp[second_slice_index:,:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
-        fitted_project_slice1_err = [np.sqrt((err**2)[:first_slice_index,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
-        fitted_project_slice2_err = [np.sqrt((err**2)[second_slice_index:,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice1_err = [poisson_error((err**2)[:first_slice_index,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [poisson_error((err**2)[second_slice_index:,:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
         data_slice1 = data_2d[:first_slice_index,:]
         data_slice2 = data_2d[second_slice_index:,:]
 
@@ -3034,8 +3014,8 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         # parameters for slices==True
         fitted_project_slice1 = [temp[:,:first_slice_index].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
         fitted_project_slice2 = [temp[:,second_slice_index:].sum(axis=axis_to_be_summed_over) for temp in fitted_templates_2d]
-        fitted_project_slice1_err = [np.sqrt((err**2)[:,:first_slice_index].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
-        fitted_project_slice2_err = [np.sqrt((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice1_err = [poisson_error((err**2)[:,:first_slice_index].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
+        fitted_project_slice2_err = [poisson_error((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
         data_slice1 = data_2d[:,:first_slice_index]
         data_slice2 = data_2d[:,second_slice_index:]
 
