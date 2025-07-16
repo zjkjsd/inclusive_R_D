@@ -28,6 +28,7 @@ if __name__ == "__main__":
     analysis_gt = ma.getAnalysisGlobaltag()
     b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
     b2.conditions.append_globaltag(analysis_gt)
+    b2.conditions.prepend_globaltag('pid_nn_release06_Kpi')
     b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 
     # b2.conditions.prepend_globaltag('data_beam_conditions_proc13prompt')
@@ -83,20 +84,14 @@ if __name__ == "__main__":
     #                 path=main_path)
     vm.addAlias("isBremsCorrected", "extraInfo(bremsCorrected)")
 
-
-    ma.applyChargedPidMVA(['e+:corrected'], path=main_path, trainingMode=1, 
-                          chargeIndependent=False, binaryHypoPDGCodes=(0, 0))
-    #ma.applyChargedPidMVA(['e+:corrected'], path=main_path, trainingMode=0,
-    #                      chargeIndependent=False, binaryHypoPDGCodes=(11, 211))
-
-
     ma.fillParticleList("mu+:mymu",
                         cut=goodTrack + " and nPXDHits>0 and inKLMAcceptance",
                         path=main_path)
 
-    ma.applyChargedPidMVA(['mu+:mymu'], path=main_path, trainingMode=1, 
+    ma.applyChargedPidMVA(['e+:corrected', 'mu+:mymu'], path=main_path, trainingMode=1, 
                           chargeIndependent=False, binaryHypoPDGCodes=(0, 0))
-
+    #ma.applyChargedPidMVA(['e+:corrected'], path=main_path, trainingMode=0,
+    #                      chargeIndependent=False, binaryHypoPDGCodes=(11, 211))
 
     # ------------------------------------------------------------
     # Add extra cuts on the standard lepton lists and lepton veto.

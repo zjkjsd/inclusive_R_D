@@ -62,9 +62,9 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl'
 
 
 ############################## define relevant constants ########################
-# sidebands / signal region
-ratio_Dell_sb_sig = 753/89529
-ratio_Dstell_sb_sig = 557/57253
+# sidebands / signal region with D* veto
+ratio_Dell_sb_sig = 745/82820
+ratio_Dstell_sb_sig = 541/29344
 
 # for event classification
 pi_pdg = [111, 211, -211]
@@ -401,7 +401,7 @@ def rebin_histogram(counts, threshold):
     # Combine nominal values and uncertainties into uarray if applicable
     if has_uncertainties:
         new_counts = unp.uarray(
-            new_counts_nominal, poisson_error(new_uncertainties_squared)
+            new_counts_nominal, poisson_error(np.array(new_uncertainties_squared))
         )
     else:
         new_counts = np.array(new_counts_nominal)
@@ -515,7 +515,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         df = df_sig_sb.query('1.855<D_M<1.885')
         
         if name in sample_weights.keys():
-            df.loc[:, '__weight__'] = sample_weights[name]
+            df.loc[:, '__weight__'] = np.float32(sample_weights[name])
             
         # Compute weighted histogram, event by event weight
         if len(variables)==2:
@@ -561,7 +561,8 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
     # remove sample name if no events
     histograms = {name:hist for name,hist in histograms.items() if np.sum(hist)!=0}
     if sample_weights[r'$D\ell\nu$_gap_pi']==0 and sample_weights[r'$D\ell\nu$_gap_eta']==0:
-        histograms[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms.pop(r'$D^{\ast\ast}\ell\nu$')
+        if r'$D^{\ast\ast}\ell\nu$' in histograms:
+            histograms[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms.pop(r'$D^{\ast\ast}\ell\nu$')
 
     # Flatten the templates after cutting
     template_flat = {name: round_uarray(hist[indices_threshold]) for name, hist in histograms.items()}
@@ -697,6 +698,61 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
     temp_merged = (template_flat_merged, asimov_data_merged)
 
     return indices_threshold, temp_sig, temp_with_sb, temp_merged
+
+
+# def save_template_histogram(filepath=None):
+
+#     # Override the global filepath in case we want to run on a batch with b2luigi
+#     filepath = self.settings["output_filepath"] if filepath is None else filepath
+#     with uproot.update(filepath) as newfile:
+#         logging.info(
+#             "Updating file with uproot: %s", self.settings["output_filepath"]
+#         )
+
+#         previous_tree = None
+
+#         index = 0
+#         for ((tree_i, tree), (ctgy_i, ctgy)), t in zip(
+#             self.enumerated_iterator, self.templates.values()
+#         ):
+
+#             if tree != previous_tree:
+#                 logging.info(50 * "#")
+#                 logging.info("########## Reco channel: %s ##########", str(tree[1]))
+#                 logging.info(50 * "#")
+
+#             nominal = t.make_hist()
+
+#             for n_var in range(self.N_important_dims):
+
+#                 var = self.eigen_variations[index : index + t.Nbins, n_var]
+
+#                 branch_name = self._get_TBranch_name(
+#                     tree[1], ctgy, f"{self.syst_effect}_var{n_var+1}_up"
+#                 )
+#                 logging.info(
+#                     "Saving Up variation of MC template %s in TBranch: %s",
+#                     str(ctgy),
+#                     branch_name,
+#                 )
+
+#                 newfile[branch_name] = nominal[0] + var, nominal[1]
+
+#                 branch_name = self._get_TBranch_name(
+#                     tree[1], ctgy, f"{self.syst_effect}_var{n_var+1}_down"
+#                 )
+#                 logging.info(
+#                     "Saving Down variation of %s in TBranch: %s",
+#                     str(ctgy),
+#                     branch_name,
+#                 )
+
+#                 newfile[branch_name] = nominal[0] - var, nominal[1]
+
+#             index += t.Nbins
+
+#             previous_tree = tree
+
 
 
 
@@ -1252,7 +1308,7 @@ class fit_Dmass:
         # gaussian
         mean = np.average(x, weights=y)
         variance = np.average((x - mean)**2, weights=y)
-        std = poisson_error(variance)
+        std = float(poisson_error(variance))
         
         return round(mean,2), round(std,2), p_init
     
@@ -2008,7 +2064,7 @@ class mpl:
                 [df for name, df in self.samples.items() if name not in mask],
                 ignore_index=True)
             if scale:
-                mc_combined.loc[:, '__weight__'] = scale
+                mc_combined.loc[:, '__weight__'] = np.float32(scale)
             var_col = mc_combined.query(cut)[variable] if cut else mc_combined[variable]
             (stacked_counts, _) = np.histogram(var_col, bins=bins,
                                    weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
@@ -2022,7 +2078,7 @@ class mpl:
         if sub_df is not None:
             sample = sub_df
             if scale:
-                sample.loc[:, '__weight__'] = scale
+                sample.loc[:, '__weight__'] = np.float32(scale)
             var_col = sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins,
                                        weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -2048,7 +2104,7 @@ class mpl:
                 if sample_size == 0 or name in mask:
                     continue
                 if scale:
-                    sample.loc[:, '__weight__'] = scale
+                    sample.loc[:, '__weight__'] = np.float32(scale)
                 var_col = sample.query(cut)[variable] if cut else sample[variable]
                 (counts, _) = np.histogram(var_col, bins=bins,
                                            weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -2103,7 +2159,7 @@ class mpl:
             if sample_size == 0 or name in mask:
                 continue
                 
-            sample.loc[:, '__weight__'] = weights.get(name, 1)
+            sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
             var_col= sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins, 
                                        weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -2290,7 +2346,7 @@ class mpl:
                        'signal region': sig,
                        'right sideband': right}
             for region, df in regions.items():
-                df.loc[:, '__weight__'] = scale[region]
+                df.loc[:, '__weight__'] = np.float32(scale[region])
             
             if merge_sidebands:
                 sides = pd.concat([left, right])
@@ -2367,7 +2423,7 @@ class mpl:
             regions = {'control region': sample_control,
                        'signal region': sample_sig}
             for region, df in regions.items():
-                df.loc[:, '__weight__'] = scale[region]
+                df.loc[:, '__weight__'] = np.float32(scale[region])
             
             sig_total = self.plot_data_1d(bins=bins, sub_df=sample_sig, variable=variable, 
                                           ax=ax1,cut=cut, scale=None,name='signal region')
@@ -2408,7 +2464,7 @@ class mpl:
                            'mc signal region': mc_sig}
 
         for region, df in data_mc_regions.items():
-            df.loc[:, '__weight__'] = scale[region]
+            df.loc[:, '__weight__'] = np.float32(scale[region])
             
         # calculate the 2d hists
         data_sb_2d = 0 
@@ -2633,57 +2689,54 @@ class mpl:
 
     def plot_FOM(self, sigModes, bkgModes, variable, bins, cut=None, 
                  reverse_selection=False, weight_column=None):
-        # define signal / bkg sample
+        # the binomial error might be incorrect for weight!=1
+        
+        # define signal / tot sample
         sig = pd.concat([self.samples[i] for i in sigModes])
-        bkg = pd.concat([self.samples[i] for i in bkgModes])
+        tot = pd.concat([self.samples[i] for i in sigModes+bkgModes])
         
         # create histograms
         sig_hist, _ = np.histogram(sig[variable], bins=bins,
                                    weights=None if weight_column is None else sig[weight_column])
-        bkg_hist, _ = np.histogram(bkg[variable], bins=bins,
-                                   weights=None if weight_column is None else bkg[weight_column])
+        tot_hist, _ = np.histogram(tot[variable], bins=bins,
+                                   weights=None if weight_column is None else tot[weight_column])
         
         # define statistics
-        sig_hist = unp.uarray( sig_hist, binom_error( sig_hist, sig_hist+bkg_hist ) )
-        bkg_hist = unp.uarray( bkg_hist, binom_error( bkg_hist, sig_hist+bkg_hist ) )
-        tot_hist = sig_hist + bkg_hist
+        p_sig = np.zeros_like(sig_hist)
+        p_sig[tot_hist>0] = sig_hist[tot_hist>0] / tot_hist[tot_hist>0]
+        sig_unc = np.sqrt( sig_hist * (1 - p_sig) ) # binomial error
+        tot_hist_unc = unp.uarray( tot_hist, np.sqrt(tot_hist) ) # poisson error
+        sig_hist_unc = unp.uarray( sig_hist, sig_unc )
+        bkg_hist_unc = tot_hist_unc - sig_hist_unc
         
         if reverse_selection: # x = f'{variable}<{i}'
-            cumsignal = sig_hist.cumsum()
-            cumbckgrd = bkg_hist.cumsum()
+            cumsig = sig_hist_unc.cumsum()
+            cumbkg = bkg_hist_unc.cumsum()
         else: # x = f'{variable}>{i}'
-            cumsignal = sig_hist.sum() - sig_hist.cumsum()
-            cumbckgrd = bkg_hist.sum() - bkg_hist.cumsum()
+            cumsig = sig_hist_unc.sum() - sig_hist_unc.cumsum()
+            cumbkg = bkg_hist_unc.sum() - bkg_hist_unc.cumsum()
 
+        # FOM calculation
+        with np.errstate(divide='ignore', invalid='ignore'):
+            # Initialize variables with 0 ± 0
+            shape = unp.nominal_values(cumsig).shape
+            fom = unp.uarray(np.zeros(shape), np.zeros(shape))
+            purity = unp.uarray(np.zeros(shape), np.zeros(shape))
 
-
-            nsig_cut = len(sig.query(f"{cut} and {x}" if cut else f"{x}"))
-            nbkg_cut = len(bkg.query(f"{cut} and {x}" if cut else f"{x}"))
-            
-            nsig = ufloat(nsig_val, np.sqrt(nsig_val))
-            nbkg = ufloat(nbkg_val, np.sqrt(nbkg_val))
-            ntot = nsig+nbkg
-            # calculation
-            if ntot==0:
-                FOM = ufloat(0,0)
-            else:
-                FOM = nsig / ntot**0.5 # s / √(s+b)
-            sigEff = nsig / sig_tot
-            bkgEff = nbkg / bkg_tot
-
-            FOM_list.append(FOM)
-            sigEff_list.append(sigEff)
-            bkgEff_list.append(bkgEff)
+            mask = cumsig + cumbkg > 0
+            fom[mask] = cumsig[mask] / unp.sqrt(cumsig + cumbkg)[mask]
+            purity[mask] = cumsig[mask] / (cumsig + cumbkg)[mask]
+            sig_eff = cumsig / sig_hist.sum()
 
 
         fig, ax1 = plt.subplots(figsize=(8, 6))
         
         color = 'tab:blue'
         ax1.set_ylabel('Efficiency', color=color)  # we already handled the x-label with ax1
-        ax1.errorbar(x=test_points, y=[E.n for E in sigEff_list], yerr=[E.s for E in sigEff_list], 
+        ax1.errorbar(x=bins[:-1], y=unp.nominal_values(sig_eff), yerr=unp.std_devs(sig_eff), 
                      fmt='.',color=color,markeredgecolor='white',markeredgewidth=0.5, label='Signal Efficiency')
-        ax1.errorbar(x=test_points, y=[E.n for E in bkgEff_list], yerr=[E.s for E in bkgEff_list], 
-                     fmt='.',color='green',markeredgecolor='white',markeredgewidth=0.5, label='Bkg Efficiency')
+        ax1.errorbar(x=bins[:-1], y=unp.nominal_values(purity), yerr=unp.std_devs(purity), 
+                     fmt='.',color='green',markeredgecolor='white',markeredgewidth=0.5, label='Purity')
         ax1.tick_params(axis='y', labelcolor=color)
         ax1.legend(loc='upper left')
         ax1.grid()
@@ -2693,7 +2746,7 @@ class mpl:
         
         color = 'tab:red'
         ax2.set_ylabel('FOM', color=color)
-        ax2.errorbar(x=test_points, y=[F.n for F in FOM_list], yerr=[F.s for F in FOM_list], 
+        ax2.errorbar(x=bins[:-1], y=unp.nominal_values(fom), yerr=unp.std_devs(fom), 
                      fmt='.',color=color,markeredgecolor='white',markeredgewidth=0.5, label='FOM')
         ax2.tick_params(axis='y', labelcolor=color)
         #ax2.grid()
