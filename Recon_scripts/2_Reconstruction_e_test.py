@@ -28,6 +28,7 @@ if __name__ == "__main__":
     analysis_gt = ma.getAnalysisGlobaltag()
     b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
     b2.conditions.append_globaltag(analysis_gt)
+    b2.conditions.prepend_globaltag('pid_nn_release08_v1')
     b2.conditions.prepend_globaltag('pid_nn_release06_Kpi')
     b2.conditions.prepend_globaltag('chargedpidmva_rel6_v5')
 
@@ -142,7 +143,7 @@ if __name__ == "__main__":
     vertex_vars = ['vtxReChi2',]#'vtxNDF','flightDistanceSig','flightTimeSig',]
 
     # the mass cut is needed again because the treefit updates the daughters
-    ma.applyCuts('D+:K2pi', f'vtxReChi2<13 and {DMcut2}', path=main_path)
+    ma.applyCuts('D+:K2pi', f'{DMcut2}', path=main_path)
 
     
     # ----------------
@@ -197,7 +198,7 @@ if __name__ == "__main__":
     vm.addAlias('D_ReChi2', 'formula( vtxReChi2 + daughter(0, vtxReChi2) )')
     vm.addAlias('p_0_1', 'formula( daughter(0, CMS_p) + daughter(1, CMS_p) )')
 
-    ma.applyCuts('anti-B0:Dl', 'vtxReChi2<14 and CMS_E<5.4', path=main_path)
+    ma.applyCuts('anti-B0:Dl', 'CMS_E<5.4', path=main_path)
 
     # MC Truth Matching
     ma.matchMCTruth('anti-B0:Dl', path=main_path)

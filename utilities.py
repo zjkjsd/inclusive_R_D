@@ -924,39 +924,44 @@ def create_workspace(temp_asimov_channels: list,
         })
 
         # Loop over each sample in the channel
-        for sample_index, sample_name in enumerate(sample_names):
-            if np.sum(template_flat[sample_name])==0:
-                continue # skip samples with 0 events
-                
-            # Add the nominal template data for the sample
-            channels[ch_index]['samples'].append({
+        for sample_name in sample_names:
+            sample_data = template_flat[sample_name]
+            if np.sum(sample_data) == 0:
+                continue  # skip samples with 0 events
+
+            # Build the sample entry
+            sample_entry = {
                 'name': sample_name,
-                'data': unp.nominal_values(template_flat[sample_name]).tolist(),
+                'data': unp.nominal_values(sample_data).tolist(),
                 'modifiers': [
                     {
-                        'name': sample_name+'_norm',
+                        'name': sample_name + '_norm',
                         'type': 'normfactor',
                         'data': None  # Normalization factor modifier
                     }
                 ]
-            })
+            }
 
             # Add uncertainty modifiers for statistical errors
             sig_comp = [r'$D\tau\nu$', r'$D^\ast\tau\nu$', r'$D^{\ast\ast}\tau\nu$']
             if (sample_name in sig_comp) and mc_uncer:
                 # Add statistical uncertainty for signals using shapesys
-                channels[ch_index]['samples'][sample_index]['modifiers'].append({
+                sample_entry['modifiers'].append({
                     'name': f'mcStat_ch{ch_index}', # fakeD_stat
                     'type': 'staterror', # 'shapesys'
-                    'data': unp.std_devs(template_flat[sample_name]).tolist()
+                    'data': unp.std_devs(sample_data).tolist()
                 })
             elif (sample_name not in sig_comp) and mc_uncer:
                 # Add statistical uncertainty for all other components using staterror
-                channels[ch_index]['samples'][sample_index]['modifiers'].append({
+                sample_entry['modifiers'].append({
                     'name': f'mcStat_ch{ch_index}',
                     'type': 'staterror',
-                    'data': unp.std_devs(template_flat[sample_name]).tolist()
+                    'data': unp.std_devs(sample_data).tolist()
                 })
+
+            # Append the sample entry to the channel
+            channels[ch_index]['samples'].append(sample_entry)
+            
 
             # Define parameter bounds based on whether it's a background or signal sample
             if sample_name.startswith('bkg'):
@@ -1926,7 +1931,7 @@ class mpl:
     def __init__(self, mc_samples, data=None):
         self.samples = mc_samples
         self.data = data
-        self.colors = my_cmap.colors
+        self.colors = my_cmap.colors*2
         # sort the components to plot in order of fitted templates_project size
         self.sorted_order = ['bkg_fakeD',    'bkg_continuum',    'bkg_combinatorial',
                              'bkg_TDFl',     'bkg_fakeTracks',
@@ -1935,7 +1940,9 @@ class mpl:
                              r'$D^{\ast\ast}\ell\nu$_narrow',    r'$D^{\ast\ast}\ell\nu$_broad',      
                              r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
-                             r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
+                             r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',
+                             'DSemiB_ellPri',  'DSemiB_ellSec',  'DHad1Charm_ellPri',
+                             'DHad1Charm_ellSec', 'DHad2Charm_ellPri', 'DHad2Charm_ellSec']
         self.bkg = self.sorted_order[:6]
         self.norm = [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta',
                      r'$D^{\ast\ast}\ell\nu$_narrow', r'$D^{\ast\ast}\ell\nu$_broad',
@@ -2041,14 +2048,13 @@ class mpl:
 
         if ax is not None:
             # Plot using errorbar to show data with uncertainties
-            ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='.',color='black',
-                     markeredgecolor='white',markeredgewidth=0.5, label=label)
+            ax.errorbar(x=bin_centers, y=data_val, yerr=data_err, fmt='ok',label=label)
         
         return data_counts
 
 
     def plot_mc_1d(self, bins, ax, sub_df=None, sub_name=None, variable=None, cut=None,
-               scale=1, correction=None, mask=[], legend_count=False, density=False):
+               weights={}, correction=None, mask=[], legend_count=False, density=False):
 
         def normalize_to_density(counts, bins):
             # If density is True, normalize the counts so that the integral is 1
@@ -2063,8 +2069,8 @@ class mpl:
             mc_combined = pd.concat(
                 [df for name, df in self.samples.items() if name not in mask],
                 ignore_index=True)
-            if scale:
-                mc_combined.loc[:, '__weight__'] = np.float32(scale)
+
+            mc_combined.loc[:, '__weight__'] = np.float32( weights.get('combined', 1) )
             var_col = mc_combined.query(cut)[variable] if cut else mc_combined[variable]
             (stacked_counts, _) = np.histogram(var_col, bins=bins,
                                    weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
@@ -2077,8 +2083,8 @@ class mpl:
 
         if sub_df is not None:
             sample = sub_df
-            if scale:
-                sample.loc[:, '__weight__'] = np.float32(scale)
+
+            sample.loc[:, '__weight__'] = np.float32( weights.get('sub_df', 1) )
             var_col = sample.query(cut)[variable] if cut else sample[variable]
             (counts, _) = np.histogram(var_col, bins=bins,
                                        weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -2103,8 +2109,8 @@ class mpl:
                 sample_size = len(sample.query(cut)) if cut else len(sample)
                 if sample_size == 0 or name in mask:
                     continue
-                if scale:
-                    sample.loc[:, '__weight__'] = np.float32(scale)
+
+                sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
                 var_col = sample.query(cut)[variable] if cut else sample[variable]
                 (counts, _) = np.histogram(var_col, bins=bins,
                                            weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
@@ -2115,9 +2121,9 @@ class mpl:
                 # Apply correction if needed
                 if correction:
                     (counts, _) = np.histogram(var_col, bins=bins,
-                                               weights=scale * sample.query(cut)['PIDWeight'] if cut else scale * sample['PIDWeight'])
+                                               weights=weights.get(name, 1) * sample.query(cut)['PIDWeight'] if cut else weights.get(name, 1) * sample['PIDWeight'])
                     (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                                                        weights=(scale * sample.query(cut)['PIDWeight'])**2 if cut else (scale * sample['PIDWeight'])**2)
+                                                        weights=(weights.get(name, 1) * sample.query(cut)['PIDWeight'])**2 if cut else (weights.get(name, 1) * sample['PIDWeight'])**2)
                     staterror = poisson_error(staterr_squared)
 
                 # Normalize if density=True
@@ -2233,8 +2239,7 @@ class mpl:
             label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
 
             # Plot the residuals in ax
-            ax.errorbar(x=bin_centers, y=res_val, yerr=res_err, fmt='.',color='black',
-                     markeredgecolor='white',markeredgewidth=0.5, label=label)
+            ax.errorbar(x=bin_centers, y=res_val, yerr=res_err, fmt='ok',label=label)
             
             # Add a horizontal line at y=0 for reference
             ax.axhline(0, color='gray', linestyle='--')
@@ -2277,7 +2282,7 @@ class mpl:
         # Label the residual plot
         ax.set_ylabel('Ratios')
     
-    def plot_data_mc_stacked(self,variable,bins,cut=None,scale=[1,1],
+    def plot_data_mc_stacked(self,variable,bins,cut=None,weights={},
                              data_sig_mask=False, density=False,
                              correction=False,mask=[],figsize=(8,5),
                              ratio=False, legend_nc=2,legend_fs=12):
@@ -2286,15 +2291,15 @@ class mpl:
             
         # MC
         mc_counts = self.plot_mc_1d(bins=bins, variable=variable, ax=ax1, cut=cut,
-                                    density=density, 
-                                    scale=scale[1],correction=correction,mask=mask)
+                                    density=density, weights=weights,
+                                    correction=correction,mask=mask)
         # Data
         if self.data is None:
             data_counts = unp.uarray(np.zeros_like(mc_counts), np.zeros_like(mc_counts))
         else:
             data_counts = self.plot_data_1d(bins=bins, variable=variable, 
                                             sig_mask=data_sig_mask,
-                                            ax=ax1, cut=cut, scale=scale[0])
+                                            ax=ax1, cut=cut, scale=weights.get('data', 1))
         
         if ratio:
             self.plot_ratios(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
@@ -2346,7 +2351,7 @@ class mpl:
                        'signal region': sig,
                        'right sideband': right}
             for region, df in regions.items():
-                df.loc[:, '__weight__'] = np.float32(scale[region])
+                df.loc[:, '__weight__'] = np.float32( scale.get(region, 1) )
             
             if merge_sidebands:
                 sides = pd.concat([left, right])
@@ -2363,17 +2368,16 @@ class mpl:
                     
                 for region, df in regions.items():
                     if region=='signal region':
-                        counts = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
-                                                cut=cut, scale=None,name=region)
-                        sig_total += counts
+                        sig_total = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
+                                                cut=cut, name=region)
 
                     elif region in ['sidebands','left sideband', 'right sideband']:
-                        fakeD_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
-                                        ax=None, cut=cut, scale=None,correction=correction,mask=mask)
+                        bkg_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
+                                        ax=None, cut=cut, correction=correction,mask=mask)
                         
-#                         fakeD_counts -= ratio_Dell_sb_sig * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
-#                         fakeD_counts -= ratio_Dstell_sb_sig * Dst_counts
-                        sb_total += fakeD_counts
+#                         bkg_counts -= ratio_Dell_sb_sig * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
+#                         bkg_counts -= ratio_Dstell_sb_sig * Dst_counts
+                        sb_total += bkg_counts
                         
                         ax1.hist(bins[:-1], bins, weights=unp.nominal_values(fakeD_counts),histtype='step',
                     label=f'{region} \n{self.statistics(hist=[fakeD_counts, bins],count_only=False)} ')
