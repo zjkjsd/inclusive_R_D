@@ -70,13 +70,18 @@ ratio_Dstell_sb_sig = 541/29344
 pi_pdg = [111, 211, -211]
 eta_pdg = [221]
 
-D_Dst_pdg = [411, 413, -411, -413]
+charged_D_Dst_pdg = [411, 413, -411, -413]
+neutral_D_Dst_pdg = [421, 423, -421, -423]
+D_Dst_pdg = charged_D_Dst_pdg + neutral_D_Dst_pdg
+
 Dstst_narrow_pdg = [10413, 10423, 415, 425, -10413, -10423, -415, -425]
 Dstst_broad_pdg  = [10411, 10421, 20413, 20423, -10411, -10421, -20413, -20423]
 Dstst_pdg   = Dstst_narrow_pdg + Dstst_broad_pdg
 
+D_s_pdg = [431, 433, 10431, 20433, 10433, 435, -431, -433, -10431, -20433, -10433, -435]
+
 # for combinatorial classification
-D_mesons_pdg = D_Dst_pdg + Dstst_pdg + [421,-421,423,-423,431,-431] # D0, D*0, D_s
+D_mesons_pdg = D_Dst_pdg + Dstst_pdg + D_s_pdg
 charm_baryons_pdg = [4122, -4122, # Lambda_c
                      4112, -4112, 4212, -4212, # Sigma_c
                      4132, -4132, 4232, -4232, # Xi_c
@@ -97,7 +102,7 @@ import pandas as pd
 from autogluon.tabular import TabularPredictor
 import lightgbm as lgb
 
-def apply_mva_bcs(df, features, cut, library='ag', version='',model=None,bcs='vtx',importance=False):
+def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='vtx',importance=False):
     # load model
     if library is not None:
         if library=='ag':
@@ -170,8 +175,8 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     B2Dstst_ell_narrow = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_narrow_pdg and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
     B2Dstst_ell_broad = f'{signals} and B0_mcDaughter_0_PDG in @Dstst_broad_pdg and abs(B0_mcDaughter_1_PDG)=={lepton_PDG[mode]}'
 
-    B2D_ell_gap_pi = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_pdg and B0_mcDaughter_1_PDG in @pi_pdg'
-    B2D_ell_gap_eta = f'{signals} and B0_mcDaughter_0_PDG in @D_Dst_pdg and B0_mcDaughter_1_PDG in @eta_pdg'
+    B2D_ell_gap_pi = f'{signals} and B0_mcDaughter_0_PDG in @charged_D_Dst_pdg and B0_mcDaughter_1_PDG in @pi_pdg'
+    B2D_ell_gap_eta = f'{signals} and B0_mcDaughter_0_PDG in @charged_D_Dst_pdg and B0_mcDaughter_1_PDG in @eta_pdg'
     
     ######################### Apply selection ###########################
     
@@ -339,7 +344,14 @@ def poisson_error(n_tot):
     use poisson error, except for 0 we use an 68% CL upper limit
     p_poisson(x=0; l) = e^-l = 1-CL --> l = ln (1/ (1-CL) )
     """
-    return np.where(n_tot > 0, unp.sqrt(n_tot), np.log(1 / (1 - 0.6827)))
+    return np.where(n_tot > 0, np.sqrt(n_tot), np.log(1 / (1 - 0.6827)))
+
+
+def round_uarray(uarray):
+    """Rounds a uarray to 3 decimal places."""
+    nominal = np.round(unp.nominal_values(uarray), 2)
+    std_dev = np.round(unp.std_devs(uarray), 2)
+    return unp.uarray(nominal, std_dev)
 
 
 def rebin_histogram(counts, threshold):
@@ -497,12 +509,6 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         - If `fakeD_from_sideband` is True, additional templates are created using sidebands of the D_M variable.
     """
 
-    def round_uarray(uarray):
-        """Rounds a uarray to 3 decimal places."""
-        nominal = np.round(unp.nominal_values(uarray), 2)
-        std_dev = np.round(unp.std_devs(uarray), 2)
-        return unp.uarray(nominal, std_dev)
-
     #################### Create template 2d histograms with uncertainties ################
     if len(bins)!=len(variables):
         raise ValueError('Dimensions of variables and bins are not equal')
@@ -540,18 +546,18 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         if name in [r'$D^{\ast\ast}\ell\nu$_narrow',r'$D^{\ast\ast}\ell\nu$_broad']:
             # merge the 2 resonant D** modes
             if r'$D^{\ast\ast}\ell\nu$' in histograms:
-                histograms[r'$D^{\ast\ast}\ell\nu$'] += round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
+                histograms[r'$D^{\ast\ast}\ell\nu$'] += unp.uarray(counts, poisson_error(staterr_squared))
             else:
-                histograms[r'$D^{\ast\ast}\ell\nu$'] = round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
+                histograms[r'$D^{\ast\ast}\ell\nu$'] = unp.uarray(counts, poisson_error(staterr_squared))
         elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
             # merge the 2 Dellnu gap modes
             if r'$D\ell\nu$_gap' in histograms:
-                histograms[r'$D\ell\nu$_gap'] += round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
+                histograms[r'$D\ell\nu$_gap'] += unp.uarray(counts, poisson_error(staterr_squared))
             else:
-                histograms[r'$D\ell\nu$_gap'] = round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
+                histograms[r'$D\ell\nu$_gap'] = unp.uarray(counts, poisson_error(staterr_squared))
         else:
             # store other modes individually
-            histograms[name] = round_uarray(unp.uarray(counts.T, poisson_error(staterr_squared.T)))
+            histograms[name] = unp.uarray(counts, poisson_error(staterr_squared))
 
     ################### Trimming and flattening ###############
     # Determine which bins pass the threshold based on sum of all templates
@@ -1339,7 +1345,7 @@ class fit_Dmass:
         if self.poly_only:
             m.values["x0"] = 0
         # temporarily mask out the signal
-        c.mask = (x < 1.822) | (1.92 < x)
+        c.mask = (x < 1.82) | (1.92 < x)
         m.simplex().migrad()
         
         if not self.poly_only:
@@ -1379,7 +1385,7 @@ class fit_Dmass:
             m.values["x0"] = 0
         # temporarily mask out the signal
         x_re = xe[1:] # right edge
-        c.mask = (x_re < 1.822) | (1.92 < x_re)
+        c.mask = (x_re < 1.82) | (1.92 < x_re)
         m.simplex().migrad()
 
         if not self.poly_only:
@@ -1958,7 +1964,7 @@ class mpl:
         
         if hist is not None:
             bin_counts, bin_edges = hist
-            counts = np.sum(bin_counts)
+            counts = np.sum(bin_counts).round(0).astype(int)
             
             # Step 1: Calculate bin centers
             bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
@@ -1991,7 +1997,7 @@ class mpl:
     def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, 
                  sig_mask=False, scale=1, name='Data', density=False):
         # Provide either variable or hist
-        if variable:
+        if variable: # requires sub_df
             # Apply signal mask if requested
             if sig_mask:
                 s_mask = 'D_M<1.855 or D_M>1.885'
@@ -2004,12 +2010,12 @@ class mpl:
                 data.loc[:, '__weight__'] = scale
 
             var_col = data.query(cut)[variable] if cut else data[variable]
+            w = data.query(cut)['__weight__'] if cut else data['__weight__']
+            w2 = data.query(cut)['__weight__']**2 if cut else data['__weight__']**2
 
             # Compute histogram with weights
-            counts, _ = np.histogram(var_col, bins=bins,
-                                     weights=data.query(cut)['__weight__'] if cut else data['__weight__'])
-            staterr_squared, _ = np.histogram(var_col, bins=bins,
-                                              weights=(data.query(cut)['__weight__'] if cut else data['__weight__'])**2)
+            counts, _ = np.histogram(var_col, bins=bins, weights=w)
+            staterr_squared, _ = np.histogram(var_col, bins=bins,weights=w2)
             staterror = poisson_error(staterr_squared)
 
             # Normalize to density if requested
@@ -2027,10 +2033,10 @@ class mpl:
         else:
             # If hist is provided directly (data_counts as unp.uarray), we handle it similarly
             data_counts = hist
+            counts = unp.nominal_values(data_counts)
 
             if density and hist is not None:
                 # Normalize the provided histogram to density if needed
-                counts = unp.nominal_values(data_counts)
                 staterror = unp.std_devs(data_counts)
                 bin_widths = np.diff(bins)
                 integral = np.sum(counts * bin_widths)
@@ -2040,7 +2046,7 @@ class mpl:
                     staterror *= factor
                     data_counts = unp.uarray(counts, staterror)
 
-            label = f'{name} \n{self.statistics(hist=[data_counts,bins])}'
+            label = f'{name} \n{self.statistics(hist=[counts,bins])}'
 
         bin_centers = (bins[:-1] + bins[1:]) / 2
         data_val = unp.nominal_values(data_counts)
@@ -2072,8 +2078,8 @@ class mpl:
 
             mc_combined.loc[:, '__weight__'] = np.float32( weights.get('combined', 1) )
             var_col = mc_combined.query(cut)[variable] if cut else mc_combined[variable]
-            (stacked_counts, _) = np.histogram(var_col, bins=bins,
-                                   weights=mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__'])
+            w = mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__']
+            (stacked_counts, _) = np.histogram(var_col, bins=bins,weights=w)
             stacked_counts = normalize_to_density(stacked_counts, bins)
             
             if ax is not None:
@@ -2086,10 +2092,10 @@ class mpl:
 
             sample.loc[:, '__weight__'] = np.float32( weights.get('sub_df', 1) )
             var_col = sample.query(cut)[variable] if cut else sample[variable]
-            (counts, _) = np.histogram(var_col, bins=bins,
-                                       weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
-            (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                                 weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
+            w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
+            w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
+            (counts, _) = np.histogram(var_col, bins=bins,weights=w)
+            (staterr_squared, _) = np.histogram(var_col, bins=bins,weights=w2)
             staterror = poisson_error(staterr_squared)
 
             counts = normalize_to_density(counts, bins)  # Normalize if density=True
@@ -2105,6 +2111,9 @@ class mpl:
         else:
             bottom = unp.uarray(np.zeros(len(bins)-1), np.zeros(len(bins)-1))
             for i, name in enumerate(self.sorted_order):
+                if name not in self.samples.keys():
+                    continue
+                    
                 sample = self.samples[name]
                 sample_size = len(sample.query(cut)) if cut else len(sample)
                 if sample_size == 0 or name in mask:
@@ -2112,10 +2121,10 @@ class mpl:
 
                 sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
                 var_col = sample.query(cut)[variable] if cut else sample[variable]
-                (counts, _) = np.histogram(var_col, bins=bins,
-                                           weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
-                (staterr_squared, _) = np.histogram(var_col, bins=bins,
-                                    weights=sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2)
+                w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
+                w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
+                (counts, _) = np.histogram(var_col, bins=bins,weights=w)
+                (staterr_squared, _) = np.histogram(var_col, bins=bins,weights=w2)
                 staterror = poisson_error(staterr_squared)
 
                 # Apply correction if needed
@@ -2160,6 +2169,8 @@ class mpl:
             
         fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
         for i, name in enumerate(self.sorted_order):
+            if name not in self.samples.keys():
+                continue
             sample = self.samples[name]
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size == 0 or name in mask:
@@ -2167,8 +2178,8 @@ class mpl:
                 
             sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
             var_col= sample.query(cut)[variable] if cut else sample[variable]
-            (counts, _) = np.histogram(var_col, bins=bins, 
-                                       weights=sample.query(cut)['__weight__'] if cut else sample['__weight__'])
+            w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
+            (counts, _) = np.histogram(var_col, bins=bins,weights=w)
 
             axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,color=self.colors[i],
                     label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
@@ -2184,37 +2195,65 @@ class mpl:
         plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
 
     
-    def plot_single_2d(self, df, variables, bins,fig, ax,name,hist=None,cut=None):
+    def plot_2d(self, bins,fig, ax,title_name, weights={},mask=[],
+                variables=None,sub_df=None,hist=None,cut=None):
         # Compute 2d hist
         if hist is None:
-            (counts, xedges, yedges) = np.histogram2d(
-                            df.query(cut)[variables[0]] if cut else df[variables[0]], 
-                            df.query(cut)[variables[1]] if cut else df[variables[1]],
-                            bins=bins,
-                    weights=df.query(cut)['__weight__'] if cut else df['__weight__'])
+            counts_err = 0
+            counts_tot = 0
+            if sub_df is None:
+                for i, name in enumerate(self.sorted_order):
+                    if name not in self.samples.keys():
+                        continue
+                    sample = self.samples[name]
+                    sample_size = len(sample.query(cut)) if cut else len(sample)
+                    if sample_size == 0 or name in mask:
+                        continue
 
-            (staterr_squared, _, _) = np.histogram2d(
-                            df.query(cut)[variables[0]] if cut else df[variables[0]], 
-                            df.query(cut)[variables[1]] if cut else df[variables[1]],
-                            bins=bins,
-                    weights=df.query(cut)['__weight__']**2 if cut else df['__weight__']**2)
-            staterror = poisson_error(staterr_squared)
+                    sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
+                    var0_col= sample.query(cut)[variables[0]] if cut else sample[variables[0]]
+                    var1_col= sample.query(cut)[variables[1]] if cut else sample[variables[1]]
+                    w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
+                    w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
 
-            counts_err = unp.uarray(counts.round(0), staterror.round(0))
+                    (counts, xedges, yedges) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w)
+
+                    (staterr_squared, _, _) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w2)
+                    staterror = poisson_error(staterr_squared)
+
+                    sub_tot = unp.uarray(counts.round(0), staterror.round(0))
+                    counts_tot += counts
+                    counts_err += sub_tot
+            else:
+                sample = sub_df
+                sample.loc[:, '__weight__'] = np.float32( weights.get('sub_df', 1) )
+                var0_col= sample.query(cut)[variables[0]] if cut else sample[variables[0]]
+                var1_col= sample.query(cut)[variables[1]] if cut else sample[variables[1]]
+                w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
+                w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
+
+                (counts, xedges, yedges) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w)
+
+                (staterr_squared, _, _) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w2)
+                staterror = poisson_error(staterr_squared)
+
+                sub_tot = unp.uarray(counts.round(0), staterror.round(0))
+                counts_tot += counts
+                counts_err += sub_tot
         else:
             xedges, yedges = bins
-            counts = hist
-            counts_err = hist.round(0)
+            counts_tot = hist.round(0)
+            counts_err = counts_tot
 
         if fig is not None and ax is not None:
             # 2D Histogram
-            im = ax.imshow(counts.T.round(0), origin='lower', aspect='auto', 
+            im = ax.imshow(counts_tot.T.round(0), origin='lower', aspect='auto', 
                              cmap='rainbow', norm=mcolors.LogNorm(),
                              extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]])
             fig.colorbar(im, ax=ax)
             ax.set_xlabel('$M_{miss}^2$')
             ax.set_ylabel('$|p_D| + |p_{\ell}|$')
-            ax.set_title(name)
+            ax.set_title(title_name)
             ax.grid()
         
         return counts_err
@@ -2246,12 +2285,12 @@ class mpl:
             # Label the residual plot
             ax.set_ylabel('Residuals')
         elif len(bins)==2:
-            residuals = data - model
+            residuals = abs(data - model) # abs to make the plot simpler
             res_val = unp.nominal_values(residuals)
             res_err = unp.std_devs(residuals)
             
             # Create a mask to exclude points where residual_errors are zero
-            mask = res_err != 0
+            mask = res_val != 0
             # Compute chi-squared excluding those points
             chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
             ndf = len(res_val[mask])
@@ -2262,8 +2301,7 @@ class mpl:
                 label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}'
                 
             # Plot the residuals in ax
-            self.plot_single_2d(bins=bins, df=None, variables=None,
-                                hist=res_val, fig=fig, ax=ax,name=label)
+            self.plot_2d(bins=bins, hist=res_val, fig=fig, ax=ax,title_name=label)
         
     def plot_ratios(self, bins, data, model, ax):
         # Compute ratios (Data / Model) and their errors
@@ -2323,7 +2361,7 @@ class mpl:
         return data_counts, mc_counts
         
         
-    def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,scale={},mask=[],
+    def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,weights={},mask=[],
                             bkg_name='bkg_fakeD',merge_sidebands=False,samples_sig=None,
                             norm_tail_subt=False,figsize=(8,5),legend_nc=2,legend_fs=12):
         if type(variable)==str:
@@ -2340,7 +2378,7 @@ class mpl:
                     
             # fakeD in the signal region
             fakeD = self.samples[bkg_name]
-            sig = fakeD.query('1.84<D_M<1.9').copy()
+            fakeD_in_sig = fakeD.query('1.84<D_M<1.9').copy()
             
             # fakeD in sidebands, Concatenate all DataFrames into one
             df_concatenated = pd.concat(self.samples.values(), ignore_index=True)
@@ -2348,39 +2386,40 @@ class mpl:
             right = df_concatenated.query('D_M>1.91').copy()
                 
             regions = {'left sideband': left,
-                       'signal region': sig,
+                       'signal region': fakeD_in_sig,
                        'right sideband': right}
-            for region, df in regions.items():
-                df.loc[:, '__weight__'] = np.float32( scale.get(region, 1) )
-            
-            if merge_sidebands:
-                sides = pd.concat([left, right])
-                regions = {'sidebands': sides,
-                       'signal region': sig,}
             
             sb_total = 0 # total counts in sidebands used in residual calculation
             sig_total = 0
             if type(variable)==str:
-                D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=region, variable=variable, 
-                                        ax=None, cut=cut, scale=None,correction=correction,mask=mask)
-                Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=region, variable=variable, 
-                                        ax=None, cut=cut, scale=None,correction=correction,mask=mask)
+                D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=r'$D\ell\nu$', variable=variable, 
+                                        ax=None, cut=cut, weights={},correction=correction,mask=mask)
+                Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=r'$D^\ast\ell\nu$', variable=variable, 
+                                        ax=None, cut=cut, weights={},correction=correction,mask=mask)
                     
                 for region, df in regions.items():
                     if region=='signal region':
                         sig_total = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
-                                                cut=cut, name=region)
+                                                cut=cut, name=region, scale=weights.get(region,1) )
 
                     elif region in ['sidebands','left sideband', 'right sideband']:
                         bkg_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
-                                        ax=None, cut=cut, correction=correction,mask=mask)
+                                                    ax=None, cut=cut, correction=correction,mask=mask,
+                                                    weights={'sub_df':weights.get(region,1)})
                         
 #                         bkg_counts -= ratio_Dell_sb_sig * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
 #                         bkg_counts -= ratio_Dstell_sb_sig * Dst_counts
                         sb_total += bkg_counts
                         
-                        ax1.hist(bins[:-1], bins, weights=unp.nominal_values(fakeD_counts),histtype='step',
-                    label=f'{region} \n{self.statistics(hist=[fakeD_counts, bins],count_only=False)} ')
+                        if not merge_sidebands:
+                            count1 = unp.nominal_values(bkg_counts)
+                            ax1.hist(bins[:-1], bins, weights=count1,histtype='step',
+                    label=f'{region} \n{self.statistics(hist=[count1, bins],count_only=False)} ')
+                    
+                if merge_sidebands:
+                    count2 = unp.nominal_values(sb_total)
+                    ax1.hist(bins[:-1], bins, weights=count2,histtype='step',
+                label=f'sidebands \n{self.statistics(hist=[count2, bins],count_only=False)} ')
 
                 # Residuals (Data - Model) and their errors
                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
@@ -2390,28 +2429,20 @@ class mpl:
                 assert merge_sidebands==True, 'merge_sidebands must be True'
                 for region, df in regions.items():
                     if region=='signal region':
-                        sig_total = self.plot_single_2d(bins=bins, df=df, variables=variable, 
-                                                        fig=fig, ax=ax1, cut=cut, name=region)
-                    elif region in ['sidebands']:
-                        sb_total = self.plot_single_2d(bins=bins, df=df, variables=variable, 
-                                        fig=None, ax=None, cut=cut, name=region)
-                        D_counts = self.plot_single_2d(bins=bins, df=Dellnu, variables=variable, 
-                                        fig=None, ax=None, cut=cut, name=region)
-                        Dst_counts = self.plot_single_2d(bins=bins, df=Dstellnu, variables=variable, 
-                                        fig=None, ax=None, cut=cut, name=region)
+                        sig_total = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
+                                    weights={'sub_df': weights.get(region,1)},fig=fig, ax=ax1, cut=cut)
+                    elif region in ['sidebands','left sideband', 'right sideband']:
+                        bkg_counts = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
+                                    weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
+                        D_counts = self.plot_2d(bins=bins, sub_df=Dellnu, variables=variable, title_name=region,
+                                    weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
+                        Dst_counts = self.plot_2d(bins=bins, sub_df=Dstellnu, variables=variable, title_name=region,
+                                    weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
 #                         sb_total -= r_D * D_counts
 #                         sb_total -= r_Dst * Dst_counts
+                        sb_total += bkg_counts
                         
-                        
-                        # 2D Histogram
-                        im = ax2.imshow(unp.nominal_values(sb_total).T.round(0), origin='lower', aspect='auto', 
-                                         cmap='rainbow', norm=mcolors.LogNorm(),
-                                         extent=[bins[0][0], bins[0][-1], bins[1][0], bins[1][-1]])
-                        fig.colorbar(im, ax=ax2)
-                        ax2.set_xlabel('$M_{miss}^2$')
-                        ax2.set_ylabel('$|p_D| + |p_{\ell}|$')
-                        ax2.set_title(region)
-                        ax2.grid()
+                self.plot_2d(bins=bins, hist=unp.nominal_values(sb_total),title_name='sidebands',fig=fig, ax=ax2, cut=cut)
                         
                 # Residuals (Data - Model) and their errors
                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, fig=fig, ax=ax3)
@@ -2426,15 +2457,13 @@ class mpl:
                 
             regions = {'control region': sample_control,
                        'signal region': sample_sig}
-            for region, df in regions.items():
-                df.loc[:, '__weight__'] = np.float32(scale[region])
             
-            sig_total = self.plot_data_1d(bins=bins, sub_df=sample_sig, variable=variable, 
-                                          ax=ax1,cut=cut, scale=None,name='signal region')
+            sig_total = self.plot_data_1d(bins=bins, sub_df=sample_sig, variable=variable, name='signal region',
+                                          ax=ax1,cut=None, scale=weights.get('signal region',1))
 
             control_total = self.plot_mc_1d(bins=bins, sub_df=sample_control, sub_name='control region', 
-                                            variable=variable,ax=ax1,cut=cut, scale=None,
-                                            correction=correction,mask=mask)
+                                            variable=variable,ax=ax1,cut=cut,correction=correction,
+                                            weights={'sub_df':weights.get('control region',1)}, mask=mask)
             
             # Residuals (Data - Model) and their errors
             self.plot_residuals(bins=bins, data=sig_total, model=control_total, ax=ax2)
@@ -2452,28 +2481,14 @@ class mpl:
         plt.tight_layout()
         plt.show()
 
-    def plot_data_subtracted_and_mc(self,var_list,bin_list,cut=None,scale={},
+    def plot_data_subtracted_and_mc(self,var_list,bin_list,cut=None,weights={},
                                     correction=False,mask=['bkg_fakeD'],figsize=(10,10)):
         # get data in sig and sidebands regions
         data_left = self.data.query('D_M<1.83').copy()
         data_sig = self.data.query('1.84<D_M<1.9').copy()
         data_right = self.data.query('D_M>1.91').copy()
-        # get mc in sig region without fake D
-        mc_sig = pd.concat([df.query('1.84<D_M<1.9').copy() for name, df in self.samples.items() if name != 'bkg_fakeD'], 
-                           ignore_index=True)
-
-        data_mc_regions = {'data left sideband': data_left,
-                           'data signal region': data_sig,
-                           'data right sideband': data_right,
-                           'mc signal region': mc_sig}
-
-        for region, df in data_mc_regions.items():
-            df.loc[:, '__weight__'] = np.float32(scale[region])
             
         # calculate the 2d hists
-        data_sb_2d = 0 
-        data_sig_2d = 0
-        mc_sig_2d = 0
         variable_x, variable_y = var_list
         edges_x, edges_y = bin_list
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
@@ -2482,34 +2497,20 @@ class mpl:
         else:
             var_x_label = var_list[0]
             var_y_label = var_list[1]
-        
-        for region, df in data_mc_regions.items():
-            (counts_2d, xe, ye) = np.histogram2d(
-                df.query(cut)[variable_x] if cut else df[variable_x], 
-                df.query(cut)[variable_y] if cut else df[variable_y],
-                bins=[edges_x, edges_y],
-                weights=df.query(cut)['__weight__'] if cut else df['__weight__'])
-            (staterr_squared_2d, edges_x, edges_y) = np.histogram2d(
-                df.query(cut)[variable_x] if cut else df[variable_x], 
-                df.query(cut)[variable_y] if cut else df[variable_y],
-                bins=[edges_x, edges_y],
-                weights=df.query(cut)['__weight__']**2 if cut else df['__weight__']**2)
-            staterr_2d = poisson_error(staterr_squared_2d)
-
-            # Ensure that both arrays have the same shape
-            assert counts_2d.shape == staterr_2d.shape, \
-                f"Shape mismatch between hist counts and staterror for 2d data in {region=}"
-            # Combine the count values with their uncertainties
-            counts_uncert_2d = unp.uarray(counts_2d.round(0), staterr_2d.round(0))
             
-            if region=='data signal region':
-                data_sig_2d += counts_uncert_2d
-
-            elif region=='mc signal region':
-                mc_sig_2d += counts_uncert_2d
-                
-            elif region in ['data left sideband', 'data right sideband']:
-                data_sb_2d += counts_uncert_2d
+        data_sig_2d = self.plot_2d(bins=bin_list, sub_df=data_sig, variables=var_list, 
+                                   weights={'sub_df':weights.get('data signal region',1)},
+                                   fig=None, ax=None, cut=cut, title_name='data signal region')
+        
+        data_left_2d = self.plot_2d(bins=bin_list, sub_df=data_left, variables=var_list, 
+                                   weights={'sub_df':weights.get('data left sideband',1)},
+                                   fig=None, ax=None, cut=cut, title_name='data left sideband')
+        
+        data_right_2d = self.plot_2d(bins=bin_list, sub_df=data_right, variables=var_list, 
+                                   weights={'sub_df':weights.get('data right sideband',1)},
+                                   fig=None, ax=None, cut=cut, title_name='data right sideband')
+        
+        data_sb_2d = data_left_2d + data_right_2d
 
         # subtract the sidebands from sig region
         data_subtracted_2d = data_sig_2d - data_sb_2d
@@ -2530,20 +2531,16 @@ class mpl:
         ax6 = fig.add_subplot(gs[7:,6:])
 
         # Top-left: 2D histogram of Data (p_D_l vs B0_CMS3_weMissM2)
-        im = ax1.imshow(abs(unp.nominal_values(data_subtracted_2d)).T, origin='lower', aspect='auto', 
-                         cmap='rainbow', norm=mcolors.LogNorm(),
-                         extent=[edges_x[0], edges_x[-1], edges_y[0], edges_y[-1]])
-        fig.colorbar(im, ax=ax1)
-        ax1.set_title('Data, D_M sidebands subtracted')
+        self.plot_2d(bins=bin_list, hist= abs(unp.nominal_values(data_subtracted_2d)),
+                    fig=fig, ax=ax1, cut=cut, title_name='Data, D_M sidebands subtracted')
         ax1.set_xlabel(var_x_label)
         ax1.set_ylabel(var_y_label)
-        ax1.grid()
     
         
         # Top-right: 1D histogram of p_D_l projection + residuals
         data_y = self.plot_data_1d(bins=edges_y, hist=data_subtracted_y, ax=ax2,cut=cut, name='Data')
-        mc_y = self.plot_mc_1d(bins=edges_y, variable=variable_y, ax=ax2, scale=scale['mc signal region'],
-                               cut='1.84<D_M<1.9', correction=correction,mask=mask,legend_count=True)
+        mc_y = self.plot_mc_1d(bins=edges_y, variable=variable_y, ax=ax2, weights=weights,
+                               cut='1.84<D_M<1.9 and '+cut, correction=correction,mask=mask,legend_count=True)
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
             ax2.set_title('$|p_D| + |p_{\ell}|$ Projection')
         else:
@@ -2558,8 +2555,8 @@ class mpl:
         
         # Bottom-left: 1D histogram of mm2 projection + residuals
         data_x = self.plot_data_1d(bins=edges_x, hist=data_subtracted_x, ax=ax4,cut=cut, name='Data')
-        mc_x = self.plot_mc_1d(bins=edges_x, variable=variable_x, ax=ax4, scale=scale['mc signal region'],
-                               cut='1.84<D_M<1.9', correction=correction,mask=mask,legend_count=True)
+        mc_x = self.plot_mc_1d(bins=edges_x, variable=variable_x, ax=ax4, weights=weights,
+                               cut='1.84<D_M<1.9 and '+cut, correction=correction,mask=mask,legend_count=True)
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
             ax4.set_title('$M_{miss}^2$ Projection')
         else:
@@ -2573,19 +2570,71 @@ class mpl:
         
         
         # Bottom-right: 2D histogram of MC (B0_CMS3_weMissM2 vs p_D_l)
-        im = ax6.imshow(unp.nominal_values(mc_sig_2d).T, origin='lower', aspect='auto', 
-                         cmap='rainbow', norm=mcolors.LogNorm(),
-                         extent=[edges_x[0], edges_x[-1], edges_y[0], edges_y[-1]])
-        fig.colorbar(im, ax=ax6)
-        ax6.set_title('MC, fakeD removed')
+        self.plot_2d(bins=bin_list, mask=mask,weights=weights,variables=var_list,
+                    fig=fig, ax=ax6, cut='1.84<D_M<1.9 and '+cut, title_name='MC, fakeD removed')
         ax6.set_xlabel(var_x_label)
         ax6.set_ylabel(var_y_label)
-        ax6.grid()
         
         # Adjust layout to avoid overlap
         fig.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.1, hspace=0.4, wspace=0.4)
         plt.show()
         
+        
+        ################### Trimming and return the flattened data ###############
+        histograms = {}
+        for name, df in self.samples.items():
+            if name in mask or name=='others':
+                continue
+
+            df_sig_region = df.query('1.855<D_M<1.885 and '+cut)
+            if len(df_sig_region)==0:
+                continue
+                
+            df_sig_region.loc[:, '__weight__'] = np.float32(weights.get(name, 1))
+
+            # Compute weighted histogram, event by event weight
+            counts, xedges, yedges = np.histogram2d(
+                df_sig_region[variable_x], df_sig_region[variable_y],
+                bins=bin_list, weights=df_sig_region['__weight__'])
+
+            # Compute sum of weight^2 for uncertainties
+            staterr_squared, _, _ = np.histogram2d(
+                df_sig_region[variable_x], df_sig_region[variable_y],
+                bins=bin_list, weights=(df_sig_region['__weight__']**2))
+
+            # Store as uarray: Transpose to have consistent shape (y,x) if needed
+            if name in [r'$D^{\ast\ast}\ell\nu$_narrow',r'$D^{\ast\ast}\ell\nu$_broad']:
+                # merge the 2 resonant D** modes
+                if r'$D^{\ast\ast}\ell\nu$' in histograms:
+                    histograms[r'$D^{\ast\ast}\ell\nu$'] += unp.uarray(counts, poisson_error(staterr_squared))
+                else:
+                    histograms[r'$D^{\ast\ast}\ell\nu$'] = unp.uarray(counts, poisson_error(staterr_squared))
+            elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
+                # merge the 2 Dellnu gap modes
+                if r'$D\ell\nu$_gap' in histograms:
+                    histograms[r'$D\ell\nu$_gap'] += unp.uarray(counts, poisson_error(staterr_squared))
+                else:
+                    histograms[r'$D\ell\nu$_gap'] = unp.uarray(counts, poisson_error(staterr_squared))
+            else:
+                # store other modes individually
+                histograms[name] = unp.uarray(counts, poisson_error(staterr_squared))
+
+        # combine the D** resonant and gap
+        if weights.get(r'$D\ell\nu$_gap_pi',1)==0 and weights.get(r'$D\ell\nu$_gap_eta',1)==0:
+            if r'$D^{\ast\ast}\ell\nu$' in histograms:
+                histograms[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms.pop(r'$D^{\ast\ast}\ell\nu$')
+
+        # Determine which bins pass the threshold based on sum of all templates
+        indices_threshold = np.where(unp.nominal_values(data_subtracted_2d) >= 2)
+        # Flatten the templates after cutting
+        template_flat = {name: round_uarray(hist[indices_threshold]) for name, hist in histograms.items()}
+        # Flatten data
+        data_flat = round_uarray(data_subtracted_2d[indices_threshold])  # uarray
+        
+        #################### Prepare return tuples: (template dict, asimov data)
+        temp_data = (template_flat, data_flat)
+        return indices_threshold, temp_data
+    
         
     def plot_all_2Dhist(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], 
                         title='Generic MC 1/ab',cut=None, mask=[1.6,1]):
@@ -2605,6 +2654,9 @@ class mpl:
             
         fig = plt.figure(figsize=[16,20])
         for i, name in enumerate(self.sorted_order):
+            if name not in self.samples.keys():
+                continue
+                    
             sample = self.samples[name]
             sample_size = len(sample.query(cut)) if cut else len(sample)
             if sample_size==0:
