@@ -12,14 +12,20 @@ steering=$1
 EventType=$2
 
 # Save the output Ntuples into different folders
-if [ "$steering" == "2_Reconstruction_e_test.py" ]; then
+if [ "$steering" == "1_Reconstruction_e_test.py" ]; then
     destination_folder='../Samples/MC15ri/e_channel/local_200fb_test'
-elif [ "$steering" == "2_Reconstruction_e_control.py" ]; then
+    
+elif [ "$steering" == "2_Reconstruction_e.py" ]; then
     destination_folder='../Samples/MC15ri/e_channel/local_200fb_control'
+
 elif [ "$steering" == "3_Reconstruction_e_wrongCharge.py" ]; then
     destination_folder='../Samples/MC15ri/e_channel/local_wrongCharge_200fb'
+    
 elif [ "$steering" == "4_Reconstruction_mu.py" ]; then
-    destination_folder='../Samples/MC15ri/mu_channel/local_200fb'
+    destination_folder='../Samples/MC15ri/mu_channel/local_200fb_test'
+    
+elif [ "$steering" == "5_Reconstruction_mu_wrongCharge.py" ]; then
+    destination_folder='../Samples/MC15ri/mu_channel/local_wrongCharge_200fb'
 fi
 
 echo "Selected folder: $destination_folder"

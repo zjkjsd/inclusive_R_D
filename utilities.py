@@ -2,7 +2,7 @@
 # region
 ############################## define relevant variables ########################
 
-spectators = ['__weight__', 'D_CMS_p', 'ell_CMS_p', 'B0_CMS3_weMissM2', 'B0_CMS3_weQ2lnuSimple']
+spectators = ['__weight__', 'D_CMS_p', 'ell_CMS_p', 'B0_CMS_weMissM2_3', 'B0_CMS_weQ2lnuSimple_3','B0_CMS_weQ2lnu_3']
 
 CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
                 "B0_KSFWV3",   "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
@@ -15,29 +15,35 @@ CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
 DTC_variables = ['D_vtxReChi2',                'D_A1FflightDistanceSig_IP',
                  'D_daughterInvM_1_2',         'D_daughterInvM_0_1',]
 
-B_variables = ['B0_vtxReChi2',               'B0_dr',   
+B_variables = ['B0_vtxReChi2',               'B0_TagVReChi2IP',   
                'B0_CMS_cos_angle_0_1',       'B0_D_l_DisSig',
-               'B0_roeMbc_my_mask',          'B0_roeDeltae_my_mask',
-               'B0_roeEextra_my_mask',       'B0_TagVReChi2IP',]
+               'B0_roeMbc_my_mask',          'B0_roeDeltae_my_mask',]
 
 training_variables = CS_variables + DTC_variables + B_variables
 mva_variables = training_variables + spectators
 
 analysis_variables=['__experiment__',     '__run__',       '__event__',      '__production__',
                     'B0_isContinuumEvent','B0_mcPDG',      'B0_mcErrors',    'B0_mcDaughter_0_PDG',
-                    'B0_mcDaughter_1_PDG','B0_deltaE',     'B0_Mbc',         'B0_CMS2_weMbc', 
-                    'B0_CMS0_weDeltae',   'B0_cos_angle_0_1',   
+                    'B0_mcDaughter_1_PDG','B0_deltaE',     'B0_Mbc',          'B0_dr',
+                    
                     'D_mcErrors',         'D_genGMPDG',    'D_genMotherPDG', 'D_mcPDG',
                     'D_BFM',              'D_M',           'D_p',            
                     'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_charge',
                     'D_K_cosTheta',       'D_K_p',         'D_K_PDG',        'D_K_mcPDG',
+                    
                     'ell_genMotherPDG',   'ell_mcPDG',     'ell_mcErrors',   'ell_genGMPDG',
                     'ell_p',              'ell_pValue',    'ell_charge',     'ell_theta',
-                    'ell_PDG',            'ell_eID',
+                    'ell_PDG',            'ell_eID',       'ell_mcSecPhysProc',
+                    
                     'mode',               'Ecms',          'p_D_l',          'B_D_ReChi2',
-                    'sig_prob',           'fakeD_prob',    'fakeB_prob',     'continuum_prob',]
+                    'sig_prob',           'fakeD_prob',    'fakeB_prob',     'continuum_prob',
+                    
+                    'B0_CMS_weMissM2_4',  'B0_CMS_weQ2lnuSimple_4', 'B0_CMS_weQ2lnu_4', 'B0_weMissPTheta_2',
+                    'B0_weMissPTheta_3',  'B0_recQ2Bh','B0_recQ2BhSimple','B0_mcMomTransfer2',
+                    'B0_recMissM2','B0_missingMomentumOfEvent_theta',
+                    'B0_roeEextra_my_mask',   'B0_roeCharge_my_mask',]
 #                  'D_K_kaonIDNN',        'D_K_pionIDNN',  'D_pi2_kaonIDNN', 'D_pi2_pionIDNN',
-#                  'D_pi1_kaonIDNN',      'D_pi1_pionIDNN',] 'B0_Lab5_weMissPTheta','B0_roeCharge_my_mask', 
+#                  'D_pi1_kaonIDNN',      'D_pi1_pionIDNN',]
 #                'B0_nROE_Tracks_my_mask',  'B0_nROE_Photons_my_mask',  'B0_nROE_NeutralHadrons_my_mask',
 
 combinatorial_vars = [
@@ -248,7 +254,7 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     return samples
     
     
-def classify_combinatorial(df):
+def classify_combinatorial(df, merge=False):
     """
     Classifies combinatorial background into 7 distinct classes based on:
       1. D mother decay type.
@@ -256,6 +262,7 @@ def classify_combinatorial(df):
 
     Args:
         df (pd.DataFrame): Input DataFrame containing necessary columns.
+        merge (boolean): Group the output categories based on kinematics
 
     Returns:
         dict: A dictionary where keys are class names and values are sub-DataFrames.
@@ -265,6 +272,7 @@ def classify_combinatorial(df):
 
     # 1. Semileptonic B: at least one lepton appears in the study columns
     mask_sl = df[study_cols].isin(leptons).any(axis=1)
+    mask_had = ~mask_sl
 
     # 2. Hadronic single charm: no leptons and exactly one value in the D_mesons
     charm_mask1 = df[study_cols].abs().isin(single_charm_pdg)
@@ -281,14 +289,22 @@ def classify_combinatorial(df):
     mask_secondary_ell = ~mask_primary_ell
 
     # Build dictionary of classified samples:
-    class_dict = {
-        'DSemiB_ellPri': df[mask_sl & mask_primary_ell].copy(),
-        'DSemiB_ellSec': df[mask_sl & mask_secondary_ell].copy(),
-        'DHad1Charm_ellPri': df[mask_cx & mask_primary_ell].copy(),
-        'DHad1Charm_ellSec': df[mask_cx & mask_secondary_ell].copy(),
-        'DHad2Charm_ellPri': df[mask_ccx & mask_primary_ell].copy(),
-        'DHad2Charm_ellSec': df[mask_ccx & mask_secondary_ell].copy(),
-    }
+    if merge:
+        class_dict = {
+            'SemileptonicB2D_PrimaryLepton' : df[mask_sl & mask_primary_ell].copy(),
+            'SemileptonicB2D_SecondaryLepton + HadronicB2D_PrimaryLepton' : 
+            df[(mask_sl & mask_secondary_ell) | (mask_had & mask_primary_ell)].copy(),
+            'HadronicB2D_SecondaryLepton' : df[mask_had & mask_secondary_ell].copy(),
+        }
+    else:
+        class_dict = {
+            'DSemiB_ellPri': df[mask_sl & mask_primary_ell].copy(),
+            'DSemiB_ellSec': df[mask_sl & mask_secondary_ell].copy(),
+            'DHad1Charm_ellPri': df[mask_cx & mask_primary_ell].copy(),
+            'DHad1Charm_ellSec': df[mask_cx & mask_secondary_ell].copy(),
+            'DHad2Charm_ellPri': df[mask_ccx & mask_primary_ell].copy(),
+            'DHad2Charm_ellSec': df[mask_ccx & mask_secondary_ell].copy(),
+        }
 
     # Catch unclassified rows
     classified_indices = pd.concat(class_dict.values()).index
@@ -613,7 +629,7 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
                     df_i[variables[0]], bins=bins[0])
 
             # compute the counts and errors, scale with the fit result
-            hist_side_i = unp.uarray(side_counts_i.T, poisson_error(side_counts_i.T))
+            hist_side_i = unp.uarray(side_counts_i, poisson_error(side_counts_i))
             scaled_side_i = hist_side_i * (yields_sig/yields_i/2) # overall scaling weight
             hist_sbFakeD += scaled_side_i
 
@@ -910,6 +926,44 @@ def create_workspace(temp_asimov_channels: list,
     observations = []
     measurements = [{"name": "R_D", "config": {"poi": "$D\\tau\\nu$_norm", "parameters": []}}]
     version = "1.0.0"
+    
+    norm_modifiers = {
+                    r'$D^\ast\tau\nu$': {
+                        'name': r'$D^\ast\tau\nu$_norm',
+                        'type': 'normsys',
+                        'data': {"hi": 1.05, "lo": 0.95}
+                    },
+                     r'$D^{\ast\ast}\tau\nu$': {
+                        'name': r'$D^{\ast\ast}\tau\nu$_norm',
+                        'type': 'normsys',
+                        'data': {"hi": 1.3, "lo": 0.7}
+                    },
+#                      'bkg_TDFl': {
+#                         'name': 'bkg_TDFl_norm',
+#                         'type': 'normsys',
+#                         'data': {"hi": 1.2, "lo": 0.8}
+#                     },
+#                      'bkg_combinatorial': {
+#                         'name': 'bkg_combinatorial_norm',
+#                         'type': 'normsys',
+#                         'data': {"hi": 1.2, "lo": 0.8}
+#                     },
+#                      'bkg_continuum': {
+#                         'name': 'bkg_continuum_norm',
+#                         'type': 'normsys',
+#                         'data': {"hi": 1.2, "lo": 0.8}
+#                     },
+#                      'bkg_fakeTracks': {
+#                         'name': 'bkg_fakeTracks_norm',
+#                         'type': 'normsys',
+#                         'data': {"hi": 1.2, "lo": 0.8}
+#                     },
+#                      'bkg_singleBbkg': {
+#                         'name': 'bkg_singleBbkg_norm',
+#                         'type': 'normsys',
+#                         'data': {"hi": 1.2, "lo": 0.8}
+#                     },
+                     }
 
     # Extract sample names from the first set of templates
     sample_names = list(temp_asimov_channels[0][0].keys())
@@ -936,17 +990,23 @@ def create_workspace(temp_asimov_channels: list,
                 continue  # skip samples with 0 events
 
             # Build the sample entry
-            sample_entry = {
-                'name': sample_name,
-                'data': unp.nominal_values(sample_data).tolist(),
-                'modifiers': [
-                    {
-                        'name': sample_name + '_norm',
-                        'type': 'normfactor',
-                        'data': None  # Normalization factor modifier
-                    }
-                ]
-            }
+            if sample_name in norm_modifiers:
+                sample_entry = {
+                    'name': sample_name,
+                    'data': unp.nominal_values(sample_data).tolist(),
+                    'modifiers': [ norm_modifiers[sample_name] ] }
+            else:
+                sample_entry = {
+                    'name': sample_name,
+                    'data': unp.nominal_values(sample_data).tolist(),
+                    'modifiers': [
+                        {
+                            'name': sample_name + '_norm',
+                            'type': 'normfactor',
+                            'data': None  # Normalization factor modifier
+                        }
+                    ]
+                }
 
             # Add uncertainty modifiers for statistical errors
             sig_comp = [r'$D\tau\nu$', r'$D^\ast\tau\nu$', r'$D^{\ast\ast}\tau\nu$']
@@ -1947,8 +2007,11 @@ class mpl:
                              r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',
-                             'DSemiB_ellPri',  'DSemiB_ellSec',  'DHad1Charm_ellPri',
-                             'DHad1Charm_ellSec', 'DHad2Charm_ellPri', 'DHad2Charm_ellSec']
+#                              'DSemiB_ellPri',  'DSemiB_ellSec',  'DHad1Charm_ellPri',
+#                              'DHad1Charm_ellSec', 'DHad2Charm_ellPri', 'DHad2Charm_ellSec',
+                             'SemileptonicB2D_PrimaryLepton', 'HadronicB2D_SecondaryLepton',
+                             'SemileptonicB2D_SecondaryLepton + HadronicB2D_PrimaryLepton']
+
         self.bkg = self.sorted_order[:6]
         self.norm = [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta',
                      r'$D^{\ast\ast}\ell\nu$_narrow', r'$D^{\ast\ast}\ell\nu$_broad',
@@ -2060,7 +2123,7 @@ class mpl:
 
 
     def plot_mc_1d(self, bins, ax, sub_df=None, sub_name=None, variable=None, cut=None,
-               weights={}, correction=None, mask=[], legend_count=False, density=False):
+               weights={}, correction=None, mask=[], legend='full', density=False):
 
         def normalize_to_density(counts, bins):
             # If density is True, normalize the counts so that the integral is 1
@@ -2083,9 +2146,16 @@ class mpl:
             stacked_counts = normalize_to_density(stacked_counts, bins)
             
             if ax is not None:
-                ax.hist(bins[:-1], bins, weights=stacked_counts, histtype='step', color='black',
-                    label=(f'Unweighted MC \n{self.statistics(df=var_col,count_only=legend_count)} '
-                           f'\n cut_eff={(len(var_col)/len(mc_combined)):.3f}'))
+                if legend== 'simple_color':
+                    label = 'Unweighted MC'
+                elif legend == 'count':
+                    label = (f'Unweighted MC \n{self.statistics(df=var_col,count_only=True)} '
+                           f'\n cut_eff={(len(var_col)/len(mc_combined)):.3f}')
+                elif legend=='full':
+                    label = (f'Unweighted MC \n{self.statistics(df=var_col,count_only=False)} '
+                           f'\n cut_eff={(len(var_col)/len(mc_combined)):.3f}')
+                ax.hist(bins[:-1], bins, weights=stacked_counts, 
+                        histtype='step', color='black',label=label)
 
         if sub_df is not None:
             sample = sub_df
@@ -2101,9 +2171,15 @@ class mpl:
             counts = normalize_to_density(counts, bins)  # Normalize if density=True
 
             if ax is not None:
-                ax.hist(bins[:-1], bins, weights=counts,
-                    label=(f'{sub_name} \n{self.statistics(df=var_col,count_only=legend_count)} '
-                           f'\n cut_eff={(len(var_col)/len(sample)):.3f}'))
+                if legend== 'simple_color':
+                    label = sub_name
+                elif legend == 'count':
+                    label = (f'{sub_name} \n{self.statistics(df=var_col,count_only=True)} '
+                           f'\n cut_eff={(len(var_col)/len(sample)):.3f}')
+                elif legend=='full':
+                    label = (f'{sub_name} \n{self.statistics(df=var_col,count_only=False)} '
+                           f'\n cut_eff={(len(var_col)/len(sample)):.3f}')
+                ax.hist(bins[:-1], bins, weights=counts,label=label)
 
             sample_counts = unp.uarray(counts, staterror)
             bottom = sample_counts
@@ -2119,7 +2195,10 @@ class mpl:
                 if sample_size == 0 or name in mask:
                     continue
 
-                sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
+                if 'all_mc' in weights:
+                    sample.loc[:, '__weight__'] = np.float32( weights['all_mc'] )
+                else:
+                    sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
                 var_col = sample.query(cut)[variable] if cut else sample[variable]
                 w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
                 w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
@@ -2140,9 +2219,16 @@ class mpl:
                 b = unp.nominal_values(bottom)
                 
                 if ax is not None:
-                    ax.hist(bins[:-1], bins, weights=counts, bottom=b, color=self.colors[i],
-                        label=(f'{name} \n{self.statistics(df=var_col,count_only=legend_count)} '
-                               f'\n cut_eff={(sample_size/len(sample)):.3f}'))
+                    if legend== 'simple_color':
+                        label = name
+                    elif legend == 'count':
+                        label = (f'{name} \n{self.statistics(df=var_col,count_only=True)} '
+                               f'\n cut_eff={(sample_size/len(sample)):.3f}')
+                    elif legend=='full':
+                        label = (f'{name} \n{self.statistics(df=var_col,count_only=False)} '
+                               f'\n cut_eff={(sample_size/len(sample)):.3f}')
+                    ax.hist(bins[:-1], bins, weights=counts, bottom=b, 
+                            color=self.colors[i],label=label)
 
                 sample_counts = unp.uarray(counts, staterror)
                 bottom += sample_counts
@@ -2151,7 +2237,7 @@ class mpl:
     
     
     def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,
-                            density=False, errorbars=False, weights={}):
+                            density=False, errorbars=False, weights={},legend_nc=3):
         if show_only is not None:
             # this will overwrite the mask argument
             if show_only == 'sig_and_gap':
@@ -2192,7 +2278,7 @@ class mpl:
         axs.set_xlabel(f'{variable}', fontsize=14)
         axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=14)
         axs.grid()
-        plt.legend(bbox_to_anchor=(1,1),ncol=3, fancybox=True, shadow=True,labelspacing=1.5)
+        plt.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5)
 
     
     def plot_2d(self, bins,fig, ax,title_name, weights={},mask=[],
@@ -2518,6 +2604,8 @@ class mpl:
         # get 2 projections
         data_subtracted_x = data_subtracted_2d.sum(axis=1)  # Sum along the y-axis
         data_subtracted_y = data_subtracted_2d.sum(axis=0)  # Sum along the x-axis
+        
+        mc_proj_query = f'{edges_x[0]} < {variable_x} < {edges_x[-1]} and {edges_y[0]} < {variable_y} < {edges_y[-1]}'
            
         
         # Create figure and define subplots layout
@@ -2540,7 +2628,7 @@ class mpl:
         # Top-right: 1D histogram of p_D_l projection + residuals
         data_y = self.plot_data_1d(bins=edges_y, hist=data_subtracted_y, ax=ax2,cut=cut, name='Data')
         mc_y = self.plot_mc_1d(bins=edges_y, variable=variable_y, ax=ax2, weights=weights,
-                               cut='1.84<D_M<1.9 and '+cut, correction=correction,mask=mask,legend_count=True)
+                               cut=f'1.84<D_M<1.9 and {mc_proj_query} and '+cut, correction=correction,mask=mask,legend='simple_color')
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
             ax2.set_title('$|p_D| + |p_{\ell}|$ Projection')
         else:
@@ -2556,7 +2644,7 @@ class mpl:
         # Bottom-left: 1D histogram of mm2 projection + residuals
         data_x = self.plot_data_1d(bins=edges_x, hist=data_subtracted_x, ax=ax4,cut=cut, name='Data')
         mc_x = self.plot_mc_1d(bins=edges_x, variable=variable_x, ax=ax4, weights=weights,
-                               cut='1.84<D_M<1.9 and '+cut, correction=correction,mask=mask,legend_count=True)
+                               cut=f'1.84<D_M<1.9 and {mc_proj_query} and '+cut, correction=correction,mask=mask,legend='simple_color')
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
             ax4.set_title('$M_{miss}^2$ Projection')
         else:
@@ -2571,7 +2659,7 @@ class mpl:
         
         # Bottom-right: 2D histogram of MC (B0_CMS3_weMissM2 vs p_D_l)
         self.plot_2d(bins=bin_list, mask=mask,weights=weights,variables=var_list,
-                    fig=fig, ax=ax6, cut='1.84<D_M<1.9 and '+cut, title_name='MC, fakeD removed')
+                    fig=fig, ax=ax6, cut=f'1.84<D_M<1.9 and {mc_proj_query} and '+cut, title_name='MC, fakeD removed')
         ax6.set_xlabel(var_x_label)
         ax6.set_ylabel(var_y_label)
         
