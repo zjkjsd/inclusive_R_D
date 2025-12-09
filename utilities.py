@@ -35,13 +35,14 @@ analysis_variables=['__experiment__',     '__run__',       '__event__',      '__
                     'ell_p',              'ell_pValue',    'ell_charge',     'ell_theta',
                     'ell_PDG',            'ell_eID',       'ell_mcSecPhysProc',
                     
-                    'mode',               'Ecms',          'p_D_l',          'B_D_ReChi2',
+                    'mode',               'Ecms',          'p_D_l',          'B_D_ReChi2', 'B0_D_ReChi2',
                     'sig_prob',           'fakeD_prob',    'fakeB_prob',     'continuum_prob',
+                    'combinatorial_prob',
                     
                     'B0_CMS_weMissM2_4',  'B0_CMS_weQ2lnuSimple_4', 'B0_CMS_weQ2lnu_4', 'B0_weMissPTheta_2',
-                    'B0_weMissPTheta_3',  'B0_recQ2Bh','B0_recQ2BhSimple','B0_mcMomTransfer2',
-                    'B0_recMissM2','B0_missingMomentumOfEvent_theta',
-                    'B0_roeEextra_my_mask',   'B0_roeCharge_my_mask',]
+                    'B0_weMissPTheta_3',  'B0_recQ2Bh',     'B0_recQ2BhSimple',     'B0_mcMomTransfer2',
+                    'B0_recMissM2',       'B0_missingMomentumOfEvent_theta',        'B0_CMS_roeP_my_mask',
+                    'B0_roeEextra_my_mask',   'B0_roeCharge_my_mask',               'B0_CMS_roeE_my_mask',]
 #                  'D_K_kaonIDNN',        'D_K_pionIDNN',  'D_pi2_kaonIDNN', 'D_pi2_pionIDNN',
 #                  'D_pi1_kaonIDNN',      'D_pi1_pionIDNN',]
 #                'B0_nROE_Tracks_my_mask',  'B0_nROE_Photons_my_mask',  'B0_nROE_NeutralHadrons_my_mask',
@@ -66,11 +67,12 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl'
                  r'$D^{\ast\ast}\ell\nu$_narrow':13,   r'$D^{\ast\ast}\ell\nu$_broad':14,
                  r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16}
 
+lgb_tight = 'sig_prob>0.6 and fakeD_prob<0.06 and continuum_prob<0.05 and combinatorial_prob<0.2'
+lgb_loose = 'sig_prob>0.6 and fakeD_prob<0.5 and continuum_prob<0.5 and combinatorial_prob<0.5'
+lgb_comb = 'fakeD_prob<0.1 and continuum_prob<0.1 and combinatorial_prob>0.7'
+
 
 ############################## define relevant constants ########################
-# sidebands / signal region with D* veto
-ratio_Dell_sb_sig = 745/82820
-ratio_Dstell_sb_sig = 541/29344
 
 # for event classification
 pi_pdg = [111, 211, -211]
@@ -118,17 +120,29 @@ def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='
                                         1: 'fakeD_prob',
                                         2: 'combinatorial_prob',
                                         3: 'continuum_prob'})
+            # combine the predict result
+            pred['largest_prob'] = pred[['sig_prob','fakeD_prob','combinatorial_prob','continuum_prob']].max(axis=1)
+            df_pred = pd.concat([df, pred], axis=1)
 
         elif library=='lgbm':
-            predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass.txt')
-            pred_array = predictor.predict(df[features], num_iteration=predictor.best_iteration)
-            pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
-                                                     'combinatorial_prob','continuum_prob'])
+            if model == 'multiclass':
+                predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass_v1.txt')
+                pred_array = predictor.predict(df[features], num_iteration=20)
+                pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
+                                                         'combinatorial_prob','continuum_prob'])
+                # combine the predict result
+                pred['largest_prob'] = pred[['sig_prob','fakeD_prob','combinatorial_prob','continuum_prob']].max(axis=1)
+                df_pred = pd.concat([df, pred], axis=1)
+
+            elif model == 'binary':
+                predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_binary_v1.txt')
+                pred_array = predictor.predict(df[features], num_iteration=20)
+                pred = pd.DataFrame(pred_array, columns=['data_prob',])
+                df_pred = pd.concat([df, pred], axis=1)
+        
             if importance: # feature importances
                 lgb.plot_importance(predictor, figsize=(18,20))
-        # combine the predict result
-        pred['largest_prob'] = pred[['sig_prob','fakeD_prob','combinatorial_prob','continuum_prob']].max(axis=1)
-        df_pred = pd.concat([df, pred], axis=1)
+        
 
         # apply the MVA cut and BCS
         df_cut=df_pred.query(cut)
@@ -140,6 +154,8 @@ def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='
         df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['B_D_ReChi2'].idxmin()]
     elif bcs=='mva':
         df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['sig_prob'].idxmax()]
+    else:
+        df_bestSelected = df_cut
     
     return df_bestSelected
 
@@ -282,6 +298,23 @@ def classify_combinatorial(df, merge=False):
     charm_mask2 = df[study_cols].abs().isin(double_charm_pdg)
     mask_ccx = (~mask_sl) & ( (charm_mask1.sum(axis=1) == 2) | (charm_mask2.sum(axis=1) == 1) )
 
+    #########################################################
+    # double charm: 2 charm mesons
+    charm_mask3 = df[study_cols].abs().isin(D_mesons_pdg)
+    mask_ccx3 = (~mask_sl) & (charm_mask3.sum(axis=1) == 2)
+
+    # double charm: 2 charm baryons
+    charm_mask4 = df[study_cols].abs().isin(charm_baryons_pdg)
+    mask_ccx4 = (~mask_sl) & (charm_mask4.sum(axis=1) == 2)
+
+    # double charm: 1 charm meson + 1 baryons
+    mask_ccx5 = (~mask_sl) & (charm_mask3.sum(axis=1) == 1) & (charm_mask4.sum(axis=1) == 1)
+
+    # double charm: 1 cc meson/baryon
+    mask_ccx6 = (~mask_sl) & (charm_mask2.sum(axis=1) == 1)
+
+    #########################################################
+
     # Lepton classification:
     mask_primary_ell = (df['ell_genMotherPDG'].abs().isin(Bpdg)) | (
         (df['ell_genGMPDG'].abs().isin(Bpdg)) & (df['ell_genMotherPDG'].abs() == 15)
@@ -304,6 +337,15 @@ def classify_combinatorial(df, merge=False):
             'DHad1Charm_ellSec': df[mask_cx & mask_secondary_ell].copy(),
             'DHad2Charm_ellPri': df[mask_ccx & mask_primary_ell].copy(),
             'DHad2Charm_ellSec': df[mask_ccx & mask_secondary_ell].copy(),
+            ###################################
+            'DHad2Charm_meson_ellPri': df[mask_ccx3 & mask_primary_ell].copy(),
+            'DHad2Charm_meson_ellSec': df[mask_ccx3 & mask_secondary_ell].copy(),
+            'DHad2Charm_baryon_ellPri': df[mask_ccx4 & mask_primary_ell].copy(),
+            'DHad2Charm_baryon_ellSec': df[mask_ccx4 & mask_secondary_ell].copy(),
+            'DHad2Charm_mix_ellPri': df[mask_ccx5 & mask_primary_ell].copy(),
+            'DHad2Charm_mix_ellSec': df[mask_ccx5 & mask_secondary_ell].copy(),
+            'DHad2Charm_cc_ellPri': df[mask_ccx6 & mask_primary_ell].copy(),
+            'DHad2Charm_cc_ellSec': df[mask_ccx6 & mask_secondary_ell].copy(),
         }
 
     # Catch unclassified rows
@@ -344,6 +386,24 @@ import uncertainties.unumpy as unp
 import copy
 from termcolor import colored
 
+def get_weights(df, w):
+    """
+    Create a weighted histogram where `w` can be either:
+      - a scalar (e.g. 0.5)
+      - a DataFrame column name
+      - a list of form ['col_name', scalar]
+    """
+    # Determine weights
+    if np.isscalar(w):
+        weights = np.full(len(df), w)          # same constant for all rows
+    elif type(w)==str: # hasattr(w, "index") and hasattr(w, "values")
+        weights = df[w].to_numpy()             # use column from DataFrame
+    elif type(w)==list and type(w[0])==str:
+        weights = (df[w[0]]*w[1]).to_numpy()     # use a constant and a column from DataFrame
+    else:
+        raise TypeError("w must be either a scalar or a column name.")
+    
+    return weights
 
 def binom_error(n_sig, n_tot):
     """
@@ -476,7 +536,7 @@ def rebin_histogram_with_new_edges(counts_with_uncertainties, old_bin_edges, new
 
 
 def create_templates(samples:dict, bins:list, scale_lumi=1,
-                     variables=['B0_CMS3_weMissM2','p_D_l'],
+                     variables=['B0_recMissM2','p_D_l'],
                      bin_threshold=1, merge_threshold=10,
                      fakeD_from_sideband=False, data=None,
                      sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal'],
@@ -535,27 +595,26 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
 
         df_sig_sb = df_sig_sb.copy()
         df = df_sig_sb.query('1.855<D_M<1.885')
-        
-        if name in sample_weights.keys():
-            df.loc[:, '__weight__'] = np.float32(sample_weights[name])
+
+        weight = get_weights(df, sample_weights.get(name,1))
             
         # Compute weighted histogram, event by event weight
         if len(variables)==2:
             counts, xedges, yedges = np.histogram2d(
                 df[variables[0]], df[variables[1]],
-                bins=bins, weights=df['__weight__'])
+                bins=bins, weights=weight)
 
             # Compute sum of weight^2 for uncertainties
             staterr_squared, _, _ = np.histogram2d(
                 df[variables[0]], df[variables[1]],
-                bins=bins, weights=(df['__weight__']**2))
+                bins=bins, weights=weight**2)
             
         elif len(variables)==1:
             counts, edges = np.histogram(
-                df[variables[0]],bins=bins[0], weights=df['__weight__'])
+                df[variables[0]],bins=bins[0], weights=weight)
 
             staterr_squared, _ = np.histogram(
-                df[variables[0]],bins=bins[0], weights=(df['__weight__']**2))
+                df[variables[0]],bins=bins[0], weights=weight**2)
 
      
         # Store as uarray: Transpose to have consistent shape (y,x) if needed
@@ -600,6 +659,54 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
             df_all = data
         df_sidebands = df_all.query('D_M<1.83 or 1.91<D_M').copy()
 
+        # Calculate the total leak (norm + normst) at sidebands using MC, this is the scaling factor for the sideband yield
+        # effectively subtract the norm leak at the sidebands, to get a more correct sideband yield
+        DM_left = '1.79<D_M<1.82'
+        DM_sig = '1.855<D_M<1.885'
+        DM_right = '1.92<D_M<1.95'
+        left_leak = 0
+        left_total = 0
+        right_leak = 0
+        right_total = 0
+        for name, df in samples.items():
+            left_total += len(df.query(DM_left) )
+            right_total += len(df.query(DM_right) )
+            if name in [r'$D\ell\nu$', r'$D^\ast\ell\nu$']:
+                print(name, 'left:', len(df.query(DM_left)), 'right:', len(df.query(DM_right)))
+                left_leak += len(df.query(DM_left))
+                right_leak += len(df.query(DM_right) )
+
+        mc_yield_left_total = ufloat(left_total, poisson_error(left_total) )
+        mc_yield_left_leak = ufloat(left_leak, poisson_error(left_leak) )
+        mc_yield_right_total = ufloat(right_total, poisson_error(right_total) )
+        mc_yield_right_leak = ufloat(right_leak, poisson_error(right_leak) )
+        
+        norm_leak_correction_left = (mc_yield_left_total - mc_yield_left_leak)/mc_yield_left_total
+        norm_leak_correction_right = (mc_yield_right_total - mc_yield_right_leak)/mc_yield_right_total
+        
+        
+        # calculate the leak/sig yield ratios individually for norm, normst, this scaling factor is used in subtracting the norm template
+        # to get a more correct template shape from the sidebands
+        norm_leak_left = len(samples[r'$D\ell\nu$'].query(DM_left))
+        norm_sig = len(samples[r'$D\ell\nu$'].query(DM_sig))
+        norm_leak_right = len(samples[r'$D\ell\nu$'].query(DM_right))
+        normst_leak_left = len(samples[r'$D^\ast\ell\nu$'].query(DM_left))
+        normst_sig = len(samples[r'$D^\ast\ell\nu$'].query(DM_sig))
+        normst_leak_right = len(samples[r'$D^\ast\ell\nu$'].query(DM_right))
+
+        mc_norm_leak_yield_left = ufloat(norm_leak_left, poisson_error(norm_leak_left) )
+        mc_norm_sig_yield = ufloat(norm_sig, poisson_error(norm_sig) )
+        mc_norm_leak_yield_right = ufloat(norm_leak_right, poisson_error(norm_leak_right) )
+        mc_normst_leak_yield_left = ufloat(normst_leak_left, poisson_error(normst_leak_left) )
+        mc_normst_sig_yield = ufloat(normst_sig, poisson_error(normst_sig) )
+        mc_normst_leak_yield_right = ufloat(normst_leak_right, poisson_error(normst_leak_right) )
+
+        norm_leak_sig_ratio_left = mc_norm_leak_yield_left / mc_norm_sig_yield
+        norm_leak_sig_ratio_right = mc_norm_leak_yield_right / mc_norm_sig_yield
+        normst_leak_sig_ratio_left = mc_normst_leak_yield_left / mc_normst_sig_yield
+        normst_leak_sig_ratio_right = mc_normst_leak_yield_right / mc_normst_sig_yield
+
+        
         # Compute the sideband histogram and assume poisson error
         bin_D_M = np.linspace(1.79,1.95,81)
         D_M_s2, _ = np.histogram(df_sidebands['D_M'], bins=bin_D_M)
@@ -609,44 +716,54 @@ def create_templates(samples:dict, bins:list, scale_lumi=1,
         fitter = fit_Dmass(x_edges=bin_D_M, hist=D_M_side_count, poly_only=True)
         m_ml, c_ml, result_ml = fitter.fit_gauss_poly_ML(deg=1)
 
-        yields_left = fitter.poly_integral(xrange=[1.79,1.82],result=result_ml)
-        yields_sig = fitter.poly_integral(xrange=[1.855,1.885],result=result_ml)
-        yields_right = fitter.poly_integral(xrange=[1.92,1.95],result=result_ml)
-        print(f'sig/left = {round_uarray(yields_sig/yields_left)}, \
-        sig/right = {round_uarray(yields_sig/yields_right)}')
+        data_fit_yields_left = fitter.poly_integral(xrange=[1.79,1.82],result=result_ml)
+        data_fit_yields_sig = fitter.poly_integral(xrange=[1.855,1.885],result=result_ml)
+        data_fit_yields_right = fitter.poly_integral(xrange=[1.92,1.95],result=result_ml)
 
+        data_count_yield_left = ufloat(len(df_all.query(DM_left) ),  poisson_error(len(df_all.query(DM_left) )) )
+        data_count_yield_right = ufloat(len(df_all.query(DM_right) ),  poisson_error(len(df_all.query(DM_right) )) )
+
+
+        # fakeD_left = corrected_data_left_hist / corrected_data_left_yield * center_fit_yield
+        # fakeD_left = (Data_hist_left - norm_mc_hist * norm_leak_yield_left / norm_sig_yield ) * center_fit_yield / (data_yield_left * norm_leak_correction_left)
+        # Temp_fakeD = fakeD_left/2 + fakeD_right/2
+        
         # Construct the fakeD 2d template from sidebands
-        region_yield = {'D_M<1.83': yields_left, '1.91<D_M': yields_right}
-        hist_sbFakeD = 0
-        for region_i, yields_i in region_yield.items():
-            df_i = df_sidebands.query(region_i)
-#             weights_i = df_i['__weight__']
-            if len(variables)==2:
-                (side_counts_i, _1, _2) = np.histogram2d(
-                    df_i[variables[0]], df_i[variables[1]], bins=bins)
-            elif len(variables)==1:
-                (side_counts_i, _) = np.histogram(
-                    df_i[variables[0]], bins=bins[0])
+        # left sideband
+        df_left  = df_sidebands.query(DM_left)
+        if len(variables)==2:
+            (data_left, _1, _2) = np.histogram2d(df_left[variables[0]], df_left[variables[1]], bins=bins)
+        elif len(variables)==1:
+            (data_left, _) = np.histogram(df_left[variables[0]], bins=bins[0])
+        
+        data_hist_left = unp.uarray(data_left, poisson_error(data_left))
+        
+        fakeD_left = (data_hist_left - histograms[r'$D\ell\nu$'] * norm_leak_sig_ratio_left - histograms[r'$D^\ast\ell\nu$'] * normst_leak_sig_ratio_left) * data_fit_yields_sig / (data_count_yield_left * norm_leak_correction_left)
 
-            # compute the counts and errors, scale with the fit result
-            hist_side_i = unp.uarray(side_counts_i, poisson_error(side_counts_i))
-            scaled_side_i = hist_side_i * (yields_sig/yields_i/2) # overall scaling weight
-            hist_sbFakeD += scaled_side_i
+        # right sideband
+        df_right  = df_sidebands.query(DM_right)
+        if len(variables)==2:
+            (data_right, _1, _2) = np.histogram2d(df_right[variables[0]], df_right[variables[1]], bins=bins)
+        elif len(variables)==1:
+            (data_right, _) = np.histogram(df_right[variables[0]], bins=bins[0])
+        
+        data_hist_right = unp.uarray(data_right, poisson_error(data_right))
+        
+        fakeD_right = (data_hist_right - histograms[r'$D\ell\nu$'] * norm_leak_sig_ratio_right - histograms[r'$D^\ast\ell\nu$'] * normst_leak_sig_ratio_right) * data_fit_yields_sig / (data_count_yield_right * norm_leak_correction_right)
+        
+        # fakeD template, Replace negative nominal values with zero, keep uncertainties
+        fakeD_sidebands = 0.8 * fakeD_left/2 + 1.2 * fakeD_right/2 
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!  added the correction 1.08 due to the leaking sig peak in the left sideband
 
-        # Create new 2d hists with fakeD replaced by sideband
+        fakeD_counts = unp.nominal_values(fakeD_sidebands)
+        fakeD_stat_err = unp.std_devs(fakeD_sidebands)
+        fakeD_counts_mod = np.where(fakeD_counts < 0, 0, fakeD_counts)
+        template_fakeD_sidebands = round_uarray(unp.uarray(fakeD_counts_mod, fakeD_stat_err))
+
+        # Create new 2d hists with fakeD replaced by sideband, and remove the fakeTracks component
+        ######!!!!!!!!!!!!!!!!!!!!!!
         hists_with_sbFakeD = {k: v for k, v in histograms.items()}
-
-        # subtract the D_ell_nu and D*_ell_nu leaked in the sideband
-        modified_hist_sbFakeD = hist_sbFakeD - ratio_Dell_sb_sig*hists_with_sbFakeD[r'$D\ell\nu$']
-        modified_hist_sbFakeD -= ratio_Dstell_sb_sig*hists_with_sbFakeD[r'$D^\ast\ell\nu$']
-
-        # Replace negative nominal values with zero, retain uncertainties
-        n_mod_hist_side = unp.nominal_values(modified_hist_sbFakeD)
-        s_mod_hist_side = unp.std_devs(modified_hist_sbFakeD)
-        n2_mod_hist_side = np.where(n_mod_hist_side < 0, 0, n_mod_hist_side)
-        modified_hist_sbFakeD_2 = round_uarray(unp.uarray(n2_mod_hist_side, s_mod_hist_side))
-
-        hists_with_sbFakeD['bkg_fakeD'] = modified_hist_sbFakeD_2
+        hists_with_sbFakeD['bkg_fakeD'] = template_fakeD_sidebands
 
         ################### Trimming and flattening ###############
         # Determine which bins pass the threshold based on sum of all templates
@@ -931,12 +1048,17 @@ def create_workspace(temp_asimov_channels: list,
                     r'$D^\ast\tau\nu$': {
                         'name': r'$D^\ast\tau\nu$_norm',
                         'type': 'normsys',
-                        'data': {"hi": 1.05, "lo": 0.95}
+                        'data': {"hi": 1.1, "lo": 0.9}
                     },
                      r'$D^{\ast\ast}\tau\nu$': {
                         'name': r'$D^{\ast\ast}\tau\nu$_norm',
                         'type': 'normsys',
                         'data': {"hi": 1.3, "lo": 0.7}
+                    },
+                     'bkg_fakeD': {
+                        'name': 'bkg_fakeD_norm',
+                        'type': 'normsys',
+                        'data': {"hi": 1.05, "lo": 0.95}
                     },
 #                      'bkg_TDFl': {
 #                         'name': 'bkg_TDFl_norm',
@@ -1009,11 +1131,11 @@ def create_workspace(temp_asimov_channels: list,
                 }
 
             # Add uncertainty modifiers for statistical errors
-            sig_comp = [r'$D\tau\nu$', r'$D^\ast\tau\nu$', r'$D^{\ast\ast}\tau\nu$']
+            sig_comp = ['bkg_fakeD', ] # r'$D\tau\nu$', r'$D^\ast\tau\nu$', r'$D^{\ast\ast}\tau\nu$'
             if (sample_name in sig_comp) and mc_uncer:
                 # Add statistical uncertainty for signals using shapesys
                 sample_entry['modifiers'].append({
-                    'name': f'mcStat_ch{ch_index}', # fakeD_stat
+                    'name': f'fakeD_Stat_ch{ch_index}', # fakeD_stat
                     'type': 'staterror', # 'shapesys'
                     'data': unp.std_devs(sample_data).tolist()
                 })
@@ -1030,10 +1152,12 @@ def create_workspace(temp_asimov_channels: list,
             
 
             # Define parameter bounds based on whether it's a background or signal sample
-            if sample_name.startswith('bkg'):
-                par_config = {"name": sample_name+'_norm', "bounds": [[0, 2]], "inits": [1.0], "fixed":True}
+            if sample_name == 'bkg_fakeD':
+                par_config = {"name": sample_name+'_norm', "bounds": [[-5, 5]], } # "inits": [0]
+            elif sample_name.startswith('bkg'):
+                par_config = {"name": sample_name+'_norm', "bounds": [[-5, 5]], "fixed":True}
             else:
-                par_config = {"name": sample_name+'_norm', "bounds": [[-5, 5]], "inits": [1.0]}
+                par_config = {"name": sample_name+'_norm', "bounds": [[-5, 5]],}
 
             # Add parameter configuration if it doesn't already exist
             if par_config not in measurements[0]['config']['parameters']:
@@ -1618,8 +1742,8 @@ import json
 from tqdm.auto import tqdm
 
 class pyhf_utils:
-    def __init__(self, toy_temp, fit_temp, fit_inits = [0.4]*12,
-                 toy_pars=[1]*12, par_fix=[False]*12):
+    def __init__(self, toy_temp, fit_temp, par_fix=['bkg_fakeTracks_norm']):
+                 # toy_pars=[1]*12, fit_inits = [0.4]*12  not used in code
         
         # load toy and fit templates
         tt = cabinetry.workspace.load(toy_temp)
@@ -1634,18 +1758,25 @@ class pyhf_utils:
         
         # set up the parameter configuration
         for i, par_name in enumerate(norm_parameter_names):
-            model_toy.config.param_set(par_name).suggested_init=[toy_pars[i]]
-            model_toy.config.param_set(par_name).suggested_fixed=fix_mask[i]
-            model_fit.config.param_set(par_name).suggested_init=[fit_inits[i]]
+            # model_toy.config.param_set(par_name).suggested_init=[toy_pars[i]]
+            # model_toy.config.param_set(par_name).suggested_fixed=fix_mask[i]
+            # model_fit.config.param_set(par_name).suggested_init=[fit_inits[i]]
             model_fit.config.param_set(par_name).suggested_fixed=fix_mask[i]
 
         # setup init attributes
         self.model_toy = model_toy
         self.model_fit = model_fit
-        # Set the pars for generating toys
-        self.toy_pars = cabinetry.model_utils.asimov_parameters(model_toy)
+        # Set the pars for generating toys or default `model_toy.config.suggested_init()`
+        self.toy_pars = cabinetry.model_utils.asimov_parameters(model_toy) # returns ndarray
         # Create a list of parameter names for samples that are not fixed
         self.minos_pars = [par for par in norm_parameter_names if par not in par_fix]
+
+    def toyAndFit_inits(self):
+        norm_parameter_names = [par for par in self.model_toy.config.par_order if par.endswith('_norm')]
+        nNorm_pars = len(norm_parameter_names)
+        fit_inits_toSave = self.model_fit.config.suggested_init()[:nNorm_pars]
+        
+        return self.toy_pars.tolist(), fit_inits_toSave
         
     def toy_generator(self, n_toys):
         pdf_toy = self.model_toy.make_pdf(pyhf.tensorlib.astensor(self.toy_pars))
@@ -1655,14 +1786,14 @@ class pyhf_utils:
         
     def fit_scipy_minuit(self, data):
         try: # fit with scipy for an initial guess
-            pyhf.set_backend('jax', 'scipy')
+            pyhf.set_backend('numpy', 'scipy')
             init_pars = pyhf.infer.mle.fit(pdf=self.model_fit, data=data).tolist()
 
         except Exception as e: # use the suggested init
             init_pars = self.model_fit.config.suggested_init()
 
         # fit with minuit
-        pyhf.set_backend('jax', 'minuit')
+        pyhf.set_backend('numpy', 'minuit')
         result = cabinetry.fit.fit(model=self.model_fit,data=data,
                                    init_pars=init_pars,goodness_of_fit=True,
                                    minos=self.minos_pars
@@ -1681,16 +1812,19 @@ class toy_utils:
         self.toy_workspace = toy_workspace
         self.fit_workspace = toy_workspace if fit_workspace=='' else fit_workspace
         
-    def generate_fit_toys(self,toy_pars,fit_inits,n_toys):
+    def generate_fit_toys(self,n_toys):
         # initialize util tools for pyhf
         pyhf_tools = pyhf_utils(toy_temp=self.toy_workspace,
                                      par_fix=self.pars_toFix,
                                      fit_temp=self.fit_workspace,
-                                     toy_pars=toy_pars,
-                                     fit_inits = fit_inits
+                                     # toy_pars=toy_pars,
+                                     # fit_inits = fit_inits
                                    )
         # generate toys
         toys = pyhf_tools.toy_generator(n_toys=n_toys)
+
+        # retrive the toy and fit initials
+        toy_pars, fit_inits = pyhf_tools.toyAndFit_inits()
         
         # prepare containers for fit results
         fit_results = {
@@ -1802,19 +1936,19 @@ class toy_utils:
             minos_up = np.array(merged_results['minos_uncertainty_up'])
             minos_down = np.array(merged_results['minos_uncertainty_down'])
             pulls = np.where(diff > 0, diff / minos_up, diff / minos_down)
-            percent_error = np.where(diff > 0, minos_up / fitted, minos_down / fitted) # will show in the plot
+            error_toplot = np.where(diff > 0, minos_up, minos_down) # will show in the plot
         else:
             # hesse error
             hesse_error = np.array(merged_results['hesse_uncertainty'])
             pulls = diff / hesse_error
-            percent_error = hesse_error / fitted # will show in the plot
+            error_toplot = hesse_error # will show in the plot
         
         if not normalize:
             pulls = diff
             
         # save
         merged_dict['toy_results']['pulls']=pulls.tolist()
-        merged_dict['toy_results']['percent_error']=percent_error.tolist()
+        merged_dict['toy_results']['error_toplot']=error_toplot.tolist()
         
         return merged_dict
     
@@ -1882,8 +2016,8 @@ class toy_utils:
         bin_width = bins[1] - bins[0]
         
         # set up the fitted gaussian
-        def gaussian(x, mu, sig): # user defined gauss for uncertainties
-            return 1. / (((2. * np.pi)**0.5) * sig) * np.e**(-(((x - mu) / sig)**2) / 2)
+        def gaussian(x, mu, sigma): # user defined gauss for uncertainties
+            return 1. / (((2. * np.pi)**0.5) * sigma) * np.e**(-(((x - mu) / sigma)**2) / 2)
         gauss_x = np.linspace(bins[0], bins[-1], 2001)
         gauss_y = gaussian(gauss_x, mu, sigma)
         gauss_y_nominal = unp.nominal_values(gauss_y)
@@ -2027,19 +2161,25 @@ class mpl:
         
         if hist is not None:
             bin_counts, bin_edges = hist
-            counts = np.sum(bin_counts).round(0).astype(int)
             
-            # Step 1: Calculate bin centers
-            bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
-            
-            # Step 2: Calculate the weighted mean
-            mean = np.average(bin_centers, weights=bin_counts)
-            
-            # Step 3: Calculate the weighted variance
-            variance = np.average((bin_centers - mean)**2, weights=bin_counts)
-            
-            # Step 4: Use the uncertainties package's sqrt if variance has uncertainties
-            std = poisson_error(variance)
+            if sum(bin_counts)==0:
+                counts = 0
+                mean = 0
+                std = 0
+            else: 
+                counts = np.sum(bin_counts).round(0).astype(int)
+                
+                # Step 1: Calculate bin centers
+                bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+                
+                # Step 2: Calculate the weighted mean
+                mean = np.average(bin_centers, weights=bin_counts)
+                
+                # Step 3: Calculate the weighted variance
+                variance = np.average((bin_centers - mean)**2, weights=bin_counts)
+                
+                # Step 4: Use the uncertainties package's sqrt if variance has uncertainties
+                std = poisson_error(variance)
         if count_only:
             return f'{counts=:d}'
         else:
@@ -2048,11 +2188,11 @@ class mpl:
     def plot_pie(self, cut='1.855<D_M<1.885'):
         # Plotting the pie chart
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
-        sizes = [len(self.samples[comp].query(cut)) for comp in self.sorted_order]
-        ax1.pie(sizes, labels=self.sorted_order, autopct='%1.1f%%', startangle=140, colors=self.colors)
-        ax1.set_title(f'All components in the region {cut=}')
+        sizes = [len(self.samples[comp].query(cut)) for comp in self.sorted_order if comp in self.samples.keys()]
+        ax1.pie(sizes, labels=[c for c in self.sorted_order if c in self.samples.keys()], autopct='%1.1f%%', startangle=140, colors=self.colors)
+        ax1.set_title(f'All components in the region {cut[:15]=}')
         ax2.pie(sizes[:6], labels=self.sorted_order[:6], autopct='%1.1f%%', startangle=140, colors=self.colors)
-        ax2.set_title(f'BKG components in the region {cut=}')
+        ax2.set_title(f'BKG components in the region {cut[:15]=}')
         plt.tight_layout()
         plt.show()
         
@@ -2068,17 +2208,14 @@ class mpl:
             else:
                 data = sub_df if sub_df is not None else self.data
 
+            var_col = data.query(cut)[variable] if cut else data[variable]
             # Apply scaling if requested
             if scale:
-                data.loc[:, '__weight__'] = scale
-
-            var_col = data.query(cut)[variable] if cut else data[variable]
-            w = data.query(cut)['__weight__'] if cut else data['__weight__']
-            w2 = data.query(cut)['__weight__']**2 if cut else data['__weight__']**2
+                weight = get_weights(var_col, scale)
 
             # Compute histogram with weights
-            counts, _ = np.histogram(var_col, bins=bins, weights=w)
-            staterr_squared, _ = np.histogram(var_col, bins=bins,weights=w2)
+            counts, _ = np.histogram(var_col, bins=bins, weights=weight)
+            staterr_squared, _ = np.histogram(var_col, bins=bins,weights=weight**2)
             staterror = poisson_error(staterr_squared)
 
             # Normalize to density if requested
@@ -2139,10 +2276,9 @@ class mpl:
                 [df for name, df in self.samples.items() if name not in mask],
                 ignore_index=True)
 
-            mc_combined.loc[:, '__weight__'] = np.float32( weights.get('combined', 1) )
             var_col = mc_combined.query(cut)[variable] if cut else mc_combined[variable]
-            w = mc_combined.query(cut)['__weight__'] if cut else mc_combined['__weight__']
-            (stacked_counts, _) = np.histogram(var_col, bins=bins,weights=w)
+            weight = get_weights(var_col, weights.get('combined', 1))
+            (stacked_counts, _) = np.histogram(var_col, bins=bins,weights=weight)
             stacked_counts = normalize_to_density(stacked_counts, bins)
             
             if ax is not None:
@@ -2158,14 +2294,12 @@ class mpl:
                         histtype='step', color='black',label=label)
 
         if sub_df is not None:
-            sample = sub_df
+            sample = sub_df.query(cut) if cut else sub_df
 
-            sample.loc[:, '__weight__'] = np.float32( weights.get('sub_df', 1) )
-            var_col = sample.query(cut)[variable] if cut else sample[variable]
-            w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
-            w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
-            (counts, _) = np.histogram(var_col, bins=bins,weights=w)
-            (staterr_squared, _) = np.histogram(var_col, bins=bins,weights=w2)
+            weight = get_weights(sample, weights.get('sub_df', 1))
+
+            (counts, _) = np.histogram(sample[variable], bins=bins,weights=weight)
+            (staterr_squared, _) = np.histogram(sample[variable], bins=bins,weights=weight**2)
             staterror = poisson_error(staterr_squared)
 
             counts = normalize_to_density(counts, bins)  # Normalize if density=True
@@ -2174,11 +2308,11 @@ class mpl:
                 if legend== 'simple_color':
                     label = sub_name
                 elif legend == 'count':
-                    label = (f'{sub_name} \n{self.statistics(df=var_col,count_only=True)} '
-                           f'\n cut_eff={(len(var_col)/len(sample)):.3f}')
+                    label = (f'{sub_name} \n{self.statistics(df=sample[variable],count_only=True)} '
+                           f'\n cut_eff={(len(sample)/len(sub_df)):.3f}')
                 elif legend=='full':
-                    label = (f'{sub_name} \n{self.statistics(df=var_col,count_only=False)} '
-                           f'\n cut_eff={(len(var_col)/len(sample)):.3f}')
+                    label = (f'{sub_name} \n{self.statistics(df=sample[variable],count_only=False)} '
+                           f'\n cut_eff={(len(sample)/len(sub_df)):.3f}')
                 ax.hist(bins[:-1], bins, weights=counts,label=label)
 
             sample_counts = unp.uarray(counts, staterror)
@@ -2189,28 +2323,28 @@ class mpl:
             for i, name in enumerate(self.sorted_order):
                 if name not in self.samples.keys():
                     continue
-                    
-                sample = self.samples[name]
-                sample_size = len(sample.query(cut)) if cut else len(sample)
-                if sample_size == 0 or name in mask:
-                    continue
+                
+                sample = self.samples[name].query(cut) if cut else self.samples[name]
 
-                if 'all_mc' in weights:
-                    sample.loc[:, '__weight__'] = np.float32( weights['all_mc'] )
+                if len(sample) == 0 or name in mask:
+                    continue
+                
+                if name in weights:
+                    weight = get_weights(sample, weights.get(name, 1) )
+                elif 'all_mc' in weights:
+                    weight = get_weights(sample, weights.get('all_mc', 1) )
                 else:
-                    sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
-                var_col = sample.query(cut)[variable] if cut else sample[variable]
-                w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
-                w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
-                (counts, _) = np.histogram(var_col, bins=bins,weights=w)
-                (staterr_squared, _) = np.histogram(var_col, bins=bins,weights=w2)
+                    weight = get_weights(sample, weights.get(name, 1) )
+
+                (counts, _) = np.histogram(sample[variable], bins=bins,weights=weight)
+                (staterr_squared, _) = np.histogram(sample[variable], bins=bins,weights=weight**2)
                 staterror = poisson_error(staterr_squared)
 
                 # Apply correction if needed
                 if correction:
-                    (counts, _) = np.histogram(var_col, bins=bins,
+                    (counts, _) = np.histogram(sample[variable], bins=bins,
                                                weights=weights.get(name, 1) * sample.query(cut)['PIDWeight'] if cut else weights.get(name, 1) * sample['PIDWeight'])
-                    (staterr_squared, _) = np.histogram(var_col, bins=bins,
+                    (staterr_squared, _) = np.histogram(sample[variable], bins=bins,
                                                         weights=(weights.get(name, 1) * sample.query(cut)['PIDWeight'])**2 if cut else (weights.get(name, 1) * sample['PIDWeight'])**2)
                     staterror = poisson_error(staterr_squared)
 
@@ -2222,11 +2356,11 @@ class mpl:
                     if legend== 'simple_color':
                         label = name
                     elif legend == 'count':
-                        label = (f'{name} \n{self.statistics(df=var_col,count_only=True)} '
-                               f'\n cut_eff={(sample_size/len(sample)):.3f}')
+                        label = (f'{name} \n{self.statistics(df=sample[variable],count_only=True)} '
+                               f'\n cut_eff={(len(sample)/len(self.samples[name])):.3f}')
                     elif legend=='full':
-                        label = (f'{name} \n{self.statistics(df=var_col,count_only=False)} '
-                               f'\n cut_eff={(sample_size/len(sample)):.3f}')
+                        label = (f'{name} \n{self.statistics(df=sample[variable],count_only=False)} '
+                               f'\n cut_eff={(len(sample)/len(self.samples[name])):.3f}')
                     ax.hist(bins[:-1], bins, weights=counts, bottom=b, 
                             color=self.colors[i],label=label)
 
@@ -2257,18 +2391,15 @@ class mpl:
         for i, name in enumerate(self.sorted_order):
             if name not in self.samples.keys():
                 continue
-            sample = self.samples[name]
-            sample_size = len(sample.query(cut)) if cut else len(sample)
-            if sample_size == 0 or name in mask:
+            sample = self.samples[name].query(cut) if cut else self.samples[name]
+            if len(sample) == 0 or name in mask:
                 continue
                 
-            sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
-            var_col= sample.query(cut)[variable] if cut else sample[variable]
-            w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
-            (counts, _) = np.histogram(var_col, bins=bins,weights=w)
+            weight = get_weights(sample,weights.get(name, 1) )
+            (counts, _) = np.histogram(sample[variable], bins=bins,weights=weight)
 
             axs.hist(bins[:-1], bins, weights=counts, density=density,histtype='step',lw=2,color=self.colors[i],
-                    label=f'''{name} \n{self.statistics(var_col)} \n cut_eff={(sample_size/len(sample)):.3f}''')
+                    label=f'''{name} \n{self.statistics(sample[variable])} \n cut_eff={(len(sample)/len(self.samples[name])):.3f}''')
             if errorbars:
                 bin_centers = (bins[:-1]+bins[1:])/2
                 axs.errorbar(x=bin_centers, y=counts, yerr=poisson_error(counts), fmt='.',
@@ -2291,36 +2422,28 @@ class mpl:
                 for i, name in enumerate(self.sorted_order):
                     if name not in self.samples.keys():
                         continue
-                    sample = self.samples[name]
-                    sample_size = len(sample.query(cut)) if cut else len(sample)
-                    if sample_size == 0 or name in mask:
+                    sample = self.samples[name].query(cut) if cut else self.samples[name]
+                    if len(sample) == 0 or name in mask:
                         continue
 
-                    sample.loc[:, '__weight__'] = np.float32( weights.get(name, 1) )
-                    var0_col= sample.query(cut)[variables[0]] if cut else sample[variables[0]]
-                    var1_col= sample.query(cut)[variables[1]] if cut else sample[variables[1]]
-                    w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
-                    w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
+                    weight = get_weights(sample, weights.get(name, 1) )
 
-                    (counts, xedges, yedges) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w)
+                    (counts, xedges, yedges) = np.histogram2d(sample[variables[0]],sample[variables[1]],bins=bins,weights=weight)
 
-                    (staterr_squared, _, _) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w2)
+                    (staterr_squared, _, _) = np.histogram2d(sample[variables[0]],sample[variables[1]],bins=bins,weights=weight**2)
                     staterror = poisson_error(staterr_squared)
 
                     sub_tot = unp.uarray(counts.round(0), staterror.round(0))
                     counts_tot += counts
                     counts_err += sub_tot
             else:
-                sample = sub_df
-                sample.loc[:, '__weight__'] = np.float32( weights.get('sub_df', 1) )
-                var0_col= sample.query(cut)[variables[0]] if cut else sample[variables[0]]
-                var1_col= sample.query(cut)[variables[1]] if cut else sample[variables[1]]
-                w = sample.query(cut)['__weight__'] if cut else sample['__weight__']
-                w2 = sample.query(cut)['__weight__']**2 if cut else sample['__weight__']**2
+                sample = sub_df.query(cut) if cut else sub_df
 
-                (counts, xedges, yedges) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w)
+                weight = get_weights(sample, weights.get('sub_df', 1) )
 
-                (staterr_squared, _, _) = np.histogram2d(var0_col,var1_col,bins=bins,weights=w2)
+                (counts, xedges, yedges) = np.histogram2d(sample[variables[0]],sample[variables[1]],bins=bins,weights=weight)
+
+                (staterr_squared, _, _) = np.histogram2d(sample[variables[0]],sample[variables[1]],bins=bins,weights=weight**2)
                 staterror = poisson_error(staterr_squared)
 
                 sub_tot = unp.uarray(counts.round(0), staterror.round(0))
@@ -2449,7 +2572,7 @@ class mpl:
         
     def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,weights={},mask=[],
                             bkg_name='bkg_fakeD',merge_sidebands=False,samples_sig=None,
-                            norm_tail_subt=False,figsize=(8,5),legend_nc=2,legend_fs=12):
+                            full_sideband=False, subtract_leak=False, figsize=(8,5),legend_nc=2,legend_fs=12):
         if type(variable)==str:
             # Create a figure with two subplots: one for the histogram, one for the residual plot
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
@@ -2466,36 +2589,116 @@ class mpl:
             fakeD = self.samples[bkg_name]
             fakeD_in_sig = fakeD.query('1.84<D_M<1.9').copy()
             
-            # fakeD in sidebands, Concatenate all DataFrames into one
+            # fakeD in sidebands vs. everything in the sidebands (concatenate all components)
+            fakeD_left = fakeD.query('D_M<1.83').copy()
+            fakeD_right = fakeD.query('1.91<D_M').copy()
+            
             df_concatenated = pd.concat(self.samples.values(), ignore_index=True)
-            left = df_concatenated.query('D_M<1.83').copy()
-            right = df_concatenated.query('D_M>1.91').copy()
+            all_left = df_concatenated.query('D_M<1.83').copy()
+            all_right = df_concatenated.query('1.91<D_M').copy()
                 
-            regions = {'left sideband': left,
+            regions = {'left sideband': all_left if full_sideband else fakeD_left,
                        'signal region': fakeD_in_sig,
-                       'right sideband': right}
+                       'right sideband': all_right if full_sideband else fakeD_right}
             
             sb_total = 0 # total counts in sidebands used in residual calculation
             sig_total = 0
             if type(variable)==str:
+                ###################################
                 D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=r'$D\ell\nu$', variable=variable, 
-                                        ax=None, cut=cut, weights={},correction=correction,mask=mask)
+                                           ax=None, cut=cut, correction=correction,mask=mask,
+                                           weights={'sub_df':weights.get('signal region',1)})
                 Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=r'$D^\ast\ell\nu$', variable=variable, 
-                                        ax=None, cut=cut, weights={},correction=correction,mask=mask)
+                                             ax=None, cut=cut, correction=correction,mask=mask,
+                                             weights={'sub_df':weights.get('signal region',1)},)
+                ###################################
                     
                 for region, df in regions.items():
                     if region=='signal region':
                         sig_total = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
                                                 cut=cut, name=region, scale=weights.get(region,1) )
 
-                    elif region in ['sidebands','left sideband', 'right sideband']:
+                    elif region in ['left sideband', 'right sideband']:
                         bkg_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
                                                     ax=None, cut=cut, correction=correction,mask=mask,
                                                     weights={'sub_df':weights.get(region,1)})
-                        
+                        # if subtract_leak:
 #                         bkg_counts -= ratio_Dell_sb_sig * D_counts # if plot 2 sb separately, this subtraction will be accidentally done 2 times
 #                         bkg_counts -= ratio_Dstell_sb_sig * Dst_counts
-                        sb_total += bkg_counts
+                        
+                        # DM_left = '1.79<D_M<1.82'
+                        # DM_sig = '1.855<D_M<1.885'
+                        # DM_right = '1.92<D_M<1.95'
+                        # left_leak = 0
+                        # left_total = 0
+                        # right_leak = 0
+                        # right_total = 0
+                        # for name, df in self.samples.items():
+                        #     left_total += len(df.query(DM_left) )
+                        #     right_total += len(df.query(DM_right) )
+                        #     if name in [r'$D\ell\nu$', r'$D^\ast\ell\nu$']:
+                        #         print(name, 'left:', len(df.query(DM_left)), 'right:', len(df.query(DM_right)))
+                        #         left_leak += len(df.query(DM_left))
+                        #         right_leak += len(df.query(DM_right) )
+                
+                        # mc_yield_left_total = ufloat(left_total, poisson_error(left_total) )
+                        # mc_yield_left_leak = ufloat(left_leak, poisson_error(left_leak) )
+                        # mc_yield_right_total = ufloat(right_total, poisson_error(right_total) )
+                        # mc_yield_right_leak = ufloat(right_leak, poisson_error(right_leak) )
+                        
+                        # norm_leak_correction_left = (mc_yield_left_total - mc_yield_left_leak)/mc_yield_left_total
+                        # norm_leak_correction_right = (mc_yield_right_total - mc_yield_right_leak)/mc_yield_right_total
+                        
+                        
+                        # # calculate the leak/sig yield ratios individually for norm, normst, this scaling factor is used in subtracting the norm template
+                        # # to get a more correct template shape from the sidebands
+                        # norm_leak_left = len(samples[r'$D\ell\nu$'].query(DM_left))
+                        # norm_sig = len(samples[r'$D\ell\nu$'].query(DM_sig))
+                        # norm_leak_right = len(samples[r'$D\ell\nu$'].query(DM_right))
+                        # normst_leak_left = len(samples[r'$D^\ast\ell\nu$'].query(DM_left))
+                        # normst_sig = len(samples[r'$D^\ast\ell\nu$'].query(DM_sig))
+                        # normst_leak_right = len(samples[r'$D^\ast\ell\nu$'].query(DM_right))
+                
+                        # mc_norm_leak_yield_left = ufloat(norm_leak_left, poisson_error(norm_leak_left) )
+                        # mc_norm_sig_yield = ufloat(norm_sig, poisson_error(norm_sig) )
+                        # mc_norm_leak_yield_right = ufloat(norm_leak_right, poisson_error(norm_leak_right) )
+                        # mc_normst_leak_yield_left = ufloat(normst_leak_left, poisson_error(normst_leak_left) )
+                        # mc_normst_sig_yield = ufloat(normst_sig, poisson_error(normst_sig) )
+                        # mc_normst_leak_yield_right = ufloat(normst_leak_right, poisson_error(normst_leak_right) )
+                
+                        # norm_leak_sig_ratio_left = mc_norm_leak_yield_left / mc_norm_sig_yield
+                        # norm_leak_sig_ratio_right = mc_norm_leak_yield_right / mc_norm_sig_yield
+                        # normst_leak_sig_ratio_left = mc_normst_leak_yield_left / mc_normst_sig_yield
+                        # normst_leak_sig_ratio_right = mc_normst_leak_yield_right / mc_normst_sig_yield
+                
+                        
+                        # # Compute the sideband histogram and assume poisson error
+                        # bin_D_M = np.linspace(1.79,1.95,81)
+                        # D_M_s2, _ = np.histogram(df_sidebands['D_M'], bins=bin_D_M)
+                        # D_M_side_count = round_uarray(unp.uarray(D_M_s2, poisson_error(D_M_s2)))
+                
+                        # # Fit a polynomial to the D_M sidebands
+                        # fitter = fit_Dmass(x_edges=bin_D_M, hist=D_M_side_count, poly_only=True)
+                        # m_ml, c_ml, result_ml = fitter.fit_gauss_poly_ML(deg=1)
+                
+                        # data_fit_yields_left = fitter.poly_integral(xrange=[1.79,1.82],result=result_ml)
+                        # data_fit_yields_sig = fitter.poly_integral(xrange=[1.855,1.885],result=result_ml)
+                        # data_fit_yields_right = fitter.poly_integral(xrange=[1.92,1.95],result=result_ml)
+                
+                        # data_count_yield_left = ufloat(len(df_all.query(DM_left) ),  poisson_error(len(df_all.query(DM_left) )) )
+                        # data_count_yield_right = ufloat(len(df_all.query(DM_right) ),  poisson_error(len(df_all.query(DM_right) )) )
+                
+                
+                        # fakeD_left = corrected_data_left_hist / corrected_data_left_yield * center_fit_yield
+                        # fakeD_left = (Data_hist_left - norm_mc_hist * norm_leak_yield_left / norm_sig_yield ) * center_fit_yield / (data_yield_left * norm_leak_correction_left)
+                        # Temp_fakeD = fakeD_left/2 + fakeD_right/2
+
+
+                        
+                        if region == 'left sideband':
+                            sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_left)
+                        elif region == 'right sideband':
+                            sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_right)
                         
                         if not merge_sidebands:
                             count1 = unp.nominal_values(bkg_counts)
@@ -2517,7 +2720,7 @@ class mpl:
                     if region=='signal region':
                         sig_total = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
                                     weights={'sub_df': weights.get(region,1)},fig=fig, ax=ax1, cut=cut)
-                    elif region in ['sidebands','left sideband', 'right sideband']:
+                    elif region in ['left sideband', 'right sideband']:
                         bkg_counts = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
                         D_counts = self.plot_2d(bins=bins, sub_df=Dellnu, variables=variable, title_name=region,
@@ -2678,17 +2881,17 @@ class mpl:
             if len(df_sig_region)==0:
                 continue
                 
-            df_sig_region.loc[:, '__weight__'] = np.float32(weights.get(name, 1))
+            weight = get_weights(df_sig_region, weights.get(name, 1) )
 
             # Compute weighted histogram, event by event weight
             counts, xedges, yedges = np.histogram2d(
                 df_sig_region[variable_x], df_sig_region[variable_y],
-                bins=bin_list, weights=df_sig_region['__weight__'])
+                bins=bin_list, weights=weight)
 
             # Compute sum of weight^2 for uncertainties
             staterr_squared, _, _ = np.histogram2d(
                 df_sig_region[variable_x], df_sig_region[variable_y],
-                bins=bin_list, weights=(df_sig_region['__weight__']**2))
+                bins=bin_list, weights=weight**2)
 
             # Store as uarray: Transpose to have consistent shape (y,x) if needed
             if name in [r'$D^{\ast\ast}\ell\nu$_narrow',r'$D^{\ast\ast}\ell\nu$_broad']:
@@ -2878,9 +3081,9 @@ class mpl:
         color = 'tab:blue'
         ax1.set_ylabel('Efficiency', color=color)  # we already handled the x-label with ax1
         ax1.errorbar(x=bins[:-1], y=unp.nominal_values(sig_eff), yerr=unp.std_devs(sig_eff), 
-                     fmt='.',color=color,markeredgecolor='white',markeredgewidth=0.5, label='Signal Efficiency')
+                     color=color,label='Signal Efficiency')
         ax1.errorbar(x=bins[:-1], y=unp.nominal_values(purity), yerr=unp.std_devs(purity), 
-                     fmt='.',color='green',markeredgecolor='white',markeredgewidth=0.5, label='Purity')
+                     color='green',label='Purity')
         ax1.tick_params(axis='y', labelcolor=color)
         ax1.legend(loc='upper left')
         ax1.grid()
@@ -2891,7 +3094,7 @@ class mpl:
         color = 'tab:red'
         ax2.set_ylabel('FOM', color=color)
         ax2.errorbar(x=bins[:-1], y=unp.nominal_values(fom), yerr=unp.std_devs(fom), 
-                     fmt='.',color=color,markeredgecolor='white',markeredgewidth=0.5, label='FOM')
+                     color=color,label='FOM')
         ax2.tick_params(axis='y', labelcolor=color)
         #ax2.grid()
         ax2.legend(loc='upper right')

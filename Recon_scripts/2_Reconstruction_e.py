@@ -33,30 +33,29 @@ if __name__ == "__main__":
     # Define the path
     main_path = b2.Path()
 
-    input_file = '/group/belle2/dataprod/MC/MC15ri/mixed/sub00/mdst_000001_prod00024821_task10020000001.root'
+    input_file = 'MC16rd_release-08-00-08_e0012_4S_offres_ccbar.root'
+    #'/group/belle2/dataprod/MC/MC15ri/mixed/sub00/mdst_000001_prod00024821_task10020000001.root'
     output_file = 'MC_e_control.root'
 
     ma.inputMdstList(filelist=input_file, path=main_path)
-
-    goodTrack = 'abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nCDCHits>0'
 
     # kinematic vars in CMS frame
     cms_kinematics = vu.create_aliases(vc.kinematics, "useCMSFrame({variable})", "CMS")
     # cms_mc_kinematics = vu.create_aliases(vc.mc_kinematics, "useCMSFrame({variable})", "CMS")
     # cms_momentum_uncertainty = vu.create_aliases(vc.momentum_uncertainty, "useCMSFrame({variable})", "CMS")
 
-    ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and nSVDHits>0 and pionIDNN > 0.1', path=main_path)
-    ma.fillParticleList('K-:myk', cut=goodTrack + ' and nSVDHits>0 and kaonIDNN > 0.9', path=main_path)
-
     # ----------------------------------
-    # Fill example standard lepton list.
+    # Fill fsp list.
     # ----------------------------------
+    goodTrack = 'abs(dz)<2 and dr<0.5 and thetaInCDCAcceptance and nCDCHits>0 and nSVDHits>0'
+    ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and pionIDNN > 0.1', path=main_path)
+    ma.fillParticleList('K-:myk', cut=goodTrack + ' and kaonIDNN > 0.9', path=main_path)
 
     # For electrons, we show the case in which a Bremsstrahlung correction
     # is applied first to get the 4-momentum right,
     # and the resulting particle list is passed as input to the stdE list creator.
     ma.fillParticleList("e+:uncorrected",
-                        cut=goodTrack + ' and nSVDHits>0',  # NB: whichever cut is set here, will be inherited by the std electrons.
+                        cut=goodTrack,  # NB: whichever cut is set here, will be inherited by the std electrons.
                         path=main_path)
 
     stdPhotons.stdPhotons(listtype="cdc", beamBackgroundMVAWeight="MC16rd", fakePhotonMVAWeight="MC16rd", path=main_path)
@@ -80,9 +79,49 @@ if __name__ == "__main__":
     ma.applyCuts("e-:corrected", "electronIDNN>0.9 and p>0.2", path=main_path)
 
     ma.fillParticleList("mu+:mymu",
-                        cut=goodTrack + " and nSVDHits>0 and inKLMAcceptance and muonIDNN>0.9",
+                        cut=goodTrack + " and inKLMAcceptance and muonIDNN>0.9",
                         path=main_path)
 
+    # ---------------------------------------------------------------------------
+    # Differential Track Momentum Scale and Energy Loss Corrections & Systematics
+    # ---------------------------------------------------------------------------
+    ## Choose the GT, payload, particle lists and SF name
+    
+    ## APPLY CORRECTIONS ONLY TO RUN1 Data and MC!!
+    
+    gt_name = "tracking_MomentumScaleEnergyLoss_Run1_v2" # MC16 and proc16
+    # For more information on this separation see appendix C of BELLE2-NOTE-PH-2023-069 V7.
+    
+    payload_name_cosTheta = "tracking_MomentumScaling_Data"
+    payload_name_Eloss = "tracking_EnergyLoss_Data"
+    particle_lists = ["pi+:mypi", 'K-:myk', "e-:corrected", "mu+:mymu"] #choose your lists
+    sf_name = "central"
+    
+    sf_keys = ["central",
+               "misAl_down",     "misAl_up",
+               "bias_corr_down", "bias_corr_up",
+               "pdg_down",       "pdg_up",
+               "stat_down",      "stat_up",
+               "total_down",     "total_up"]
+    
+    ## scale track momenta according to SFs given in the payload
+    b2.conditions.prepend_globaltag(gt_name)
+    ma.scaleTrackMomenta(particle_lists, payloadName=payload_name_cosTheta,
+                         scalingFactorName=sf_name, path=main_path)
+    ma.correctTrackEnergy(particle_lists, payloadName=payload_name_Eloss,
+                          correctionName=sf_name, path=main_path)
+    ##
+    ## Add aliases for the corrections as to store as new variables.
+    ## Here the tracks are scaled according to "central" but the variations
+    ## could still be included as extra variables in the tuples to be used
+    ## offline.
+    ##
+    track_variables = []
+    for sf_key in sf_keys:
+      vm.addAlias(f"{sf_key}_momScale", f"extraInfo({payload_name_cosTheta}_{sf_name})")
+      vm.addAlias(f"{sf_key}_Ecorrection", f"extraInfo({payload_name_Eloss}_{sf_name})")
+      track_variables += [f"{sf_key}_momScale", f"{sf_key}_Ecorrection"]
+    
     # ------------------------------------------------------------
     # Add extra cuts on the standard lepton lists and lepton veto.
     # ------------------------------------------------------------
@@ -241,7 +280,7 @@ if __name__ == "__main__":
     # ----------
     # ROE vars
     # ----------
-    roe_kinematics = ["roeP(my_mask)"]#, "roeE(my_mask)", "roePx(my_mask)",
+    roe_kinematics = ["roeP(my_mask)", "roeE(my_mask)",]# "roePx(my_mask)",
                       #"roePy(my_mask)","roePz(my_mask)","roePt(my_mask)",]
     # roe_MC_kinematics = ['roeMC_E','roeMC_M','roeMC_P',
     #                      'roeMC_PTheta','roeMC_Pt',
@@ -357,7 +396,7 @@ if __name__ == "__main__":
     for i in range(2):
         vm.addAlias(f'd{i}_mcPDG', f'daughter({i}, mcPDG)')
     l_vars = vu.create_aliases_for_selected(
-        list_of_variables= cms_kinematics + vc.kinematics + general_mc_vars + pid_vars
+        list_of_variables= cms_kinematics + vc.kinematics + general_mc_vars + pid_vars + track_variables
         + ['isBremsCorrected','pValue','isCloneTrack','d0_mcPDG','d1_mcPDG','mcSecPhysProc'], 
         decay_string='anti-B0:Dl =norad=> D+:K2pi ^e-:corrected',
         prefix=['ell'])

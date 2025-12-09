@@ -10,6 +10,8 @@ from autogluon.tabular import TabularPredictor
 import uproot
 import pandas as pd
 import argparse
+import utilities as util
+from termcolor import colored
 
 def argparser():
     """
@@ -21,7 +23,7 @@ def argparser():
     parser.add_argument('-p', "--presets",
                         action="store",
                         type=str,
-                        default='good_quality',
+                        default='medium_quality',
                         required=False,
                         choices=['best_quality', 'high_quality','good_quality','medium_quality'],
                         help="Training presets")
@@ -38,16 +40,34 @@ if __name__ == "__main__":
     
     args = argparser().parse_args()
 
-    train_sub = uproot.concatenate([f'AutogluonModels/train.root:B0'],library="np")
-    df_train_sub = pd.DataFrame({k:v for k, v in train_sub.items() if k not in ['index','__weight__']})
+    # define training variables
+    training_variables = util.CS_variables
 
-    # Split the training set to train and validation
-#     train_data = df_train_sub.sample(frac=0.8, random_state=0)
-#     validation_data = df_train_sub.drop(train_data.index)
+    # load data
+    print(colored('Loading data and initializing configrations', 'blue'))
+    MC_4Soffres = uproot.concatenate(['Samples/MC16rd/e_channel/4Soffres_deimos_1/*.root:B0'],
+                          library="np",
+                          filter_branch=lambda branch: branch.name in training_variables)
+
+    data_4Soffres = uproot.concatenate(['Samples/Data/e_channel/proc16_4Soffres_deimos_1.root:B0'],
+                              library="np",
+                              filter_branch=lambda branch: branch.name in training_variables)
+    df_mc_4Soffres = pd.DataFrame(MC_4Soffres)
+    df_data_4Soffres = pd.DataFrame(data_4Soffres)
+
+
+    # define binary label
+    df_data_4Soffres['data'] = 1
+    df_mc_4Soffres['data'] = 0
+    df_all = pd.concat([df_data_4Soffres,df_mc_4Soffres],ignore_index=True)
+    
+    # # train test split
+    # print(colored('Splitting training test samples', 'green'))
+    # train, test = train_test_split(df_all, test_size=0.2, random_state=0, shuffle=True, stratify=df_all['data'])
 
     # Define and fit the AutoGluon classifier
-    ag = TabularPredictor(label='target', eval_metric='f1_macro',sample_weight='balance_weight')
-    predictor = ag.fit(df_train_sub, presets=args.presets, time_limit=args.time_limit,save_bag_folds=True,
-                       infer_limit=0.05, infer_limit_batch_size=10000,
+    ag = TabularPredictor(label='data', eval_metric='f1_macro',sample_weight='balance_weight')
+    predictor = ag.fit(df_all, presets=args.presets, time_limit=args.time_limit,save_bag_folds=True,
+                       infer_limit=0.05, infer_limit_batch_size=10000,)
 #                        hyperparameters={"GBM": ['GBMLarge']},
-                       excluded_model_types=['FASTAI','RF','XT','KNN','CAT','XGB'])
+                       excluded_model_types=['CAT',]) #'FASTAI','RF','XT','KNN','XGB'

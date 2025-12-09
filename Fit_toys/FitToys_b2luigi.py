@@ -87,11 +87,11 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
     
     fit_workspace = b2luigi.Parameter(default='',hashed=True)
     
-    toy_pars = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=True,
-                                     hash_function=join_list_hash_function)
+    # toy_pars = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=True,
+    #                                  hash_function=join_list_hash_function)
     
-    fit_inits = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=False,
-                                      hash_function=join_list_hash_function)
+    # fit_inits = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=False,
+    #                                   hash_function=join_list_hash_function)
     
     n_toys = b2luigi.IntParameter(default=10, significant=False)
 
@@ -112,9 +112,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
                                    pars_toFix = self.pars_toFix, 
                                    part=self.part, binning=self.binning)
         
-        result_dict = toy_tools.generate_fit_toys(toy_pars=self.toy_pars,
-                                                  fit_inits=self.fit_inits, 
-                                                  n_toys=self.n_toys)
+        result_dict = toy_tools.generate_fit_toys(n_toys=self.n_toys)
 
         with open(self.get_output_file_name('toy_part_results.json'), 'w') as f:
             json.dump(result_dict, f, indent=4)
@@ -132,11 +130,11 @@ class pyhf_toy_fitTask(b2luigi.Task):
     
     fit_workspace = b2luigi.Parameter(default='',hashed=True)
     
-    toy_pars = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=False,
-                                     hash_function=join_list_hash_function)
+    # toy_pars = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=False,
+    #                                  hash_function=join_list_hash_function)
     
-    fit_inits = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=False,
-                                      hash_function=join_list_hash_function)
+    # fit_inits = b2luigi.ListParameter(default=[1]*7,hashed=True,significant=False,
+    #                                   hash_function=join_list_hash_function)
     
     n_total_toys = b2luigi.IntParameter(default=1000, significant=False)
     
@@ -155,8 +153,8 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 toy_workspace = self.toy_workspace,
                 fit_workspace = self.fit_workspace,
                 pars_toFix = self.pars_toFix,
-                toy_pars = self.toy_pars,
-                fit_inits = self.fit_inits,
+                # toy_pars = self.toy_pars,
+                # fit_inits = self.fit_inits,
                 part=part,
                 n_toys=self.n_toys_per_job
             )                                   
@@ -165,7 +163,12 @@ class pyhf_toy_fitTask(b2luigi.Task):
             
     def output(self):
         yield self.add_to_output('pulls_toy_results.json')
-        n_plot = len(self.toy_pars)
+        ft = cabinetry.workspace.load(self.fit_workspace)
+        model_fit, _ = cabinetry.model_utils.model_and_data(ft)
+        norm_parameter_names = [par for par in model_fit.config.par_order if par.endswith('_norm')]
+        float_norm_pars = [par not in self.pars_toFix for par in norm_parameter_names]
+        n_plot = len(float_norm_pars)
+        
         for i in range(n_plot):
             yield self.add_to_output(f'toy_fit_pulls_{i}.pdf')
 
@@ -186,12 +189,12 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 continue
 
             # get percent error for each fit
-            percent_error = np.array(merged_dict['toy_results']['percent_error'])[:,poi_index]
+            error_toplot = np.array(merged_dict['toy_results']['error_toplot'])[:,poi_index]
             
             # method 2: toy percent error = std(best_fit)/truth
             fitted = np.array(merged_dict['toy_results']['best_fit'])[:,poi_index]
             truth = np.array(merged_dict['toy_results']['expected_results'])[0,poi_index]
-            toys_percent_error = np.std(fitted) / truth
+            toys_error = np.std(fitted)
             
             # fit pulls with a gaussian
             pulls = np.array(merged_dict['toy_results']['pulls'])[:,poi_index]
@@ -202,19 +205,18 @@ class pyhf_toy_fitTask(b2luigi.Task):
                 'corr': uncertainties.correlation_matrix([mu, sigma]).tolist(),
                 'simple_mean': np.mean(pulls),
                 'simple_std': np.std(pulls),
-                'avg_percent_error': np.mean(percent_error),
-                'toys_percent_error': toys_percent_error
+                'avg_error': np.mean(error_toplot),
+                'toys_error': toys_error
             }
 
             # make plots
             util.toy_utils.plot_toy_gaussian(
                 pulls,
                 mu=mu if abs(sigma.n)<5 else uncertainties.ufloat(0, 0.1),
-                sigma=sigma if abs(sigma.n)<5 else uncertainties.ufloat(1, 0.1),
+                sigma=sigma if 0<abs(sigma.n)<5 else uncertainties.ufloat(1, 0.1),
                 vertical_lines=([0,]), title_info= poi,
                 xlabel='$(\mu-\mu_{in}) /\sigma_{\mu}$' if self.normalize_by_uncertainty else r'$\mu-\mu_{in}$',
-                extra_info=f'''Avg percent error: {percent_error.mean():.3f}
-Toys percent error: {toys_percent_error:.3f}''' if abs(sigma.n)<5 else 'Fit failed',
+                extra_info=f'''Avg error: {error_toplot.mean():.3f} \n Toys error: {toys_error:.3f}''' if 0<abs(sigma.n)<5 else 'Fit failed',
                 file_name=self.get_output_file_name(f'toy_fit_pulls_{nplot}.pdf'),
             )
             nplot+=1
@@ -500,11 +502,11 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
             toy_workspace = self.toy_workspace,
             fit_workspace = self.fit_workspace,
             pars_toFix = self.pars_toFix,
-            toy_pars = [1]*12, # set it to [1]*11 if no gap mode
-            fit_inits = [1]*12, # set it to [1]*11 if no gap mode
-            n_total_toys = 2000,
-            n_toys_per_job = 5,
-            normalize_by_uncertainty = True)
+            # toy_pars = [1]*12, # set it to [1]*11 if no gap mode
+            # fit_inits = [1]*12, # set it to [1]*11 if no gap mode
+            n_total_toys = 1000,
+            n_toys_per_job = 2,
+            normalize_by_uncertainty = False)
         
 #         yield pyhf_linearity_fitTask(
 #             toy_workspace = self.toy_workspace,
@@ -521,16 +523,16 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 if __name__ == '__main__':
     
     b2luigi.process(
-        pyhf_toys_wrapper(toy_workspace='2dws_SR_e_gapDststTau_noerror_sigMC.json',
-                          fit_workspace='2dws_SBFakeD_e_gapDststTau_noerror_sigMC.json',
+        pyhf_toys_wrapper(toy_workspace='2dws_SR_e_MC16rd_fakeD.json',
+                          fit_workspace='2dws_SB_e_MC16rd_fakeD.json',
                           pars_toFix = ['bkg_fakeTracks_norm',
                                         'bkg_TDFl_norm',
-                                        'bkg_fakeD_norm',
+                                        # 'bkg_fakeD_norm',
                                         'bkg_continuum_norm',
                                         'bkg_combinatorial_norm',
                                         'bkg_singleBbkg_norm',
-                                        r'$D^\ast\tau\nu$_norm',
-                                        r'$D^{\ast\ast}\tau\nu$_norm',
+                                        # r'$D^\ast\tau\nu$_norm',
+                                        # r'$D^{\ast\ast}\tau\nu$_norm',
                                           ]),
         workers=int(1e3),
         batch=True,
