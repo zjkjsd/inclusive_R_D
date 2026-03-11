@@ -523,8 +523,8 @@ class pyhf_toys_wrapper(b2luigi.WrapperTask):
 if __name__ == '__main__':
     
     b2luigi.process(
-        pyhf_toys_wrapper(toy_workspace='2dws_SR_e_MC16rd_fakeD.json',
-                          fit_workspace='2dws_SB_e_MC16rd_fakeD.json',
+        pyhf_toys_wrapper(toy_workspace='2dws_SR_e_MC16rd_fakeD_cont.json',
+                          fit_workspace='2dws_SR_e_MC16rd_fakeD_cont.json',
                           pars_toFix = ['bkg_fakeTracks_norm',
                                         'bkg_TDFl_norm',
                                         # 'bkg_fakeD_norm',

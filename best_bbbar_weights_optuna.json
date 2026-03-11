@@ -1,0 +1,15 @@
+{
+  "best_value_sum_reduced_chi2": 6.4567904681137245,
+  "best_weights": {
+    "unmeasured:3-body": 0.9996959174462291,
+    "unmeasured:4-body": 0.4427275085102145,
+    "unmeasured:5-body": 0.015836295420671255,
+    "unmeasured:6-body": 0.058835505942956716,
+    "unmeasured:7-body": 0.02544115720833684
+  },
+  "fixed_weights": {
+    "measured_hadronic": 1,
+    "semileptonic": 1,
+    "unmeasured:2-body": 1
+  }
+}
