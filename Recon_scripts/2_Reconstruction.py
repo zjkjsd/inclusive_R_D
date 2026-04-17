@@ -16,8 +16,15 @@ def argparser():
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('-pdt', "--printMCDecayTree",action="store_true",
+    parser.add_argument('-MCdecay', "--printMCDecayTree",action="store_true",
                         help="print the MC truth decay tree for each event")
+    parser.add_argument('-dtype', "--data_type", default='MC',
+                        choices=['Data', 'MC',],
+                        help="Specify the type of sample to run, Data or MC")
+    parser.add_argument('-E', "--Energy", default='4S',
+                        choices=['4S', '4S_offres',],
+                        help="Specify the collision energy of sample to run, 4S or 4S_offres")
+    
     return parser
 
 
@@ -57,10 +64,6 @@ if __name__ == "__main__":
     stdPhotons.stdPhotons(listtype="cdc", beamBackgroundMVAWeight="MC16rd", fakePhotonMVAWeight="MC16rd", path=main_path)
     ma.cutAndCopyList("gamma:brems", "gamma:cdc", cut="[0.05<clusterE<2.5] and [beamBackgroundSuppression>0.2]", path=main_path)
 
-    # create a MC K_L list for counting K_L in the event
-    ma.fillParticleListFromMC('K_L0:mc', path=main_path)
-    vm.addAlias('nMC_K_L', 'nParticlesInList(K_L0:mc)')
-
     # ---------------------------------------------------------------------------
     # Differential Track Momentum Scale and Energy Loss Corrections & Systematics
     # ---------------------------------------------------------------------------
@@ -71,15 +74,21 @@ if __name__ == "__main__":
     # For more information on this separation see appendix C of BELLE2-NOTE-PH-2023-069 V7.
     
     # !!! Important: There are different payloads to be used for Data and MC, so you need to pick the correct payloads corresponding to the dataset you running over!
-    data_or_mc = "MC" # "MC" or "Data" 
+    data_or_mc = args.data_type # "MC" or "Data" 
     
     payload_name_cosTheta = "tracking_MomentumScaling_Data"
     payload_name_Eloss = "tracking_EnergyLoss_Data"
     
     if data_or_mc == "MC":
-      payload_name_cosTheta = "tracking_MomentumScaling_MC"
-      payload_name_Eloss = "tracking_EnergyLoss_MC"
-    
+        payload_name_cosTheta = "tracking_MomentumScaling_MC"
+        payload_name_Eloss = "tracking_EnergyLoss_MC"
+        
+        # create a MC K_L list for counting K_L in the event
+        ma.fillParticleListFromMC('K_L0:mc', cut='', path=main_path)
+        vm.addAlias('nMC_K_L', 'nParticlesInList(K_L0:mc)')
+
+    print('data_or_mc' ,data_or_mc)
+    print('payload_name_cosTheta', payload_name_cosTheta)
     
     particle_lists = ["pi+:mypi", 'K+:goodk', 'e+:uncorrected', 'mu+:mymu'] #choose your lists
     sf_name = "central"
@@ -96,11 +105,11 @@ if __name__ == "__main__":
     ma.scaleTrackMomenta(inputListNames=particle_lists,
         payloadName=payload_name_cosTheta,
         scalingFactorName=sf_name,
-        path=my_path)
+        path=main_path)
     ma.correctTrackEnergy(inputListNames=particle_lists,
         payloadName=payload_name_Eloss,
         correctionName=sf_name,
-        path=my_path)
+        path=main_path)
     ##
     ## Add aliases for the corrections to store as new variables.
     ## Here the tracks are scaled according to "central" but the variations
@@ -196,15 +205,10 @@ if __name__ == "__main__":
     # --------------------------
     ma.reconstructDecay('B0:De =norad=> D-:K2pi e+:goode ?addbrems', cut='', path=main_path)
     ma.reconstructDecay('B0:Dmu =norad=> D-:K2pi mu+:goodmu ?addbrems', cut='', path=main_path)
-    # wrong charge reconstruction
-    ma.reconstructDecay('B0:wc_De =norad=> D-:K2pi e-:goode ?addbrems',cut='',allowChargeViolation=True,path=main_path)
-    ma.reconstructDecay('B0:wc_Dmu =norad=> D-:K2pi mu-:goodmu ?addbrems',cut='',allowChargeViolation=True,path=main_path)
 
     # treefit
     vx.treeFit('B0:De', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
     vx.treeFit('B0:Dmu', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
-    vx.treeFit('B0:wc_De', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
-    vx.treeFit('B0:wc_Dmu', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
     
     # Get the distance between vertices De/IP and D+
     # vm.addAlias('vtxDDSig', 'vertexDistanceOfDaughterSignificance(0,0)')
@@ -217,8 +221,7 @@ if __name__ == "__main__":
     # Calculate DOCA(D,l)
     ma.calculateDistance('B0:De', 'B0:De -> ^D-:K2pi ^e+:goode', "vertextrack", path=main_path)
     ma.calculateDistance('B0:Dmu', 'B0:Dmu -> ^D-:K2pi ^mu+:goodmu', "vertextrack", path=main_path)
-    ma.calculateDistance('B0:wc_De', 'B0:wc_De -> ^D-:K2pi ^e-:goode', "vertextrack", path=main_path)
-    ma.calculateDistance('B0:wc_Dmu', 'B0:wc_Dmu -> ^D-:K2pi ^mu-:goodmu', "vertextrack", path=main_path)
+    
     vm.addAlias('D_l_DisSig', 'formula( extraInfo(CalculatedDistance) / extraInfo(CalculatedDistanceError) )')
 
     # define the total reChi2 and p_D_l
@@ -227,14 +230,11 @@ if __name__ == "__main__":
 
     ma.applyCuts('B0:De', 'vtxReChi2<14', path=main_path)
     ma.applyCuts('B0:Dmu', 'vtxReChi2<14', path=main_path)
-    ma.applyCuts('B0:wc_De', 'vtxReChi2<14', path=main_path)
-    ma.applyCuts('B0:wc_Dmu', 'vtxReChi2<14', path=main_path)
+    
 
     # MC Truth Matching
     ma.matchMCTruth('B0:De', path=main_path)
     ma.matchMCTruth('B0:Dmu', path=main_path)
-    ma.matchMCTruth('B0:wc_De', path=main_path)
-    ma.matchMCTruth('B0:wc_Dmu', path=main_path)
 
     vm.addAlias('genGMPDG','genMotherPDG(1)')
     vm.addAlias('mcDaughter_0_PDG', 'mcDaughter(0,PDG)')
@@ -265,8 +265,7 @@ if __name__ == "__main__":
 
     ma.buildRestOfEvent('B0:De', fillWithMostLikely=True,path=main_path)
     ma.buildRestOfEvent('B0:Dmu', fillWithMostLikely=True,path=main_path)
-    ma.buildRestOfEvent('B0:wc_De', fillWithMostLikely=True,path=main_path)
-    ma.buildRestOfEvent('B0:wc_Dmu', fillWithMostLikely=True,path=main_path)
+    
 
     loose_track = 'dr<10 and abs(dz)<20 and thetaInCDCAcceptance and E < 5.5' 
     loose_gamma = "0.05< clusterE < 5.5"
@@ -281,25 +280,18 @@ if __name__ == "__main__":
     roe_mask1 = ('my_mask',  loose_track, loose_gamma)
     ma.appendROEMasks('B0:De', [roe_mask1], path=main_path)
     ma.appendROEMasks('B0:Dmu', [roe_mask1], path=main_path)
-    ma.appendROEMasks('B0:wc_De', [roe_mask1], path=main_path)
-    ma.appendROEMasks('B0:wc_Dmu', [roe_mask1], path=main_path)
-
+    
 
     # creates V0 particle lists and uses V0 candidates to update/optimize the Rest Of Event
     ma.updateROEUsingV0Lists('B0:De', mask_names='my_mask', default_cleanup=True, selection_cuts=None,
                              apply_mass_fit=True, fitter='treefit', path=main_path)
     ma.updateROEUsingV0Lists('B0:Dmu', mask_names='my_mask', default_cleanup=True, selection_cuts=None,
                              apply_mass_fit=True, fitter='treefit', path=main_path)
-    ma.updateROEUsingV0Lists('B0:wc_De', mask_names='my_mask', default_cleanup=True, selection_cuts=None,
-                             apply_mass_fit=True, fitter='treefit', path=main_path)
-    ma.updateROEUsingV0Lists('B0:wc_Dmu', mask_names='my_mask', default_cleanup=True, selection_cuts=None,
-                             apply_mass_fit=True, fitter='treefit', path=main_path)
+    
 
     ma.updateROEMask("B0:De","my_mask",tight_track, tight_gamma, path=main_path)
     ma.updateROEMask("B0:Dmu","my_mask",tight_track, tight_gamma, path=main_path)
-    ma.updateROEMask("B0:wc_De","my_mask",tight_track, tight_gamma, path=main_path)
-    ma.updateROEMask("B0:wc_Dmu","my_mask",tight_track, tight_gamma, path=main_path)
-
+    
 
     # ----------
     # ROE vars
@@ -342,10 +334,7 @@ if __name__ == "__main__":
             reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
     vx.TagV('B0:Dmu',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
             reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
-    vx.TagV('B0:wc_De',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
-            reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
-    vx.TagV('B0:wc_Dmu',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
-            reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
+    
     vm.addAlias('TagVReChi2','formula(TagVChi2/TagVNDF)')
     vm.addAlias('TagVReChi2IP','formula(TagVChi2IP/TagVNDF)')
 
@@ -357,19 +346,14 @@ if __name__ == "__main__":
                   [abs(roeCharge(my_mask))<3] and [0<TagVReChi2IP<100]', path=main_path)
     ma.applyCuts('B0:Dmu', '[4<roeMbc(my_mask)] and [-5<roeDeltae(my_mask)<5] and \
                   [abs(roeCharge(my_mask))<3] and [0<TagVReChi2IP<100]', path=main_path)
-    ma.applyCuts('B0:wc_De', '[4<roeMbc(my_mask)] and [-5<roeDeltae(my_mask)<5] and \
-                  [abs(roeCharge(my_mask))<3] and [0<TagVReChi2IP<100]', path=main_path)
-    ma.applyCuts('B0:wc_Dmu', '[4<roeMbc(my_mask)] and [-5<roeDeltae(my_mask)<5] and \
-                  [abs(roeCharge(my_mask))<3] and [0<TagVReChi2IP<100]', path=main_path)
-
+    
 
     # ---------------------
     # Continuum Suppression
     # ---------------------
     ma.buildContinuumSuppression(list_name="B0:De", roe_mask="my_mask", path=main_path)
     ma.buildContinuumSuppression(list_name="B0:Dmu", roe_mask="my_mask", path=main_path)
-    ma.buildContinuumSuppression(list_name="B0:wc_De", roe_mask="my_mask", path=main_path)
-    ma.buildContinuumSuppression(list_name="B0:wc_Dmu", roe_mask="my_mask", path=main_path)
+    
 
     vm.addAlias('KSFWV1','KSFWVariables(et)') #correlates with p_D + p_l
     vm.addAlias('KSFWV2','KSFWVariables(mm2)') #correlates with mm2
@@ -452,7 +436,9 @@ if __name__ == "__main__":
         decay_string='B0:De =norad=> D-:K2pi ^e+:goode',
         prefix=['ell'])
 
-    candidate_e_vars = ['Ecms', 'nPi0','nMC_K_L'] + veto_vars + b_e_vars + D_e_vars + D_daughter_e_vars + e_vars
+    candidate_e_vars = ['Ecms', 'nPi0',] + veto_vars + b_e_vars + D_e_vars + D_daughter_e_vars + e_vars
+    if data_or_mc == "MC":
+        candidate_e_vars.append('nMC_K_L')
 
     ma.variablesToNtuple('B0:De', candidate_e_vars, useFloat=True,
                          filename=output_file, treename='B0_e', path=main_path, basketsize=1_000_000)
@@ -485,81 +471,133 @@ if __name__ == "__main__":
         decay_string='B0:Dmu =norad=> D-:K2pi ^mu+:goodmu',
         prefix=['ell'])
 
-    candidate_mu_vars = ['Ecms', 'nPi0','nMC_K_L'] + veto_vars + b_mu_vars + D_mu_vars + D_daughter_mu_vars + mu_vars
+    candidate_mu_vars = ['Ecms', 'nPi0',] + veto_vars + b_mu_vars + D_mu_vars + D_daughter_mu_vars + mu_vars
+    if data_or_mc == "MC":
+        candidate_mu_vars.append('nMC_K_L')
 
     ma.variablesToNtuple('B0:Dmu', candidate_mu_vars, useFloat=True,
                          filename=output_file, treename='B0_mu', path=main_path, basketsize=1_000_000)
 
-    ########################################### WC electron mode ##########################################
-    b_wc_e_vars = vu.create_aliases_for_selected(
-        list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics + roe_multiplicities
-        + CSVariables + vertex_vars + TVVariables + B_mcDaughters_vars
-        + ['mcErrors','mcPDG','dr','D_l_DisSig','CMS_cos_angle_0_1','recMissM2',
-           'recQ2Bh','recQ2BhSimple','mcMomTransfer2','missingMomentumOfEvent_theta',],
-        decay_string='^B0:wc_De =norad=> D-:K2pi e-:goode',
-        prefix=['B0'])
-
-    D_wc_e_vars = vu.create_aliases_for_selected(
-        list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
-        + vertex_vars + general_mc_vars + Ancestor_info
-        + ['pErr','dM','BFM','A1FflightDistanceSig_IP'],
-        decay_string='B0:wc_De =norad=> ^D-:K2pi e-:goode',
-        prefix=['D'])
-
-    D_daughter_wc_e_vars = vu.create_aliases_for_selected(
-        list_of_variables= pid_vars + ['pionIDNN','kaonIDNN','mcErrors','electronIDNN','muonIDNN'],
-        decay_string='B0:wc_De =norad=> [D-:K2pi -> ^K+:myk ^pi-:mypi ^pi-:mypi] e-:goode',
-        prefix=['K', 'pi1', 'pi2'])
-
-    uncorrected_e_pid = []
-    for variable in ['electronIDNN']+pid_vars:
-        vm.addAlias(f'BFbrems_{variable}', f'daughter(0, {variable})')
-        uncorrected_e_pid.append(f'BFbrems_{variable}')
+    
+    ########################################### wrong charge reconstruction ##########################################
+    if args.Energy=='4S':
         
-    wc_e_vars = vu.create_aliases_for_selected(
-        list_of_variables= cms_kinematics + vc.kinematics + general_mc_vars + uncorrected_e_pid + Ancestor_info
-        #+ track_variables
-        + ['isBremsCorrected','pValue','isCloneTrack','mcSecPhysProc'], 
-        decay_string='B0:wc_De =norad=> D-:K2pi ^e-:goode',
-        prefix=['ell'])
-
-    candidate_wc_e_vars = ['Ecms', 'nPi0','nMC_K_L'] + veto_vars + b_wc_e_vars + D_wc_e_vars + D_daughter_wc_e_vars + wc_e_vars
-
-    ma.variablesToNtuple('B0:wc_De', candidate_wc_e_vars, useFloat=True,
-                         filename=output_file, treename='B0_wc_e', path=main_path, basketsize=1_000_000)
-
-    ########################################### WC muon mode ##########################################
-    b_wc_mu_vars = vu.create_aliases_for_selected(
-        list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics + roe_multiplicities
-        + CSVariables + vertex_vars + TVVariables + B_mcDaughters_vars
-        + ['mcErrors','mcPDG','dr','D_l_DisSig','CMS_cos_angle_0_1','recMissM2',
-           'recQ2Bh','recQ2BhSimple','mcMomTransfer2','missingMomentumOfEvent_theta',],
-        decay_string='^B0:wc_Dmu =norad=> D-:K2pi mu-:goodmu',
-        prefix=['B0'])
-
-    D_wc_mu_vars = vu.create_aliases_for_selected(
-        list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
-        + vertex_vars + general_mc_vars + Ancestor_info
-        + ['pErr','dM','BFM','A1FflightDistanceSig_IP'],
-        decay_string='B0:wc_Dmu =norad=> ^D-:K2pi mu-:goodmu',
-        prefix=['D'])
-
-    D_daughter_wc_mu_vars = vu.create_aliases_for_selected(
-        list_of_variables= pid_vars + ['pionIDNN','kaonIDNN','mcErrors','electronIDNN','muonIDNN'],
-        decay_string='B0:wc_Dmu =norad=> [D-:K2pi -> ^K+:myk ^pi-:mypi ^pi-:mypi] mu-:goodmu',
-        prefix=['K', 'pi1', 'pi2'])
+        ma.reconstructDecay('B0:wc_De =norad=> D-:K2pi e-:goode ?addbrems',cut='',allowChargeViolation=True,path=main_path)
+        ma.reconstructDecay('B0:wc_Dmu =norad=> D-:K2pi mu-:goodmu ?addbrems',cut='',allowChargeViolation=True,path=main_path)
         
-    wc_mu_vars = vu.create_aliases_for_selected(
-        list_of_variables= cms_kinematics + vc.kinematics + general_mc_vars + Ancestor_info + pid_vars
-        #+ track_variables
-        + ['pValue','isCloneTrack','mcSecPhysProc', 'muonIDNN'], 
-        decay_string='B0:wc_Dmu =norad=> D-:K2pi ^mu-:goodmu',
-        prefix=['ell'])
-
-    candidate_wc_mu_vars = ['Ecms', 'nPi0','nMC_K_L'] + veto_vars + b_wc_mu_vars + D_wc_mu_vars + D_daughter_wc_mu_vars + wc_mu_vars
-
-    ma.variablesToNtuple('B0:wc_Dmu', candidate_wc_mu_vars, useFloat=True,
-                         filename=output_file, treename='B0_wc_mu', path=main_path, basketsize=1_000_000)
+        vx.treeFit('B0:wc_De', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
+        vx.treeFit('B0:wc_Dmu', conf_level=0, updateAllDaughters=False, massConstraint=[], ipConstraint=True, path=main_path)
+    
+        ma.calculateDistance('B0:wc_De', 'B0:wc_De -> ^D-:K2pi ^e-:goode', "vertextrack", path=main_path)
+        ma.calculateDistance('B0:wc_Dmu', 'B0:wc_Dmu -> ^D-:K2pi ^mu-:goodmu', "vertextrack", path=main_path)
+    
+        ma.applyCuts('B0:wc_De', 'vtxReChi2<14', path=main_path)
+        ma.applyCuts('B0:wc_Dmu', 'vtxReChi2<14', path=main_path)
+    
+        ma.matchMCTruth('B0:wc_De', path=main_path)
+        ma.matchMCTruth('B0:wc_Dmu', path=main_path)
+    
+        ma.buildRestOfEvent('B0:wc_De', fillWithMostLikely=True,path=main_path)
+        ma.buildRestOfEvent('B0:wc_Dmu', fillWithMostLikely=True,path=main_path)
+    
+        ma.appendROEMasks('B0:wc_De', [roe_mask1], path=main_path)
+        ma.appendROEMasks('B0:wc_Dmu', [roe_mask1], path=main_path)
+    
+        ma.updateROEUsingV0Lists('B0:wc_De', mask_names='my_mask', default_cleanup=True, selection_cuts=None,
+                                 apply_mass_fit=True, fitter='treefit', path=main_path)
+        ma.updateROEUsingV0Lists('B0:wc_Dmu', mask_names='my_mask', default_cleanup=True, selection_cuts=None,
+                                 apply_mass_fit=True, fitter='treefit', path=main_path)
+    
+        ma.updateROEMask("B0:wc_De","my_mask",tight_track, tight_gamma, path=main_path)
+        ma.updateROEMask("B0:wc_Dmu","my_mask",tight_track, tight_gamma, path=main_path)
+    
+        vx.TagV('B0:wc_De',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
+                reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
+        vx.TagV('B0:wc_Dmu',confidenceLevel=0.0,trackFindingType='standard_PXD',MCassociation='breco',constraintType='tube', 
+                reqPXDHits=0, maskName='my_mask', fitAlgorithm='KFit', kFitReqReducedChi2=5.0, path=main_path)
+    
+        ma.applyCuts('B0:wc_De', '[4<roeMbc(my_mask)] and [-5<roeDeltae(my_mask)<5] and \
+                      [abs(roeCharge(my_mask))<3] and [0<TagVReChi2IP<100]', path=main_path)
+        ma.applyCuts('B0:wc_Dmu', '[4<roeMbc(my_mask)] and [-5<roeDeltae(my_mask)<5] and \
+                      [abs(roeCharge(my_mask))<3] and [0<TagVReChi2IP<100]', path=main_path)
+    
+        ma.buildContinuumSuppression(list_name="B0:wc_De", roe_mask="my_mask", path=main_path)
+        ma.buildContinuumSuppression(list_name="B0:wc_Dmu", roe_mask="my_mask", path=main_path)
+        
+        ########################################### WC electron mode ##########################################
+        b_wc_e_vars = vu.create_aliases_for_selected(
+            list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics + roe_multiplicities
+            + CSVariables + vertex_vars + TVVariables + B_mcDaughters_vars
+            + ['mcErrors','mcPDG','dr','D_l_DisSig','CMS_cos_angle_0_1','recMissM2',
+               'recQ2Bh','recQ2BhSimple','mcMomTransfer2','missingMomentumOfEvent_theta',],
+            decay_string='^B0:wc_De =norad=> D-:K2pi e-:goode',
+            prefix=['B0'])
+    
+        D_wc_e_vars = vu.create_aliases_for_selected(
+            list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
+            + vertex_vars + general_mc_vars + Ancestor_info
+            + ['pErr','dM','BFM','A1FflightDistanceSig_IP'],
+            decay_string='B0:wc_De =norad=> ^D-:K2pi e-:goode',
+            prefix=['D'])
+    
+        D_daughter_wc_e_vars = vu.create_aliases_for_selected(
+            list_of_variables= pid_vars + ['pionIDNN','kaonIDNN','mcErrors','electronIDNN','muonIDNN'],
+            decay_string='B0:wc_De =norad=> [D-:K2pi -> ^K+:myk ^pi-:mypi ^pi-:mypi] e-:goode',
+            prefix=['K', 'pi1', 'pi2'])
+    
+        uncorrected_e_pid = []
+        for variable in ['electronIDNN']+pid_vars:
+            vm.addAlias(f'BFbrems_{variable}', f'daughter(0, {variable})')
+            uncorrected_e_pid.append(f'BFbrems_{variable}')
+            
+        wc_e_vars = vu.create_aliases_for_selected(
+            list_of_variables= cms_kinematics + vc.kinematics + general_mc_vars + uncorrected_e_pid + Ancestor_info
+            #+ track_variables
+            + ['isBremsCorrected','pValue','isCloneTrack','mcSecPhysProc'], 
+            decay_string='B0:wc_De =norad=> D-:K2pi ^e-:goode',
+            prefix=['ell'])
+    
+        candidate_wc_e_vars = ['Ecms', 'nPi0',] + veto_vars + b_wc_e_vars + D_wc_e_vars + D_daughter_wc_e_vars + wc_e_vars
+        if data_or_mc == "MC":
+            candidate_wc_e_vars.append('nMC_K_L')
+    
+        ma.variablesToNtuple('B0:wc_De', candidate_wc_e_vars, useFloat=True,
+                             filename=output_file, treename='B0_wc_e', path=main_path, basketsize=1_000_000)
+    
+        ########################################### WC muon mode ##########################################
+        b_wc_mu_vars = vu.create_aliases_for_selected(
+            list_of_variables= vc.deltae_mbc + roe_Mbc_Deltae + roe_E_Q + roe_cms_kinematics + roe_multiplicities
+            + CSVariables + vertex_vars + TVVariables + B_mcDaughters_vars
+            + ['mcErrors','mcPDG','dr','D_l_DisSig','CMS_cos_angle_0_1','recMissM2',
+               'recQ2Bh','recQ2BhSimple','mcMomTransfer2','missingMomentumOfEvent_theta',],
+            decay_string='^B0:wc_Dmu =norad=> D-:K2pi mu-:goodmu',
+            prefix=['B0'])
+    
+        D_wc_mu_vars = vu.create_aliases_for_selected(
+            list_of_variables= cms_kinematics + vc.kinematics + vc.dalitz_3body + vc.inv_mass 
+            + vertex_vars + general_mc_vars + Ancestor_info
+            + ['pErr','dM','BFM','A1FflightDistanceSig_IP'],
+            decay_string='B0:wc_Dmu =norad=> ^D-:K2pi mu-:goodmu',
+            prefix=['D'])
+    
+        D_daughter_wc_mu_vars = vu.create_aliases_for_selected(
+            list_of_variables= pid_vars + ['pionIDNN','kaonIDNN','mcErrors','electronIDNN','muonIDNN'],
+            decay_string='B0:wc_Dmu =norad=> [D-:K2pi -> ^K+:myk ^pi-:mypi ^pi-:mypi] mu-:goodmu',
+            prefix=['K', 'pi1', 'pi2'])
+            
+        wc_mu_vars = vu.create_aliases_for_selected(
+            list_of_variables= cms_kinematics + vc.kinematics + general_mc_vars + Ancestor_info + pid_vars
+            #+ track_variables
+            + ['pValue','isCloneTrack','mcSecPhysProc', 'muonIDNN'], 
+            decay_string='B0:wc_Dmu =norad=> D-:K2pi ^mu-:goodmu',
+            prefix=['ell'])
+    
+        candidate_wc_mu_vars = ['Ecms', 'nPi0',] + veto_vars + b_wc_mu_vars + D_wc_mu_vars + D_daughter_wc_mu_vars + wc_mu_vars
+        if data_or_mc == "MC":
+            candidate_wc_mu_vars.append('nMC_K_L')
+    
+        ma.variablesToNtuple('B0:wc_Dmu', candidate_wc_mu_vars, useFloat=True,
+                             filename=output_file, treename='B0_wc_mu', path=main_path, basketsize=1_000_000)
     
 
     b2.process(path=main_path)

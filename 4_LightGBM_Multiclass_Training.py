@@ -47,40 +47,26 @@ if __name__ == "__main__":
 
     # define training variables
     training_variables = util.training_variables
-    relevant_vars = training_variables + ['target', 'Ecms','B0_CMS_roeP_my_mask', 'B0_dr']
-    cut = '(B0_roeMbc_my_mask>5) & (-4<B0_roeDeltae_my_mask) & (B0_roeDeltae_my_mask<1) & (B0_dr<0.1)'
+    relevant_vars = training_variables + ['target','training_weight', 'Ecms','B0_CMS_roeP_my_mask', 'B0_dr']
+    cut = util.offline_cut
 
     # load data
     print(colored('Loading data and initializing configrations', 'blue'))
-    sig_mc15ri = uproot.concatenate(['AutogluonModels/train.root:B0'],cut='target==0',library="np",
+    all_classes = uproot.concatenate(['Samples/BDT_training_sample.root:all_classes'],library="np",
                                        filter_branch=lambda branch: branch.name in relevant_vars)
-    df_sig = pd.DataFrame(sig_mc15ri)
-    df_sig['weight']=6
+    df_all_classes = pd.DataFrame(all_classes)
 
-    fakes_mc16rd = uproot.concatenate(['BDTs/train_fakes.root:B0'],library="np",
-                                        filter_branch=lambda branch: branch.name in relevant_vars)
-    df_fakes = pd.DataFrame(fakes_mc16rd)
-    df_fakes['weight']=1
-
-    data_4Soffres = uproot.concatenate(['Samples/Data/e_channel/proc16_4Soffres_deimos_1.root:B0'],
-                          library="np",cut = cut,filter_branch=lambda branch: branch.name in relevant_vars)
-    df_continuum = pd.DataFrame(data_4Soffres).drop('B0_roeMbc_my_mask', axis=1) 
-    df_continuum.eval('B0_roeMbc_my_mask = ( (10.58/2)**2 - (B0_CMS_roeP_my_mask*10.58/Ecms)**2 )**0.5', inplace=True)
-    df_continuum['weight']=2
-    df_continuum['target']=3
-
-    df_train = pd.concat([df_sig, df_fakes, df_continuum])
-    print(colored(df_train[['target','weight']].value_counts(), 'green'))
+    print(colored(df_all_classes[['target','training_weight']].value_counts(), 'green'))
     
     # train test split
     print(colored('Splitting training test samples', 'blue'))
-    train_set = df_train.sample(frac=0.8, random_state=0)
-    validation_set = df_train.drop(train_set.index)
+    train_set = df_all_classes.sample(frac=0.8, random_state=0)
+    validation_set = df_all_classes.drop(train_set.index)
 
     lgb_train = lgb.Dataset(data=train_set[training_variables], label=train_set['target'],
-                            weight=train_set['weight'],free_raw_data=False)
+                            weight=train_set['training_weight'],free_raw_data=False)
     lgb_eval = lgb_train.create_valid(data=validation_set[training_variables], label=validation_set['target'],
-                            weight=validation_set['weight'])
+                            weight=validation_set['training_weight'])
 
     params = {'boosting_type': 'gbdt',
               'objective': args.objective,
@@ -146,7 +132,7 @@ if __name__ == "__main__":
         for metric in params['metric']:
             eval_result1[valid_set][metric] += eval_result2[valid_set][metric]
             
-    with open('BDTs/LightGBM/eval_result.json', "w") as f:
+    with open('BDTs/LightGBM/eval_result_v2.json', "w") as f:
         json.dump(eval_result1, f)
 
     ax0 = lgb.plot_metric(eval_result1, params['metric'][0], figsize=(8,6))

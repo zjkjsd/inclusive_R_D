@@ -4,20 +4,26 @@
 
 spectators = ['__weight__', 'D_CMS_p', 'ell_CMS_p', ]
 
-CS_variables = ["B0_R2",       "B0_thrustOm",   "B0_cosTBTO",    "B0_cosTBz",
-                "B0_KSFWV3",   "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
-                "B0_KSFWV7",   "B0_KSFWV8",     "B0_KSFWV9",     "B0_KSFWV10",
-                "B0_KSFWV13",  "B0_KSFWV14",    "B0_KSFWV15",    "B0_KSFWV16",
-                "B0_KSFWV17",  "B0_KSFWV18",]   
-#                 "B0_thrustBm", "B0_KSFWV1",     "B0_KSFWV2",     "B0_KSFWV11", 
-#                 "B0_KSFWV12" correlates with mm2 or p_D_l
+CS_variables = ["B0_cosTBTO",    "B0_KSFWV3",    "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
+                "B0_KSFWV7",     "B0_KSFWV9",    "B0_KSFWV10",    "B0_KSFWV13",    "B0_KSFWV17",]   
+                # "B0_thrustBm", "B0_KSFWV1", "B0_KSFWV2", "B0_KSFWV11", "B0_KSFWV12" correlates with mm2 or p_D_l
+                # "B0_R2", "B0_thrustOm","B0_cosTBz","B0_KSFWV8","B0_KSFWV14","B0_KSFWV15","B0_KSFWV16","B0_KSFWV18", data/mc mismodeling
 
-DTC_variables = ['D_vtxReChi2',                'D_A1FflightDistanceSig_IP',
-                 'D_daughterInvM_1_2',         'D_daughterInvM_0_1',]
+DTC_variables = ['D_A1FflightDistanceSig_IP',   'D_daughterInvM_1_2',  'D_daughterInvM_0_1',] # 'D_vtxReChi2', data/mc mismodeling
 
-B_variables = ['B0_vtxReChi2',               'B0_TagVReChi2IP',   
-               'B0_CMS_cos_angle_0_1',       'B0_D_l_DisSig',
-               'B0_roeMbc_my_mask',          'B0_roeDeltae_my_mask',]
+B_variables = ['B0_CMS_cos_angle_0_1', 'B0_D_l_DisSig', 'B0_roeMbc_my_mask', 'B0_roeDeltae_my_mask',]
+                # 'B0_vtxReChi2',  'B0_TagVReChi2IP',  data/mc mismodeling
+
+# CS_variables = ["B0_cosTBTO",    "B0_KSFWV3",    "B0_KSFWV4",     "B0_KSFWV5",     "B0_KSFWV6",
+#                 "B0_KSFWV7",     "B0_KSFWV9",    "B0_KSFWV10",    "B0_KSFWV13",    "B0_KSFWV17",
+#                "B0_R2", "B0_thrustOm","B0_cosTBz","B0_KSFWV8","B0_KSFWV14","B0_KSFWV15","B0_KSFWV16","B0_KSFWV18",]   
+#                 # "B0_thrustBm", "B0_KSFWV1", "B0_KSFWV2", "B0_KSFWV11", "B0_KSFWV12" correlates with mm2 or p_D_l
+#                 # "B0_R2", "B0_thrustOm","B0_cosTBz","B0_KSFWV8","B0_KSFWV14","B0_KSFWV15","B0_KSFWV16","B0_KSFWV18", data/mc mismodeling
+
+# DTC_variables = ['D_A1FflightDistanceSig_IP',   'D_daughterInvM_1_2',  'D_daughterInvM_0_1', 'D_vtxReChi2'] #, data/mc mismodeling
+
+# B_variables = ['B0_CMS_cos_angle_0_1', 'B0_D_l_DisSig', 'B0_roeMbc_my_mask', 'B0_roeDeltae_my_mask', 'B0_vtxReChi2',  'B0_TagVReChi2IP',]
+#                 # 'B0_vtxReChi2',  'B0_TagVReChi2IP',  data/mc mismodeling
 
 training_variables = CS_variables + DTC_variables + B_variables
 mva_variables = training_variables + spectators
@@ -27,22 +33,25 @@ analysis_variables=['__experiment__',     '__run__',       '__event__',      '__
                     'B0_mcDaughter_1_PDG','B0_deltaE',     'B0_Mbc',          'B0_dr',
                     
                     'D_mcErrors',         'D_genGMPDG',    'D_genMotherPDG', 'D_mcPDG',
-                    'D_BFM',              'D_M',           'D_p',            
+                    'D_BFM',              'D_M',           'D_p',            'D_vtxReChi2',
                     'D_K_mcErrors',       'D_pi1_mcErrors','D_pi2_mcErrors', 'D_K_charge',
                     'D_K_cosTheta',       'D_K_p',         'D_K_PDG',        'D_K_mcPDG',
                     
                     'ell_genMotherPDG',   'ell_pValue',    'ell_mcErrors',   'ell_genGMPDG',    'ell_BFbrems_electronIDNN',
                     'ell_BFbrems_p',      'ell_BFbrems_cosTheta',            'ell_BFbrems_theta', 'ell_BFbrems_charge',     
                     'ell_BFbrems_PDG',    'ell_BFbrems_mcPDG',               'ell_mcSecPhysProc',
+
+                    'ell_p',      'ell_cosTheta',            'ell_theta', 'ell_charge',     
+                    'ell_PDG',    'ell_mcPDG',
                     
                     'mode',               'Ecms',          'p_D_l',          'B_D_ReChi2', 'B0_D_ReChi2',
                     'sig_prob',           'fakeD_prob',    'fakeB_prob',     'continuum_prob',
                     'combinatorial_prob', 'nPi0',          'pi0_p',          'pi0_cosTheta',
                     
-                    'B0_recQ2Bh',     'B0_recQ2BhSimple',     'B0_mcMomTransfer2',
+                    'B0_recQ2Bh',         'B0_recQ2BhSimple',                       'B0_mcMomTransfer2',  
                     'B0_recMissM2',       'B0_missingMomentumOfEvent_theta',        'B0_CMS_roeP_my_mask',
                     'B0_roeEextra_my_mask',   'B0_roeCharge_my_mask',               'B0_CMS_roeE_my_mask',
-                    'B0_nROE_Tracks_my_mask',]
+                    'B0_nROE_Tracks_my_mask',  'nMC_K_L',           'B0_vtxReChi2',]
 #                  'D_K_kaonIDNN',        'D_K_pionIDNN',  'D_pi2_kaonIDNN', 'D_pi2_pionIDNN',
 #                  'D_pi1_kaonIDNN',      'D_pi1_pionIDNN',]
 #                'B0_nROE_Tracks_my_mask',  'B0_nROE_Photons_my_mask',  'B0_nROE_NeutralHadrons_my_mask',
@@ -60,17 +69,21 @@ veto_vars = ['DstVeto_massDiff_0']
 
 all_relevant_variables = mva_variables + analysis_variables + combinatorial_vars + veto_vars
 
-DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_TDFl':2,
+DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_fakeL':2,
                  'bkg_continuum':3,          'bkg_combinatorial':4,   'bkg_hadronicB_secondaryL':5,
                  'bkg_other_TDTl':6,         'bkg_other_signal':7,
                  r'$D\tau\nu$':8,            r'$D^\ast\tau\nu$':9,    r'$D\ell\nu$':10,
                  r'$D^\ast\ell\nu$':11,                r'$D^{\ast\ast}\tau\nu$':12,
                  r'$D^{\ast\ast}\ell\nu$_narrow':13,   r'$D^{\ast\ast}\ell\nu$_broad':14,
-                 r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16}
+                 r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16,     r'$D\ell\nu$_gap':17}
 
 lgb_tight = 'sig_prob>0.6 and fakeD_prob<0.06 and continuum_prob<0.05 and combinatorial_prob<0.2'
 lgb_loose = 'sig_prob>0.6 and fakeD_prob<0.5 and continuum_prob<0.5 and combinatorial_prob<0.5'
 lgb_comb = 'fakeD_prob<0.1 and continuum_prob<0.1 and combinatorial_prob>0.7'
+
+offline_cut = '(5<B0_roeMbc_my_mask) & (-4<B0_roeDeltae_my_mask) & (B0_roeDeltae_my_mask<1) & (B0_dr<0.1) & (ell_p<4)'
+
+Dst_veto_cut = '( (DstVeto_massDiff_0<0.135) | (0.145<DstVeto_massDiff_0) )'
 
 
 ############################## define relevant constants ########################
@@ -282,12 +295,59 @@ def apply_eventByEvent_weight(df, weight_array, weight_col):
     print(f"Warning: column '{weight_col}' not found; skipping event by event weighting")
     return weight_array
 
+def apply_pi0_eff_correction(df, corr_table, corr_col_name='pi0_eff_weight'):
+
+    df = df.copy()
+    table = pd.read_csv(corr_table)
+
+    # --- Create bin labels ---
+    table['p_bin'] = list(zip(table['p_min'], table['p_max']))
+    table['cos_bin'] = list(zip(table['cosTheta_min'], table['cosTheta_max']))
+
+    # --- Build bin edges ---
+    p_bins = sorted(set(table['p_min']).union(table['p_max']))
+    cos_bins = sorted(set(table['cosTheta_min']).union(table['cosTheta_max']))
+
+    # --- Assign bins to df ---
+    df['p_bin'] = pd.cut(df['pi0_p'], bins=p_bins, right=False)
+    df['cos_bin'] = pd.cut(df['pi0_cosTheta'], bins=cos_bins, right=False)
+
+    # --- Convert intervals to tuple form for matching ---
+    table['p_bin'] = pd.IntervalIndex.from_arrays(
+        table['p_min'], table['p_max'], closed='left'
+    )
+    table['cos_bin'] = pd.IntervalIndex.from_arrays(
+        table['cosTheta_min'], table['cosTheta_max'], closed='left'
+    )
+
+    # --- Merge ---
+    merged = df.merge(
+        table[['p_bin', 'cos_bin', 'data_MC_ratio', 'data_MC_ratio_err']],
+        on=['p_bin', 'cos_bin'],
+        how='left'
+    )
+
+    # --- Rename output columns ---
+    merged = merged.rename(columns={
+        'data_MC_ratio': corr_col_name,
+        'data_MC_ratio_err': corr_col_name+'_err'
+    })
+    
+    mask_missing = merged[corr_col_name].isna()
+    print(merged.loc[mask_missing, ['pi0_p', 'pi0_cosTheta']].describe())
+    merged[corr_col_name] = merged[corr_col_name].fillna(1)
+    merged[corr_col_name+'_err'] = merged[corr_col_name+'_err'].fillna(0)
+
+    return merged
+
+
 
 ################################ dataframe samples ###########################
 import numpy as np
 import pandas as pd
 from autogluon.tabular import TabularPredictor
 import lightgbm as lgb
+import matplotlib.pyplot as plt
 
 def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='vtx',importance=False):
     # load model
@@ -306,7 +366,7 @@ def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='
         elif library=='lgbm':
             if model == 'multiclass':
                 predictor = lgb.Booster(model_file='/home/belle/zhangboy/inclusive_R_D/BDTs/LightGBM/lgbm_multiclass_v1.txt')
-                pred_array = predictor.predict(df[features], num_iteration=20)
+                pred_array = predictor.predict(df[features], num_iteration=20) # predictor.best_iteration
                 pred = pd.DataFrame(pred_array, columns=['sig_prob','fakeD_prob',
                                                          'combinatorial_prob','continuum_prob'])
                 # combine the predict result
@@ -320,9 +380,16 @@ def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='
                 df_pred = pd.concat([df, pred], axis=1)
         
             if importance: # feature importances
-                lgb.plot_importance(predictor, figsize=(18,20))
+                # Plotting top 10 features based on 'gain'
+                lgb.plot_importance(predictor, importance_type='gain', max_num_features=20, figsize=(18,20))
+                plt.title("LightGBM Feature Importance (Gain)")
+                plt.show()
+                
+                # Plotting top 10 features based on 'split'
+                lgb.plot_importance(predictor, importance_type='split', max_num_features=20, figsize=(18,20))
+                plt.title("LightGBM Feature Importance (Split)")
+                plt.show()
         
-
         # apply the MVA cut and BCS
         df_cut=df_pred.query(cut)
         
@@ -335,6 +402,14 @@ def apply_mva_bcs(df, features, cut, library='lgbm', version='',model=None,bcs='
         df_bestSelected=df_cut.loc[df_cut.groupby(['__experiment__','__run__','__event__','__production__'])['sig_prob'].idxmax()]
     else:
         df_bestSelected = df_cut
+
+    # check if best selected
+    cols = ['__experiment__','__run__','__event__','__production__']
+    is_unique = not df_bestSelected.duplicated(subset=cols).any()
+    print('Is best selected', is_unique)
+
+    # rename column names
+    df_bestSelected = df_bestSelected.rename(columns={"__experiment__": "experiment", '__run__': 'run','__event__': 'event', '__production__': 'production'})
     
     return df_bestSelected
 
@@ -345,12 +420,18 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     
     ################## Define D and lepton #################
     trueD = 'D_mcErrors==0'
-    truel = f'abs(ell_mcPDG)=={lepton_PDG[mode]}'
-    
     fakeD = '0<D_mcErrors<512'
-    fakel = f'abs(ell_mcPDG)!={lepton_PDG[mode]}'
+
+    
+    if mode == 'e':
+        truel = f'abs(ell_BFbrems_mcPDG)==11'
+        fakel = f'abs(ell_BFbrems_mcPDG)!=11'
+    elif mode == 'mu':
+        truel = f'abs(ell_mcPDG)==13'
+        fakel = f'abs(ell_mcPDG)!=13'
     
     fakeTracks = 'D_mcErrors==512'
+    
     
     ################# Define B ####################
     
@@ -384,7 +465,7 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     # Fake background components:
     samples.update({
         'bkg_fakeD': df.query(fakeD).copy(),
-        'bkg_TDFl':  df.query(TDFl).copy(),
+        'bkg_fakeL':  df.query(TDFl).copy(),
         'bkg_fakeTracks': df.query(fakeTracks).copy(),
     })
     
@@ -436,8 +517,9 @@ def classify_mc_dict(df, mode, template=True) -> dict:
         r'$D^{\ast\ast}\tau\nu$': Dstst_tau_nu,
         r'$D^{\ast\ast}\ell\nu$_narrow': Dstst_l_nu_narrow,
         r'$D^{\ast\ast}\ell\nu$_broad': Dstst_l_nu_broad,
-        r'$D\ell\nu$_gap_pi': D_l_nu_gap_pi,
-        r'$D\ell\nu$_gap_eta': D_l_nu_gap_eta,
+        # r'$D\ell\nu$_gap_pi': D_l_nu_gap_pi,
+        # r'$D\ell\nu$_gap_eta': D_l_nu_gap_eta,
+        r'$D\ell\nu$_gap': pd.concat([D_l_nu_gap_pi, D_l_nu_gap_eta], ignore_index=True),
         'bkg_other_signal': bkg_other_signal,
     })
     
@@ -734,6 +816,24 @@ def classify_measured_modes(df, base='D',corr_col_name='BF_corr_w_D'):
     return dfs_by_category
 
 
+def classify_mc_KL(df):
+    df['pie_category'] = np.where(df['nMC_K_L']<=2, 'nMC_KL:'+df['nMC_K_L'].astype(str), 'nMC_KL:2+' )
+    dfs_by_nKL = dict(tuple(df.groupby('pie_category')))
+
+    # Compute weighted yields per category
+    yields = df.groupby('pie_category', dropna=False)['nMC_K_L'].count().sort_values(ascending=False)
+    print(yields)
+
+    # plot pie chart
+    fig, ax = plt.subplots(figsize=(7, 7))
+    wedges, texts, autotexts = ax.pie( yields.to_numpy(), labels=yields.index.to_list(), autopct="%1.1f%%", startangle=90, )
+    ax.set_title(f"Number of $K_L^0$ in MC")
+    ax.axis("equal")  # make it a circle
+    plt.tight_layout()
+    plt.show()
+
+    return dfs_by_nKL
+
 
 # Function to check for duplicate entries in a dictionary of Pandas DataFrames
 def check_duplicate_entries(data_dict):
@@ -922,8 +1022,7 @@ def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
                      apply_eventByEvent_correction=False, eventByEvent_weight_col=None,
                      sample_to_exclude=['bkg_fakeTracks','bkg_other_TDTl','bkg_other_signal'],
                      sample_weights={r'$D^{\ast\ast}\ell\nu$_broad':1,
-                                     r'$D\ell\nu$_gap_pi':1, 
-                                     r'$D\ell\nu$_gap_eta':1}):
+                                     r'$D\ell\nu$_gap':1,}):
 
 
     #################### Create template 2d histograms with uncertainties for signal channel ################
@@ -970,12 +1069,12 @@ def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
                 histograms_sr[r'$D^{\ast\ast}\ell\nu$'] += unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
             else:
                 histograms_sr[r'$D^{\ast\ast}\ell\nu$'] = unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
-        elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
-            # merge the 2 Dellnu gap modes
-            if r'$D\ell\nu$_gap' in histograms_sr:
-                histograms_sr[r'$D\ell\nu$_gap'] += unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
-            else:
-                histograms_sr[r'$D\ell\nu$_gap'] = unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
+        # elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
+        #     # merge the 2 Dellnu gap modes
+        #     if r'$D\ell\nu$_gap' in histograms_sr:
+        #         histograms_sr[r'$D\ell\nu$_gap'] += unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
+        #     else:
+        #         histograms_sr[r'$D\ell\nu$_gap'] = unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
         else:
             # store other modes individually
             histograms_sr[name] = unp.uarray(counts_sr, poisson_error(staterr_squared_sr))
@@ -987,7 +1086,7 @@ def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
 
     # remove sample name if no events
     histograms_sr = {name:hist for name,hist in histograms_sr.items() if np.sum(hist)!=0}
-    if sample_weights[r'$D\ell\nu$_gap_pi']==0 and sample_weights[r'$D\ell\nu$_gap_eta']==0:
+    if sample_weights[r'$D\ell\nu$_gap']==0:
         if r'$D^{\ast\ast}\ell\nu$' in histograms_sr:
             histograms_sr[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms_sr.pop(r'$D^{\ast\ast}\ell\nu$')
 
@@ -1038,12 +1137,12 @@ def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
                 histograms_sb[r'$D^{\ast\ast}\ell\nu$'] += unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
             else:
                 histograms_sb[r'$D^{\ast\ast}\ell\nu$'] = unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
-        elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
-            # merge the 2 Dellnu gap modes
-            if r'$D\ell\nu$_gap' in histograms_sb:
-                histograms_sb[r'$D\ell\nu$_gap'] += unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
-            else:
-                histograms_sb[r'$D\ell\nu$_gap'] = unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
+        # elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
+        #     # merge the 2 Dellnu gap modes
+        #     if r'$D\ell\nu$_gap' in histograms_sb:
+        #         histograms_sb[r'$D\ell\nu$_gap'] += unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
+        #     else:
+        #         histograms_sb[r'$D\ell\nu$_gap'] = unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
         else:
             # store other modes individually
             histograms_sb[name] = unp.uarray(counts_sb, poisson_error(staterr_squared_sb))
@@ -1055,7 +1154,7 @@ def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
 
     # remove sample name if no events
     histograms_sb = {name:hist for name,hist in histograms_sb.items() if np.sum(hist)!=0}
-    if sample_weights[r'$D\ell\nu$_gap_pi']==0 and sample_weights[r'$D\ell\nu$_gap_eta']==0:
+    if sample_weights[r'$D\ell\nu$_gap']==0:
         if r'$D^{\ast\ast}\ell\nu$' in histograms_sb:
             histograms_sb[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms_sb.pop(r'$D^{\ast\ast}\ell\nu$')
 
@@ -1610,8 +1709,8 @@ def create_workspace(temp_data_channels: list,
                     #     'type': 'normsys',
                     #     'data': {"hi": 1.035, "lo": 0.965}
                     # },
-#                      'bkg_TDFl': {
-#                         'name': 'bkg_TDFl_norm',
+#                      'bkg_fakeL': {
+#                         'name': 'bkg_fakeL_norm',
 #                         'type': 'normsys',
 #                         'data': {"hi": 1.2, "lo": 0.8}
 #                     },
@@ -2547,7 +2646,7 @@ from matplotlib import gridspec
 # Original tab20 colors
 original_colors = plt.cm.tab20.colors
 # New order for the colors
-new_order_indices = [0,1,2,3,16,10,4,5,12,13,19,8,18,7,6]
+new_order_indices = [0,1,2,3,16,5,10,4,12,13,19,8,18,7,6]
 # Create a new ordered list of colors
 reordered_colors = [original_colors[i] for i in new_order_indices]
 # Add the rest of the colors that are not explicitly ordered
@@ -2562,11 +2661,11 @@ class mpl:
         self.data = data
         self.colors = my_cmap.colors*2
         # sort the components to plot in order of fitted templates_project size
-        self.sorted_order = ['bkg_fakeD',    'bkg_continuum',    'bkg_combinatorial',
-                             'bkg_TDFl',     'bkg_fakeTracks',   'bkg_hadronicB_secondaryL',                   
-                             r'$D\ell\nu$_gap_pi',               r'$D\ell\nu$_gap_eta',
-                             r'$D^{\ast\ast}\ell\nu$_narrow',    r'$D^{\ast\ast}\ell\nu$_broad',      
-                             r'$D^{\ast\ast}\tau\nu$',
+        self.sorted_order = ['bkg_fakeD',                        'bkg_continuum',    
+                             'bkg_combinatorial',                'bkg_hadronicB_secondaryL',
+                             'bkg_fakeL',                        'bkg_fakeTracks',    'bkg_fakeL_Tracks',
+                             r'$D\ell\nu$_gap',
+                             r'$D^{\ast\ast}\ell\nu$_narrow',    r'$D^{\ast\ast}\ell\nu$_broad', r'$D^{\ast\ast}\tau\nu$',
                              r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                              r'$D^\ast\tau\nu$',                 r'$D\tau\nu$',
 #                              'DSemiB_ellPri',  'DSemiB_ellSec',  'DHad1Charm_ellPri',
@@ -2576,11 +2675,12 @@ class mpl:
                              'BBbar_measured_hadronic',          'BBbar_semileptonic', 
                              'BBbar_unmeasured:2-body',          'BBbar_unmeasured:3-body',
                              'BBbar_unmeasured:4-body',          'BBbar_unmeasured:5-body', 
-                             'BBbar_unmeasured:6-body',          'BBbar_unmeasured:7-body',]
+                             'BBbar_unmeasured:6-body',          'BBbar_unmeasured:7-body',
+                            
+                             'nMC_KL:0', 'nMC_KL:1', 'nMC_KL:2', 'nMC_KL:2+']
 
         self.bkg = self.sorted_order[:6]
-        self.norm = [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta',
-                     r'$D^{\ast\ast}\ell\nu$_narrow', r'$D^{\ast\ast}\ell\nu$_broad',
+        self.norm = [r'$D\ell\nu$_gap', r'$D^{\ast\ast}\ell\nu$_narrow', r'$D^{\ast\ast}\ell\nu$_broad',
                      r'$D^\ast\ell\nu$',r'$D\ell\nu$']
         self.sig = [r'$D^{\ast\ast}\tau\nu$',r'$D^\ast\tau\nu$',r'$D\tau\nu$']
        
@@ -2619,11 +2719,22 @@ class mpl:
     
     def plot_pie(self, cut='1.855<D_M<1.885'):
         # Plotting the pie chart
+        fakeL_Tracks = pd.concat([self.samples['bkg_fakeL'], self.samples['bkg_fakeTracks']], ignore_index=True)
+        samples_to_plot = {**self.samples, 'bkg_fakeL_Tracks': fakeL_Tracks}
+        samples_to_plot.pop('bkg_fakeL')
+        samples_to_plot.pop('bkg_fakeTracks')
+        sizes1 = [len(self.samples[comp].query(cut)) for comp in self.sorted_order if comp in self.samples.keys()]
+        sizes2 = [len(samples_to_plot[comp].query(cut)) for comp in self.sorted_order if comp in samples_to_plot.keys()]
+        
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8))
-        sizes = [len(self.samples[comp].query(cut)) for comp in self.sorted_order if comp in self.samples.keys()]
-        ax1.pie(sizes, labels=[c for c in self.sorted_order if c in self.samples.keys()], autopct='%1.1f%%', startangle=140, colors=self.colors)
+        
+        labels = [name for name in self.sorted_order if name in samples_to_plot.keys()]
+        indices = [self.sorted_order.index(name) for name in labels]
+        colors = [self.colors[i] for i in indices]
+        
+        ax1.pie(sizes2, labels=labels, autopct='%1.1f%%', startangle=140, colors=colors)
         ax1.set_title(f'All components in the region {cut[:15]=}')
-        ax2.pie(sizes[:6], labels=self.sorted_order[:6], autopct='%1.1f%%', startangle=140, colors=self.colors)
+        ax2.pie(sizes1[:6], labels=self.sorted_order[:6], autopct='%1.1f%%', startangle=140, colors=self.colors)
         ax2.set_title(f'BKG components in the region {cut[:15]=}')
         plt.tight_layout()
         plt.show()
@@ -2948,7 +3059,7 @@ class mpl:
     def plot_data_mc_stacked(self,variable,bins,cut=None,weights={},
                              data_sig_mask=False, density=False,mask=[],figsize=(8,5),
                              apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight',
-                             ratio=False, legend_nc=2,legend_fs=12,):
+                             ratio=False, legend_nc=2,legend_fs=12,text_fs=14):
         # Create a figure with two subplots: one for the histogram, one for the residual plot
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
             
@@ -2971,12 +3082,16 @@ class mpl:
             # Residuals (Data - Model)
             self.plot_residuals(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
             ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
-        
-        ax1.set_title(f'Overlaid Data vs MC ({cut=})')
-        ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
+
+        if len(cut)>30:
+            print('cut=',cut)
+            ax1.set_title(f'Overlaid Data vs MC (with cut)', fontsize=text_fs)
+        else: 
+            ax1.set_title(f'Overlaid Data vs MC ({cut=})', fontsize=text_fs)
+        ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
         ax1.grid()
         ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
-        ax2.set_xlabel(f'{variable}')
+        ax2.set_xlabel(f'{variable}', fontsize=text_fs)
         
         
         # Adjust the layout to avoid overlapping of the subplots
@@ -3317,18 +3432,18 @@ class mpl:
                     histograms[r'$D^{\ast\ast}\ell\nu$'] += unp.uarray(counts, poisson_error(staterr_squared))
                 else:
                     histograms[r'$D^{\ast\ast}\ell\nu$'] = unp.uarray(counts, poisson_error(staterr_squared))
-            elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
-                # merge the 2 Dellnu gap modes
-                if r'$D\ell\nu$_gap' in histograms:
-                    histograms[r'$D\ell\nu$_gap'] += unp.uarray(counts, poisson_error(staterr_squared))
-                else:
-                    histograms[r'$D\ell\nu$_gap'] = unp.uarray(counts, poisson_error(staterr_squared))
+            # elif name in [r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta']:
+            #     # merge the 2 Dellnu gap modes
+            #     if r'$D\ell\nu$_gap' in histograms:
+            #         histograms[r'$D\ell\nu$_gap'] += unp.uarray(counts, poisson_error(staterr_squared))
+            #     else:
+            #         histograms[r'$D\ell\nu$_gap'] = unp.uarray(counts, poisson_error(staterr_squared))
             else:
                 # store other modes individually
                 histograms[name] = unp.uarray(counts, poisson_error(staterr_squared))
 
         # combine the D** resonant and gap
-        if weights.get(r'$D\ell\nu$_gap_pi',1)==0 and weights.get(r'$D\ell\nu$_gap_eta',1)==0:
+        if weights.get(r'$D\ell\nu$_gap',1)==0:
             if r'$D^{\ast\ast}\ell\nu$' in histograms:
                 histograms[r'$D^{\ast\ast}\ell\nu$ + gap'] = histograms.pop(r'$D^{\ast\ast}\ell\nu$')
 
@@ -3535,7 +3650,7 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         c = my_cmap.colors
         # sort the components to plot in order of fitted templates_project size
         sorted_order = ['bkg_fakeD',    'bkg_continuum',    'bkg_combinatorial',
-                        'bkg_TDFl',     'bkg_hadronicB_secondaryL',   r'$D\ell\nu$_gap',
+                        'bkg_fakeL',     'bkg_hadronicB_secondaryL',   r'$D\ell\nu$_gap',
                         r'$D^{\ast\ast}\ell\nu$',           r'$D^{\ast\ast}\tau\nu$',
                         r'$D^\ast\ell\nu$',                 r'$D\ell\nu$',
                         r'$D^\ast\tau\nu$',                 r'$D\tau\nu$']
