@@ -91,7 +91,7 @@ if __name__ == "__main__":
     eval_result1 = {}
     gbm = lgb.train(params, 
                     lgb_train,
-                    num_boost_round=30,
+                    num_boost_round=15,
                     init_model=f'BDTs/LightGBM/lgbm_{args.objective}.txt' if args.continue_train else None,
                     valid_sets=[lgb_train, lgb_eval],
                     valid_names=['train', 'test'], 
@@ -99,7 +99,7 @@ if __name__ == "__main__":
                     callbacks=[lgb.early_stopping(3),
                                lgb.record_evaluation(eval_result1)])
 
-    print(colored('Finished first 30 rounds...', 'blue'))
+    print(colored('Finished first 15 rounds...', 'blue'))
 
     # continue training with decay learning rates
     # reset_parameter callback accepts:
@@ -108,7 +108,7 @@ if __name__ == "__main__":
     eval_result2 = {}
     gbm = lgb.train(params,
                     lgb_train,
-                    num_boost_round=20,
+                    num_boost_round=10,
                     init_model=gbm, # or the file name path 'BDTs/LightGBM/lgbm_model.txt'
                     valid_sets=[lgb_train, lgb_eval],
                     valid_names=['train', 'test'],
@@ -117,14 +117,14 @@ if __name__ == "__main__":
                                lgb.early_stopping(2),
                                lgb.record_evaluation(eval_result2)])
 
-    print(colored('Finished the last 20 rounds with decay learning rates...', 'blue'))
+    print(colored('Finished the last 10 rounds with decay learning rates...', 'blue'))
     
 
     # save model and metric plots
     if args.continue_train:
-        save_path = f'BDTs/LightGBM/lgbm_{args.objective}_continue'
+        save_path = f'BDTs/LightGBM/lgbm_{args.objective}_v3_continue'
     else:
-        save_path = f'BDTs/LightGBM/lgbm_{args.objective}'
+        save_path = f'BDTs/LightGBM/lgbm_{args.objective}_v3'
     print(colored(f'Saving model to {save_path}.txt and metric plots', 'blue'))
     gbm.save_model(save_path+'.txt', num_iteration=gbm.best_iteration)
     
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         for metric in params['metric']:
             eval_result1[valid_set][metric] += eval_result2[valid_set][metric]
             
-    with open('BDTs/LightGBM/eval_result_v2.json', "w") as f:
+    with open('BDTs/LightGBM/eval_result_v3.json', "w") as f:
         json.dump(eval_result1, f)
 
     ax0 = lgb.plot_metric(eval_result1, params['metric'][0], figsize=(8,6))

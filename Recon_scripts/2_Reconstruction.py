@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # ----------------------------------
     goodTrack = '[abs(dz)<2] and [dr<0.5] and thetaInCDCAcceptance and [nCDCHits>0] and [nSVDHits>0]'
     ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and [pionIDNN > 0.1]', path=main_path)
-    ma.fillParticleList('K-:goodk', cut=goodTrack + ' and [kaonIDNN > 0.9]', path=main_path)
+    ma.fillParticleList('K-:goodk', cut=goodTrack + ' and [kaonIDNN > 0.9] and [p>0.2]', path=main_path)
 
     ma.fillParticleList("e+:uncorrected",cut=goodTrack + ' and [electronIDNN>0.9]', path=main_path)
     ma.fillParticleList("mu+:mymu",cut=goodTrack + " and [muonIDNN>0.9]", path=main_path)
@@ -239,7 +239,8 @@ if __name__ == "__main__":
     vm.addAlias('genGMPDG','genMotherPDG(1)')
     vm.addAlias('mcDaughter_0_PDG', 'mcDaughter(0,PDG)')
     vm.addAlias('mcDaughter_1_PDG', 'mcDaughter(1,PDG)')
-    B_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG']
+    vm.addAlias('mcDaughter_0_M', 'daughterMCInvariantMass(0)')
+    B_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG','mcDaughter_0_M']
 
     Ancestor_info = []
     B_types = ['511','521']
