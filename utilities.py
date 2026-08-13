@@ -274,10 +274,25 @@ hadronicB_replacement_map = {431 * 411 * 211 * 211: 431 * 10413,  # Ds D pi pi -
 
 ########################### define known corrections ########################
 
-def create_naive_data_mc_correction(df_data, df_mc, cut, var, mc_weight=0.25, corr_col_name='naive_corr_w'):
+def create_naive_data_mc_correction(
+    df_data,
+    df_mc,
+    cut,
+    var,
+    mc_weight=0.25,
+    corr_col_name="naive_corr_w",
+):
+    """Add a binned data/MC ratio weight to a simulated sample.
+
+    The correction is calculated after applying ``cut``.  A copy of the selected
+    MC rows is returned, leaving the caller's DataFrame unchanged.  Empty MC bins
+    receive the neutral weight of one.
+    """
     if cut is not None:
         df_data = df_data.query(cut)
         df_mc = df_mc.query(cut)
+    else:
+        df_mc = df_mc.copy()
     
     # Count events per integer value
     counts_data = df_data[var].value_counts().sort_index()
@@ -299,28 +314,26 @@ def create_naive_data_mc_correction(df_data, df_mc, cut, var, mc_weight=0.25, co
     })
     
     print(ratio_df)
-
-    weight_dict = ratio.to_dict()
-    df_mc[corr_col_name] = df_mc[var].map(weight_dict).fillna(1)
-    # so far, this function works only for variables of integer values
+    df_mc[corr_col_name] = df_mc[var].map(ratio).fillna(1.0)
+    return df_mc
 
 
-def apply_eventByEvent_weight(df, weight_array, weight_col):
-
-    if weight_col in df:
-        return weight_array * df[weight_col].to_numpy()
+def apply_event_by_event_weight(df, weights, weight_col):
+    """Multiply *weights* by an event-weight column when it is available."""
+    if weight_col in df.columns:
+        return np.asarray(weights) * df[weight_col].to_numpy()
 
     print(f"Warning: column '{weight_col}' not found; skipping event by event weighting")
-    return weight_array
+    return weights
+
+
+# Backwards-compatible spelling used by existing notebooks.
+apply_eventByEvent_weight = apply_event_by_event_weight
 
 def apply_pi0_eff_correction(df, corr_table, corr_col_name='pi0_eff_weight'):
-
+    """Merge momentum/angular pi0-efficiency corrections into a DataFrame."""
     df = df.copy()
     table = pd.read_csv(corr_table)
-
-    # --- Create bin labels ---
-    table['p_bin'] = list(zip(table['p_min'], table['p_max']))
-    table['cos_bin'] = list(zip(table['cosTheta_min'], table['cosTheta_max']))
 
     # --- Build bin edges ---
     p_bins = sorted(set(table['p_min']).union(table['p_max']))
@@ -342,28 +355,31 @@ def apply_pi0_eff_correction(df, corr_table, corr_col_name='pi0_eff_weight'):
     merged = df.merge(
         table[['p_bin', 'cos_bin', 'data_MC_ratio', 'data_MC_ratio_err']],
         on=['p_bin', 'cos_bin'],
-        how='left'
+        how='left',
+        sort=False,
+        validate='many_to_one',
     )
 
     # --- Rename output columns ---
     merged = merged.rename(columns={
         'data_MC_ratio': corr_col_name,
-        'data_MC_ratio_err': corr_col_name+'_err'
+        'data_MC_ratio_err': f'{corr_col_name}_err'
     })
     
     mask_missing = merged[corr_col_name].isna()
     print(merged.loc[mask_missing, ['pi0_p', 'pi0_cosTheta']].describe())
     merged[corr_col_name] = merged[corr_col_name].fillna(1)
-    merged[corr_col_name+'_err'] = merged[corr_col_name+'_err'].fillna(0)
+    merged[f'{corr_col_name}_err'] = merged[f'{corr_col_name}_err'].fillna(0)
 
     return merged
 
 
-import sysvar
 import warnings
 import pandas as pd
 
 def apply_pid_corrections(df, MC='MC16', run='run1', channel='e', corr_col_name='total_PIDweight'):
+    import sysvar
+
     e_eff_table = pd.read_csv(f'/home/belle/zhangboy/inclusive_R_D/{MC}_sys_tables/{MC}_pid_tables/e_efficiency_{run}_TwophotonEe.csv')
     pi_e_fake = pd.read_csv(f'/home/belle/zhangboy/inclusive_R_D/{MC}_sys_tables/{MC}_pid_tables/pi_e_fake_{run}.csv')
     K_e_fake = pd.read_csv(f'/home/belle/zhangboy/inclusive_R_D/{MC}_sys_tables/{MC}_pid_tables/K_e_fake_{run}.csv')
@@ -1084,17 +1100,15 @@ def get_weights(df, w):
       - a DataFrame column name
       - a list of form ['col_name', scalar]
     """
-    # Determine weights
+    if isinstance(w, str):
+        return df[w].to_numpy()
     if np.isscalar(w):
-        weights = np.full(len(df), w)          # same constant for all rows
-    elif type(w)==str: # hasattr(w, "index") and hasattr(w, "values")
-        weights = df[w].to_numpy()             # use column from DataFrame
-    elif type(w)==list and type(w[0])==str:
-        weights = (df[w[0]]*w[1]).to_numpy()     # use a constant and a column from DataFrame
-    else:
-        raise TypeError("w must be either a scalar or a column name.")
-    
-    return weights
+        return np.full(len(df), w)
+    if isinstance(w, (list, tuple)) and len(w) == 2 and isinstance(w[0], str):
+        return (df[w[0]] * w[1]).to_numpy()
+    raise TypeError(
+        "w must be a scalar, a column name, or a (column name, scale) pair"
+    )
 
 def binom_error(n_sig, n_tot):
     """
@@ -1201,30 +1215,28 @@ def rebin_histogram_with_new_edges(counts_with_uncertainties, old_bin_edges, new
     Returns:
         new_counts_with_uncertainties (unp.uarray): Rebinned counts with uncertainties.
     """
-    # Extract nominal values (counts) and standard deviations (uncertainties)
-    counts = unp.nominal_values(counts_with_uncertainties).round().astype(int)
+    old_bin_edges = np.asarray(old_bin_edges)
+    new_bin_edges = np.asarray(new_bin_edges)
+    counts = unp.nominal_values(counts_with_uncertainties)
     uncertainties = unp.std_devs(counts_with_uncertainties)
 
-    # Repeat the bin centers based on counts for rebinning
-    new_counts, _ = np.histogram(
-        np.repeat(old_bin_edges[:-1], counts), bins=new_bin_edges
-    )
-    
-    # Initialize new uncertainties (sum in quadrature)
-    new_uncertainties_squared = np.zeros_like(new_counts, dtype=float)
+    if len(old_bin_edges) != len(counts) + 1:
+        raise ValueError("old_bin_edges must contain exactly len(counts) + 1 entries")
+    if new_bin_edges[0] != old_bin_edges[0] or new_bin_edges[-1] != old_bin_edges[-1]:
+        raise ValueError("new_bin_edges must span the full old-bin range")
 
-    # Combine uncertainties for the new bins
-    for i in range(len(old_bin_edges) - 1):
-        bin_value = old_bin_edges[i]
-        new_bin_index = np.digitize(bin_value, new_bin_edges) - 1  # Find new bin index
-        new_uncertainties_squared[new_bin_index] += uncertainties[i] ** 2  # Sum uncertainties in quadrature
+    # Each new edge must coincide with an old edge: this routine combines bins,
+    # rather than splitting them and inventing an intra-bin distribution.
+    edge_indices = np.searchsorted(old_bin_edges, new_bin_edges)
+    if (
+        np.any(edge_indices == len(old_bin_edges))
+        or not np.array_equal(old_bin_edges[edge_indices], new_bin_edges)
+    ):
+        raise ValueError("new_bin_edges must be a subset of old_bin_edges")
 
-    # Take square root of summed uncertainties square
-    new_uncertainties = np.sqrt(new_uncertainties_squared)
-
-    # Combine counts and uncertainties into a single uarray
-    new_counts_with_uncertainties = unp.uarray(new_counts, new_uncertainties)
-    return new_counts_with_uncertainties
+    new_counts = np.add.reduceat(counts, edge_indices[:-1])
+    variances = np.add.reduceat(uncertainties**2, edge_indices[:-1])
+    return unp.uarray(new_counts, np.sqrt(variances))
 
 
 def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
@@ -2417,7 +2429,7 @@ class toy_utils:
     def plot_toy_gaussian(x: list, mu:ufloat,sigma: ufloat,
                           file_name: str,vertical_lines: list = [0],
                           extra_info=None, title_info=None, ylabel='Trials',
-                          xlabel: str = '$(\mu-\mu_{in}) /\sigma_{\mu}$',
+                          xlabel: str = r'$(\mu-\mu_{in}) /\sigma_{\mu}$',
                           figsize=(6, 6 / 1.618), show: bool = False):
         # set up the figure
         fig = plt.figure(figsize=figsize)
@@ -2497,7 +2509,7 @@ class toy_utils:
         # set up extra reference line and text
         plt.plot(np.array([bonds[0], bonds[1]]) + x_offset, [bonds[0], bonds[1]], color='gray', label='Diagonal', lw=0.5, zorder=-100, ls='--')
         plusminus = '+' if intercept >= 0 else '-'
-        eq = f"""({round(slope.n,3)}$\pm${round(slope.s,3)})$\mu_{{in}}$${plusminus}$({abs(round(intercept.n,3))}$\pm${round(intercept.s,3)})"""
+        eq = fr"""({round(slope.n,3)}$\pm${round(slope.s,3)})$\mu_{{in}}$${plusminus}$({abs(round(intercept.n,3))}$\pm${round(intercept.s,3)})"""
         plt.text(0.02, 0.85, eq, usetex=False,color=line[0].get_color(),
                  transform=plt.gca().transAxes, fontsize=9)
 
@@ -3189,7 +3201,7 @@ class mpl:
             fig.colorbar(im, ax=ax)
             if variables is None:
                 ax.set_xlabel('$M_{miss}^2$')
-                ax.set_ylabel('$|p_D| + |p_{\ell}|$')
+                ax.set_ylabel(r'$|p_D| + |p_{\ell}|$')
             else:
                 ax.set_xlabel(variables[0])
                 ax.set_ylabel(variables[1])
@@ -3457,7 +3469,7 @@ class mpl:
         edges_x, edges_y = bin_list
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
             var_x_label = '$M_{miss}^2$    [$GeV^2/c^4$]'
-            var_y_label = '$|p_D| + |p_{\ell}|$    [GeV/c]'
+            var_y_label = r'$|p_D| + |p_{\ell}|$    [GeV/c]'
         else:
             var_x_label = var_list[0]
             var_y_label = var_list[1]
@@ -3508,7 +3520,7 @@ class mpl:
         mc_y = self.plot_mc_1d(bins=edges_y, variable=variable_y, ax=ax2, weights=weights,
                                cut=f'1.84<D_M<1.9 and {mc_proj_query} and '+cut, correction=correction,mask=mask,legend='simple_color')
         if var_list==['B0_CMS3_weMissM2','p_D_l']:
-            ax2.set_title('$|p_D| + |p_{\ell}|$ Projection')
+            ax2.set_title(r'$|p_D| + |p_{\ell}|$ Projection')
         else:
             ax2.set_title(f'{var_list[1]} Projection')
         ax2.grid()
@@ -3640,7 +3652,7 @@ class mpl:
 
         fig.suptitle(f'{title} ({cut=})', y=0.92, fontsize=18)
         fig.supylabel(r'$|p^\ast_{D}|+|p^\ast_{\ell}| \ \ [GeV]$', x=0.05,fontsize=18)
-        fig.supxlabel('$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.08,fontsize=18)
+        fig.supxlabel(r'$M_{miss}^2\ \ \ [GeV^2/c^4]$', y=0.08,fontsize=18)
 
         
     def plot_2Dhist_and_projections(self, bin_list:list, var_list=['B0_CMS3_weMissM2','p_D_l'], cut=None):
@@ -3670,7 +3682,7 @@ class mpl:
             fig.colorbar(im, ax=ax[0])
             ax[0].set_title(name)
             ax[0].set_xlabel('$M_{miss}^2$', fontsize=14)
-            ax[0].set_ylabel('$|p_D| + |p_{\ell}|$', fontsize=14)
+            ax[0].set_ylabel(r'$|p_D| + |p_{\ell}|$', fontsize=14)
             ax[0].grid()
 
             # X Projection
@@ -3682,9 +3694,9 @@ class mpl:
 
             # Y Projection
             ax[2].barh(yedges[:-1], y_projection, height=np.diff(yedges), align='edge')
-            ax[2].set_title('$|p_D| + |p_{\ell}|$ Projection')
+            ax[2].set_title(r'$|p_D| + |p_{\ell}|$ Projection')
             ax[2].set_xlabel('Counts')
-            ax[2].set_ylabel('$|p_D| + |p_{\ell}|$')
+            ax[2].set_ylabel(r'$|p_D| + |p_{\ell}|$')
             ax[2].grid()
 
             plt.tight_layout()
@@ -3867,11 +3879,11 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
         axis = 0
         axis_label = '$M_{miss}^2$'
         axis_unit = '$[GeV^2/c^4]$'
-        other_axis_label = '$|p_D|\ +\ |p_l|$'
+        other_axis_label = r'$|p_D|\ +\ |p_l|$'
         other_axis_unit = '[GeV]'
     elif direction == 'p_D_l':
         axis = 1
-        axis_label = '$|p_D|\ +\ |p_l|$'
+        axis_label = r'$|p_D|\ +\ |p_l|$'
         axis_unit = '[GeV]'
         other_axis_label = '$M_{miss}^2$'
         other_axis_unit = '$[GeV^2/c^4]$'
@@ -4050,7 +4062,7 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
     if direction=='mm2':
         direction_label = '$M_{miss}^2$'
         direction_unit = '$[GeV^2/c^4]$'
-        other_direction_label = '$|p_D|\ +\ |p_l|$'
+        other_direction_label = r'$|p_D|\ +\ |p_l|$'
         other_direction_unit = '[GeV]'
         axis_to_be_summed_over = 0
 
@@ -4069,7 +4081,7 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         data_slice2 = data_2d[second_slice_index:,:]
 
     elif direction=='p_D_l':
-        direction_label = '$|p_D|\ +\ |p_l|$'
+        direction_label = r'$|p_D|\ +\ |p_l|$'
         direction_unit = '[GeV]'
         other_direction_label = '$M_{miss}^2$'
         other_direction_unit = '$[GeV^2/c^4]$'
@@ -4323,7 +4335,7 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
 #     if direction=='mm2':
 #         direction_label = '$M_{miss}^2$'
 #         direction_unit = '$[GeV^2/c^4]$'
-#         other_direction_label = '$|p_D|\ +\ |p_l|$'
+#         other_direction_label = r'$|p_D|\ +\ |p_l|$'
 #         other_direction_unit = '[GeV]'
 #         axis_to_be_summed_over = 0
 
@@ -4343,7 +4355,7 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
 
 
 #     elif direction=='p_D_l':
-#         direction_label = '$|p_D|\ +\ |p_l|$'
+#         direction_label = r'$|p_D|\ +\ |p_l|$'
 #         direction_unit = '[GeV]'
 #         other_direction_label = '$M_{miss}^2$'
 #         other_direction_unit = '$[GeV^2/c^4]$'
