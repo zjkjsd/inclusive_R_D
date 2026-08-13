@@ -402,7 +402,8 @@ def apply_pid_corrections(df, MC='MC16', run='run1', channel='e', corr_col_name=
                  (211, 11):  e_pi_fake}
     pi_thresholds = {211: ('pionIDNN', 0.1)}
 
-    
+
+    assert channel in ['e', 'mu'], 'channel must be either e or mu'
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if channel=='e':
@@ -411,8 +412,6 @@ def apply_pid_corrections(df, MC='MC16', run='run1', channel='e', corr_col_name=
         elif channel=='mu':
             sysvar.add_weights_to_dataframe('ell', df, systematic='custom_PID', custom_tables=mu_tables, custom_thresholds=mu_thresholds)
             weight_cols = ['ell_Weight', 'K_Weight', 'pi1_Weight', 'pi2_Weight',]
-        else:
-            raise ValueError("channel must be either e or mu")
         
         sysvar.add_weights_to_dataframe('K', df, systematic='custom_PID', custom_tables=k_tables, custom_thresholds=k_thresholds)
         sysvar.add_weights_to_dataframe('pi1', df, systematic='custom_PID', custom_tables=pi_tables, custom_thresholds=pi_thresholds)
@@ -1239,8 +1238,8 @@ def create_templates_new(samples:dict, bins_sr:list, bins_sb:list,
 
 
     #################### Create template 2d histograms with uncertainties for signal channel ################
-    if len(bins_sr)!=len(variables):
-        raise ValueError('Dimensions of variables and bins are not equal')
+    assert len(bins_sr)!=len(variables), 'Dimensions of variables and bins are not equal'
+
     print('Creating templates for the signal region')
     histograms_sr = {}
     for name, df_sr_sb in samples.items():
@@ -3002,7 +3001,9 @@ class mpl:
                 elif legend=='full':
                     label = (f'{sub_name} \n{self.statistics(df=sample[variable],count_only=False)} '
                            f'\n cut_eff={(len(sample)/len(sub_df)):.3f}')
-                ax.hist(bins[:-1], bins, weights=counts,color=self.colors[14],label=label)
+                
+                color_index = self.sorted_order.index(sub_name)
+                ax.hist(bins[:-1], bins, weights=counts,color=self.colors[color_index],label=label)
 
             sample_counts = unp.uarray(counts, staterror)
             bottom = sample_counts
@@ -3227,10 +3228,13 @@ class mpl:
         # Label the residual plot
         ax.set_ylabel('Ratios')
     
-    def plot_data_mc_stacked(self,variable,bins,cut=None,weights={},
-                             data_sig_mask=False, density=False,mask=[],figsize=(8,5),
+    def plot_data_mc_stacked(self,variable,bins,cut=None,weights={},data_sig_mask=False, density=False,mask=[],
                              apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight',
-                             ratio=False, legend_nc=2,legend_fs=12,text_fs=14):
+                             ratio_or_residual='residual', bottom_plot=r'$D\tau\nu$',
+                             figsize=(8,5),legend_nc=2,legend_fs=12,text_fs=14):
+        
+        assert ratio_or_residual in ['ratio', 'residual'], 'must choose ratio or residual'
+        
         # Create a figure with two subplots: one for the histogram, one for the residual plot
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
             
@@ -3243,20 +3247,20 @@ class mpl:
             data_counts = self.plot_data_1d(bins=bins, variable=variable, sig_mask=data_sig_mask,
                                             ax=ax1, cut=cut, scale=weights.get('data', 1))
             # plot residuals
-            if ratio:
+            if ratio_or_residual=='ratio':
                 self.plot_ratios(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
-            else:
+            elif ratio_or_residual=='residual':
                 # Residuals (Data - Model)
                 self.plot_residuals(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
                 ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
             
         else: # if MC only
             data_counts = unp.uarray(np.zeros_like(mc_counts), np.zeros_like(mc_counts))
-            mc_DtauNu = self.plot_mc_1d(bins=bins, sub_df=self.samples[r'$D\tau\nu$'], sub_name=r'$D\tau\nu$', 
+            bottom_comp = self.plot_mc_1d(bins=bins, sub_df=self.samples[bottom_plot], sub_name=bottom_plot, 
                                         variable=variable, ax=ax2, cut=cut,mask=mask, density=density, legend='simple_color',
                                         weights=weights, apply_eventByEvent_correction=apply_eventByEvent_correction, 
                                         eventByEvent_weight_col=eventByEvent_weight_col,)
-            ax2.set_ylabel(r'$D\tau\nu$')
+            ax2.set_ylabel(bottom_plot)
         
         # restrict title length
         if cut is not None and len(cut)>30:
@@ -3897,8 +3901,9 @@ def fit_project_cabinetry(fit_result, templates_2d,staterror_2d,data_2d,
 
 # plotting version: two residual plots, residual_signal = data - all_temp
 def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices=[1.6,1],direction='mm2', plot_with='pltbar'):
-    if direction not in ['mm2', 'p_D_l'] or plot_with not in ['mplhep', 'pltbar']:
-        raise ValueError('direction in [mm2, p_D_l] and plot_with in [mplhep, pltbar]')
+    assert direction in ['mm2', 'p_D_l'], 'direction must be in [mm2, p_D_l]'
+    assert plot_with in ['mplhep', 'pltbar'], 'plot_with must be in [mplhep, pltbar]'
+
     fitted_components_names = list(Minuit.parameters)
     #### fitted_templates_2d = templates / normalization * yields
     fitted_templates_2d = [templates_2d[i]/templates_2d[i].sum() * Minuit.values[i] for i in range(len(templates_2d))]
@@ -4046,9 +4051,6 @@ def mpl_projection_residual_iMinuit(Minuit, templates_2d, data_2d, edges, slices
         fitted_project_slice2_err = [poisson_error((err**2)[:,second_slice_index:].sum(axis=axis_to_be_summed_over)) for err in fitted_templates_err]
         data_slice1 = data_2d[:,:first_slice_index]
         data_slice2 = data_2d[:,second_slice_index:]
-
-    else:
-        raise ValueError('Current version only supports projection to either MM2 or p_D_l')
 
     if not slices:
         fig = plt.figure(figsize=(6.4,6.4))

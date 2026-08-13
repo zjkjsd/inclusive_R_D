@@ -55,8 +55,8 @@ if __name__ == "__main__":
     # Fill fsp list.
     # ----------------------------------
     goodTrack = '[abs(dz)<2] and [dr<0.5] and thetaInCDCAcceptance and [nCDCHits>0] and [nSVDHits>0]'
-    ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and [pionIDNN > 0.1]', path=main_path)
-    ma.fillParticleList('K-:goodk', cut=goodTrack + ' and [kaonIDNN > 0.9] and [p>0.2]', path=main_path)
+    ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and [pionIDNN > 0.1] and [p>0.1]', path=main_path)
+    ma.fillParticleList('K-:goodk', cut=goodTrack + ' and [kaonIDNN > 0.9] and [p>0.3]', path=main_path)
 
     ma.fillParticleList("e+:uncorrected",cut=goodTrack + ' and [electronIDNN>0.9]', path=main_path)
     ma.fillParticleList("mu+:mymu",cut=goodTrack + " and [muonIDNN>0.9]", path=main_path)
