@@ -2813,7 +2813,22 @@ def plot_PID_weight_heatmap_mpl(
     
 
 class mpl:
-    def __init__(self, mc_samples, data=None):
+    def __init__(self, mc_samples, data=None, background_hatches=None):
+        """Create a plotting helper.
+
+        Parameters
+        ----------
+        mc_samples : dict
+            Mapping from component names to their data frames.
+        data : pandas.DataFrame, optional
+            The observed data sample.
+        background_hatches : sequence of str or dict, optional
+            Hatch patterns for components whose names start with ``"bkg_"``.
+            A dictionary can be used to select patterns by component name; a
+            sequence is applied in plotting order.  By default, each background
+            component receives a different pattern.  Non-background components
+            are left solid.
+        """
         self.samples = mc_samples
         self.data = data
         self.colors = my_cmap.colors*2
@@ -2840,6 +2855,26 @@ class mpl:
         self.norm = [r'$D\ell\nu$_gap', r'$D^{\ast\ast}\ell\nu$_narrow', r'$D^{\ast\ast}\ell\nu$_broad',
                      r'$D^\ast\ell\nu$',r'$D\ell\nu$']
         self.sig = [r'$D^{\ast\ast}\tau\nu$',r'$D^\ast\tau\nu$',r'$D\tau\nu$']
+
+        background_names = [name for name in self.sorted_order if name.startswith('bkg_')]
+        if background_hatches is None:
+            background_hatches = ('///', '\\\\', 'xxx', '---', '+++', 'ooo', '...')
+        if isinstance(background_hatches, dict):
+            self.background_hatches = background_hatches.copy()
+        else:
+            if not background_hatches:
+                raise ValueError('background_hatches must contain at least one pattern')
+            self.background_hatches = {
+                name: background_hatches[i % len(background_hatches)]
+                for i, name in enumerate(background_names)
+            }
+
+    def _hist_style(self, component):
+        """Return the fill style for an MC component histogram."""
+        hatch = self.background_hatches.get(component)
+        if hatch is None:
+            return {}
+        return {'hatch': hatch, 'edgecolor': 'black', 'linewidth': 0.8}
        
     
     def statistics(self, df=None, hist=None, count_only=False):
@@ -3003,7 +3038,8 @@ class mpl:
                            f'\n cut_eff={(len(sample)/len(sub_df)):.3f}')
                 
                 color_index = self.sorted_order.index(sub_name)
-                ax.hist(bins[:-1], bins, weights=counts,color=self.colors[color_index],label=label)
+                ax.hist(bins[:-1], bins, weights=counts, color=self.colors[color_index],
+                        label=label, **self._hist_style(sub_name))
 
             sample_counts = unp.uarray(counts, staterror)
             bottom = sample_counts
@@ -3047,7 +3083,8 @@ class mpl:
                     elif legend=='full':
                         label = (f'{name} \n{self.statistics(df=sample[variable],count_only=False)} '
                                f'\n cut_eff={(len(sample)/len(self.samples[name])):.3f}')
-                    ax.hist(bins[:-1], bins, weights=counts, bottom=b, color=self.colors[i],label=label)
+                    ax.hist(bins[:-1], bins, weights=counts, bottom=b, color=self.colors[i],
+                            label=label, **self._hist_style(name))
 
                 sample_counts = unp.uarray(counts, staterror)
                 bottom += sample_counts
