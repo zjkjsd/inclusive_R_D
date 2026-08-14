@@ -3280,7 +3280,7 @@ class mpl:
     def plot_data_mc_stacked(self,variable,bins,cut=None,weights={},data_sig_mask=False, density=False,mask=[],
                              apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight',
                              ratio_or_residual='residual', bottom_plot=r'$D\tau\nu$',
-                             figsize=(8,5),legend_nc=2,legend_fs=12,text_fs=14):
+                             figsize=(8,5),legend_nc=2,legend_fs=12,text_fs=14,title=None):
         
         assert ratio_or_residual in ['ratio', 'residual'], 'must choose ratio or residual'
         
@@ -3312,14 +3312,18 @@ class mpl:
             ax2.set_ylabel(bottom_plot)
         
         # restrict title length
-        if cut is not None and len(cut)>30:
-            print('cut=',cut)
-            ax1.set_title(f'Overlaid Data vs MC (with cut)', fontsize=text_fs)
+        print('cut=',cut)
+        if title is None:
+            if self.data is None:
+                ax1.set_title(f'MC distribution', fontsize=text_fs)
+            else:
+                ax1.set_title(f'Data vs MC', fontsize=text_fs)
         else: 
-            ax1.set_title(f'Overlaid Data vs MC ({cut=})', fontsize=text_fs)
+            ax1.set_title(title, fontsize=text_fs)
+            
         ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
-        ax1.grid()
         ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
+        ax1.grid()
         ax2.set_xlabel(f'{variable}', fontsize=text_fs)
         
         plt.tight_layout()
@@ -3328,9 +3332,9 @@ class mpl:
         return data_counts, mc_counts
         
         
-    def plot_mc_sig_control(self,variable,bins,cut=None,correction=False,weights={},mask=[],
-                            bkg_name='bkg_fakeD',merge_sidebands=False,samples_sig=None,
-                            full_sideband=False, subtract_leak=False, figsize=(8,5),legend_nc=2,legend_fs=12):
+    def plot_mc_sig_control(self,variable,bins,cut=None,weights={},mask=[],
+                            bkg_name='bkg_fakeD',samples_sig=None,
+                            figsize=(10,5),legend_nc=1,text_fs=12):
         if type(variable)==str:
             # Create a figure with two subplots: one for the histogram, one for the residual plot
             fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
@@ -3339,91 +3343,161 @@ class mpl:
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
         
         if bkg_name=='bkg_fakeD':
+            print('This part of the function needs to be rewritten!')
+            
             # norm in sig region, for tail removal
-            Dellnu = self.samples[r'$D\ell\nu$'].query('1.84<D_M<1.9').copy()
-            Dstellnu = self.samples[r'$D^\ast\ell\nu$'].query('1.84<D_M<1.9').copy()
+#             Dellnu = self.samples[r'$D\ell\nu$'].query('1.84<D_M<1.9').copy()
+#             Dstellnu = self.samples[r'$D^\ast\ell\nu$'].query('1.84<D_M<1.9').copy()
                     
-            # fakeD in the signal region
-            fakeD = self.samples[bkg_name]
-            fakeD_in_sig = fakeD.query('1.84<D_M<1.9').copy()
+#             # fakeD in the signal region
+#             fakeD = self.samples[bkg_name]
+#             fakeD_in_sig = fakeD.query('1.84<D_M<1.9').copy()
             
-            # fakeD in sidebands vs. everything in the sidebands (concatenate all components)
-            fakeD_left = fakeD.query('D_M<1.83').copy()
-            fakeD_right = fakeD.query('1.91<D_M').copy()
+#             # fakeD in sidebands vs. everything in the sidebands (concatenate all components)
+#             fakeD_left = fakeD.query('D_M<1.83').copy()
+#             fakeD_right = fakeD.query('1.91<D_M').copy()
             
-            df_concatenated = pd.concat(self.samples.values(), ignore_index=True)
-            all_left = df_concatenated.query('D_M<1.83').copy()
-            all_right = df_concatenated.query('1.91<D_M').copy()
+#             df_concatenated = pd.concat(self.samples.values(), ignore_index=True)
+#             all_left = df_concatenated.query('D_M<1.83').copy()
+#             all_right = df_concatenated.query('1.91<D_M').copy()
                 
-            regions = {'left sideband': all_left if full_sideband else fakeD_left,
-                       'signal region': fakeD_in_sig,
-                       'right sideband': all_right if full_sideband else fakeD_right}
+#             regions = {'left sideband': all_left if full_sideband else fakeD_left,
+#                        'signal region': fakeD_in_sig,
+#                        'right sideband': all_right if full_sideband else fakeD_right}
             
-            sb_total = 0 # total counts in sidebands used in residual calculation
-            sig_total = 0
-            if type(variable)==str:
-                ###################################
-                D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=r'$D\ell\nu$', variable=variable, 
-                                           ax=None, cut=cut, correction=correction,mask=mask,
-                                           weights={'sub_df':weights.get('signal region',1)})
-                Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=r'$D^\ast\ell\nu$', variable=variable, 
-                                             ax=None, cut=cut, correction=correction,mask=mask,
-                                             weights={'sub_df':weights.get('signal region',1)},)
-                ###################################
+#             sb_total = 0 # total counts in sidebands used in residual calculation
+#             sig_total = 0
+#             if type(variable)==str:
+#                 ###################################
+#                 D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=r'$D\ell\nu$', variable=variable, 
+#                                            ax=None, cut=cut, correction=correction,mask=mask,
+#                                            weights={'sub_df':weights.get('signal region',1)})
+#                 Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=r'$D^\ast\ell\nu$', variable=variable, 
+#                                              ax=None, cut=cut, correction=correction,mask=mask,
+#                                              weights={'sub_df':weights.get('signal region',1)},)
+#                 ###################################
                     
-                for region, df in regions.items():
-                    if region=='signal region':
-                        sig_total = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
-                                                cut=cut, name=region, scale=weights.get(region,1) )
+#                 for region, df in regions.items():
+#                     if region=='signal region':
+#                         sig_total = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
+#                                                 cut=cut, name=region, scale=weights.get(region,1) )
 
-                    elif region in ['left sideband', 'right sideband']:
-                        bkg_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
-                                                    ax=None, cut=cut, correction=correction,mask=mask,
-                                                    weights={'sub_df':weights.get(region,1)})
+#                     elif region in ['left sideband', 'right sideband']:
+#                         bkg_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
+#                                                     ax=None, cut=cut, correction=correction,mask=mask,
+#                                                     weights={'sub_df':weights.get(region,1)})
 
                         
-                        if region == 'left sideband':
-                            sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_left)
-                        elif region == 'right sideband':
-                            sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_right)
+#                         if region == 'left sideband':
+#                             sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_left)
+#                         elif region == 'right sideband':
+#                             sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_right)
                         
-                        if not merge_sidebands:
-                            count1 = unp.nominal_values(bkg_counts)
-                            ax1.hist(bins[:-1], bins, weights=count1,histtype='step',
-                    label=f'{region} \n{self.statistics(hist=[count1, bins],count_only=False)} ')
+#                         if not merge_sidebands:
+#                             count1 = unp.nominal_values(bkg_counts)
+#                             ax1.hist(bins[:-1], bins, weights=count1,histtype='step',
+#                     label=f'{region} \n{self.statistics(hist=[count1, bins],count_only=False)} ')
                     
-                if merge_sidebands:
-                    count2 = unp.nominal_values(sb_total)
-                    ax1.hist(bins[:-1], bins, weights=count2,histtype='step',
-                label=f'sidebands \n{self.statistics(hist=[count2, bins],count_only=False)} ')
+#                 if merge_sidebands:
+#                     count2 = unp.nominal_values(sb_total)
+#                     ax1.hist(bins[:-1], bins, weights=count2,histtype='step',
+#                 label=f'sidebands \n{self.statistics(hist=[count2, bins],count_only=False)} ')
 
-                # Residuals (Data - Model) and their errors
-                self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
-                ax2.set_xlabel(f'{variable}')
+#                 # Residuals (Data - Model) and their errors
+#                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
+#                 ax2.set_xlabel(f'{variable}')
                 
-            elif type(variable)==list:
-                assert merge_sidebands==True, 'merge_sidebands must be True'
-                for region, df in regions.items():
-                    if region=='signal region':
-                        sig_total = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
-                                    weights={'sub_df': weights.get(region,1)},fig=fig, ax=ax1, cut=cut)
-                    elif region in ['left sideband', 'right sideband']:
-                        bkg_counts = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
-                                    weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
-                        D_counts = self.plot_2d(bins=bins, sub_df=Dellnu, variables=variable, title_name=region,
-                                    weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
-                        Dst_counts = self.plot_2d(bins=bins, sub_df=Dstellnu, variables=variable, title_name=region,
-                                    weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
-#                         sb_total -= r_D * D_counts
-#                         sb_total -= r_Dst * Dst_counts
-                        sb_total += bkg_counts
+#             elif type(variable)==list:
+#                 assert merge_sidebands==True, 'merge_sidebands must be True'
+#                 for region, df in regions.items():
+#                     if region=='signal region':
+#                         sig_total = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
+#                                     weights={'sub_df': weights.get(region,1)},fig=fig, ax=ax1, cut=cut)
+#                     elif region in ['left sideband', 'right sideband']:
+#                         bkg_counts = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
+#                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
+#                         D_counts = self.plot_2d(bins=bins, sub_df=Dellnu, variables=variable, title_name=region,
+#                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
+#                         Dst_counts = self.plot_2d(bins=bins, sub_df=Dstellnu, variables=variable, title_name=region,
+#                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
+# #                         sb_total -= r_D * D_counts
+# #                         sb_total -= r_Dst * Dst_counts
+#                         sb_total += bkg_counts
                         
-                self.plot_2d(bins=bins, hist=unp.nominal_values(sb_total),title_name='sidebands',fig=fig, ax=ax2, cut=cut)
+#                 self.plot_2d(bins=bins, hist=unp.nominal_values(sb_total),title_name='sidebands',fig=fig, ax=ax2, cut=cut)
                         
-                # Residuals (Data - Model) and their errors
-                self.plot_residuals(bins=bins, data=sig_total, model=sb_total, fig=fig, ax=ax3)
+#                 # Residuals (Data - Model) and their errors
+#                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, fig=fig, ax=ax3)
             
-        elif bkg_name in ['bkg_continuum','bkg_combinatorial']:
+        elif bkg_name == 'bkg_BBbar':
+
+            if samples_sig is None:
+                raise ValueError(
+                    "samples_sig must be provided for bkg_name='bkg_BBbar'"
+                )
+        
+            components = [
+                'bkg_combinatorial',
+                'bkg_hadronicB_secondaryL',
+            ]
+        
+            # --------------------------------------------------
+            # Control region:
+            # self.samples contains CR samples
+            # Plot the two components as a stack
+            # --------------------------------------------------
+        
+            control_mask = [
+                name for name in self.sorted_order
+                if name not in components
+            ]
+        
+            control_counts = self.plot_mc_1d(
+                bins=bins,
+                variable=variable,
+                ax=ax1,
+                cut=cut,
+                weights=weights,
+                mask=control_mask,
+                legend='simple_color',
+            )
+        
+            # --------------------------------------------------
+            # Signal region:
+            # combine both components and treat the total
+            # visually like "data"
+            # --------------------------------------------------
+        
+            signal_df = pd.concat(
+                [
+                    samples_sig['bkg_combinatorial'],
+                    samples_sig['bkg_hadronicB_secondaryL'],
+                ],
+                ignore_index=True
+            )
+        
+            signal_counts = self.plot_data_1d(
+                bins=bins,
+                ax=ax1,
+                sub_df=signal_df,
+                variable=variable,
+                cut=cut,
+                scale=weights.get('signal region', 1),
+                name='BBbar_bkg MC signal region',
+            )
+        
+            # --------------------------------------------------
+            # Residual
+            # --------------------------------------------------
+        
+            self.plot_residuals(
+                bins=bins,
+                data=signal_counts,
+                model=control_counts,
+                ax=ax2,
+            )
+        
+        elif bkg_name in ['bkg_continuum',]:
             sample_control = self.samples[bkg_name]
             if samples_sig is None:
                 print(f'Error: samples_sig is required for {bkg_name}')
@@ -3446,11 +3520,12 @@ class mpl:
             ax2.set_xlabel(f'{variable}')
         
         if type(variable)==str:
-            ax1.set_title(f'Overlaid signal region vs control region ({bkg_name=})')
-            ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV')
+            ax1.set_title(f'signal region MC vs control region MC ({bkg_name=})')
+            ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
+            ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=text_fs)
             ax1.grid()
-            ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
-            ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
+            ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=text_fs)
+            ax2.set_xlabel(f'{variable}', fontsize=text_fs)
         elif type(variable)==list:
             fig.suptitle(f'signal region vs weighted control region ({bkg_name=})')
         # Adjust the layout to avoid overlapping of the subplots
