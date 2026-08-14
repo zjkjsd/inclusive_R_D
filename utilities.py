@@ -671,6 +671,29 @@ def reweight_BBbar_background(
         10431 * 423: 0.0009  / 0.01706301,
     }
 
+    # Keep category colours tied to their meaning rather than to the (yield-sorted)
+    # order returned by groupby.  The n-body palette also makes newly appearing
+    # categories deterministic across the D and lepton plots.
+    category_colors = {
+        "BBbar_semileptonic": "#4c78a8",
+        "BBbar_measured_hadronic": "#f58518",
+        "BBbar_unmeasured:2-body": "#54a24b",
+        "BBbar_unmeasured:3-body": "#e45756",
+        "BBbar_unmeasured:4-body": "#72b7b2",
+        "BBbar_unmeasured:5-body": "#b279a2",
+        "BBbar_unmeasured:6-body": "#ff9da6",
+        "BBbar_unmeasured:7-body": "#9d755d",
+    }
+    category_colors.update({
+        key.replace("-body", "+-body"): color
+        for key, color in tuple(category_colors.items())
+        if key.startswith("BBbar_unmeasured:")
+    })
+
+    def colors_for(categories):
+        """Return stable colours for BBbar category names."""
+        return [category_colors.get(category, "#bab0ac") for category in categories]
+
     def add_side_columns_inplace(
         df: pd.DataFrame,
         *,
@@ -819,23 +842,29 @@ def reweight_BBbar_background(
             print(D_yields)
             if weight_ell_side and name == "bkg_combinatorial":
                 ell_yields = df.groupby("ell_category", dropna=False)['ell_side_weight'].sum().sort_values(ascending=False)
-                fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
-                ax1.pie(D_yields.to_numpy(), labels=D_yields.index.to_list(),autopct="%1.1f%%", startangle=90)
-                ax2.pie(ell_yields.to_numpy(), labels=ell_yields.index.to_list(),autopct="%1.1f%%", startangle=90)
-                fig.suptitle(f"MC composition {name}: measured vs unmeasured (split by n-body)", fontsize=16)
-                ax1.set_title("D ancestor B decay")
-                ax2.set_title("Lepton ancestor B decay")
+                fig, (ax1, ax2) = plt.subplots(
+                    1, 2, figsize=(14, 6), constrained_layout=True
+                )
+                D_categories = D_yields.index.to_list()
+                ell_categories = ell_yields.index.to_list()
+                ax1.pie(D_yields.to_numpy(), labels=D_categories, autopct="%1.1f%%",
+                        startangle=90, colors=colors_for(D_categories))
+                ax2.pie(ell_yields.to_numpy(), labels=ell_categories, autopct="%1.1f%%",
+                        startangle=90, colors=colors_for(ell_categories))
+                fig.suptitle(f"MC composition {name}: measured vs unmeasured (split by n-body)", fontsize=16, y=0.98)
+                ax1.set_title("D ancestor B decay", pad=4)
+                ax2.set_title("Lepton ancestor B decay", pad=4)
                 ax1.axis("equal")
                 ax2.axis("equal")
-                plt.tight_layout()
                 plt.show()
                 
             else:
-                fig, ax = plt.subplots(figsize=(7, 7))
-                ax.pie(D_yields.to_numpy(), labels=D_yields.index.to_list(),autopct="%1.1f%%", startangle=90)
-                ax.set_title(f"MC composition {name}: D-side categories")
+                fig, ax = plt.subplots(figsize=(7, 6), constrained_layout=True)
+                D_categories = D_yields.index.to_list()
+                ax.pie(D_yields.to_numpy(), labels=D_categories, autopct="%1.1f%%",
+                       startangle=90, colors=colors_for(D_categories))
+                ax.set_title(f"MC composition {name}: D-side categories", pad=4)
                 ax.axis("equal")
-                plt.tight_layout()
                 plt.show()
 
 
@@ -2944,8 +2973,10 @@ class mpl:
         plt.show()
         
     
-    def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None, 
-                 sig_mask=False, scale=1, name='Data', density=False):
+    def plot_data_1d(self, bins, ax, hist=None, sub_df=None, variable=None, cut=None,
+                 sig_mask=False, scale=1, name='Data', density=False,
+                 apply_eventByEvent_correction=False,
+                 eventByEvent_weight_col='total_PID_weight'):
         # Provide either variable or hist
         if variable: # requires sub_df
             # Apply signal mask if requested
@@ -2955,10 +2986,14 @@ class mpl:
             else:
                 data = sub_df if sub_df is not None else self.data
 
-            var_col = data.query(cut)[variable] if cut else data[variable]
+            selected_data = data.query(cut) if cut else data
+            var_col = selected_data[variable]
             # Apply scaling if requested
-            if scale:
-                weight = get_weights(var_col, scale)
+            weight = get_weights(selected_data, scale)
+            if apply_eventByEvent_correction:
+                weight = apply_eventByEvent_weight(
+                    selected_data, weight, eventByEvent_weight_col
+                )
 
             # Compute histogram with weights
             counts, _ = np.histogram(var_col, bins=bins, weights=weight)
@@ -3010,14 +3045,17 @@ class mpl:
                   weights={}, mask=[], legend='full', density=False,
                   apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight'):
 
-        def normalize_to_density(counts, bins):
-            # If density is True, normalize the counts so that the integral is 1
+        def normalize_to_density(counts, staterror, bins, integral=None):
+            # Scale both values and errors so the uncertainty array stays
+            # consistent with the density shown in the plot.
             if density:
                 bin_widths = np.diff(bins)
-                integral = np.sum(counts * bin_widths)
+                if integral is None:
+                    integral = np.sum(counts * bin_widths)
                 if integral > 0:
                     counts = counts / integral
-            return counts
+                    staterror = staterror / integral
+            return counts, staterror
 
 
         if sub_df is not None:
@@ -3037,7 +3075,7 @@ class mpl:
             (staterr_squared, _) = np.histogram(sample[variable], bins=bins,weights=weight**2)
             staterror = poisson_error(staterr_squared)
 
-            counts = normalize_to_density(counts, bins)  # Normalize if density=True
+            counts, staterror = normalize_to_density(counts, staterror, bins)
 
             if ax is not None:
                 if legend== 'simple_color':
@@ -3049,7 +3087,10 @@ class mpl:
                     label = (f'{sub_name} \n{self.statistics(df=sample[variable],count_only=False)} '
                            f'\n cut_eff={(len(sample)/len(sub_df)):.3f}')
                 
-                color_index = self.sorted_order.index(sub_name)
+                color_index = (
+                    self.sorted_order.index(sub_name)
+                    if sub_name in self.sorted_order else 0
+                )
                 ax.hist(bins[:-1], bins, weights=counts, color=self.colors[color_index],
                         label=label, **self._hist_style(sub_name))
 
@@ -3058,6 +3099,26 @@ class mpl:
 
         else:
             bottom = unp.uarray(np.zeros(len(bins)-1), np.zeros(len(bins)-1))
+            density_integral = None
+            if density:
+                density_integral = 0.0
+                for name in self.sorted_order:
+                    if name not in self.samples or name in mask:
+                        continue
+                    sample = self.samples[name].query(cut) if cut else self.samples[name]
+                    if len(sample) == 0:
+                        continue
+                    scale = weights.get(name, weights.get('all_mc', 1))
+                    weight = get_weights(sample, scale)
+                    if apply_eventByEvent_correction:
+                        weight = apply_eventByEvent_weight(
+                            sample, weight, eventByEvent_weight_col
+                        )
+                    raw_counts, _ = np.histogram(
+                        sample[variable], bins=bins, weights=weight
+                    )
+                    density_integral += np.sum(raw_counts * np.diff(bins))
+
             for i, name in enumerate(self.sorted_order):
                 if name not in self.samples.keys():
                     continue
@@ -3083,7 +3144,9 @@ class mpl:
                 
 
                 # Normalize if density=True
-                counts = normalize_to_density(counts, bins)
+                counts, staterror = normalize_to_density(
+                    counts, staterror, bins, density_integral
+                )
                 b = unp.nominal_values(bottom)
                 
                 if ax is not None:
@@ -3332,7 +3395,9 @@ class mpl:
         return data_counts, mc_counts
         
         
-    def plot_mc_sig_control(self,variable,bins,cut=None,weights={},mask=[],
+    def plot_mc_sig_control(self,variable,bins,cut=None,weights={},mask=[], density=False,
+                            apply_eventByEvent_correction=False,
+                            eventByEvent_weight_col='total_PID_weight',
                             bkg_name='bkg_fakeD',samples_sig=None,
                             figsize=(10,5),legend_nc=1,text_fs=12):
         if type(variable)==str:
@@ -3460,6 +3525,9 @@ class mpl:
                 weights=weights,
                 mask=control_mask,
                 legend='simple_color',
+                density=density,
+                apply_eventByEvent_correction=apply_eventByEvent_correction,
+                eventByEvent_weight_col=eventByEvent_weight_col,
             )
         
             # --------------------------------------------------
@@ -3484,6 +3552,9 @@ class mpl:
                 cut=cut,
                 scale=weights.get('signal region', 1),
                 name='BBbar_bkg MC signal region',
+                density=density,
+                apply_eventByEvent_correction=apply_eventByEvent_correction,
+                eventByEvent_weight_col=eventByEvent_weight_col,
             )
         
             # --------------------------------------------------
@@ -3509,11 +3580,16 @@ class mpl:
                        'signal region': sample_sig}
             
             sig_total = self.plot_data_1d(bins=bins, sub_df=sample_sig, variable=variable, name='signal region',
-                                          ax=ax1,cut=None, scale=weights.get('signal region',1))
+                                          ax=ax1,cut=None, scale=weights.get('signal region',1), density=density,
+                                          apply_eventByEvent_correction=apply_eventByEvent_correction,
+                                          eventByEvent_weight_col=eventByEvent_weight_col)
 
             control_total = self.plot_mc_1d(bins=bins, sub_df=sample_control, sub_name='control region', 
-                                            variable=variable,ax=ax1,cut=cut,correction=correction,
-                                            weights={'sub_df':weights.get('control region',1)}, mask=mask)
+                                            variable=variable,ax=ax1,cut=cut,
+                                            weights={'control region':weights.get('control region',1)}, mask=mask,
+                                            density=density,
+                                            apply_eventByEvent_correction=apply_eventByEvent_correction,
+                                            eventByEvent_weight_col=eventByEvent_weight_col)
             
             # Residuals (Data - Model) and their errors
             self.plot_residuals(bins=bins, data=sig_total, model=control_total, ax=ax2)
@@ -3521,7 +3597,8 @@ class mpl:
         
         if type(variable)==str:
             ax1.set_title(f'signal region MC vs control region MC ({bkg_name=})')
-            ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
+            ylabel = 'Density' if density else f'# of events per bin {(bins[1]-bins[0]):.3f} GeV'
+            ax1.set_ylabel(ylabel, fontsize=text_fs)
             ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=text_fs)
             ax1.grid()
             ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=text_fs)
