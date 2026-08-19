@@ -974,7 +974,7 @@ def main() -> None:
     output_path = args.output
     if output_path is None:
         output_path = Path(
-            f"best_bbbar_weights_{fit_model}{strength_tag}{roe_bins_tag}_"
+            f"best_bbbar_weights_{fit_model}{strength_tag}{roe_bins_tag}_{run}_{channel}_"
             f"replace{mode_replacement}_minuit.json"
         )
 
