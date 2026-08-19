@@ -27,6 +27,7 @@ from optuna.trial import TrialState
 from iminuit import Minuit
 
 import utilities as util
+import bbbar_reweighting as bbbar
 
 
 # ============================================================
@@ -236,6 +237,27 @@ def _histogram1d(
     return hist.astype(float)
 
 
+def combined_event_weights(
+    df: pd.DataFrame,
+    *,
+    columns: tuple[Optional[str], ...] = (
+        BASE_WEIGHT_COL,
+        PID_WEIGHT_COL,
+        TUNE_WEIGHT_COL,
+        RUN_WEIGHT_COL,
+    ),
+    scale: float = 1.0,
+) -> np.ndarray:
+    """Multiply available event-weight columns and reject invalid inputs."""
+    weights = np.full(len(df), float(scale), dtype=float)
+    for column in columns:
+        if column is not None and column in df.columns:
+            weights *= df[column].to_numpy(dtype=float)
+    if not np.all(np.isfinite(weights)):
+        raise ValueError("Event weights contain non-finite values.")
+    return weights
+
+
 def get_data_histogram_1d(
     df_data: pd.DataFrame,
     target: OneDimensionalLikelihoodTarget,
@@ -343,19 +365,11 @@ def get_weighted_mc_histogram(
         if selected.empty:
             continue
 
-        weights = np.ones(len(selected), dtype=float)
-        for column in (
-            base_weight_col,
-            event_weight_col,
-            tune_weight_col,
-            run_weight_col,
-        ):
-            if column is not None and column in selected.columns:
-                weights *= selected[column].to_numpy(dtype=float)
-        weights *= float(luminosity_scale)
-
-        if np.any(~np.isfinite(weights)):
-            return np.full(shape, np.nan, dtype=float)
+        weights = combined_event_weights(
+            selected,
+            columns=(base_weight_col, event_weight_col, tune_weight_col, run_weight_col),
+            scale=luminosity_scale,
+        )
 
         total += _histogram2d(
             selected[target.x_variable].to_numpy(dtype=float),
@@ -385,18 +399,11 @@ def get_weighted_mc_histogram_1d(
         selected = _safe_query(df_sample, target.cut)
         if selected.empty:
             continue
-        weights = np.ones(len(selected), dtype=float)
-        for column in (
-            base_weight_col,
-            event_weight_col,
-            tune_weight_col,
-            run_weight_col,
-        ):
-            if column is not None and column in selected.columns:
-                weights *= selected[column].to_numpy(dtype=float)
-        weights *= float(luminosity_scale)
-        if np.any(~np.isfinite(weights)):
-            return np.full(shape, np.nan, dtype=float)
+        weights = combined_event_weights(
+            selected,
+            columns=(base_weight_col, event_weight_col, tune_weight_col, run_weight_col),
+            scale=luminosity_scale,
+        )
         total += _histogram1d(
             selected[target.variable].to_numpy(dtype=float),
             target.bins,
@@ -458,17 +465,14 @@ def apply_category_weights(
     *,
     replacement_map,
 ) -> Dict[str, pd.DataFrame]:
-    """Apply the current parameter point using the user's utility function."""
-    samples_weighted = util.reweight_BBbar_background(
+    """Apply a parameter point to the invariant, prepared classification."""
+    samples_weighted = bbbar.apply_bbbar_weights(
         samples_base,
-        weight_map=dict(weights),
+        weights,
         out_weight_col=TUNE_WEIGHT_COL,
         weight_ell_side=True,
-        verbose=False,
-        cap_nbody=5,
+        copy=False,
         warn_missing_weight_keys=True,
-        D_replacement_map=replacement_map,
-        ell_replacement_map=replacement_map,
     )
     # Enforce the externally determined fake-D normalization explicitly. This
     # avoids relying on the BBbar-specific utility to handle this component.
@@ -543,9 +547,10 @@ def make_optuna_objective(
     roe_target: Optional[OneDimensionalLikelihoodTarget],
     roe_strength: float,
     replacement_map,
+    fixed_weights: Mapping[str, float] = FIXED_WEIGHTS,
 ):
     def objective(trial: optuna.Trial) -> float:
-        weights = dict(FIXED_WEIGHTS)
+        weights = dict(fixed_weights)
         for spec in PARAMETER_SPECS.values():
             weights[spec.category] = trial.suggest_float(
                 spec.category,
@@ -594,11 +599,12 @@ def run_minuit(
     roe_strength: float,
     replacement_map,
     run_minos: bool,
+    fixed_weights: Mapping[str, float] = FIXED_WEIGHTS,
 ) -> Minuit:
     parameter_names = tuple(PARAMETER_SPECS)
 
     def cost(*parameter_values: float) -> float:
-        weights = dict(FIXED_WEIGHTS)
+        weights = dict(fixed_weights)
         for name, value in zip(parameter_names, parameter_values):
             weights[PARAMETER_SPECS[name].category] = float(value)
         return evaluate_weights(
@@ -688,13 +694,16 @@ def _json_safe(value):
     return value
 
 
-def minuit_results(minuit: Minuit) -> dict:
+def minuit_results(
+    minuit: Minuit,
+    fixed_weights: Mapping[str, float] = FIXED_WEIGHTS,
+) -> dict:
     names = list(PARAMETER_SPECS)
     fitted_by_safe_name = {name: float(minuit.values[name]) for name in names}
     fitted_by_category = {
         PARAMETER_SPECS[name].category: float(minuit.values[name]) for name in names
     }
-    all_weights = {**fitted_by_category, **FIXED_WEIGHTS}
+    all_weights = {**fitted_by_category, **fixed_weights}
     hesse_errors = {name: float(minuit.errors[name]) for name in names}
 
     minos_errors = {}
@@ -749,7 +758,10 @@ def main() -> None:
     # The combined sample uses an event-level run correction below, so its
     # common fake-D factor is unity rather than applying the run1 factor to all
     # events.
-    FIXED_WEIGHTS["bkg_fakeD"] = 0.87 if run == "run1" else 1.0
+    fixed_weights = {
+        **FIXED_WEIGHTS,
+        "bkg_fakeD": 0.87 if run == "run1" else 1.0,
+    }
     channel = args.channel
     mode_replacement = args.mode_replacement
     replacement_map = util.hadronicB_replacement_map if mode_replacement else None
@@ -836,6 +848,17 @@ def main() -> None:
     if run == "run1+run2" and "bkg_fakeD" in samples_base:
         fake_d = samples_base["bkg_fakeD"]
         fake_d.loc[fake_d[RUN_PERIOD_COL] == "run1", RUN_WEIGHT_COL] = 0.87
+    # Decay classification and replacement factors do not depend on fit
+    # parameters, so calculate them once rather than during every likelihood
+    # evaluation.
+    samples_base = bbbar.prepare_bbbar_reweighting(
+        samples_base,
+        weight_ell_side=True,
+        cap_nbody=5,
+        D_replacement_map=replacement_map,
+        ell_replacement_map=replacement_map,
+        copy=False,
+    )
     data_hist = get_data_histogram(data_combined, joint_target)
     fit_mask, raw_mc_hist = build_fixed_fit_mask(
         samples_base,
@@ -869,6 +892,7 @@ def main() -> None:
         roe_target=roe_target,
         roe_strength=args.roe_strength,
         replacement_map=replacement_map,
+        fixed_weights=fixed_weights,
     )
     uses_roe = fit_model != "kinematic-2d"
     strength_tag = f"_alpha{args.roe_strength:g}" if roe_target is not None else ""
@@ -900,7 +924,7 @@ def main() -> None:
             "The study has no completed trial. Run without --skip-optuna first."
         )
 
-    optuna_best_weights = {**study.best_params, **FIXED_WEIGHTS}
+    optuna_best_weights = {**study.best_params, **fixed_weights}
     print(f"\nBest Optuna deviance over all stored trials: {study.best_value:.6f}")
 
     print(colored("iminuit MIGRAD/HESSE refinement starts", "red"))
@@ -916,13 +940,14 @@ def main() -> None:
         roe_strength=args.roe_strength,
         replacement_map=replacement_map,
         run_minos=not args.skip_minos,
+        fixed_weights=fixed_weights,
     )
     print(minuit.fmin)
     print(minuit.params)
     if minuit.covariance is not None:
         print(minuit.covariance)
 
-    result = minuit_results(minuit)
+    result = minuit_results(minuit, fixed_weights)
     loss_components = evaluate_loss_components(
         result["best_weights"],
         data_hist=data_hist,
@@ -968,7 +993,7 @@ def main() -> None:
         "replace_modes": mode_replacement,
         "replacement_map": replacement_map,
         "luminosity_scale": LUMINOSITY_SCALE["all_mc"],
-        "fixed_weights": FIXED_WEIGHTS,
+        "fixed_weights": fixed_weights,
         "target": {
             "x_variable": joint_target.x_variable,
             "x_bins": joint_target.x_bins.tolist(),
