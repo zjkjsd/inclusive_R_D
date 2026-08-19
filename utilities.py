@@ -641,244 +641,46 @@ def reweight_BBbar_background(
     verbose: bool = False,
     cap_nbody: int | None = None,
     warn_missing_weight_keys: bool = True,
-
-    # NEW
     D_replacement_map: dict[int, int] | None = None,
     ell_replacement_map: dict[int, int] | None = None,
     replacement_use_pdg_corr: bool = False,
 ):
+    """Prepare and weight BBbar samples in place (legacy compatibility API).
+
+    New fitting code should call ``bbbar_reweighting.prepare_bbbar_reweighting``
+    once and ``apply_bbbar_weights`` for each parameter point.  This wrapper
+    preserves the historical structural mutation when ``weight_ell_side`` is
+    false.
     """
-    D_replacement_map:
-      {old_dmID: new_dmID}
+    import bbbar_reweighting as bbbar
 
-    Example:
-      {431*411*211*211: 431*10413}
-
-    This gives:
-      old_dmID weight = 0
-      new_dmID weight *= (N_old + N_new) / N_new
-
-    If replacement_use_pdg_corr=True, N_old and N_new are counted after pdg_corr.
-    """
-
-    D_replacement_map = D_replacement_map or {}
-    ell_replacement_map = ell_replacement_map or {}
-
-    pdg_corr = {
-        10431 * 411: 0.00105 / 0.00737857,
-        10431 * 413: 0.0015  / 0.01768717,
-        10431 * 421: 0.00079 / 0.00761729,
-        10431 * 423: 0.0009  / 0.01706301,
-    }
-
-    # Keep category colours tied to their meaning rather than to the (yield-sorted)
-    # order returned by groupby.  The n-body palette also makes newly appearing
-    # categories deterministic across the D and lepton plots.
-    category_colors = {
-        "BBbar_semileptonic": "#4c78a8",
-        "BBbar_measured_hadronic": "#f58518",
-        "BBbar_unmeasured:2-body": "#54a24b",
-        "BBbar_unmeasured:3-body": "#e45756",
-        "BBbar_unmeasured:4-body": "#72b7b2",
-        "BBbar_unmeasured:5-body": "#b279a2",
-        "BBbar_unmeasured:6-body": "#ff9da6",
-        "BBbar_unmeasured:7-body": "#9d755d",
-    }
-    category_colors.update({
-        key.replace("-body", "+-body"): color
-        for key, color in tuple(category_colors.items())
-        if key.startswith("BBbar_unmeasured:")
-    })
-
-    def colors_for(categories):
-        """Return stable colours for BBbar category names."""
-        return [category_colors.get(category, "#bab0ac") for category in categories]
-
-    def add_side_columns_inplace(
-        df: pd.DataFrame,
-        *,
-        prefix: str,
-        combinatorial_vars: list[str],
-        neutral_cols: list[str],
-        charged_cols: list[str],
-        replacement_map: dict[int, int],
-    ):
-        df[f"{prefix}dmID"] = df[combinatorial_vars].astype("int64").prod(axis=1).abs()
-
-        df[f"{prefix}mask_sl"] = df[combinatorial_vars].isin(leptons).any(axis=1)
-
-        neutral_n = (~df[neutral_cols].isin([-1, 22])).sum(axis=1)
-        charged_n = (~df[charged_cols].isin([-1, 22])).sum(axis=1)
-        df[f"{prefix}n_daughters"] = np.maximum(neutral_n, charged_n).astype(int)
-
-        df[f"{prefix}is_measured"] = df[f"{prefix}dmID"].isin(measured_pdg_list)
-
-        n_clip = df[f"{prefix}n_daughters"].clip(lower=2)
-        if cap_nbody is not None:
-            n_lbl = np.where(
-                n_clip >= cap_nbody,
-                f"{cap_nbody}+-body",
-                n_clip.astype(str) + "-body",
-            )
-        else:
-            n_lbl = n_clip.astype(str) + "-body"
-
-        had_cat = np.where(
-            df[f"{prefix}is_measured"],
-            "BBbar_measured_hadronic",
-            "BBbar_unmeasured:" + n_lbl,
-        )
-
-        df[f"{prefix}category"] = np.where(
-            df[f"{prefix}mask_sl"],
-            "BBbar_semileptonic",
-            had_cat,
-        )
-
-        df[f"{prefix}manual_w"] = (
-            df[f"{prefix}category"].map(weight_map).fillna(1.0).astype(float)
-        )
-
-        if warn_missing_weight_keys:
-            present = set(pd.unique(df[f"{prefix}category"]))
-            missing = sorted(present - set(weight_map.keys()))
-            if missing and verbose:
-                print(f"[{prefix}] Missing weight_map keys, defaulting to 1: {missing}")
-
-        mapped_corr = df[f"{prefix}dmID"].map(pdg_corr).fillna(1.0).astype(float)
-        df[f"{prefix}pdg_corr"] = np.where(
-            df[f"{prefix}is_measured"],
-            mapped_corr,
-            1.0,
-        )
-
-        # -----------------------------
-        # NEW: dmID-level replacement weight
-        # -----------------------------
-        df[f"{prefix}replacement_w"] = 1.0
-        
-        count_base = (
-            df[f"{prefix}pdg_corr"]
-            if replacement_use_pdg_corr
-            else pd.Series(1.0, index=df.index)
-        )
-        
-        # invert map: new_dmID -> list of old_dmIDs
-        new_to_old = {}
-        for old_dmID, new_dmID in replacement_map.items():
-            old_dmID = abs(int(old_dmID))
-            new_dmID = abs(int(new_dmID))
-            new_to_old.setdefault(new_dmID, []).append(old_dmID)
-        
-        for new_dmID, old_dmIDs in new_to_old.items():
-            old_mask = df[f"{prefix}dmID"].isin(old_dmIDs)
-            new_mask = df[f"{prefix}dmID"] == new_dmID
-        
-            n_old = count_base[old_mask].sum()
-            n_new = count_base[new_mask].sum()
-        
-            if n_new <= 0:
-                if verbose:
-                    print(
-                        f"[{prefix}] WARNING: many-to-one replacement "
-                        f"{old_dmIDs} -> {new_dmID} has n_new=0. "
-                        f"Setting old modes to 0, cannot transfer yield."
-                    )
-                df.loc[old_mask, f"{prefix}replacement_w"] = 0.0
-                continue
-        
-            R = (n_old + n_new) / n_new
-        
-            df.loc[old_mask, f"{prefix}replacement_w"] = 0.0
-            df.loc[new_mask, f"{prefix}replacement_w"] *= R
-        
-            if verbose:
-                print(
-                    f"[{prefix}] many-to-one replacement {old_dmIDs} -> {new_dmID}: "
-                    f"N_old={n_old:.3f}, N_new={n_new:.3f}, R={R:.3f}"
-                )
-
-        df[f"{prefix}side_weight"] = (
-            df[f"{prefix}pdg_corr"]
-            * df[f"{prefix}manual_w"]
-            * df[f"{prefix}replacement_w"]
-        )
-
-
-    for name, df in samples.items():
-        df[out_weight_col] = 1.0
-
-        if name not in ["bkg_combinatorial", "bkg_hadronicB_secondaryL"]:
-            continue
-
-        add_side_columns_inplace(
-            df,
-            prefix="D_",
-            combinatorial_vars=combinatorial_vars_D,
-            neutral_cols=neutral_cols_D,
-            charged_cols=charged_cols_D,
-            replacement_map=D_replacement_map,
-        )
-
-        df[out_weight_col] = df["D_side_weight"]
-
-        if name == "bkg_combinatorial" and weight_ell_side:
-            add_side_columns_inplace(
-                df,
-                prefix="ell_",
-                combinatorial_vars=combinatorial_vars_ell,
-                neutral_cols=neutral_cols_ell,
-                charged_cols=charged_cols_ell,
-                replacement_map=ell_replacement_map,
-            )
-            df[out_weight_col] *= df["ell_side_weight"]
-
-
-        if verbose:
-            print(f"\n[{name}] N={len(df)}  sum({out_weight_col})={df[out_weight_col].sum():.3f}")
-
-            # Weighted yields AFTER all applied weights (using out_weight_col)
-            D_yields = df.groupby("D_category", dropna=False)['D_side_weight'].sum().sort_values(ascending=False)
-            print(D_yields)
-            if weight_ell_side and name == "bkg_combinatorial":
-                ell_yields = df.groupby("ell_category", dropna=False)['ell_side_weight'].sum().sort_values(ascending=False)
-                fig, (ax1, ax2) = plt.subplots(
-                    1, 2, figsize=(14, 6), constrained_layout=True
-                )
-                D_categories = D_yields.index.to_list()
-                ell_categories = ell_yields.index.to_list()
-                ax1.pie(D_yields.to_numpy(), labels=D_categories, autopct="%1.1f%%",
-                        startangle=90, colors=colors_for(D_categories))
-                ax2.pie(ell_yields.to_numpy(), labels=ell_categories, autopct="%1.1f%%",
-                        startangle=90, colors=colors_for(ell_categories))
-                fig.suptitle(f"MC composition {name}: measured vs unmeasured (split by n-body)", fontsize=16, y=1)
-                ax1.set_title("D ancestor B decay", y=0.9)
-                ax2.set_title("Lepton ancestor B decay", y=0.9)
-                ax1.axis("equal")
-                ax2.axis("equal")
-                plt.show()
-                
-            else:
-                fig, ax = plt.subplots(figsize=(7, 6), constrained_layout=True)
-                D_categories = D_yields.index.to_list()
-                ax.pie(D_yields.to_numpy(), labels=D_categories, autopct="%1.1f%%",
-                       startangle=90, colors=colors_for(D_categories))
-                ax.set_title(f"MC composition {name}: D-side categories", y=0.9)
-                ax.axis("equal")
-                plt.show()
-
-
+    prepared = bbbar.prepare_bbbar_reweighting(
+        samples,
+        weight_ell_side=weight_ell_side,
+        cap_nbody=cap_nbody,
+        D_replacement_map=D_replacement_map,
+        ell_replacement_map=ell_replacement_map,
+        replacement_use_pdg_corr=replacement_use_pdg_corr,
+        copy=False,
+        verbose=verbose,
+    )
+    weighted = bbbar.apply_bbbar_weights(
+        prepared,
+        weight_map,
+        out_weight_col=out_weight_col,
+        weight_ell_side=weight_ell_side,
+        copy=False,
+        warn_missing_weight_keys=warn_missing_weight_keys,
+    )
     if not weight_ell_side:
-        BBbar_bkg = pd.concat(
-            [samples["bkg_combinatorial"], samples["bkg_hadronicB_secondaryL"]]
+        combined = pd.concat(
+            [weighted["bkg_combinatorial"], weighted["bkg_hadronicB_secondaryL"]]
         )
-        BBbar_by_category = dict(tuple(BBbar_bkg.groupby("D_category")))
-
-        samples.pop("bkg_combinatorial")
-        samples.pop("bkg_hadronicB_secondaryL")
-        samples.update(BBbar_by_category)
-
-    return samples
+        by_category = dict(tuple(combined.groupby("D_category")))
+        weighted.pop("bkg_combinatorial")
+        weighted.pop("bkg_hadronicB_secondaryL")
+        weighted.update(by_category)
+    return weighted
 
 
 # def reweight_BBbar_background(
