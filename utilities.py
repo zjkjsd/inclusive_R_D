@@ -851,9 +851,9 @@ def reweight_BBbar_background(
                         startangle=90, colors=colors_for(D_categories))
                 ax2.pie(ell_yields.to_numpy(), labels=ell_categories, autopct="%1.1f%%",
                         startangle=90, colors=colors_for(ell_categories))
-                fig.suptitle(f"MC composition {name}: measured vs unmeasured (split by n-body)", fontsize=16, y=0.98)
-                ax1.set_title("D ancestor B decay", pad=4)
-                ax2.set_title("Lepton ancestor B decay", pad=4)
+                fig.suptitle(f"MC composition {name}: measured vs unmeasured (split by n-body)", fontsize=16, y=1)
+                ax1.set_title("D ancestor B decay", y=0.9)
+                ax2.set_title("Lepton ancestor B decay", y=0.9)
                 ax1.axis("equal")
                 ax2.axis("equal")
                 plt.show()
@@ -863,7 +863,7 @@ def reweight_BBbar_background(
                 D_categories = D_yields.index.to_list()
                 ax.pie(D_yields.to_numpy(), labels=D_categories, autopct="%1.1f%%",
                        startangle=90, colors=colors_for(D_categories))
-                ax.set_title(f"MC composition {name}: D-side categories", pad=4)
+                ax.set_title(f"MC composition {name}: D-side categories", y=0.9)
                 ax.axis("equal")
                 plt.show()
 
@@ -2897,6 +2897,9 @@ class mpl:
                      r'$D^\ast\ell\nu$',r'$D\ell\nu$']
         self.sig = [r'$D^{\ast\ast}\tau\nu$',r'$D^\ast\tau\nu$',r'$D\tau\nu$']
 
+        self.var_name_dictionary = {'B0_recMissM2': '$M_{miss}^2$    [$GeV^2/c^4$]',
+                                    'p_D_l': r'$|p_D| + |p_{\ell}|$    [GeV/c]',}
+
         background_names = [name for name in self.sorted_order if name.startswith('bkg_')]
         if background_hatches is None:
             background_hatches = ('///', '\\\\', 'xxx', '---', '+++', 'ooo', '...')
@@ -3006,8 +3009,12 @@ class mpl:
                 integral = np.sum(counts * bin_widths)
                 if integral > 0:
                     factor = 1.0 / integral
-                    counts *= factor
-                    staterror *= factor
+                    # np.histogram returns integer counts when the input weights
+                    # are integer-valued.  Do not normalize in place: NumPy
+                    # cannot cast the resulting floating-point density back to
+                    # that integer array.
+                    counts = np.asarray(counts, dtype=float) * factor
+                    staterror = np.asarray(staterror, dtype=float) * factor
 
             label = f'{name} \n{self.statistics(df=var_col)}\n cut_eff={(len(var_col)/len(data)):.3f}'
             data_counts = unp.uarray(counts, staterror)
@@ -3167,8 +3174,8 @@ class mpl:
         return bottom
     
     
-    def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,
-                            density=False, errorbars=False, weights={},legend_nc=3,text_fs=14):
+    def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,density=False, errorbars=False, 
+                            weights={},figsize=(8,5),legend_nc=3,text_fs=14):
         if show_only is not None:
             # this will overwrite the mask argument
             if show_only == 'sig_and_gap':
@@ -3184,7 +3191,7 @@ class mpl:
             else:
                 print('Warning: show_only accepts sig, norm, bkg or a list')
             
-        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=(8, 6))
+        fig,axs =plt.subplots(sharex=True, sharey=False,figsize=figsize)
         for i, name in enumerate(self.sorted_order):
             if name not in self.samples.keys():
                 continue
@@ -3203,13 +3210,11 @@ class mpl:
                         color=self.colors[i],markeredgecolor='white',markeredgewidth=0.5)
 
         # restrict title length
-        if cut is not None and len(cut)>30:
-            print('cut=',cut)
-            axs.set_title(f'Overlaid Data vs MC (with cut)', fontsize=text_fs)
-        else: 
-            axs.set_title(f'Overlaid Data vs MC ({cut=})', fontsize=text_fs)
+        print('cut=',cut)
+        axs.set_title(f'MC distribution', fontsize=text_fs)
         axs.set_xlabel(f'{variable}', fontsize=text_fs)
-        axs.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
+        ylabel = 'density' if density else f'# of events per bin {(bins[1]-bins[0]):.3f} GeV'
+        axs.set_ylabel(ylabel, fontsize=text_fs)
         axs.grid()
         plt.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5)
 
@@ -3372,7 +3377,7 @@ class mpl:
                                         variable=variable, ax=ax2, cut=cut,mask=mask, density=density, legend='simple_color',
                                         weights=weights, apply_eventByEvent_correction=apply_eventByEvent_correction, 
                                         eventByEvent_weight_col=eventByEvent_weight_col,)
-            ax2.set_ylabel(bottom_plot)
+            ax2.set_ylabel(bottom_plot, fontsize=text_fs)
         
         # restrict title length
         print('cut=',cut)
@@ -3387,7 +3392,7 @@ class mpl:
         ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
         ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
         ax1.grid()
-        ax2.set_xlabel(f'{variable}', fontsize=text_fs)
+        ax2.set_xlabel(self.var_name_dictionary.get(variable, variable), fontsize=text_fs)
         
         plt.tight_layout()
         plt.show()
