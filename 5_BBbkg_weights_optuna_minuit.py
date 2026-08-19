@@ -72,6 +72,14 @@ FIXED_WEIGHTS: Dict[str, float] = {
     "bkg_fakeD": 0.87,
 }
 
+# This correction is measured separately for each data-taking period.  Keep it
+# in one named mapping so that the likelihood setup and the serialized weight
+# representation cannot silently diverge.
+FAKE_D_WEIGHT_BY_RUN_PERIOD: Dict[str, float] = {
+    "run1": 0.87,
+    "run2": 1.0,
+}
+
 CATEGORIES = [
     "bkg_fakeD",
     "BBbar_measured_hadronic",
@@ -694,6 +702,30 @@ def _json_safe(value):
     return value
 
 
+def weights_by_run_period(
+    weights: Mapping[str, float],
+    run_periods: tuple[str, ...],
+    *,
+    fake_d_correction_applied: bool = False,
+) -> Dict[str, Dict[str, float]]:
+    """Return the effective category weights for each included run period.
+
+    In the combined fit, ``weights['bkg_fakeD']`` is the common category
+    factor and the period correction is carried by ``RUN_WEIGHT_COL``.  This
+    expansion records their product, which is the representation downstream
+    users need when they do not have the fit's private event-level columns.
+    """
+    expanded = {}
+    for period in run_periods:
+        if period not in FAKE_D_WEIGHT_BY_RUN_PERIOD:
+            raise ValueError(f"No fake-D correction is configured for {period!r}.")
+        period_weights = {key: float(value) for key, value in weights.items()}
+        if not fake_d_correction_applied:
+            period_weights["bkg_fakeD"] *= FAKE_D_WEIGHT_BY_RUN_PERIOD[period]
+        expanded[period] = period_weights
+    return expanded
+
+
 def minuit_results(
     minuit: Minuit,
     fixed_weights: Mapping[str, float] = FIXED_WEIGHTS,
@@ -760,7 +792,10 @@ def main() -> None:
     # events.
     fixed_weights = {
         **FIXED_WEIGHTS,
-        "bkg_fakeD": 0.87 if run == "run1" else 1.0,
+        # A single-period fit can put the correction directly in the category
+        # weight.  A combined fit needs a common factor here and applies the
+        # differing corrections through RUN_WEIGHT_COL below.
+        "bkg_fakeD": FAKE_D_WEIGHT_BY_RUN_PERIOD[run] if run != "run1+run2" else 1.0,
     }
     channel = args.channel
     mode_replacement = args.mode_replacement
@@ -847,7 +882,19 @@ def main() -> None:
         sample[RUN_WEIGHT_COL] = 1.0
     if run == "run1+run2" and "bkg_fakeD" in samples_base:
         fake_d = samples_base["bkg_fakeD"]
-        fake_d.loc[fake_d[RUN_PERIOD_COL] == "run1", RUN_WEIGHT_COL] = 0.87
+        fake_d[RUN_WEIGHT_COL] = fake_d[RUN_PERIOD_COL].map(
+            FAKE_D_WEIGHT_BY_RUN_PERIOD
+        )
+        if fake_d[RUN_WEIGHT_COL].isna().any():
+            unknown_periods = sorted(
+                fake_d.loc[fake_d[RUN_WEIGHT_COL].isna(), RUN_PERIOD_COL]
+                .astype(str)
+                .unique()
+            )
+            raise ValueError(
+                "No fake-D correction is configured for run period(s): "
+                f"{unknown_periods}."
+            )
     # Decay classification and replacement factors do not depend on fit
     # parameters, so calculate them once rather than during every likelihood
     # evaluation.
@@ -994,6 +1041,26 @@ def main() -> None:
         "replacement_map": replacement_map,
         "luminosity_scale": LUMINOSITY_SCALE["all_mc"],
         "fixed_weights": fixed_weights,
+        "fixed_weights_by_run_period": weights_by_run_period(
+            fixed_weights,
+            run_periods,
+            fake_d_correction_applied=run != "run1+run2",
+        ),
+        "weight_representation": {
+            "category_column": TUNE_WEIGHT_COL,
+            "run_period_column": RUN_PERIOD_COL,
+            "run_factor_column": RUN_WEIGHT_COL,
+            "event_weight_product": [
+                BASE_WEIGHT_COL,
+                PID_WEIGHT_COL,
+                TUNE_WEIGHT_COL,
+                RUN_WEIGHT_COL,
+            ],
+            "fakeD_period_correction": FAKE_D_WEIGHT_BY_RUN_PERIOD,
+            "fakeD_period_correction_application": (
+                RUN_WEIGHT_COL if run == "run1+run2" else TUNE_WEIGHT_COL
+            ),
+        },
         "target": {
             "x_variable": joint_target.x_variable,
             "x_bins": joint_target.x_bins.tolist(),
@@ -1026,11 +1093,21 @@ def main() -> None:
             "best_deviance": float(study.best_value),
             "best_trial_number": int(study.best_trial.number),
             "best_weights": optuna_best_weights,
+            "best_weights_by_run_period": weights_by_run_period(
+                optuna_best_weights,
+                run_periods,
+                fake_d_correction_applied=run != "run1+run2",
+            ),
             "total_trials": len(study.trials),
             "trial_counts": trial_counts,
         },
         "minuit": result,
     }
+    result["best_weights_by_run_period"] = weights_by_run_period(
+        result["best_weights"],
+        run_periods,
+        fake_d_correction_applied=run != "run1+run2",
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w") as output_file:
         json.dump(_json_safe(output), output_file, indent=2, default=_json_default)
