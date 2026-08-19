@@ -535,8 +535,9 @@ def evaluate_loss_components(
     }
 
 
-def evaluate_weights(**kwargs) -> float:
-    return evaluate_loss_components(**kwargs)["total"]
+def evaluate_weights(weights: Mapping[str, float], **kwargs) -> float:
+    """Return the total loss for the supplied category weights."""
+    return evaluate_loss_components(weights, **kwargs)["total"]
 
 
 # ============================================================
