@@ -1,0 +1,20 @@
+# Downloaded ntuples and other local sample data
+/Samples/
+
+# Optuna study databases
+*.db
+*.db-shm
+*.db-wal
+
+# Regenerable ROOT outputs
+*.root
+
+# Common Python/Jupyter local state
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Local environments and editor/OS files
+.venv/
+venv/
+.DS_Store
