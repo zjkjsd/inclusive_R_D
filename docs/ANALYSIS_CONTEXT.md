@@ -59,7 +59,12 @@ Categories are built by `utilities.classify_mc_dict()` and labeled via
       `D ℓν_gap`)
   These are the `hadronicB_secondaryL`-adjacent "signals" category in code
   (`B2D_tau`, `B2D_ell`, `B2Dst_tau`, `B2Dst_ell`, `B2Dstst_*`, etc.)
-- **Other backgrounds** (all require `B0_isContinuumEvent==0` unless noted):
+- **Other backgrounds:** fake-object categories take priority in
+  `classify_mc_dict()`. A continuum event with a fake D, fake lepton, or
+  fake/clone D track is assigned to `bkg_fakeD`, `bkg_fakeL`, or
+  `bkg_fakeTracks` without a `B0_isContinuumEvent==0` requirement. The
+  continuum flag is applied only when separating the categories with a true D
+  and a true lepton.
     - `bkg_fakeD` — the reconstructed `Kππ` combination does not come from
       a real D± (`0 < D_mcErrors < 512`).
     - `bkg_fakeL` / `bkg_fakeTracks` — the lepton is not a true lepton, or
@@ -143,7 +148,7 @@ pending an updated MC16rd table (expected summer 2026).
 |---|---|
 | `Recon_scripts/1_Reconstruction_test.py`, `2_Reconstruction.py` | basf2 steering scripts, signal-side + ROE/tag-side reconstruction, e and μ channels, includes wrong-charge reconstruction for `4S` energy |
 | `Recon_scripts/submit_local_jobs.sh` | Local batch submission helper for the steering scripts |
-| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV hyperparameter tuning for the continuum-suppression BDT |
+| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV tuning for the binary off-resonance data/MC check; currently does not tune the final four-class classifier |
 | `3_LightGBM_Binary_Training.py` | Binary data/MC BDT (off-resonance validation) |
 | `4_LightGBM_Multiclass_Training.py` | Final 4-class signal-selection BDT training |
 | `5_BBbkg_weights_optuna_minuit.py` | BBbar background weight tuning (Optuna + iminuit joint 2D Poisson fit) |

@@ -30,7 +30,7 @@ and MC16rd simulation for Run 1 and Run 2. The current basf2 release is
 | Path | Purpose |
 |---|---|
 | `Recon_scripts/` | basf2 steering scripts for grid production, plus a local `bsub` test wrapper |
-| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV hyperparameter tuning |
+| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV tuner for the off-resonance binary data/MC check (see the limitation below) |
 | `3_LightGBM_Binary_Training.py` | Off-resonance data/MC binary-classifier check |
 | `4_LightGBM_Multiclass_Training.py` | Four-class signal-selection BDT training |
 | `5_BBbkg_weights_optuna_minuit.py` | BBbar MC weight tuning with Optuna and iminuit |
@@ -54,9 +54,16 @@ the workflow below.
    campaign and channel as expected by the consuming script or notebook.
 3. **Prepare training inputs.** See
    `Notebooks/2_create_BDTtrainingSet.ipynb` for a working example.
-4. **Tune the BDT.** Use `2_LightGBM_Tuner.py` to optimize the
-   continuum-suppression classifier. Optuna SQLite studies and LightGBM
-   artifacts are local, regenerable outputs.
+4. **Run the current binary-BDT tuner, if needed.**
+   `2_LightGBM_Tuner.py` currently loads off-resonance data and MC and assigns
+   binary data/MC labels. Run it with `--objective binary`; its default
+   `multiclass` objective has no corresponding `num_class` configuration and
+   is incompatible with those labels. Its Optuna study is separate from the
+   four-class model in the next step, which uses hard-coded parameters and
+   does not consume the study. The tuner must be updated before it can support
+   both binary data/MC tuning and four-class signal-selection tuning; do not
+   treat it as tuning the final classifier in its current form. Optuna SQLite
+   studies and LightGBM artifacts are local, regenerable outputs.
 5. **Train classifiers.** `3_LightGBM_Binary_Training.py` performs the
    off-resonance data/MC check. `4_LightGBM_Multiclass_Training.py` trains the
    four-class model whose outputs (`sig_prob`, `fakeD_prob`,
