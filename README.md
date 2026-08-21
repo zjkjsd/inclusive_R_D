@@ -39,7 +39,7 @@ and MC16rd simulation for Run 1 and Run 2. The current basf2 release is
 | `Fit_toys/` | Toy-fit workflow and example workspaces |
 | `docs/ANALYSIS_CONTEXT.md` | Physics categories, fit model, control regions, open issues, and editing guardrails |
 | `Old_scripts/` | Superseded implementations retained for reference; do not use as the default workflow |
-| `Samples/` | Local grid ntuples (ignored by Git; create/download locally) |
+| `Samples/` | Local grid ntuples (never commit these; create/download locally) |
 
 Numbered scripts and notebooks broadly follow pipeline order. When adding a
 new stage, preserve that convention where practical and update this table and
@@ -107,7 +107,8 @@ basf2 release and cannot be imported or meaningfully checked in plain Python.
 ## Before making changes
 
 - Do not commit ntuples, Optuna databases, ROOT output, or large/regenerable
-  fit artifacts. See `.gitignore`.
+  fit artifacts. Keep local-only ignore rules in your personal `.gitignore`,
+  `.git/info/exclude`, or global Git excludes as appropriate.
 - Treat category names and PDG-code products in `utilities.py` as physics
   interfaces, not cosmetic strings or arbitrary integers.
 - Preserve the run/channel split unless a combined treatment is intentional.
