@@ -1,0 +1,258 @@
+{
+  "run": "run1",
+  "run_periods": [
+    "run1"
+  ],
+  "input_files": {
+    "run1": "/home/belle/zhangboy/inclusive_R_D/Samples/4S_run1_deimos_BDT_e_3.root"
+  },
+  "channel": "e",
+  "objective": "missm2-roe-2d",
+  "roe_strength": null,
+  "roe_tail_start": 14,
+  "replace_modes": false,
+  "replacement_map": null,
+  "luminosity_scale": 0.25,
+  "fixed_weights": {
+    "BBbar_semileptonic": 1.0,
+    "bkg_fakeD": 0.87
+  },
+  "fixed_weights_by_run_period": {
+    "run1": {
+      "BBbar_semileptonic": 1.0,
+      "bkg_fakeD": 0.87
+    }
+  },
+  "weight_representation": {
+    "category_column": "BB_weight",
+    "run_period_column": "__run_period__",
+    "run_factor_column": "__run_weight__",
+    "event_weight_product": [
+      "__weight__",
+      "total_PID_weight",
+      "BB_weight",
+      "__run_weight__"
+    ],
+    "fakeD_period_correction": {
+      "run1": 0.87,
+      "run2": 1.0
+    },
+    "fakeD_period_correction_application": "BB_weight"
+  },
+  "target": {
+    "x_variable": "B0_recMissM2",
+    "x_bins": [
+      -4.0,
+      -3.3,
+      -2.6,
+      -1.9000000000000004,
+      -1.2000000000000002,
+      -0.5,
+      0.1999999999999993,
+      0.8999999999999995,
+      1.5999999999999996,
+      2.3,
+      3.0,
+      3.6999999999999993,
+      4.399999999999999,
+      5.1,
+      5.799999999999999,
+      6.5,
+      7.199999999999999,
+      7.899999999999999,
+      8.6,
+      9.299999999999999,
+      10.0
+    ],
+    "y_variable": "B0_nROE_Tracks_my_mask",
+    "y_bins": [
+      -0.5,
+      0.5,
+      1.5,
+      2.5,
+      3.5,
+      4.5,
+      5.5,
+      6.5,
+      7.5,
+      8.5,
+      9.5,
+      10.5,
+      11.5,
+      12.5,
+      13.5,
+      "Infinity"
+    ],
+    "cut": "1.855 < D_M < 1.885 and fakeD_prob < 0.1 and sig_prob < 0.1",
+    "minimum_raw_mc_events_per_included_bin": 1,
+    "included_bins": 295,
+    "total_bins": 300,
+    "included_data_events": 27918.0,
+    "excluded_data_events": 1.0
+  },
+  "roe_target": null,
+  "loss_components": {
+    "joint_2d": 783.3164848273723,
+    "roe_1d_shape": 0.0,
+    "roe_strength": 1.0,
+    "total": 783.3164848273723
+  },
+  "optuna": {
+    "study_name": "BBbar_mle_run1_e_missm2-roe-2d_roetail14_replaceFalse",
+    "storage": "sqlite:///bbbar_mle_optuna_studies.db",
+    "best_deviance": 786.6832744581898,
+    "best_trial_number": 191,
+    "best_weights": {
+      "BBbar_measured_hadronic": 2.164394924962136,
+      "BBbar_unmeasured:2-body": 0.08670725729556159,
+      "BBbar_unmeasured:3-body": 0.13905699166633922,
+      "BBbar_unmeasured:4-body": 0.0023320411702303936,
+      "BBbar_unmeasured:5+-body": 0.44685915849685526,
+      "BBbar_semileptonic": 1.0,
+      "bkg_fakeD": 0.87
+    },
+    "best_weights_by_run_period": {
+      "run1": {
+        "BBbar_measured_hadronic": 2.164394924962136,
+        "BBbar_unmeasured:2-body": 0.08670725729556159,
+        "BBbar_unmeasured:3-body": 0.13905699166633922,
+        "BBbar_unmeasured:4-body": 0.0023320411702303936,
+        "BBbar_unmeasured:5+-body": 0.44685915849685526,
+        "BBbar_semileptonic": 1.0,
+        "bkg_fakeD": 0.87
+      }
+    },
+    "total_trials": 200,
+    "trial_counts": {
+      "running": 0,
+      "complete": 131,
+      "pruned": 69,
+      "fail": 0,
+      "waiting": 0
+    }
+  },
+  "minuit": {
+    "minimum_deviance": 783.3164848273723,
+    "valid_minimum": true,
+    "accurate_covariance": true,
+    "edm": 1.7031811058027397e-05,
+    "has_parameters_at_limit": true,
+    "has_posdef_covar": true,
+    "parameter_order": [
+      "measured",
+      "unmeasured_2body",
+      "unmeasured_3body",
+      "unmeasured_4body",
+      "unmeasured_5plus"
+    ],
+    "fitted_parameters": {
+      "measured": 2.1847187286662866,
+      "unmeasured_2body": 0.0010000001552336146,
+      "unmeasured_3body": 0.012386370829381946,
+      "unmeasured_4body": 0.0010000018664705179,
+      "unmeasured_5plus": 0.4999998462049801
+    },
+    "best_weights": {
+      "BBbar_measured_hadronic": 2.1847187286662866,
+      "BBbar_unmeasured:2-body": 0.0010000001552336146,
+      "BBbar_unmeasured:3-body": 0.012386370829381946,
+      "BBbar_unmeasured:4-body": 0.0010000018664705179,
+      "BBbar_unmeasured:5+-body": 0.4999998462049801,
+      "BBbar_semileptonic": 1.0,
+      "bkg_fakeD": 0.87
+    },
+    "hesse_errors": {
+      "measured": 0.0867886644493101,
+      "unmeasured_2body": 0.06530709622042002,
+      "unmeasured_3body": 0.9065647397043528,
+      "unmeasured_4body": 0.031082142816474194,
+      "unmeasured_5plus": 0.3095363174004625
+    },
+    "minos_errors": {},
+    "covariance": [
+      [
+        0.007536262981957869,
+        -5.782083195055009e-11,
+        -0.009530184095978876,
+        1.7953511027393293e-09,
+        4.6720544447765374e-07
+      ],
+      [
+        -5.782083195055009e-11,
+        4.0729255606333445e-11,
+        -1.0893972051129317e-09,
+        2.2431354718165725e-16,
+        5.664201636056148e-14
+      ],
+      [
+        -0.009530184095978876,
+        -1.0893972051129317e-09,
+        0.013577000523089208,
+        -1.1419297759323076e-08,
+        -1.6304984327050951e-06
+      ],
+      [
+        1.7953511027393293e-09,
+        2.2431354718165725e-16,
+        -1.1419297759323076e-08,
+        2.3450303429973225e-10,
+        2.8291420805606754e-13
+      ],
+      [
+        4.6720544447765374e-07,
+        5.664201636056148e-14,
+        -1.6304984327050951e-06,
+        2.8291420805606754e-13,
+        8.086858467205277e-08
+      ]
+    ],
+    "correlation": [
+      [
+        1.0,
+        -0.00010436456741833484,
+        -0.9421528152716288,
+        0.0013505079249340854,
+        0.018925177062949387
+      ],
+      [
+        -0.00010436456741833484,
+        0.9999999999999999,
+        -0.0014649780006813177,
+        2.295239627880315e-06,
+        3.1210127839809174e-05
+      ],
+      [
+        -0.9421528152716288,
+        -0.0014649780006813177,
+        1.0,
+        -0.006399753502908952,
+        -0.04920718796021405
+      ],
+      [
+        0.0013505079249340854,
+        2.295239627880315e-06,
+        -0.006399753502908952,
+        0.9999999999999998,
+        6.496666959792575e-05
+      ],
+      [
+        0.018925177062949387,
+        3.1210127839809174e-05,
+        -0.04920718796021405,
+        6.496666959792575e-05,
+        0.9999999999999999
+      ]
+    ],
+    "best_weights_by_run_period": {
+      "run1": {
+        "BBbar_measured_hadronic": 2.1847187286662866,
+        "BBbar_unmeasured:2-body": 0.0010000001552336146,
+        "BBbar_unmeasured:3-body": 0.012386370829381946,
+        "BBbar_unmeasured:4-body": 0.0010000018664705179,
+        "BBbar_unmeasured:5+-body": 0.4999998462049801,
+        "BBbar_semileptonic": 1.0,
+        "bkg_fakeD": 0.87
+      }
+    }
+  }
+}
