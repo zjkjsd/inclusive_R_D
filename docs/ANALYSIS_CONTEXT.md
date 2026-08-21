@@ -2,7 +2,9 @@
 
 This file summarizes the analysis strategy, event categorization, fit model,
 and validation plan for the inclusive-tagging R(D±) measurement at Belle II
-(Proc16 data, MC16rd, `light-2505-deimos`, Run1 + Run2, ~490 fb⁻¹ total).
+(Proc16 + Prompt16 data, MC16rd, `light-2505-deimos`, Run 1 + Run 2,
+approximately 490 fb⁻¹ total). The next major production update is expected
+to use `light-2607-kasei`.
 It is meant as a map for anyone (including future me) picking the repo back
 up after a break.
 
@@ -27,7 +29,7 @@ up after a break.
    - Final event selection cuts on the BDT output probabilities
      (`sig_prob`, `fakeD_prob`, `continuum_prob`, `combinatorial_prob`).
 4. **MC validation in data control regions**
-   - Apply Belle II–recommended corrections first (see §5).
+   - Apply Belle II–recommended corrections first (see §4).
    - Where data/MC discrepancies remain large, derive analysis-specific
      corrections (BBbar background reweighting is the main one so far).
 5. **Systematics evaluation**
@@ -57,7 +59,12 @@ Categories are built by `utilities.classify_mc_dict()` and labeled via
       `D ℓν_gap`)
   These are the `hadronicB_secondaryL`-adjacent "signals" category in code
   (`B2D_tau`, `B2D_ell`, `B2Dst_tau`, `B2Dst_ell`, `B2Dstst_*`, etc.)
-- **Other backgrounds** (all require `B0_isContinuumEvent==0` unless noted):
+- **Other backgrounds:** fake-object categories take priority in
+  `classify_mc_dict()`. A continuum event with a fake D, fake lepton, or
+  fake/clone D track is assigned to `bkg_fakeD`, `bkg_fakeL`, or
+  `bkg_fakeTracks` without a `B0_isContinuumEvent==0` requirement. The
+  continuum flag is applied only when separating the categories with a true D
+  and a true lepton.
     - `bkg_fakeD` — the reconstructed `Kππ` combination does not come from
       a real D± (`0 < D_mcErrors < 512`).
     - `bkg_fakeL` / `bkg_fakeTracks` — the lepton is not a true lepton, or
@@ -141,11 +148,14 @@ pending an updated MC16rd table (expected summer 2026).
 |---|---|
 | `Recon_scripts/1_Reconstruction_test.py`, `2_Reconstruction.py` | basf2 steering scripts, signal-side + ROE/tag-side reconstruction, e and μ channels, includes wrong-charge reconstruction for `4S` energy |
 | `Recon_scripts/submit_local_jobs.sh` | Local batch submission helper for the steering scripts |
-| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV hyperparameter tuning for the continuum-suppression BDT |
+| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV tuning for the binary off-resonance data/MC check; currently does not tune the final four-class classifier |
 | `3_LightGBM_Binary_Training.py` | Binary data/MC BDT (off-resonance validation) |
 | `4_LightGBM_Multiclass_Training.py` | Final 4-class signal-selection BDT training |
 | `5_BBbkg_weights_optuna_minuit.py` | BBbar background weight tuning (Optuna + iminuit joint 2D Poisson fit) |
 | `utilities.py` | Shared library: variable lists, MC classification (`classify_mc_dict`), BBbar reweighting, template/workspace construction for `pyhf`, plotting helpers |
+| `Notebooks/` | MC-truth checks, PID studies, BDT sample preparation, fit examples, and data/MC control-region plots |
+| `Fit_toys/` | Toy-fit workflow and example `pyhf` workspaces |
+| `BBbkg_weights/` | Small, selected BBbar reweighting results retained for downstream use |
 
 ## 7. Decisions Pending
 
@@ -161,3 +171,40 @@ pending an updated MC16rd table (expected summer 2026).
 - Are the remaining systematics (MC statistics, D**ℓν/gap-mode modeling,
   D*τν/D**τν feed-down, fakeD/continuum normalization) small enough for
   the final fit, or do they need further reduction first?
+
+## 9. Editing and Analysis Conventions
+
+- **Run/channel parameterization:** offline work is generally evaluated for
+  `run1`/`run2` and `e`/`mu`. New reusable stages should expose these choices
+  rather than silently hard-coding one combination; see `parse_arguments()`
+  in `5_BBbkg_weights_optuna_minuit.py` for an example.
+- **Category names are interfaces:** strings such as
+  `BBbar_measured_hadronic`, `BBbar_unmeasured:2-body`, and `bkg_fakeD` are
+  dictionary keys shared by classification, reweighting, and workspace code.
+  Rename them only as a coordinated migration. Missing weight-map entries can
+  otherwise fall back to a weight of 1.
+- **Fixed weights are intentional:** `BBbar_semileptonic` and `bkg_fakeD`
+  are not free parameters in the current BBbar tuning. The fake-D correction
+  is run dependent; preserve that behavior when refactoring.
+- **The support mask is fixed:** `build_fixed_fit_mask()` derives supported
+  bins from unweighted MC once, before optimization. It must not be recomputed
+  from trial weights because doing so would make likelihood support depend on
+  the parameters being fitted.
+- **Likelihood convention:** the iminuit cost is a Poisson deviance with
+  `errordef = 1.0`. Preserve this convention when interpreting or extending
+  HESSE/MINOS intervals.
+- **Physics constants are not cleanup targets:** PDG-code products,
+  `measured_pdg_norad`, and `hadronicB_replacement_map` encode decay-mode and
+  branching-fraction decisions. Do not simplify or deduplicate them without
+  validating the physics inputs.
+- **External paths are not portable:** grid locations and PID/systematics CSV
+  paths may be absolute and user specific. Parameterize them when generalizing
+  a workflow; do not copy external calibration inputs into the repository.
+- **basf2 and offline Python are different environments:** steering scripts
+  under `Recon_scripts/` require basf2. Do not treat failure to import basf2 in
+  a plain Python environment as a steering-code defect.
+- **Protect analysis provenance:** do not commit `Samples/`, Optuna databases,
+  large ROOT files, or other regenerable outputs. Changes to selections, fit
+  bins, fixed/floating parameters, or systematic assumptions must be called
+  out explicitly because status material can quote results from the prior
+  configuration.
