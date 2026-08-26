@@ -85,11 +85,22 @@ from 0.64 to 0.93:
 
 Two explanations fit that pattern: the bounds are too tight, or the tuning
 region cannot separate the unmeasured families. They are distinguished by
-where the minimum lands as the bounds are relaxed. If an interior minimum
-appears, the bounds were the constraint and the resulting covariance can go
-to `bbbar_eigen_systematics.py`. If the minimum keeps pinning while the
-deviance barely moves, the likelihood is flat along a direction and the fix
-is to merge families or add a separating observable, not to widen further.
+where the minimum lands as the bounds are relaxed, and the scan reports one
+of three verdicts:
+
+| Verdict | Condition | Action |
+|---|---|---|
+| bounds were binding | some scale reaches an interior minimum | re-run the tuning with those bounds, feed the covariance to `bbbar_eigen_systematics.py` |
+| flat direction | every minimum still pins **and** the deviance moves by no more than `--deviance-tolerance` | merge the unmeasured families, or add a separating observable; widening further will not help |
+| inconclusive | every minimum still pins **but** the deviance improves by more than the tolerance | the bounds still matter, so this is not evidence of a flat direction; extend the scan |
+
+The default tolerance is 1.0. The cost has `errordef = 1`, so one unit is the
+1-sigma scale of a single parameter; a deviance change below that across a
+wide range of bounds is not a meaningful improvement.
+
+HESSE can fail to return a covariance precisely when the likelihood is flat,
+which is the case the scan exists to find, so a missing covariance is
+reported per scale rather than raised.
 
 The scan monkeypatches `PARAMETER_SPECS` on the imported tuning module and
 restores it afterwards; it is a diagnostic, not part of the nominal chain.

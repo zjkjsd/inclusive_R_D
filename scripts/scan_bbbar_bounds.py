@@ -76,6 +76,11 @@ def parse_arguments() -> argparse.Namespace:
                         help="Directory holding the BDT ntuples.")
     parser.add_argument("--skip-minos", action="store_true", default=True,
                         help="MINOS is slow and not needed for this diagnostic.")
+    parser.add_argument("--deviance-tolerance", type=float, default=1.0,
+                        help="Largest deviance change across the scan that still "
+                             "counts as 'the bounds do not matter'.  The cost has "
+                             "errordef = 1, so one unit is the 1-sigma scale of a "
+                             "single parameter.  Default: 1.0.")
     return parser.parse_args()
 
 
@@ -190,40 +195,68 @@ def main() -> int:
                 if abs(minuit.values[n] - spec.lower) / max(abs(spec.lower), 1e-9) < 1e-3
                 or abs(minuit.values[n] - spec.upper) / max(abs(spec.upper), 1e-9) < 1e-3
             ]
-            correlation = np.array(minuit.covariance.correlation())
-            unmeasured = [i for i, n in enumerate(names) if n != "measured"]
-            max_rho = max(
-                (abs(correlation[a, b]) for a, b in itertools.combinations(unmeasured, 2)),
-                default=float("nan"),
-            )
+            # HESSE can fail to produce a covariance exactly when the
+            # likelihood is flat, which is the case this scan exists to find.
+            # Guard it the way the tuning script's minuit_results() does.
+            if minuit.covariance is None:
+                max_rho = float("nan")
+                rho_text = "no covariance"
+            else:
+                correlation = np.array(minuit.covariance.correlation())
+                unmeasured = [i for i, n in enumerate(names) if n != "measured"]
+                max_rho = max(
+                    (abs(correlation[a, b])
+                     for a, b in itertools.combinations(unmeasured, 2)),
+                    default=float("nan"),
+                )
+                rho_text = f"{max_rho:.3f}"
             print(f"{scale:>7g} {minuit.fval:>12.3f} "
-                  f"{'yes' if not pinned else 'NO':>9} {max_rho:>16.3f}  "
+                  f"{'yes' if not pinned else 'NO':>9} {rho_text:>16}  "
                   f"{', '.join(pinned) if pinned else '-'}")
-            rows.append((scale, minuit.fval, not pinned, max_rho,
-                         {n: float(minuit.values[n]) for n in names}))
+            rows.append((scale, float(minuit.fval), not pinned, max_rho,
+                         {n: float(minuit.values[n]) for n in names},
+                         minuit.covariance is not None, bool(minuit.valid)))
     finally:
         tuning.PARAMETER_SPECS = original_specs
 
     print("\nInterpretation")
     print("-" * 88)
+    if not rows:
+        print("  No fits completed; nothing to interpret.")
+        return 1
     deviances = [row[1] for row in rows]
     interior = [row[2] for row in rows]
+    span = max(deviances) - min(deviances)
+    scale_range = max(args.scales) / min(args.scales)
+    tolerance = args.deviance_tolerance
+
+    print(f"  deviance change across the scan : {span:.3f}")
+    print(f"  bound range scanned             : {scale_range:g}x")
+    print(f"  tolerance (--deviance-tolerance): {tolerance:g}")
+    print()
     if any(interior):
         first = args.scales[interior.index(True)]
-        print(f"  An interior minimum is reached at scale {first:g}: the bounds were "
-              "the binding constraint.  Re-run the tuning with these bounds and "
-              "feed the covariance to scripts/bbbar_eigen_systematics.py.")
+        print(f"  VERDICT: bounds were the binding constraint.  An interior minimum "
+              f"is reached at scale {first:g}.  Re-run the tuning with these bounds "
+              "and feed the covariance to scripts/bbbar_eigen_systematics.py.")
+    elif span <= tolerance:
+        print("  VERDICT: flat likelihood direction.  No scale gives an interior "
+              f"minimum, and the deviance moved by {span:.3f}, within the "
+              f"{tolerance:g} tolerance, across a {scale_range:g}x range of bounds. "
+              "Widening the bounds further will not help; merge the unmeasured "
+              "families, or add an observable that separates them.")
     else:
-        span = max(deviances) - min(deviances)
-        print(f"  No scale gives an interior minimum, and the deviance moved by only "
-              f"{span:.2f} across a {max(args.scales) / min(args.scales):g}x range of "
-              "bounds.  That is the signature of a flat likelihood direction: the "
-              "families are degenerate in this region.  Widening bounds will not "
-              "help; merge the unmeasured families, or add an observable that "
-              "separates them.")
-    for scale, deviance, is_interior, max_rho, values in rows:
-        print(f"\n  scale {scale:g}: deviance {deviance:.3f}, "
-              f"interior={is_interior}, max|rho|(unmeasured)={max_rho:.3f}")
+        print("  VERDICT: inconclusive.  No scale gives an interior minimum, but the "
+              f"deviance improved by {span:.3f}, more than the {tolerance:g} "
+              "tolerance, so the bounds are still materially affecting the fit. "
+              "This is not evidence of a flat direction.  Extend the scan to larger "
+              "scales until either an interior minimum appears or the deviance "
+              "stops improving.")
+
+    for scale, deviance, is_interior, max_rho, values, has_cov, valid in rows:
+        rho_text = "n/a (no covariance)" if not has_cov else f"{max_rho:.3f}"
+        print(f"\n  scale {scale:g}: deviance {deviance:.3f}, interior={is_interior}, "
+              f"valid={valid}, max|rho|(unmeasured)={rho_text}")
         for name, value in values.items():
             print(f"    {name:22s} {value:.6g}")
     return 0
