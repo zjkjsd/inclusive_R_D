@@ -148,3 +148,31 @@ reported per scale rather than raised.
 
 The scan monkeypatches `PARAMETER_SPECS` on the imported tuning module and
 restores it afterwards; it is a diagnostic, not part of the nominal chain.
+## Review status
+
+Every finding raised in review of these two scripts is closed. The ones worth
+remembering, because they were all ways for the scan to reach a *confident but
+wrong* verdict rather than to crash:
+
+| Finding | Why it mattered |
+|---|---|
+| flat verdict from boundary minima | an optimum outside the allowed range makes the deviance span shrink towards zero, mimicking a flat direction |
+| flat verdict from a failed refit | a constrained refit fails precisely in near-degenerate cases |
+| flat verdict from one scale | a rise at another valid scale was discarded |
+| flat verdict from the smallest profile step | a direction rising at 10% but not 2% was called flat |
+| interior verdict from a pinned fit | the pinned test was bound-relative, so it grew stricter as bounds were relaxed |
+| compounding relaxations | scales 1, 3, 10, 30 actually tested 1, 3, 30, 900 |
+| eigen variations crossing zero | a symmetric shift can emit a negative family weight |
+| `--skip-minos` always true | declared `store_true` with `default=True`, so MINOS could never run |
+
+## Before the output is trusted
+
+These scripts have **never been run on real ntuples**. Their verdict decides
+whether to merge physics categories, and the history above shows how many ways
+that verdict can be wrong. Treat the first real run as something to
+cross-check against your own reading of the fits, not as an answer.
+
+The next step for this tooling is a test suite over synthetic likelihoods with
+known answers — degenerate, boundary-constrained, well-behaved, and
+non-converging — replacing the ad-hoc checks used while fixing the findings
+above.

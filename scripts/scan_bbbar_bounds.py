@@ -183,7 +183,7 @@ def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
         )
         bound = spec.lower if at_lower else spec.upper
         far = spec.upper if at_lower else spec.lower
-        best_rise = None
+        rises = []
         failed = False
         for fraction in fractions:
             target = bound + fraction * (far - bound)
@@ -201,12 +201,14 @@ def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
                 # A constrained refit can fail precisely in the flat and
                 # near-degenerate cases this diagnostic targets.  Its fval is
                 # then unreliable and must not reach the verdict.
-                best_rise = None
                 failed = True
                 break
-            rise = float(trial.fval) - base
-            best_rise = rise if best_rise is None else min(best_rise, rise)
-        results[parameter] = None if failed else best_rise
+            rises.append(float(trial.fval) - base)
+        # Use the LARGEST sampled rise, not the smallest.  A boundary-constrained
+        # likelihood can rise by less than the tolerance at the 2% point and more
+        # at the 10% point; taking the minimum would discard the second and call
+        # the direction flat.  "Flat" must mean every sampled point stayed flat.
+        results[parameter] = None if failed else max(rises)
     return results
 
 

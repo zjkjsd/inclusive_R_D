@@ -259,10 +259,18 @@ def main() -> int:
 
     bounds, bounds_error = load_parameter_bounds()
     if bounds is None:
-        print(f"\n  NOTE: could not read PARAMETER_SPECS from the tuning script "
-              f"({bounds_error}); variations are checked for positivity only.")
+        print(f"\n  FAIL  could not read PARAMETER_SPECS from the tuning script "
+              f"({bounds_error}).  Every configured parameter has a nonzero lower "
+              "and a finite upper bound, so a positivity-only check would let a "
+              "variation cross a real bound while the output still claimed to be "
+              "validated.")
     variations = []
     bound_problems = []
+    if bounds is None:
+        bound_problems.append(
+            f"parameter bounds unavailable ({bounds_error}); the physical-range "
+            "check could not be performed"
+        )
     print("\nNuisance parameters (+1 sigma shifts of the family weights)")
     print("-" * 70)
     for index in range(keep):
