@@ -7,6 +7,7 @@ do not modify the analysis chain.
 |---|---|
 | `validate_truth_categories.py` | Measures whether `classify_mc_dict()` is exclusive and exhaustive on a real ntuple, and reports the yield of the categories excluded from the fit templates. |
 | `bbbar_eigen_systematics.py` | Converts the tuned BBbar family-weight covariance into uncorrelated nuisance parameters by eigen-decomposition, after validating that the fit is fit to be propagated. |
+| `scan_bbbar_bounds.py` | Distinguishes "the bounds are too tight" from "the families are degenerate" by re-running the iminuit stage over a sequence of bound relaxations. Needs the ntuples. |
 
 ## `validate_truth_categories.py`
 
@@ -60,3 +61,35 @@ constraint that separates them, is the more promising direction.
 
 Use `--force` to inspect the decomposition of a failing fit. That output is
 diagnostic only and must not be used as a systematic.
+
+## `scan_bbbar_bounds.py`
+
+```bash
+python3 scripts/scan_bbbar_bounds.py --run run1 --channel e --scales 1 3 10 30
+```
+
+Every stored result pins an *unmeasured* n-body weight and never the
+measured-hadronic weight, and the correlations among unmeasured families run
+from 0.64 to 0.93:
+
+| Fit | max abs(rho), unmeasured pairs | max abs(rho), measured with any |
+|---|---|---|
+| `kinematic-2d-plus-roe_alpha1_roetail14_run1_e` | 0.77 (3body~5+) | 0.77 |
+| `kinematic-2d_run1+run2_e` | 0.77 (3body~5+) | 0.72 |
+| `kinematic-2d_run1_e` | 0.77 (3body~5+) | 0.72 |
+| `missm2-roe-2d_roetail14_run1_e` | 0.05 | 0.94 |
+| `poisson_2d_run1_e` | 0.93 (2body~3body) | 0.00 |
+| `poisson_2d_run1_mu` | 0.81 (4body~5+) | 0.51 |
+| `poisson_2d_run2_e` | 0.76 (3body~4body) | 0.45 |
+| `poisson_2d_run2_mu` | 0.64 (3body~5+) | 0.48 |
+
+Two explanations fit that pattern: the bounds are too tight, or the tuning
+region cannot separate the unmeasured families. They are distinguished by
+where the minimum lands as the bounds are relaxed. If an interior minimum
+appears, the bounds were the constraint and the resulting covariance can go
+to `bbbar_eigen_systematics.py`. If the minimum keeps pinning while the
+deviance barely moves, the likelihood is flat along a direction and the fix
+is to merge families or add a separating observable, not to widen further.
+
+The scan monkeypatches `PARAMETER_SPECS` on the imported tuning module and
+restores it afterwards; it is a diagnostic, not part of the nominal chain.

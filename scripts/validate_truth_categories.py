@@ -19,12 +19,25 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import pathlib
 import sys
+
+# Invoked as "python3 scripts/validate_truth_categories.py", Python puts
+# scripts/ on sys.path, not the repository root, so "import utilities" would
+# fail in a normal checkout.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 import uproot
 
 import utilities as util
+
+# classify_mc_dict() builds the merged gap category with
+# pd.concat(..., ignore_index=True) (utilities.py:632), so that one sample's
+# DataFrame index is renumbered from zero and no longer identifies the
+# original candidate.  Membership is therefore tracked through an explicit
+# identifier column that survives concatenation, never through the index.
+CANDIDATE_ID = "__cand_id__"
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -60,9 +73,18 @@ def main() -> int:
         entry_stop=args.max_entries,
     )
     df = df.reset_index(drop=True)
+    df[CANDIDATE_ID] = range(len(df))
     print(f"Candidates read: {len(df)}")
 
     samples = util.classify_mc_dict(df, args.channel, template=False)
+    for name, subset in samples.items():
+        if len(subset) and CANDIDATE_ID not in subset.columns:
+            print(
+                f"ERROR: category '{name}' lost the {CANDIDATE_ID} column; "
+                "membership cannot be tracked reliably.",
+                file=sys.stderr,
+            )
+            return 2
 
     print("\nPer-category counts")
     print("-" * 56)
@@ -72,9 +94,12 @@ def main() -> int:
         total_assigned += len(subset)
     print(f"  {'SUM OF CATEGORIES':36s} {total_assigned:10d}")
 
-    indices = {name: set(subset.index) for name, subset in samples.items()}
+    indices = {
+        name: set(subset[CANDIDATE_ID]) if len(subset) else set()
+        for name, subset in samples.items()
+    }
     covered = set().union(*indices.values()) if indices else set()
-    unclassified = set(df.index) - covered
+    unclassified = set(df[CANDIDATE_ID]) - covered
 
     print("\nExhaustiveness")
     print("-" * 56)
@@ -82,7 +107,7 @@ def main() -> int:
     print(f"  in at least one class : {len(covered)}")
     print(f"  UNCLASSIFIED          : {len(unclassified)}")
     if unclassified:
-        lost = df.loc[sorted(unclassified)]
+        lost = df[df[CANDIDATE_ID].isin(unclassified)]
         print("\n  D_mcErrors of unclassified candidates:")
         for value, count in lost["D_mcErrors"].value_counts().items():
             print(f"    D_mcErrors = {int(value):6d} : {count:10d}")
