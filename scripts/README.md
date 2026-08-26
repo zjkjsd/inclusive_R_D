@@ -59,6 +59,14 @@ off and drives one to zero. Widening the bounds alone would likely move the
 problem rather than fix it; merging the unmeasured families, or adding a
 constraint that separates them, is the more promising direction.
 
+Emitted variations are also checked against the parameter bounds read from
+`PARAMETER_SPECS`. A symmetric ±1σ shift is only a valid approximation while
+it stays inside the range the weight was fitted in; when the uncertainty
+exceeds the distance to zero or to a bound, the shifted vector contains a
+weight that would give a negative or out-of-range template yield, and the
+symmetric approximation has broken down. Such an output is not marked
+validated.
+
 Use `--force` to inspect the decomposition of a failing fit. That output is
 diagnostic only and must not be used as a systematic.
 
@@ -93,6 +101,7 @@ of three verdicts:
 | bounds were binding | some scale reaches a valid interior minimum | re-run the tuning with those bounds, feed the covariance to `bbbar_eigen_systematics.py` |
 | flat direction | every minimum pins, the deviance moves by no more than `--deviance-tolerance`, **and** profiling each pinned parameter inward stays flat | merge the unmeasured families, or add a separating observable |
 | boundary-constrained optimum | every minimum pins **but** profiling inward raises the objective | the data prefer a value outside the allowed range. Not a degeneracy; merging would not address it |
+| inconclusive | every inward profile had a constrained refit that failed | no profile evidence; try more fractions or a different start |
 | inconclusive | deviance still improving, or fewer than two scales converged, or no profile was run | extend or adjust the scan |
 | no valid fit | no scale converged | investigate the minimisation before drawing any physics conclusion |
 
@@ -112,6 +121,17 @@ Scales whose fit did not converge are excluded from the verdict and listed
 separately: a failed fit's parameter values and objective are both unreliable,
 so an invalid fit that happens to sit away from its limits must not be read as
 evidence that the bounds were binding.
+
+Whether a parameter counts as pinned follows iminuit's own criterion —
+distance to the nearest bound below half the parameter's error — rather than a
+bound-relative test. The lower limits shrink as `1/scale`, so a bound-relative
+threshold becomes *stricter* the more the bounds are relaxed (about `3e-8` for
+the 2-body weight at the default 30x scan), and an effectively pinned fit
+would be misreported as interior.
+
+Only `kinematic-2d-plus-roe` counts as composite. `missm2-roe-2d` puts the ROE
+variable on the second axis of a single joint Poisson deviance, so its
+`errordef = 1` is on the same footing as the pure 2D model.
 
 The default tolerance is 1.0. For the pure `kinematic-2d` model the objective
 is a single Poisson deviance with `errordef = 1`, so one unit is the 1σ scale

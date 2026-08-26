@@ -110,6 +110,25 @@ def relaxed_specs(tuning, base_specs, scale: float) -> dict:
     return specs
 
 
+def at_limit(value, error, spec, range_fraction=1e-6):
+    """Is ``value`` effectively sitting on one of ``spec``'s bounds?
+
+    Mirrors iminuit's own ``has_parameters_at_limit`` criterion, which compares
+    the distance to the nearest bound with half the parameter's error rather
+    than with the magnitude of the bound.  A bound-relative test is unusable
+    here: the lower limits shrink as 1/scale, so it becomes stricter the more
+    the bounds are relaxed -- about 3e-8 for the 2-body weight at the default
+    30x scale -- and an effectively pinned fit would be reported as interior.
+    The range floor covers a missing or zero error.
+    """
+    distance = min(value - spec.lower, spec.upper - value)
+    width = spec.upper - spec.lower
+    threshold = range_fraction * width
+    if error is not None and np.isfinite(error) and error > 0:
+        threshold = max(threshold, 0.5 * error)
+    return distance < threshold
+
+
 def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
     """Profile each pinned parameter inward, re-minimising the others.
 
@@ -137,6 +156,7 @@ def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
         bound = spec.lower if at_lower else spec.upper
         far = spec.upper if at_lower else spec.lower
         best_rise = None
+        failed = False
         for fraction in fractions:
             target = bound + fraction * (far - bound)
             trial = Minuit(cost, *[central[name] for name in names], name=tuple(names))
@@ -149,9 +169,16 @@ def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
             trial.values[parameter] = target
             trial.fixed[parameter] = True
             trial.migrad()
+            if not trial.valid:
+                # A constrained refit can fail precisely in the flat and
+                # near-degenerate cases this diagnostic targets.  Its fval is
+                # then unreliable and must not reach the verdict.
+                best_rise = None
+                failed = True
+                break
             rise = float(trial.fval) - base
             best_rise = rise if best_rise is None else min(best_rise, rise)
-        results[parameter] = best_rise
+        results[parameter] = None if failed else best_rise
     return results
 
 
@@ -251,7 +278,10 @@ def main() -> int:
         cost.errordef = 1.0
         return cost
 
-    composite = args.fit_model != "kinematic-2d"
+    # missm2-roe-2d puts the ROE variable on the second axis of one joint
+    # Poisson deviance; only kinematic-2d-plus-roe adds a separately weighted
+    # shape-only term, and only that model's errordef is a bare convention.
+    composite = roe_target is not None
     if composite:
         print(f"\n  NOTE: objective '{args.fit_model}' combines the 2D deviance with "
               "a separately weighted\n  shape-only ROE term.  errordef = 1 is a "
@@ -281,8 +311,7 @@ def main() -> int:
             names = list(specs)
             pinned = [
                 n for n, spec in specs.items()
-                if abs(minuit.values[n] - spec.lower) / max(abs(spec.lower), 1e-9) < 1e-3
-                or abs(minuit.values[n] - spec.upper) / max(abs(spec.upper), 1e-9) < 1e-3
+                if at_limit(float(minuit.values[n]), float(minuit.errors[n]), spec)
             ]
             # HESSE can fail to produce a covariance exactly when the
             # likelihood is flat, which is the case this scan exists to find.
@@ -312,8 +341,9 @@ def main() -> int:
                     args.profile_fractions,
                 )
                 for parameter, rise in profile.items():
+                    shown = "FAILED" if rise is None else f"{rise:+.3f}"
                     print(f"{'':>7} profile inward, {parameter:22s} "
-                          f"delta(objective) = {rise:+.3f}")
+                          f"delta(objective) = {shown}")
 
             rows.append((scale, float(minuit.fval), not pinned, max_rho,
                          {n: float(minuit.values[n]) for n in names},
@@ -379,14 +409,31 @@ def main() -> int:
         # flat for a real degeneracy and rises for a boundary-constrained
         # optimum.
         profiles = [row[7] for row in valid_rows if row[7]]
+        # A profile point whose constrained refit failed carries no information.
+        usable = [
+            prof for prof in profiles
+            if prof and all(rise is not None for rise in prof.values())
+        ]
         if args.skip_profile or not profiles:
             print("  VERDICT: inconclusive without a profile.  The deviance moved by "
                   f"{span:.3f} across a {scale_range:g}x range of bounds with every "
                   "minimum pinned, which is consistent with a flat direction but "
                   "equally with an optimum lying outside the allowed range.  Re-run "
                   "without --skip-profile to separate the two.")
+        elif not usable:
+            failed = sorted({
+                parameter
+                for prof in profiles
+                for parameter, rise in prof.items() if rise is None
+            })
+            print("  VERDICT: inconclusive.  Every inward profile had a constrained "
+                  f"refit that did not converge ({', '.join(failed)}), so no "
+                  "profile evidence is available and neither a flat direction nor "
+                  "a boundary-constrained optimum can be established.  A failed "
+                  "refit is itself common in near-degenerate problems; try more "
+                  "profile fractions or a different starting point.")
         else:
-            last = profiles[-1]
+            last = usable[-1]
             rising = {p: r for p, r in last.items() if r > tolerance}
             if rising:
                 worst = max(rising.items(), key=lambda item: item[1])
@@ -424,7 +471,8 @@ def main() -> int:
               f"valid={valid}, max|rho|(unmeasured)={rho_text}{flag}")
         if profile:
             for parameter, rise in profile.items():
-                print(f"    profile inward {parameter:22s} {rise:+.3f}")
+                shown = "FAILED (excluded)" if rise is None else f"{rise:+.3f}"
+                print(f"    profile inward {parameter:22s} {shown}")
         for name, value in values.items():
             print(f"    {name:22s} {value:.6g}")
     return 0

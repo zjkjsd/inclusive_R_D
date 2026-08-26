@@ -36,11 +36,19 @@ roetail14_run1_e_replaceFalse_minuit.json
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import pathlib
 import sys
 
 import numpy as np
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
+TUNING_SCRIPT = REPO_ROOT / "5_BBbkg_weights_optuna_minuit.py"
+
+# The tuning script imports utilities and bbbar_reweighting from the
+# repository root, which is not on sys.path when this script is run directly.
+sys.path.insert(0, str(REPO_ROOT))
 
 # A limited parameter pinned at its bound gets an external covariance entry
 # driven to zero while `Minuit.errors` keeps a finite value.  Disagreement far
@@ -67,6 +75,53 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--force", action="store_true",
                         help="Emit variations even if the fit fails validation.")
     return parser.parse_args()
+
+
+def load_parameter_bounds():
+    """Read the fitted parameter ranges from the tuning script.
+
+    The result files do not record the bounds, so they are taken from the
+    single place that defines them.  Returns None if the tuning script cannot
+    be imported, in which case only positivity is enforced.
+    """
+    try:
+        spec = importlib.util.spec_from_file_location("bbbar_tuning", TUNING_SCRIPT)
+        if spec is None or spec.loader is None:
+            return None, f"cannot build an import spec for {TUNING_SCRIPT}"
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["bbbar_tuning"] = module
+        spec.loader.exec_module(module)
+        return {
+            name: (float(item.lower), float(item.upper))
+            for name, item in module.PARAMETER_SPECS.items()
+        }, None
+    except Exception as error:  # noqa: BLE001 - reported, not swallowed
+        return None, f"{type(error).__name__}: {error}"
+
+
+def check_variation_bounds(order, up, down, bounds):
+    """Reject variations that leave the physical range of a family weight.
+
+    A symmetric +/-1 sigma shift is only a valid approximation while it stays
+    inside the range the weight was fitted in.  When the uncertainty exceeds
+    the distance to zero or to a bound, the shifted vector contains a weight
+    that would give a negative or out-of-range template yield, and the
+    symmetric approximation has broken down as well.
+    """
+    problems = []
+    for index, name in enumerate(order):
+        if bounds is not None and name in bounds:
+            lower, upper = bounds[name]
+        else:
+            lower, upper = 0.0, float("inf")
+        for label, vector in (("up", up), ("down", down)):
+            value = float(vector[index])
+            if value < lower or value > upper:
+                problems.append(
+                    f"{label} variation puts '{name}' at {value:.6g}, outside "
+                    f"[{lower:.6g}, {upper:.6g}]"
+                )
+    return problems
 
 
 def validate(minuit: dict, order: list[str], covariance: np.ndarray) -> list[str]:
@@ -184,7 +239,12 @@ def main() -> int:
         )
     print(f"\n  {keep} direction(s) cover {cumulative[keep - 1]:.4%} of the variance.")
 
+    bounds, bounds_error = load_parameter_bounds()
+    if bounds is None:
+        print(f"\n  NOTE: could not read PARAMETER_SPECS from the tuning script "
+              f"({bounds_error}); variations are checked for positivity only.")
     variations = []
+    bound_problems = []
     print("\nNuisance parameters (+1 sigma shifts of the family weights)")
     print("-" * 70)
     for index in range(keep):
@@ -195,8 +255,16 @@ def main() -> int:
               f"(variance fraction {eigenvalues[index] / total:.4f})")
         for name, low, mid, high in zip(order, down, central, up):
             print(f"    {name:22s} {low:9.5f} <- {mid:9.5f} -> {high:9.5f}")
+        crossings = check_variation_bounds(order, up, down, bounds)
+        if crossings:
+            for problem in crossings:
+                print(f"    OUT OF RANGE: {problem}")
+            bound_problems.extend(
+                f"BBbar_shape_np{index + 1}: {problem}" for problem in crossings
+            )
         variations.append({
             "name": f"BBbar_shape_np{index + 1}",
+            "out_of_range": crossings,
             "variance_fraction": float(eigenvalues[index] / total),
             "eigenvalue": float(eigenvalues[index]),
             "parameter_order": order,
@@ -205,19 +273,31 @@ def main() -> int:
             "down": down.tolist(),
         })
 
+    if bound_problems:
+        print("\n  FAIL  Some variations leave the physical range of a family "
+              "weight:")
+        for problem in bound_problems:
+            print(f"    {problem}")
+        print("  A negative or out-of-range weight would give negative template "
+              "yields, and\n  a symmetric shift is not a valid approximation that "
+              "close to a bound.  Use a\n  positivity-preserving parameterisation, "
+              "or reduce the number of retained\n  directions, before using this "
+              "output as a systematic.")
+
     if args.output:
         args.output.write_text(json.dumps({
             "source": str(args.weights_json),
             "run": payload.get("run"),
             "channel": payload.get("channel"),
             "objective": payload.get("objective"),
-            "validated": not problems,
+            "validated": not problems and not bound_problems,
             "validation_problems": problems,
+            "out_of_range_problems": bound_problems,
             "variations": variations,
         }, indent=2))
         print(f"\nWrote {args.output}")
 
-    return 0 if not problems else 1
+    return 0 if not problems and not bound_problems else 1
 
 
 if __name__ == "__main__":
