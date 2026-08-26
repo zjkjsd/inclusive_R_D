@@ -101,7 +101,7 @@ of three verdicts:
 | bounds were binding | some scale reaches a valid interior minimum | re-run the tuning with those bounds, feed the covariance to `bbbar_eigen_systematics.py` |
 | flat direction | every minimum pins, the deviance moves by no more than `--deviance-tolerance`, **and** profiling each pinned parameter inward stays flat | merge the unmeasured families, or add a separating observable |
 | boundary-constrained optimum | every minimum pins **but** profiling inward raises the objective | the data prefer a value outside the allowed range. Not a degeneracy; merging would not address it |
-| inconclusive | every inward profile had a constrained refit that failed | no profile evidence; try more fractions or a different start |
+| inconclusive | any inward profile has a constrained refit that failed | not every pinned direction could be tested; try more fractions or a different start |
 | inconclusive | deviance still improving, or fewer than two scales converged, or no profile was run | extend or adjust the scan |
 | no valid fit | no scale converged | investigate the minimisation before drawing any physics conclusion |
 

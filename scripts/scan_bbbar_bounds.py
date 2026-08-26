@@ -26,7 +26,7 @@ This needs the ntuples, so it must be run in the analysis environment.
 Example
 -------
     python3 scripts/scan_bbbar_bounds.py --run run1 --channel e \
-        --scales 1 3 10 30 --skip-minos
+        --scales 1 3 10 30
 """
 from __future__ import annotations
 
@@ -49,6 +49,30 @@ import bbbar_reweighting as bbbar  # noqa: E402
 TUNING_SCRIPT = REPO_ROOT / "5_BBbkg_weights_optuna_minuit.py"
 
 
+def positive_float(value: str) -> float:
+    """Parse a finite, strictly positive command-line number."""
+    number = float(value)
+    if not np.isfinite(number) or number <= 0.0:
+        raise argparse.ArgumentTypeError("must be a finite number greater than 0")
+    return number
+
+
+def nonnegative_float(value: str) -> float:
+    """Parse a finite, non-negative command-line number."""
+    number = float(value)
+    if not np.isfinite(number) or number < 0.0:
+        raise argparse.ArgumentTypeError("must be a finite number at least 0")
+    return number
+
+
+def profile_fraction(value: str) -> float:
+    """Parse a profile step as a fraction strictly between zero and one."""
+    number = float(value)
+    if not np.isfinite(number) or not 0.0 < number < 1.0:
+        raise argparse.ArgumentTypeError("must be a finite number between 0 and 1")
+    return number
+
+
 def load_tuning_module():
     """Import the tuning script, whose name is not a valid module name."""
     spec = importlib.util.spec_from_file_location("bbbar_tuning", TUNING_SCRIPT)
@@ -67,16 +91,20 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--channel", required=True, choices=["e", "mu"])
     parser.add_argument("--fit-model", default="kinematic-2d-plus-roe",
                         choices=["kinematic-2d", "missm2-roe-2d", "kinematic-2d-plus-roe"])
-    parser.add_argument("--roe-strength", type=float, default=1.0)
+    parser.add_argument("--roe-strength", type=nonnegative_float, default=1.0)
     parser.add_argument("--roe-tail-start", type=int, default=14)
-    parser.add_argument("--scales", type=float, nargs="+", default=[1.0, 3.0, 10.0, 30.0],
+    parser.add_argument("--scales", type=positive_float, nargs="+",
+                        default=[1.0, 3.0, 10.0, 30.0],
                         help="Bound-relaxation factors to scan. 1 reproduces the "
                              "current PARAMETER_SPECS.")
     parser.add_argument("--sample-dir", default="/home/belle/zhangboy/inclusive_R_D/Samples",
                         help="Directory holding the BDT ntuples.")
-    parser.add_argument("--skip-minos", action="store_true", default=True,
-                        help="MINOS is slow and not needed for this diagnostic.")
-    parser.add_argument("--deviance-tolerance", type=float, default=1.0,
+    parser.add_argument("--minos", dest="run_minos", action="store_true",
+                        help="Run the optional, slow MINOS calculation (disabled "
+                             "by default; it is not needed for this diagnostic).")
+    parser.add_argument("--skip-minos", dest="run_minos", action="store_false",
+                        help=argparse.SUPPRESS)
+    parser.add_argument("--deviance-tolerance", type=nonnegative_float, default=1.0,
                         help="Largest objective change across the scan that still "
                              "counts as 'the bounds do not matter'.  For the pure "
                              "kinematic-2d model the objective is a single Poisson "
@@ -88,7 +116,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--skip-profile", action="store_true",
                         help="Skip the inward profile of pinned parameters.  Without "
                              "it the flat-direction verdict cannot be issued.")
-    parser.add_argument("--profile-fractions", type=float, nargs="+",
+    parser.add_argument("--profile-fractions", type=profile_fraction, nargs="+",
                         default=[0.02, 0.10],
                         help="Fractions of the allowed range to step inward from a "
                              "pinned bound when profiling. Default: 0.02 0.10.")
@@ -305,7 +333,7 @@ def main() -> int:
                 samples_base=samples_base, target=joint_target,
                 roe_data_hist=roe_data_hist, roe_fit_mask=roe_fit_mask,
                 roe_target=roe_target, roe_strength=args.roe_strength,
-                replacement_map=None, run_minos=not args.skip_minos,
+                replacement_map=None, run_minos=args.run_minos,
                 fixed_weights=fixed_weights,
             )
             names = list(specs)
@@ -409,37 +437,44 @@ def main() -> int:
         # flat for a real degeneracy and rises for a boundary-constrained
         # optimum.
         profiles = [row[7] for row in valid_rows if row[7]]
-        # A profile point whose constrained refit failed carries no information.
-        usable = [
-            prof for prof in profiles
-            if prof and all(rise is not None for rise in prof.values())
-        ]
+        # A failed constrained refit carries no information.  Be conservative:
+        # do not silently discard it and then declare flatness from a different
+        # scale.  Likewise, inspect every successful profile rather than only
+        # the last one; a rise at any scanned scale disproves the claim that all
+        # of the profiled directions are flat.
+        failed_profiles = {
+            parameter
+            for prof in profiles
+            for parameter, rise in prof.items() if rise is None
+        }
+        rises = {
+            (scale, parameter): rise
+            for scale, *_, profile in valid_rows
+            if profile
+            for parameter, rise in profile.items()
+            if rise is not None
+        }
         if args.skip_profile or not profiles:
             print("  VERDICT: inconclusive without a profile.  The deviance moved by "
                   f"{span:.3f} across a {scale_range:g}x range of bounds with every "
                   "minimum pinned, which is consistent with a flat direction but "
                   "equally with an optimum lying outside the allowed range.  Re-run "
                   "without --skip-profile to separate the two.")
-        elif not usable:
-            failed = sorted({
-                parameter
-                for prof in profiles
-                for parameter, rise in prof.items() if rise is None
-            })
-            print("  VERDICT: inconclusive.  Every inward profile had a constrained "
-                  f"refit that did not converge ({', '.join(failed)}), so no "
-                  "profile evidence is available and neither a flat direction nor "
-                  "a boundary-constrained optimum can be established.  A failed "
-                  "refit is itself common in near-degenerate problems; try more "
-                  "profile fractions or a different starting point.")
+        elif failed_profiles:
+            print("  VERDICT: inconclusive.  At least one inward profile had a "
+                  "constrained refit that did not converge "
+                  f"({', '.join(sorted(failed_profiles))}), so the claim that every "
+                  "pinned direction is flat cannot be tested.  A failed refit is "
+                  "itself common in near-degenerate problems; try more profile "
+                  "fractions or a different starting point.")
         else:
-            last = usable[-1]
-            rising = {p: r for p, r in last.items() if r > tolerance}
+            rising = {key: rise for key, rise in rises.items() if rise > tolerance}
             if rising:
                 worst = max(rising.items(), key=lambda item: item[1])
                 print("  VERDICT: boundary-constrained optimum, NOT a flat "
                       "direction.  Profiling the pinned parameters inward raises "
-                      f"the objective (largest: {worst[0]} by {worst[1]:+.3f}), so "
+                      f"the objective (largest: {worst[0][1]} at scale "
+                      f"{worst[0][0]:g} by {worst[1]:+.3f}), so "
                       "the data prefer a value outside the allowed range rather "
                       "than being indifferent along that direction.  Merging "
                       "families would not address this; investigate why the "
