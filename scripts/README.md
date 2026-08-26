@@ -93,6 +93,13 @@ of three verdicts:
 | bounds were binding | some scale reaches an interior minimum | re-run the tuning with those bounds, feed the covariance to `bbbar_eigen_systematics.py` |
 | flat direction | every minimum still pins **and** the deviance moves by no more than `--deviance-tolerance` | merge the unmeasured families, or add a separating observable; widening further will not help |
 | inconclusive | every minimum still pins **but** the deviance improves by more than the tolerance | the bounds still matter, so this is not evidence of a flat direction; extend the scan |
+| inconclusive | fewer than two scales converged | no range of bounds to compare; extend or adjust the scan |
+| no valid fit | no scale converged | investigate the minimisation before drawing any physics conclusion |
+
+Scales whose fit did not converge are excluded from the verdict and listed
+separately: a failed fit's parameter values and objective are both unreliable,
+so an invalid fit that happens to sit away from its limits must not be read as
+evidence that the bounds were binding.
 
 The default tolerance is 1.0. The cost has `errordef = 1`, so one unit is the
 1-sigma scale of a single parameter; a deviance change below that across a

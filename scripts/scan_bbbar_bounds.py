@@ -84,10 +84,15 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def relaxed_specs(tuning, scale: float) -> dict:
-    """Widen every parameter range by ``scale`` about its geometric centre."""
+def relaxed_specs(tuning, base_specs, scale: float) -> dict:
+    """Widen every range in ``base_specs`` by ``scale``.
+
+    ``base_specs`` must always be the *original* mapping.  Reading it from
+    ``tuning.PARAMETER_SPECS`` instead would compound the relaxations, because
+    the scan installs each result on the module as it goes.
+    """
     specs = {}
-    for name, spec in tuning.PARAMETER_SPECS.items():
+    for name, spec in base_specs.items():
         lower = spec.lower / scale
         upper = spec.upper * scale
         specs[name] = tuning.ParameterSpec(spec.category, lower, upper)
@@ -171,13 +176,13 @@ def main() -> int:
                       if args.run != "run1+run2" else 1.0),
     }
 
-    print(f"\n{'scale':>7} {'deviance':>12} {'interior':>9} "
+    print(f"\n{'scale':>7} {'deviance':>12} {'valid':>6} {'interior':>9} "
           f"{'max|rho| unmeas':>16}  pinned parameters")
-    print("-" * 88)
+    print("-" * 96)
     rows = []
     try:
         for scale in args.scales:
-            specs = relaxed_specs(tuning, scale)
+            specs = relaxed_specs(tuning, original_specs, scale)
             tuning.PARAMETER_SPECS = specs
             start = {spec.category: float(np.sqrt(max(spec.lower, 1e-6) * spec.upper))
                      for spec in specs.values()}
@@ -211,6 +216,7 @@ def main() -> int:
                 )
                 rho_text = f"{max_rho:.3f}"
             print(f"{scale:>7g} {minuit.fval:>12.3f} "
+                  f"{'yes' if minuit.valid else 'NO':>6} "
                   f"{'yes' if not pinned else 'NO':>9} {rho_text:>16}  "
                   f"{', '.join(pinned) if pinned else '-'}")
             rows.append((scale, float(minuit.fval), not pinned, max_rho,
@@ -220,43 +226,72 @@ def main() -> int:
         tuning.PARAMETER_SPECS = original_specs
 
     print("\nInterpretation")
-    print("-" * 88)
+    print("-" * 96)
     if not rows:
         print("  No fits completed; nothing to interpret.")
         return 1
-    deviances = [row[1] for row in rows]
-    interior = [row[2] for row in rows]
-    span = max(deviances) - min(deviances)
-    scale_range = max(args.scales) / min(args.scales)
-    tolerance = args.deviance_tolerance
 
-    print(f"  deviance change across the scan : {span:.3f}")
-    print(f"  bound range scanned             : {scale_range:g}x")
+    # A failed fit says nothing about the bounds: its parameter values and its
+    # objective are both unreliable, so it must not enter the verdict.
+    valid_rows = [row for row in rows if row[6]]
+    invalid_scales = [row[0] for row in rows if not row[6]]
+    if invalid_scales:
+        print("  Excluded from the verdict (MIGRAD did not converge): "
+              f"scale(s) {', '.join(f'{value:g}' for value in invalid_scales)}")
+
+    if not valid_rows:
+        print("\n  VERDICT: no valid fit at any scale.  The scan cannot "
+              "distinguish tight bounds from a flat direction; investigate the "
+              "minimisation itself before drawing a physics conclusion.")
+        return 1
+
+    deviances = [row[1] for row in valid_rows]
+    valid_scales = [row[0] for row in valid_rows]
+    span = max(deviances) - min(deviances)
+    scale_range = max(valid_scales) / min(valid_scales)
+    tolerance = args.deviance_tolerance
+    interior_rows = [row for row in valid_rows if row[2]]
+
+    print(f"  valid scales                    : "
+          f"{', '.join(f'{value:g}' for value in valid_scales)}")
+    print(f"  deviance change across them     : {span:.3f}")
+    print(f"  bound range covered             : {scale_range:g}x")
     print(f"  tolerance (--deviance-tolerance): {tolerance:g}")
     print()
-    if any(interior):
-        first = args.scales[interior.index(True)]
-        print(f"  VERDICT: bounds were the binding constraint.  An interior minimum "
-              f"is reached at scale {first:g}.  Re-run the tuning with these bounds "
-              "and feed the covariance to scripts/bbbar_eigen_systematics.py.")
+    if interior_rows:
+        first = interior_rows[0]
+        print(f"  VERDICT: bounds were the binding constraint.  A valid interior "
+              f"minimum is reached at scale {first[0]:g}.")
+        if first[5]:
+            print("  Re-run the tuning with these bounds and feed the covariance to "
+                  "scripts/bbbar_eigen_systematics.py.")
+        else:
+            print("  NOTE: HESSE returned no covariance at that scale, so the fit "
+                  "is interior but its uncertainties are not yet propagable.")
+    elif len(valid_rows) < 2:
+        print("  VERDICT: inconclusive.  Only one scale produced a valid fit, so "
+              "there is no range of bounds to compare and neither a binding bound "
+              "nor a flat direction can be established.  Extend or adjust the scan "
+              "so that at least two scales converge.")
     elif span <= tolerance:
-        print("  VERDICT: flat likelihood direction.  No scale gives an interior "
-              f"minimum, and the deviance moved by {span:.3f}, within the "
+        print("  VERDICT: flat likelihood direction.  No valid scale gives an "
+              f"interior minimum, and the deviance moved by {span:.3f}, within the "
               f"{tolerance:g} tolerance, across a {scale_range:g}x range of bounds. "
               "Widening the bounds further will not help; merge the unmeasured "
               "families, or add an observable that separates them.")
     else:
-        print("  VERDICT: inconclusive.  No scale gives an interior minimum, but the "
-              f"deviance improved by {span:.3f}, more than the {tolerance:g} "
-              "tolerance, so the bounds are still materially affecting the fit. "
-              "This is not evidence of a flat direction.  Extend the scan to larger "
-              "scales until either an interior minimum appears or the deviance "
-              "stops improving.")
+        print("  VERDICT: inconclusive.  No valid scale gives an interior minimum, "
+              f"but the deviance improved by {span:.3f}, more than the "
+              f"{tolerance:g} tolerance, so the bounds are still materially "
+              "affecting the fit.  This is not evidence of a flat direction.  "
+              "Extend the scan to larger scales until either an interior minimum "
+              "appears or the deviance stops improving.")
 
     for scale, deviance, is_interior, max_rho, values, has_cov, valid in rows:
         rho_text = "n/a (no covariance)" if not has_cov else f"{max_rho:.3f}"
+        flag = "" if valid else "   [EXCLUDED: MIGRAD did not converge]"
         print(f"\n  scale {scale:g}: deviance {deviance:.3f}, interior={is_interior}, "
-              f"valid={valid}, max|rho|(unmeasured)={rho_text}")
+              f"valid={valid}, max|rho|(unmeasured)={rho_text}{flag}")
         for name, value in values.items():
             print(f"    {name:22s} {value:.6g}")
     return 0
