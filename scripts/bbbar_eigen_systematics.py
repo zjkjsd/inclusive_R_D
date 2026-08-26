@@ -118,8 +118,26 @@ def main() -> int:
     payload = json.loads(args.weights_json.read_text())
     minuit = payload["minuit"]
     order = list(minuit["parameter_order"])
-    covariance = np.asarray(minuit["covariance"], dtype=float)
     central = np.array([minuit["fitted_parameters"][name] for name in order])
+
+    # The tuning script serialises covariance as null when HESSE produced none.
+    # Converting that would give a 0-d array and crash validate() while
+    # indexing it, instead of following the documented refusal path.
+    if minuit.get("covariance") is None:
+        print(f"Fit      : {args.weights_json.name}")
+        print(f"Run      : {payload.get('run')}   channel: {payload.get('channel')}")
+        print("\nValidation")
+        print("-" * 70)
+        print("  FAIL  HESSE produced no covariance matrix for this fit, so there "
+              "is nothing to propagate.")
+        print("\nRefusing to emit variations.  Re-run the tuning until HESSE "
+              "returns an accurate covariance.")
+        return 1
+    covariance = np.asarray(minuit["covariance"], dtype=float)
+    if covariance.ndim != 2 or covariance.shape != (len(order), len(order)):
+        print(f"  FAIL  covariance has shape {covariance.shape}, expected "
+              f"{(len(order), len(order))}.")
+        return 1
 
     print(f"Fit      : {args.weights_json.name}")
     print(f"Run      : {payload.get('run')}   channel: {payload.get('channel')}")

@@ -90,20 +90,37 @@ of three verdicts:
 
 | Verdict | Condition | Action |
 |---|---|---|
-| bounds were binding | some scale reaches an interior minimum | re-run the tuning with those bounds, feed the covariance to `bbbar_eigen_systematics.py` |
-| flat direction | every minimum still pins **and** the deviance moves by no more than `--deviance-tolerance` | merge the unmeasured families, or add a separating observable; widening further will not help |
-| inconclusive | every minimum still pins **but** the deviance improves by more than the tolerance | the bounds still matter, so this is not evidence of a flat direction; extend the scan |
-| inconclusive | fewer than two scales converged | no range of bounds to compare; extend or adjust the scan |
+| bounds were binding | some scale reaches a valid interior minimum | re-run the tuning with those bounds, feed the covariance to `bbbar_eigen_systematics.py` |
+| flat direction | every minimum pins, the deviance moves by no more than `--deviance-tolerance`, **and** profiling each pinned parameter inward stays flat | merge the unmeasured families, or add a separating observable |
+| boundary-constrained optimum | every minimum pins **but** profiling inward raises the objective | the data prefer a value outside the allowed range. Not a degeneracy; merging would not address it |
+| inconclusive | deviance still improving, or fewer than two scales converged, or no profile was run | extend or adjust the scan |
 | no valid fit | no scale converged | investigate the minimisation before drawing any physics conclusion |
+
+A small deviance span is **necessary but not sufficient** for flatness. If the
+unconstrained optimum lies outside every relaxed range — a family whose
+preferred weight is at or below zero — then every fit pins and the span
+shrinks towards zero as the lower bound approaches zero, with no degeneracy
+anywhere. Only a profile separates the two, and a one-parameter scan will not
+do it: along a genuinely degenerate direction, moving one weight while holding
+the rest fixed also raises the objective, because the compensating movement is
+not followed. The profile fixes the pinned parameter and re-minimises
+everything else. Verified on synthetic likelihoods: a sum-constrained
+degeneracy profiles flat (rise 0.0000) while an optimum at −1 outside the
+range rises (+2.10).
 
 Scales whose fit did not converge are excluded from the verdict and listed
 separately: a failed fit's parameter values and objective are both unreliable,
 so an invalid fit that happens to sit away from its limits must not be read as
 evidence that the bounds were binding.
 
-The default tolerance is 1.0. The cost has `errordef = 1`, so one unit is the
-1-sigma scale of a single parameter; a deviance change below that across a
-wide range of bounds is not a meaningful improvement.
+The default tolerance is 1.0. For the pure `kinematic-2d` model the objective
+is a single Poisson deviance with `errordef = 1`, so one unit is the 1σ scale
+of one parameter. For the composite models that add the weighted shape-only
+ROE term, the tuning script states that `errordef = 1` is a convention
+requiring pseudoexperiment validation — so the unit carries **no** σ
+interpretation there, and the script says so at startup. Calibrate the
+tolerance before trusting a flat-versus-inconclusive verdict on a composite
+objective.
 
 HESSE can fail to return a covariance precisely when the likelihood is flat,
 which is the case the scan exists to find, so a missing covariance is

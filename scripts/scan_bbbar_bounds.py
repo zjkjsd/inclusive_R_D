@@ -77,10 +77,21 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--skip-minos", action="store_true", default=True,
                         help="MINOS is slow and not needed for this diagnostic.")
     parser.add_argument("--deviance-tolerance", type=float, default=1.0,
-                        help="Largest deviance change across the scan that still "
-                             "counts as 'the bounds do not matter'.  The cost has "
-                             "errordef = 1, so one unit is the 1-sigma scale of a "
-                             "single parameter.  Default: 1.0.")
+                        help="Largest objective change across the scan that still "
+                             "counts as 'the bounds do not matter'.  For the pure "
+                             "kinematic-2d model the objective is a single Poisson "
+                             "deviance with errordef = 1, so one unit is the "
+                             "1-sigma scale of one parameter.  For the composite "
+                             "models that add the weighted ROE term this unit is a "
+                             "convention only and must be calibrated with "
+                             "pseudoexperiments.  Default: 1.0.")
+    parser.add_argument("--skip-profile", action="store_true",
+                        help="Skip the inward profile of pinned parameters.  Without "
+                             "it the flat-direction verdict cannot be issued.")
+    parser.add_argument("--profile-fractions", type=float, nargs="+",
+                        default=[0.02, 0.10],
+                        help="Fractions of the allowed range to step inward from a "
+                             "pinned bound when profiling. Default: 0.02 0.10.")
     return parser.parse_args()
 
 
@@ -97,6 +108,51 @@ def relaxed_specs(tuning, base_specs, scale: float) -> dict:
         upper = spec.upper * scale
         specs[name] = tuning.ParameterSpec(spec.category, lower, upper)
     return specs
+
+
+def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
+    """Profile each pinned parameter inward, re-minimising the others.
+
+    A one-parameter scan is not enough here: along a genuinely degenerate
+    direction, moving one weight while holding the rest fixed also raises the
+    objective, because the compensating movement is not followed.  Only a
+    profile -- fix the pinned parameter, re-minimise everything else --
+    separates the two cases:
+
+    * profile stays flat  -> the objective really is flat in that direction,
+      i.e. the families are degenerate;
+    * profile rises       -> the constrained optimum is genuinely at the
+      bound and the data prefer a value outside the allowed range, which is a
+      modelling problem rather than a degeneracy.
+    """
+    from iminuit import Minuit
+
+    base = cost(*[central[name] for name in names])
+    results = {}
+    for parameter in pinned:
+        spec = specs[parameter]
+        at_lower = abs(central[parameter] - spec.lower) <= abs(
+            central[parameter] - spec.upper
+        )
+        bound = spec.lower if at_lower else spec.upper
+        far = spec.upper if at_lower else spec.lower
+        best_rise = None
+        for fraction in fractions:
+            target = bound + fraction * (far - bound)
+            trial = Minuit(cost, *[central[name] for name in names], name=tuple(names))
+            if not hasattr(cost, "errordef"):
+                trial.errordef = 1.0
+            for name in names:
+                trial.limits[name] = (specs[name].lower, specs[name].upper)
+                trial.errors[name] = max(0.01 * (specs[name].upper - specs[name].lower),
+                                         0.1 * abs(central[name]))
+            trial.values[parameter] = target
+            trial.fixed[parameter] = True
+            trial.migrad()
+            rise = float(trial.fval) - base
+            best_rise = rise if best_rise is None else min(best_rise, rise)
+        results[parameter] = best_rise
+    return results
 
 
 def load_samples(tuning, args):
@@ -176,6 +232,34 @@ def main() -> int:
                       if args.run != "run1+run2" else 1.0),
     }
 
+    def make_cost(specs):
+        """Rebuild the objective run_minuit() minimises, for profiling."""
+        parameter_names = tuple(specs)
+
+        def cost(*parameter_values):
+            weights = dict(fixed_weights)
+            for name, value in zip(parameter_names, parameter_values):
+                weights[specs[name].category] = float(value)
+            return tuning.evaluate_weights(
+                weights, data_hist=data_hist, fit_mask=fit_mask,
+                samples_base=samples_base, target=joint_target,
+                roe_data_hist=roe_data_hist, roe_fit_mask=roe_fit_mask,
+                roe_target=roe_target, roe_strength=args.roe_strength,
+                replacement_map=None,
+            )
+
+        cost.errordef = 1.0
+        return cost
+
+    composite = args.fit_model != "kinematic-2d"
+    if composite:
+        print(f"\n  NOTE: objective '{args.fit_model}' combines the 2D deviance with "
+              "a separately weighted\n  shape-only ROE term.  errordef = 1 is a "
+              "convention for it, not a calibrated\n  1-sigma scale, so "
+              f"--deviance-tolerance ({args.deviance_tolerance:g}) carries no sigma "
+              "interpretation\n  here and should be calibrated with "
+              "pseudoexperiments before the verdict is trusted.")
+
     print(f"\n{'scale':>7} {'deviance':>12} {'valid':>6} {'interior':>9} "
           f"{'max|rho| unmeas':>16}  pinned parameters")
     print("-" * 96)
@@ -219,9 +303,22 @@ def main() -> int:
                   f"{'yes' if minuit.valid else 'NO':>6} "
                   f"{'yes' if not pinned else 'NO':>9} {rho_text:>16}  "
                   f"{', '.join(pinned) if pinned else '-'}")
+
+            profile = None
+            if pinned and minuit.valid and not args.skip_profile:
+                central = {n: float(minuit.values[n]) for n in names}
+                profile = profile_pinned_inward(
+                    make_cost(specs), names, specs, central, pinned,
+                    args.profile_fractions,
+                )
+                for parameter, rise in profile.items():
+                    print(f"{'':>7} profile inward, {parameter:22s} "
+                          f"delta(objective) = {rise:+.3f}")
+
             rows.append((scale, float(minuit.fval), not pinned, max_rho,
                          {n: float(minuit.values[n]) for n in names},
-                         minuit.covariance is not None, bool(minuit.valid)))
+                         minuit.covariance is not None, bool(minuit.valid),
+                         profile))
     finally:
         tuning.PARAMETER_SPECS = original_specs
 
@@ -273,25 +370,61 @@ def main() -> int:
               "there is no range of bounds to compare and neither a binding bound "
               "nor a flat direction can be established.  Extend or adjust the scan "
               "so that at least two scales converge.")
-    elif span <= tolerance:
-        print("  VERDICT: flat likelihood direction.  No valid scale gives an "
-              f"interior minimum, and the deviance moved by {span:.3f}, within the "
-              f"{tolerance:g} tolerance, across a {scale_range:g}x range of bounds. "
-              "Widening the bounds further will not help; merge the unmeasured "
-              "families, or add an observable that separates them.")
     else:
-        print("  VERDICT: inconclusive.  No valid scale gives an interior minimum, "
-              f"but the deviance improved by {span:.3f}, more than the "
-              f"{tolerance:g} tolerance, so the bounds are still materially "
-              "affecting the fit.  This is not evidence of a flat direction.  "
-              "Extend the scan to larger scales until either an interior minimum "
-              "appears or the deviance stops improving.")
+        # A small deviance span is necessary but not sufficient for flatness.
+        # If the unconstrained optimum lies outside every relaxed range -- a
+        # family whose preferred weight is at or below zero -- then every fit
+        # pins, and the span shrinks towards zero as the bound approaches zero,
+        # with no degeneracy anywhere.  The profile separates the two: it stays
+        # flat for a real degeneracy and rises for a boundary-constrained
+        # optimum.
+        profiles = [row[7] for row in valid_rows if row[7]]
+        if args.skip_profile or not profiles:
+            print("  VERDICT: inconclusive without a profile.  The deviance moved by "
+                  f"{span:.3f} across a {scale_range:g}x range of bounds with every "
+                  "minimum pinned, which is consistent with a flat direction but "
+                  "equally with an optimum lying outside the allowed range.  Re-run "
+                  "without --skip-profile to separate the two.")
+        else:
+            last = profiles[-1]
+            rising = {p: r for p, r in last.items() if r > tolerance}
+            if rising:
+                worst = max(rising.items(), key=lambda item: item[1])
+                print("  VERDICT: boundary-constrained optimum, NOT a flat "
+                      "direction.  Profiling the pinned parameters inward raises "
+                      f"the objective (largest: {worst[0]} by {worst[1]:+.3f}), so "
+                      "the data prefer a value outside the allowed range rather "
+                      "than being indifferent along that direction.  Merging "
+                      "families would not address this; investigate why the "
+                      "preferred weight lies outside its physical range.")
+            elif span <= tolerance:
+                print("  VERDICT: flat likelihood direction.  No valid scale gives "
+                      f"an interior minimum, the deviance moved by {span:.3f} across "
+                      f"a {scale_range:g}x range of bounds, and profiling every "
+                      "pinned parameter inward changes the objective by no more "
+                      f"than the {tolerance:g} tolerance.  The families are "
+                      "degenerate in this region: merge the unmeasured families, or "
+                      "add an observable that separates them.")
+                if composite:
+                    print("  Calibrate --deviance-tolerance with pseudoexperiments "
+                          "before acting on this verdict; for the composite "
+                          "objective it is a convention, not a 1-sigma scale.")
+            else:
+                print("  VERDICT: inconclusive.  No valid scale gives an interior "
+                      f"minimum, but the deviance improved by {span:.3f}, more than "
+                      f"the {tolerance:g} tolerance, so the bounds are still "
+                      "materially affecting the fit.  Extend the scan to larger "
+                      "scales until either an interior minimum appears or the "
+                      "deviance stops improving.")
 
-    for scale, deviance, is_interior, max_rho, values, has_cov, valid in rows:
+    for scale, deviance, is_interior, max_rho, values, has_cov, valid, profile in rows:
         rho_text = "n/a (no covariance)" if not has_cov else f"{max_rho:.3f}"
         flag = "" if valid else "   [EXCLUDED: MIGRAD did not converge]"
         print(f"\n  scale {scale:g}: deviance {deviance:.3f}, interior={is_interior}, "
               f"valid={valid}, max|rho|(unmeasured)={rho_text}{flag}")
+        if profile:
+            for parameter, rise in profile.items():
+                print(f"    profile inward {parameter:22s} {rise:+.3f}")
         for name, value in values.items():
             print(f"    {name:22s} {value:.6g}")
     return 0
