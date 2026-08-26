@@ -62,12 +62,20 @@ NULL_EIGENVALUE_FRACTION = 1e-6
 DEFAULT_VARIANCE_TARGET = 0.999
 
 
+def variance_fraction(value: str) -> float:
+    """Parse a fraction in the interval (0, 1]."""
+    fraction = float(value)
+    if not 0.0 < fraction <= 1.0:
+        raise argparse.ArgumentTypeError("must be greater than 0 and at most 1")
+    return fraction
+
+
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("weights_json", type=pathlib.Path,
                         help="Output of 5_BBbkg_weights_optuna_minuit.py.")
-    parser.add_argument("--variance-target", type=float,
+    parser.add_argument("--variance-target", type=variance_fraction,
                         default=DEFAULT_VARIANCE_TARGET,
                         help="Cumulative variance fraction to cover.")
     parser.add_argument("--output", type=pathlib.Path, default=None,
@@ -139,6 +147,13 @@ def validate(minuit: dict, order: list[str], covariance: np.ndarray) -> list[str
             "neither the HESSE errors nor the covariance can be propagated."
         )
 
+    if not np.all(np.isfinite(covariance)):
+        problems.append("The covariance contains non-finite values.")
+        return problems
+    if not np.allclose(covariance, covariance.T, rtol=1e-10, atol=1e-12):
+        problems.append("The covariance matrix is not symmetric.")
+        return problems
+
     hesse = minuit.get("hesse_errors", {})
     for index, name in enumerate(order):
         stored = float(hesse.get(name, float("nan")))
@@ -157,6 +172,9 @@ def validate(minuit: dict, order: list[str], covariance: np.ndarray) -> list[str
 
     eigenvalues = np.linalg.eigvalsh(covariance)
     leading = eigenvalues.max()
+    if leading <= 0.0:
+        problems.append("The covariance is not positive definite.")
+        return problems
     null_directions = int(np.sum(eigenvalues < NULL_EIGENVALUE_FRACTION * leading))
     if null_directions:
         problems.append(
