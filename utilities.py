@@ -629,7 +629,12 @@ def classify_mc_dict(df, mode, template=True) -> dict:
         r'$D^{\ast\ast}\ell\nu$_broad': Dstst_l_nu_broad,
         # r'$D\ell\nu$_gap_pi': D_l_nu_gap_pi,
         # r'$D\ell\nu$_gap_eta': D_l_nu_gap_eta,
-        r'$D\ell\nu$_gap': pd.concat([D_l_nu_gap_pi, D_l_nu_gap_eta], ignore_index=True),
+        # ignore_index=False keeps the original candidate index, as every
+        # other category does.  Renumbering made this one sample's index
+        # collide with unrelated early rows, which broke any index-based
+        # bookkeeping over the returned dict and produced duplicate labels
+        # when the categories were concatenated.
+        r'$D\ell\nu$_gap': pd.concat([D_l_nu_gap_pi, D_l_nu_gap_eta], ignore_index=False),
         'bkg_other_signal': bkg_other_signal,
     })
     

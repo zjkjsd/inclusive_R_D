@@ -32,11 +32,12 @@ import uproot
 
 import utilities as util
 
-# classify_mc_dict() builds the merged gap category with
-# pd.concat(..., ignore_index=True) (utilities.py:632), so that one sample's
-# DataFrame index is renumbered from zero and no longer identifies the
-# original candidate.  Membership is therefore tracked through an explicit
-# identifier column that survives concatenation, never through the index.
+# Membership is tracked through an explicit identifier column, never through
+# the DataFrame index.  classify_mc_dict() previously renumbered the merged
+# gap category with pd.concat(..., ignore_index=True), so its index collided
+# with unrelated early rows; that is fixed, but this script exists to verify
+# how classify_mc_dict() partitions its input and so must not assume the
+# partitioning preserves the index.
 CANDIDATE_ID = "__cand_id__"
 
 
