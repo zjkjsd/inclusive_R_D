@@ -1,5 +1,23 @@
 # Validation and diagnostic scripts
 
+> ## ARCHIVED — none of these three scripts run
+>
+> Each one raises `SystemExit` at the top of `main()`. They are kept as a
+> record of an approach that was explored and **not finished**, so that the
+> reasoning, the measurements and the known failure modes are not lost. None
+> of them has been run on real ntuples; nothing here has produced a number
+> used in the analysis, and nothing here should.
+>
+> They are not merged because they work. They are merged because the problems
+> they document are real and the dead ends are worth knowing about.
+>
+> To take one up again: delete the `ARCHIVED` guard at the top of its
+> `main()`, then read **Review status** and **Before the output is trusted**
+> below before trusting a single line of output.
+>
+> `tests/test_scan_verdicts.py` is *not* guarded and still runs. It needs no
+> ntuples and is the one part of this directory with a green result.
+
 Standalone checks that support the B2Note. They read existing artifacts and
 do not modify the analysis chain.
 
@@ -167,9 +185,27 @@ The scan monkeypatches `PARAMETER_SPECS` on the imported tuning module and
 restores it afterwards; it is a diagnostic, not part of the nominal chain.
 ## Review status
 
-Every finding raised in review of these two scripts is closed. The ones worth
-remembering, because they were all ways for the scan to reach a *confident but
-wrong* verdict rather than to crash:
+Review raised **24 findings** across these scripts. All are closed, but the
+distribution is the reason the work stopped where it did:
+
+| File | Findings | Job it does |
+|---|---|---|
+| `scan_bbbar_bounds.py` | 13 | issues a physics *verdict* |
+| `bbbar_eigen_systematics.py` | 4 | validates, then propagates |
+| `validate_truth_categories.py` | 3 | measures a property |
+| `utilities.py` | 1 | comments only |
+
+More than half landed on the one script that automates a judgement call, and
+they were still arriving at an undiminished rate at the end — three in the
+final round. That is structural rather than accidental: each guard added to
+the verdict logic creates another decision boundary that can itself be wrong,
+so the finding rate does not decay the way it does for a script with a narrow,
+checkable job. Deciding whether the BBbar families are degenerate is not a
+thing to automate; the script's value is the measurements it makes on the way
+there, not its conclusion.
+
+The findings worth remembering, because they were all ways for the scan to
+reach a *confident but wrong* verdict rather than to crash:
 
 | Finding | Why it mattered |
 |---|---|
@@ -184,6 +220,9 @@ wrong* verdict rather than to crash:
 | flat verdict from a duplicated scale | two rows at the same scale gave a zero span with no bounds actually scanned |
 | flat verdict from a profile that improved | a refit landing below the nominal minimum is a negative "rise", which can never exceed the tolerance |
 | eigen variations crossing bounds only in combination | each direction was validated alone, but the parameters are independent and move together |
+| "bounds were binding" from an inferior local minimum | a narrower scale's fit is feasible at a wider one, so an interior fit it beats is not the minimum |
+| a relaxation factor below 1 | `--scales 0.1` inverts the measured range to `[5.0, 0.5]`, tightening while claiming to relax |
+| `--roe-strength 0` called composite | the ROE term is multiplied by zero, so the objective is a single deviance |
 
 ## Before the output is trusted
 
@@ -192,15 +231,19 @@ whether to merge physics categories, and the history above shows how many ways
 that verdict can be wrong. Treat the first real run as something to
 cross-check against your own reading of the fits, not as an answer.
 
-`tests/test_scan_verdicts.py` now covers every verdict branch and the profile
-and bounds helpers, over synthetic likelihoods with known answers —
-degenerate, boundary-constrained, well-behaved and non-converging. It needs no
-ntuples:
+`tests/test_scan_verdicts.py` covers every verdict branch and the profile,
+relaxation-factor and bounds helpers, over synthetic likelihoods with known
+answers — degenerate, boundary-constrained, well-behaved and non-converging.
+It needs no ntuples and it runs:
 
 ```bash
 python3 scripts/tests/test_scan_verdicts.py
 ```
 
-That replaces the ad-hoc checks used while fixing the findings above, but it
-tests the interpretation only. Nothing here substitutes for the first real
-run.
+It tests the *interpretation* only. Every branch it exercises is driven by
+constructed rows, never by a fit on real data, so a green run says the logic
+does what it claims — not that the claim is right about the BBbar weights.
+
+**The scripts were archived before that gap was closed.** If you pick this up
+again, the first real run is the point of the exercise, and it needs to be
+cross-checked against your own reading of the fits rather than believed.

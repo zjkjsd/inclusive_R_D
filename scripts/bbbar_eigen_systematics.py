@@ -232,7 +232,28 @@ def validate(minuit: dict, order: list[str], covariance: np.ndarray) -> list[str
     return problems
 
 
+# --------------------------------------------------------------------------
+# ARCHIVED -- THIS SCRIPT WILL NOT RUN
+#
+# Merged as a record of an approach that was explored, not as working tooling.
+# All eight stored fits in BBbkg_weights/ fail its validation, so the
+# propagation path it exists to provide has never actually produced a
+# systematic, and the emitting half of the script is correspondingly untested
+# against anything but synthetic input.
+#
+# To take this up again, delete the guard at the top of main() deliberately,
+# and read the "Review status" and "Before the output is trusted" sections of
+# scripts/README.md first.
+# --------------------------------------------------------------------------
+ARCHIVED = (
+    "bbbar_eigen_systematics.py is archived and does not run.  It was never validated\n"
+    "end to end.  See scripts/README.md, then delete the ARCHIVED guard at\n"
+    "the top of main() in this file if you intend to take the work up again."
+)
+
+
 def main() -> int:
+    raise SystemExit(ARCHIVED)
     args = parse_arguments()
     payload = json.loads(args.weights_json.read_text())
     minuit = payload["minuit"]

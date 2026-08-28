@@ -115,6 +115,15 @@ def test_verdicts() -> None:
     check("an interior minimum ends the scan",
           verdict([row(1.0, 100.0, profile=FLAT), row(10.0, 99.9, pinned=False)]),
           "bounds were the binding constraint")
+
+    # A pinned fit at scale 1 is still feasible at scale 10, so an interior
+    # scale-10 fit with a worse objective is a local minimum, not the answer.
+    check("an inferior interior minimum is not 'bounds were binding'",
+          verdict([row(1.0, 100.0, profile=FLAT), row(10.0, 120.0, pinned=False)]),
+          "inconclusive -- the minimisation is unreliable")
+    check("an interior minimum that beats the pinned fits still counts",
+          verdict([row(1.0, 100.0, profile=FLAT), row(10.0, 80.0, pinned=False)]),
+          "bounds were the binding constraint")
     check("a still-improving deviance is inconclusive",
           verdict([row(1.0, 100.0, profile=FLAT), row(10.0, 80.0, profile=FLAT)]),
           "inconclusive")
@@ -160,6 +169,19 @@ def test_profile() -> None:
     check("every sampled point is kept", len(rises), 2)
 
 
+def test_relaxation_factor() -> None:
+    """A scale below 1 tightens the bounds and can invert them."""
+    print("relaxation_factor")
+    check("1 is accepted", scan.relaxation_factor("1"), 1.0)
+    check("30 is accepted", scan.relaxation_factor("30"), 30.0)
+    for bad in ("0.1", "0", "-2"):
+        try:
+            scan.relaxation_factor(bad)
+            check(f"{bad} is rejected", False, True)
+        except argparse.ArgumentTypeError:
+            check(f"{bad} is rejected", True, True)
+
+
 def test_combined_bounds() -> None:
     """Independent nuisance parameters vary together downstream."""
     print("check_combined_bounds")
@@ -185,6 +207,7 @@ def test_combined_bounds() -> None:
 def main() -> int:
     test_verdicts()
     test_profile()
+    test_relaxation_factor()
     test_combined_bounds()
     print()
     if FAILURES:

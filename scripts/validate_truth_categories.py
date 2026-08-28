@@ -61,7 +61,32 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
+# --------------------------------------------------------------------------
+# ARCHIVED -- THIS SCRIPT WILL NOT RUN
+#
+# Merged as a record of an approach that was explored, not as working tooling.
+# It has never been run on real ntuples, so the exclusivity and exhaustiveness
+# of classify_mc_dict() that it was written to measure remains unmeasured --
+# including the D_mcErrors > 512 gap that motivated it.
+#
+# Of the three scripts this is the one closest to usable: it measures a
+# property rather than issuing a verdict, and nothing has been raised against
+# it since 26 Aug.  It is guarded with the others so that the whole set has one
+# status, not because it is known to be wrong.
+#
+# To take this up again, delete the guard at the top of main() deliberately,
+# and read the "Review status" and "Before the output is trusted" sections of
+# scripts/README.md first.
+# --------------------------------------------------------------------------
+ARCHIVED = (
+    "validate_truth_categories.py is archived and does not run.  It was never validated\n"
+    "end to end.  See scripts/README.md, then delete the ARCHIVED guard at\n"
+    "the top of main() in this file if you intend to take the work up again."
+)
+
+
 def main() -> int:
+    raise SystemExit(ARCHIVED)
     args = parse_arguments()
     columns = set(util.all_relevant_variables)
 

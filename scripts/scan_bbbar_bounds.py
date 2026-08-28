@@ -49,11 +49,21 @@ import bbbar_reweighting as bbbar  # noqa: E402
 TUNING_SCRIPT = REPO_ROOT / "5_BBbkg_weights_optuna_minuit.py"
 
 
-def positive_float(value: str) -> float:
-    """Parse a finite, strictly positive command-line number."""
+def relaxation_factor(value: str) -> float:
+    """Parse a bound-relaxation factor, which must not tighten the bounds.
+
+    ``relaxed_specs()`` divides the lower bound by this factor and multiplies
+    the upper by it, so it only has relaxation semantics at 1 or above.  Below
+    1 it tightens the range and can invert it outright -- at 0.1 the measured
+    weight's range becomes [5.0, 0.5] -- which either fails while assigning
+    Minuit's limits or yields a "bounds were binding" verdict from a scan that
+    was tightening them.
+    """
     number = float(value)
-    if not np.isfinite(number) or number <= 0.0:
-        raise argparse.ArgumentTypeError("must be a finite number greater than 0")
+    if not np.isfinite(number) or number < 1.0:
+        raise argparse.ArgumentTypeError(
+            "must be a finite number at least 1; a smaller factor tightens the "
+            "bounds instead of relaxing them")
     return number
 
 
@@ -93,7 +103,7 @@ def parse_arguments() -> argparse.Namespace:
                         choices=["kinematic-2d", "missm2-roe-2d", "kinematic-2d-plus-roe"])
     parser.add_argument("--roe-strength", type=nonnegative_float, default=1.0)
     parser.add_argument("--roe-tail-start", type=int, default=14)
-    parser.add_argument("--scales", type=positive_float, nargs="+",
+    parser.add_argument("--scales", type=relaxation_factor, nargs="+",
                         default=[1.0, 3.0, 10.0, 30.0],
                         help="Bound-relaxation factors to scan. 1 reproduces the "
                              "current PARAMETER_SPECS.")
@@ -155,6 +165,21 @@ def at_limit(value, error, spec, range_fraction=1e-6):
     if error is not None and np.isfinite(error) and error > 0:
         threshold = max(threshold, 0.5 * error)
     return distance < threshold
+
+
+def objective_consistent(row, valid_rows, tolerance):
+    """Is this interior minimum at least as good as every narrower fit?
+
+    ``relaxed_specs()`` nests the ranges -- a smaller scale's box is contained
+    in every larger one -- so any point found at a narrower scale is feasible
+    here too.  If one of them reached a lower objective, MIGRAD settled on an
+    inferior local minimum at this scale: the point is interior, but it is not
+    *the* minimum, and recommending its covariance would propagate the wrong
+    fit.
+    """
+    scale, deviance = row[0], row[1]
+    return not [other for other in valid_rows
+                if other[0] <= scale and other[1] < deviance - tolerance]
 
 
 def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
@@ -256,7 +281,34 @@ def load_samples(tuning, args):
             pd.concat(data_frames, ignore_index=True, copy=False))
 
 
+# --------------------------------------------------------------------------
+# ARCHIVED -- THIS SCRIPT WILL NOT RUN
+#
+# Merged as a record of an approach that was explored, not as working tooling.
+# It has never been run on real ntuples, and its verdict -- whether the BBbar
+# families are degenerate and should therefore be merged -- is an automated
+# physics judgement that was never checked against a physicist's reading of
+# the fits.
+#
+# Of the 24 findings review raised against these scripts, 13 were against this
+# file alone, and they were still arriving at the same rate when the work
+# stopped.  Almost all were cases of the scan reaching a *confident and wrong*
+# conclusion rather than crashing.  That is the nature of the thing: every
+# guard added another decision boundary that could itself be wrong.
+#
+# To take this up again, delete the guard at the top of main() deliberately,
+# and read the "Review status" and "Before the output is trusted" sections of
+# scripts/README.md first.
+# --------------------------------------------------------------------------
+ARCHIVED = (
+    "scan_bbbar_bounds.py is archived and does not run.  It was never validated\n"
+    "end to end.  See scripts/README.md, then delete the ARCHIVED guard at\n"
+    "the top of main() in this file if you intend to take the work up again."
+)
+
+
 def main() -> int:
+    raise SystemExit(ARCHIVED)
     args = parse_arguments()
     tuning = load_tuning_module()
     original_specs = dict(tuning.PARAMETER_SPECS)
@@ -325,7 +377,10 @@ def main() -> int:
     # missm2-roe-2d puts the ROE variable on the second axis of one joint
     # Poisson deviance; only kinematic-2d-plus-roe adds a separately weighted
     # shape-only term, and only that model's errordef is a bare convention.
-    composite = roe_target is not None
+    # At --roe-strength 0 the ROE term is multiplied by zero, so what is
+    # actually minimised is the single 2D deviance and errordef = 1 keeps its
+    # sigma interpretation.
+    composite = roe_target is not None and args.roe_strength > 0
     if composite:
         print(f"\n  NOTE: objective '{args.fit_model}' combines the 2D deviance with "
               "a separately weighted\n  shape-only ROE term.  errordef = 1 is a "
@@ -437,6 +492,9 @@ def interpret_scan(rows, args, composite) -> int:
     scale_range = max(valid_scales) / min(valid_scales)
     tolerance = args.deviance_tolerance
     interior_rows = [row for row in valid_rows if row[2]]
+    usable_interior = [row for row in interior_rows
+                       if objective_consistent(row, valid_rows, tolerance)]
+    inferior_interior = [row for row in interior_rows if row not in usable_interior]
 
     print(f"  valid scales                    : "
           f"{', '.join(f'{value:g}' for value in valid_scales)}"
@@ -445,8 +503,14 @@ def interpret_scan(rows, args, composite) -> int:
     print(f"  bound range covered             : {scale_range:g}x")
     print(f"  tolerance (--deviance-tolerance): {tolerance:g}")
     print()
-    if interior_rows:
-        first = interior_rows[0]
+    if inferior_interior:
+        print("  Interior minima excluded as inferior local minima (a narrower "
+              "scale, whose\n  range they contain, reached a lower objective): "
+              + ", ".join(f"scale {row[0]:g} at {row[1]:.3f}"
+                          for row in inferior_interior))
+
+    if usable_interior:
+        first = usable_interior[0]
         print(f"  VERDICT: bounds were the binding constraint.  A valid interior "
               f"minimum is reached at scale {first[0]:g}.")
         if first[5]:
@@ -455,6 +519,16 @@ def interpret_scan(rows, args, composite) -> int:
         else:
             print("  NOTE: HESSE returned no covariance at that scale, so the fit "
                   "is interior but its uncertainties are not yet propagable.")
+    elif inferior_interior:
+        # Every interior minimum found is beaten by a narrower fit nested
+        # inside it.  The scan cannot conclude the bounds were binding, and it
+        # cannot conclude flatness either: the pinned rows are not the whole
+        # picture once MIGRAD is known to be missing minima at these scales.
+        print("  VERDICT: inconclusive -- the minimisation is unreliable.  The "
+              "only interior minima found are beaten by a fit at a narrower "
+              "scale whose range they contain, so MIGRAD is settling on local "
+              "minima rather than the best one at each scale.  Re-minimise from "
+              "several starting points before reading anything off this scan.")
     elif len(distinct_scales) < 2:
         repeated = len(valid_rows) > 1
         print("  VERDICT: inconclusive.  "
