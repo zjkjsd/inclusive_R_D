@@ -521,6 +521,14 @@ def classify_mc_dict(df, mode, template=True) -> dict:
     lepton_PDG = {'e':11, 'mu':13}
     
     ################## Define D and lepton #################
+    # NOTE (exhaustiveness): these three D-side predicates cover
+    # D_mcErrors == 0, 0 < D_mcErrors < 512 and D_mcErrors == 512 only.
+    # Candidates with D_mcErrors > 512 (the clone/fake-track bit set together
+    # with any other mismatch bit, or any higher bit) match none of them and
+    # are silently dropped from every category.  The true-D branch has
+    # catch-alls (bkg_other_TDTl, bkg_other_signal); the fake branch does not.
+    # Run scripts/validate_truth_categories.py to measure the leakage on a
+    # real ntuple before assuming it is negligible.
     trueD = 'D_mcErrors==0'
     fakeD = '0<D_mcErrors<512'
 
@@ -621,7 +629,12 @@ def classify_mc_dict(df, mode, template=True) -> dict:
         r'$D^{\ast\ast}\ell\nu$_broad': Dstst_l_nu_broad,
         # r'$D\ell\nu$_gap_pi': D_l_nu_gap_pi,
         # r'$D\ell\nu$_gap_eta': D_l_nu_gap_eta,
-        r'$D\ell\nu$_gap': pd.concat([D_l_nu_gap_pi, D_l_nu_gap_eta], ignore_index=True),
+        # ignore_index=False keeps the original candidate index, as every
+        # other category does.  Renumbering made this one sample's index
+        # collide with unrelated early rows, which broke any index-based
+        # bookkeeping over the returned dict and produced duplicate labels
+        # when the categories were concatenated.
+        r'$D\ell\nu$_gap': pd.concat([D_l_nu_gap_pi, D_l_nu_gap_eta], ignore_index=False),
         'bkg_other_signal': bkg_other_signal,
     })
     
@@ -1420,10 +1433,23 @@ def create_workspace(temp_data_channels: list,
     measurements = [{"name": "R_D", "config": {"poi": "$D\\tau\\nu$_norm", "parameters": []}}]
     version = "1.0.0"
 
+    # NOTE (fake-D normalisation): the run-dependent fake-D factor
+    # (0.87 for run1, 1.0 for run2) is applied ONLY inside the BBbar weight
+    # tuning, 5_BBbkg_weights_optuna_minuit.py.  It is deliberately NOT applied
+    # when building templates: here bkg_fakeD floats freely and absorbs it.
+    # Applying it in both places would double-count the correction.
     normfactor = [ r'$D\ell\nu$', r'$D^\ast\ell\nu$', r'$D\tau\nu$', r'$D^{\ast\ast}\ell\nu$ + gap','bkg_fakeD',]
     normfactor += ['BBbar_measured_hadronic', 'BBbar_semileptonic',      'BBbar_unmeasured:2-body',
                    'BBbar_unmeasured:3-body', 'BBbar_unmeasured:4-body', 'BBbar_unmeasured:5-body',
                    'BBbar_unmeasured:6-body', 'BBbar_unmeasured:7-body', 'BBbar_unmeasured:5+-body',] # combinatorial bkg control sample
+    # NOTE (BBbar categories): bbbar_reweighting emits ':5+-body' when called
+    # with cap_nbody=5, which is what the tuning script uses; the separate
+    # 5-, 6- and 7-body keys are only produced with cap_nbody=None and are
+    # retained for backwards compatibility with earlier workspaces.
+    # NOTE (scope): floating the BBbar families is appropriate for the tuning
+    # context, but in the signal-region fit they should be fixed or
+    # constrained -- otherwise the final fit reopens what the tuning of the
+    # family weights already constrained.
     normsys_modifiers = {
                     r'$D^\ast\tau\nu$': {
                         'name': r'$D^\ast\tau\nu$_norm',
