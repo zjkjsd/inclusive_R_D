@@ -8,6 +8,7 @@ do not modify the analysis chain.
 | `validate_truth_categories.py` | Measures whether `classify_mc_dict()` is exclusive and exhaustive on a real ntuple, and reports the yield of the categories excluded from the fit templates. |
 | `bbbar_eigen_systematics.py` | Converts the tuned BBbar family-weight covariance into uncorrelated nuisance parameters by eigen-decomposition, after validating that the fit is fit to be propagated. |
 | `scan_bbbar_bounds.py` | Distinguishes "the bounds are too tight" from "the families are degenerate" by re-running the iminuit stage over a sequence of bound relaxations. Needs the ntuples. |
+| `tests/test_scan_verdicts.py` | Drives every verdict branch of `scan_bbbar_bounds.py` with constructed rows, and checks the profile and bounds helpers against likelihoods with known behaviour. Needs no ntuples. |
 
 ## `validate_truth_categories.py`
 
@@ -67,6 +68,16 @@ weight that would give a negative or out-of-range template yield, and the
 symmetric approximation has broken down. Such an output is not marked
 validated.
 
+Checking each direction on its own does **not** validate the nuisance model.
+The emitted parameters are advertised as independent, so downstream they move
+together: the weight vector is `central + Σᵢ θᵢ·shiftᵢ`. Every individual
+`central ± shiftᵢ` can sit inside the allowed range while a corner such as
+`central + shift₁ + shift₂` leaves it. The worst case over the unit hypercube
+`θ ∈ [−1, 1]ⁿ` is reached at a corner and equals `central_j ± Σᵢ |shiftᵢ[j]|`
+for weight `j`, so it is exact and needs no search. It is reported with the
+sign pattern that reaches it, and it fails validation like any other
+out-of-range variation.
+
 Use `--force` to inspect the decomposition of a failing fit. That output is
 diagnostic only and must not be used as a systematic.
 
@@ -93,8 +104,8 @@ from 0.64 to 0.93:
 
 Two explanations fit that pattern: the bounds are too tight, or the tuning
 region cannot separate the unmeasured families. They are distinguished by
-where the minimum lands as the bounds are relaxed, and the scan reports one
-of three verdicts:
+where the minimum lands as the bounds are relaxed.  The scan reports one of
+these verdicts:
 
 | Verdict | Condition | Action |
 |---|---|---|
@@ -102,7 +113,8 @@ of three verdicts:
 | flat direction | every minimum pins, the deviance moves by no more than `--deviance-tolerance`, **and** profiling each pinned parameter inward stays flat | merge the unmeasured families, or add a separating observable |
 | boundary-constrained optimum | every minimum pins **but** profiling inward raises the objective | the data prefer a value outside the allowed range. Not a degeneracy; merging would not address it |
 | inconclusive | any inward profile has a constrained refit that failed | not every pinned direction could be tested; try more fractions or a different start |
-| inconclusive | deviance still improving, or fewer than two scales converged, or no profile was run | extend or adjust the scan |
+| inconclusive — nominal fit unreliable | a valid constrained refit returns an objective *below* the nominal minimum by more than the tolerance | a constrained fit cannot beat the unconstrained one, so the nominal fit is a local or inaccurate minimum. Re-minimise from several starting points |
+| inconclusive | deviance still improving, or fewer than two **distinct** scales converged, or no profile was run | extend or adjust the scan |
 | no valid fit | no scale converged | investigate the minimisation before drawing any physics conclusion |
 
 A small deviance span is **necessary but not sufficient** for flatness. If the
@@ -116,6 +128,11 @@ not followed. The profile fixes the pinned parameter and re-minimises
 everything else. Verified on synthetic likelihoods: a sum-constrained
 degeneracy profiles flat (rise 0.0000) while an optimum at −1 outside the
 range rises (+2.10).
+
+Two converged fits at the *same* relaxation scale (`--scales 1 1`) are not a
+range of bounds: their deviance span is trivially zero, which would otherwise
+satisfy the flatness test without anything having been scanned. The verdict
+requires two distinct valid scales, not two valid rows.
 
 Scales whose fit did not converge are excluded from the verdict and listed
 separately: a failed fit's parameter values and objective are both unreliable,
@@ -164,6 +181,9 @@ wrong* verdict rather than to crash:
 | compounding relaxations | scales 1, 3, 10, 30 actually tested 1, 3, 30, 900 |
 | eigen variations crossing zero | a symmetric shift can emit a negative family weight |
 | `--skip-minos` always true | declared `store_true` with `default=True`, so MINOS could never run |
+| flat verdict from a duplicated scale | two rows at the same scale gave a zero span with no bounds actually scanned |
+| flat verdict from a profile that improved | a refit landing below the nominal minimum is a negative "rise", which can never exceed the tolerance |
+| eigen variations crossing bounds only in combination | each direction was validated alone, but the parameters are independent and move together |
 
 ## Before the output is trusted
 
@@ -172,7 +192,15 @@ whether to merge physics categories, and the history above shows how many ways
 that verdict can be wrong. Treat the first real run as something to
 cross-check against your own reading of the fits, not as an answer.
 
-The next step for this tooling is a test suite over synthetic likelihoods with
-known answers — degenerate, boundary-constrained, well-behaved, and
-non-converging — replacing the ad-hoc checks used while fixing the findings
-above.
+`tests/test_scan_verdicts.py` now covers every verdict branch and the profile
+and bounds helpers, over synthetic likelihoods with known answers —
+degenerate, boundary-constrained, well-behaved and non-converging. It needs no
+ntuples:
+
+```bash
+python3 scripts/tests/test_scan_verdicts.py
+```
+
+That replaces the ad-hoc checks used while fixing the findings above, but it
+tests the interpretation only. Nothing here substitutes for the first real
+run.

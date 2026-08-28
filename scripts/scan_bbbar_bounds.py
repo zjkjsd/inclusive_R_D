@@ -170,7 +170,15 @@ def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
       i.e. the families are degenerate;
     * profile rises       -> the constrained optimum is genuinely at the
       bound and the data prefer a value outside the allowed range, which is a
-      modelling problem rather than a degeneracy.
+      modelling problem rather than a degeneracy;
+    * profile *falls*     -> a constrained refit found a better objective than
+      the nominal fit, so the nominal fit was not the minimum.  Neither of the
+      two conclusions above can be drawn from it.
+
+    Every sampled rise is returned, not a summary of them.  The caller needs
+    the largest to test flatness (flat means every sampled point stayed flat)
+    and the smallest to detect the third case, and a single reduced number
+    cannot serve both.  ``None`` marks a parameter whose refit failed.
     """
     from iminuit import Minuit
 
@@ -204,12 +212,18 @@ def profile_pinned_inward(cost, names, specs, central, pinned, fractions):
                 failed = True
                 break
             rises.append(float(trial.fval) - base)
-        # Use the LARGEST sampled rise, not the smallest.  A boundary-constrained
-        # likelihood can rise by less than the tolerance at the 2% point and more
-        # at the 10% point; taking the minimum would discard the second and call
-        # the direction flat.  "Flat" must mean every sampled point stayed flat.
-        results[parameter] = None if failed else max(rises)
+        results[parameter] = None if failed else rises
     return results
+
+
+def format_profile(rises, failed_text="FAILED"):
+    """Render one parameter's profile result for the tables."""
+    if rises is None:
+        return failed_text
+    if len(rises) == 1:
+        return f"{rises[0]:+.3f}"
+    return (f"max {max(rises):+.3f}, min {min(rises):+.3f} "
+            f"({len(rises)} points)")
 
 
 def load_samples(tuning, args):
@@ -370,10 +384,9 @@ def main() -> int:
                     make_cost(specs), names, specs, central, pinned,
                     args.profile_fractions,
                 )
-                for parameter, rise in profile.items():
-                    shown = "FAILED" if rise is None else f"{rise:+.3f}"
+                for parameter, rises in profile.items():
                     print(f"{'':>7} profile inward, {parameter:22s} "
-                          f"delta(objective) = {shown}")
+                          f"delta(objective) = {format_profile(rises)}")
 
             rows.append((scale, float(minuit.fval), not pinned, max_rho,
                          {n: float(minuit.values[n]) for n in names},
@@ -382,6 +395,17 @@ def main() -> int:
     finally:
         tuning.PARAMETER_SPECS = original_specs
 
+    return interpret_scan(rows, args, composite)
+
+
+def interpret_scan(rows, args, composite) -> int:
+    """Turn the scanned rows into the scan's verdict.
+
+    Kept separate from main() so that every branch can be exercised
+    against constructed rows.  Each of the verdicts below is a physics
+    conclusion, and review has repeatedly found ways for the wrong one
+    to be issued confidently, so they need to be testable without a fit.
+    """
     print("\nInterpretation")
     print("-" * 96)
     if not rows:
@@ -404,13 +428,19 @@ def main() -> int:
 
     deviances = [row[1] for row in valid_rows]
     valid_scales = [row[0] for row in valid_rows]
+    # Count *distinct* scales.  Repeating a scale (``--scales 1 1``) produces
+    # two converged rows whose deviance span is trivially zero, which would
+    # otherwise satisfy the flatness test without any range of bounds having
+    # been examined at all.
+    distinct_scales = sorted(set(valid_scales))
     span = max(deviances) - min(deviances)
     scale_range = max(valid_scales) / min(valid_scales)
     tolerance = args.deviance_tolerance
     interior_rows = [row for row in valid_rows if row[2]]
 
     print(f"  valid scales                    : "
-          f"{', '.join(f'{value:g}' for value in valid_scales)}")
+          f"{', '.join(f'{value:g}' for value in valid_scales)}"
+          f"{' (repeated)' if len(distinct_scales) < len(valid_scales) else ''}")
     print(f"  deviance change across them     : {span:.3f}")
     print(f"  bound range covered             : {scale_range:g}x")
     print(f"  tolerance (--deviance-tolerance): {tolerance:g}")
@@ -425,11 +455,19 @@ def main() -> int:
         else:
             print("  NOTE: HESSE returned no covariance at that scale, so the fit "
                   "is interior but its uncertainties are not yet propagable.")
-    elif len(valid_rows) < 2:
-        print("  VERDICT: inconclusive.  Only one scale produced a valid fit, so "
-              "there is no range of bounds to compare and neither a binding bound "
-              "nor a flat direction can be established.  Extend or adjust the scan "
-              "so that at least two scales converge.")
+    elif len(distinct_scales) < 2:
+        repeated = len(valid_rows) > 1
+        print("  VERDICT: inconclusive.  "
+              + ("Every valid fit came from the same relaxation scale "
+                 f"({distinct_scales[0]:g}), so the scan covered no range of "
+                 "bounds at all and its zero deviance span carries no "
+                 "information."
+                 if repeated else
+                 "Only one scale produced a valid fit, so there is no range of "
+                 "bounds to compare and neither a binding bound nor a flat "
+                 "direction can be established.")
+              + "  Extend or adjust the scan so that at least two distinct "
+                "scales converge.")
     else:
         # A small deviance span is necessary but not sufficient for flatness.
         # If the unconstrained optimum lies outside every relaxed range -- a
@@ -449,13 +487,22 @@ def main() -> int:
             for prof in profiles
             for parameter, rise in prof.items() if rise is None
         }
-        rises = {
-            (scale, parameter): rise
+        sampled = {
+            (scale, parameter): values
             for scale, *_, profile in valid_rows
             if profile
-            for parameter, rise in profile.items()
-            if rise is not None
+            for parameter, values in profile.items()
+            if values is not None
         }
+        # Flatness is tested against the largest sampled rise, so that a
+        # direction rising past the tolerance at any sampled point is not
+        # called flat by a flatter neighbouring point.
+        rises = {key: max(values) for key, values in sampled.items()}
+        # A refit that lands *below* the nominal objective says the nominal fit
+        # was not the minimum.  Such a delta is negative, can never satisfy
+        # ``rise > tolerance``, and would otherwise pass silently into the
+        # flat-direction verdict.
+        improving = {key: min(values) for key, values in sampled.items()}
         if args.skip_profile or not profiles:
             print("  VERDICT: inconclusive without a profile.  The deviance moved by "
                   f"{span:.3f} across a {scale_range:g}x range of bounds with every "
@@ -469,6 +516,17 @@ def main() -> int:
                   "pinned direction is flat cannot be tested.  A failed refit is "
                   "itself common in near-degenerate problems; try more profile "
                   "fractions or a different starting point.")
+        elif any(rise < -tolerance for rise in improving.values()):
+            best = min(improving.items(), key=lambda item: item[1])
+            print("  VERDICT: inconclusive -- the nominal fit is unreliable.  "
+                  f"Fixing {best[0][1]} away from its bound at scale "
+                  f"{best[0][0]:g} and re-minimising the rest found an "
+                  f"objective {best[1]:+.3f} BELOW the nominal minimum, more "
+                  f"than the {tolerance:g} tolerance.  A constrained fit cannot "
+                  "beat the unconstrained one, so the nominal fit reached a "
+                  "local or inaccurate minimum and neither its deviance nor its "
+                  "pinned parameters describe the likelihood.  Re-minimise from "
+                  "several starting points before interpreting this scan.")
         else:
             rising = {key: rise for key, rise in rises.items() if rise > tolerance}
             if rising:
@@ -507,9 +565,9 @@ def main() -> int:
         print(f"\n  scale {scale:g}: deviance {deviance:.3f}, interior={is_interior}, "
               f"valid={valid}, max|rho|(unmeasured)={rho_text}{flag}")
         if profile:
-            for parameter, rise in profile.items():
-                shown = "FAILED (excluded)" if rise is None else f"{rise:+.3f}"
-                print(f"    profile inward {parameter:22s} {shown}")
+            for parameter, rises in profile.items():
+                print(f"    profile inward {parameter:22s} "
+                      f"{format_profile(rises, 'FAILED (excluded)')}")
         for name, value in values.items():
             print(f"    {name:22s} {value:.6g}")
     return 0

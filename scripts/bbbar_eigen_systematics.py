@@ -22,7 +22,11 @@ The script refuses to emit variations from a fit it cannot trust:
   covariance, which is what happens to a limited parameter pinned at its
   bound;
 * a near-singular covariance, whose null directions would assign essentially
-  zero uncertainty to whole decay families.
+  zero uncertainty to whole decay families;
+* variations that leave the range a family weight was fitted in, checked both
+  one direction at a time and with all retained directions varied together,
+  since the emitted parameters are independent and move simultaneously
+  downstream.
 
 Use ``--force`` to inspect such a fit anyway; the output is then diagnostic
 only and must not be used as a systematic.
@@ -128,6 +132,48 @@ def check_variation_bounds(order, up, down, bounds):
                 problems.append(
                     f"{label} variation puts '{name}' at {value:.6g}, outside "
                     f"[{lower:.6g}, {upper:.6g}]"
+                )
+    return problems
+
+
+def check_combined_bounds(order, central, shifts, bounds):
+    """Reject *simultaneous* settings of the retained directions.
+
+    Checking each direction on its own does not validate the nuisance model.
+    The parameters are advertised as independent, so downstream they vary
+    together: the weight vector is ``central + sum_i theta_i * shift_i``.
+    Every ``central +/- shift_i`` can sit inside the allowed range while a
+    corner such as ``central + shift_1 + shift_2`` leaves it.
+
+    The extreme of that sum over the unit hypercube ``theta in [-1, 1]^n`` is
+    reached at a corner and, for weight ``j``, equals
+    ``central_j +/- sum_i |shift_i[j]|`` -- so the worst case is exact and
+    costs no search.  Reported with the sign pattern that reaches it, since
+    that is what has to be inspected.
+    """
+    problems = []
+    if len(shifts) < 2:
+        # One direction: the corners are the per-direction up/down vectors,
+        # which check_variation_bounds() has already tested.
+        return problems
+    for index, name in enumerate(order):
+        if bounds is not None and name in bounds:
+            lower, upper = bounds[name]
+        else:
+            lower, upper = 0.0, float("inf")
+        components = [float(shift[index]) for shift in shifts]
+        reach = sum(abs(component) for component in components)
+        for label, value in (("up", float(central[index]) + reach),
+                             ("down", float(central[index]) - reach)):
+            if value < lower or value > upper:
+                sign = 1.0 if label == "up" else -1.0
+                pattern = ", ".join(
+                    f"np{position + 1}={'+' if sign * component >= 0 else '-'}1"
+                    for position, component in enumerate(components)
+                )
+                problems.append(
+                    f"combined {label} variation ({pattern}) puts '{name}' at "
+                    f"{value:.6g}, outside [{lower:.6g}, {upper:.6g}]"
                 )
     return problems
 
@@ -266,6 +312,7 @@ def main() -> int:
               "validated.")
     variations = []
     bound_problems = []
+    shifts = []
     if bounds is None:
         bound_problems.append(
             f"parameter bounds unavailable ({bounds_error}); the physical-range "
@@ -275,6 +322,7 @@ def main() -> int:
     print("-" * 70)
     for index in range(keep):
         shift = np.sqrt(abs(eigenvalues[index])) * eigenvectors[:, index]
+        shifts.append(shift)
         up = central + shift
         down = central - shift
         print(f"\n  BBbar_shape_np{index + 1} "
@@ -299,6 +347,22 @@ def main() -> int:
             "down": down.tolist(),
         })
 
+    combined_problems = check_combined_bounds(order, central, shifts, bounds)
+    if len(shifts) > 1:
+        print("\nCombined variation (all retained directions at +/-1 sigma "
+              "together)")
+        print("-" * 70)
+        reach = np.sum(np.abs(np.array(shifts)), axis=0)
+        for name, value, extent in zip(order, central, reach):
+            print(f"    {name:22s} {value - extent:9.5f} <- {value:9.5f} -> "
+                  f"{value + extent:9.5f}")
+        if combined_problems:
+            for problem in combined_problems:
+                print(f"    OUT OF RANGE: {problem}")
+        else:
+            print("    every corner stays inside the fitted range.")
+        bound_problems.extend(combined_problems)
+
     if bound_problems:
         print("\n  FAIL  Some variations leave the physical range of a family "
               "weight:")
@@ -319,6 +383,7 @@ def main() -> int:
             "validated": not problems and not bound_problems,
             "validation_problems": problems,
             "out_of_range_problems": bound_problems,
+            "combined_out_of_range_problems": combined_problems,
             "variations": variations,
         }, indent=2))
         print(f"\nWrote {args.output}")
