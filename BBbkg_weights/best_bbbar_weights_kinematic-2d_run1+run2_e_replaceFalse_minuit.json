@@ -103,59 +103,59 @@
   },
   "roe_target": null,
   "loss_components": {
-    "joint_2d": 419.779838859521,
+    "joint_2d": 419.77980648680705,
     "roe_1d_shape": 0.0,
     "roe_strength": 1.0,
-    "total": 419.779838859521
+    "total": 419.77980648680705
   },
   "optuna": {
     "study_name": "BBbar_mle_run1+run2_e_kinematic-2d_replaceFalse",
-    "storage": "sqlite:///bbbar_mle_optuna_studies.db",
-    "best_deviance": 432.4089054729516,
-    "best_trial_number": 177,
+    "storage": "sqlite:///BBbkg_weights/bbbar_mle_optuna_studies.db",
+    "best_deviance": 420.50332548193563,
+    "best_trial_number": 2097,
     "best_weights": {
-      "BBbar_measured_hadronic": 2.314719116337596,
-      "BBbar_unmeasured:2-body": 0.0036844075070220756,
-      "BBbar_unmeasured:3-body": 0.37894536935389583,
-      "BBbar_unmeasured:4-body": 0.20065855805253216,
-      "BBbar_unmeasured:5+-body": 0.06280851959342854,
+      "BBbar_measured_hadronic": 2.2627140764384497,
+      "BBbar_unmeasured:2-body": 0.009205567422946676,
+      "BBbar_unmeasured:3-body": 0.77183924473452,
+      "BBbar_unmeasured:4-body": 0.013018710323762863,
+      "BBbar_unmeasured:5+-body": 0.005823020995355639,
       "BBbar_semileptonic": 1.0,
       "bkg_fakeD": 1.0
     },
     "best_weights_by_run_period": {
       "run1": {
-        "BBbar_measured_hadronic": 2.314719116337596,
-        "BBbar_unmeasured:2-body": 0.0036844075070220756,
-        "BBbar_unmeasured:3-body": 0.37894536935389583,
-        "BBbar_unmeasured:4-body": 0.20065855805253216,
-        "BBbar_unmeasured:5+-body": 0.06280851959342854,
+        "BBbar_measured_hadronic": 2.2627140764384497,
+        "BBbar_unmeasured:2-body": 0.009205567422946676,
+        "BBbar_unmeasured:3-body": 0.77183924473452,
+        "BBbar_unmeasured:4-body": 0.013018710323762863,
+        "BBbar_unmeasured:5+-body": 0.005823020995355639,
         "BBbar_semileptonic": 1.0,
         "bkg_fakeD": 0.87
       },
       "run2": {
-        "BBbar_measured_hadronic": 2.314719116337596,
-        "BBbar_unmeasured:2-body": 0.0036844075070220756,
-        "BBbar_unmeasured:3-body": 0.37894536935389583,
-        "BBbar_unmeasured:4-body": 0.20065855805253216,
-        "BBbar_unmeasured:5+-body": 0.06280851959342854,
+        "BBbar_measured_hadronic": 2.2627140764384497,
+        "BBbar_unmeasured:2-body": 0.009205567422946676,
+        "BBbar_unmeasured:3-body": 0.77183924473452,
+        "BBbar_unmeasured:4-body": 0.013018710323762863,
+        "BBbar_unmeasured:5+-body": 0.005823020995355639,
         "BBbar_semileptonic": 1.0,
         "bkg_fakeD": 1.0
       }
     },
-    "total_trials": 200,
+    "total_trials": 2200,
     "trial_counts": {
       "running": 0,
-      "complete": 124,
-      "pruned": 76,
+      "complete": 740,
+      "pruned": 1460,
       "fail": 0,
       "waiting": 0
     }
   },
   "minuit": {
-    "minimum_deviance": 419.779838859521,
+    "minimum_deviance": 419.77980648680705,
     "valid_minimum": true,
     "accurate_covariance": true,
-    "edm": 4.2501475022118054e-05,
+    "edm": 1.0154574806699235e-05,
     "has_parameters_at_limit": true,
     "has_posdef_covar": true,
     "parameter_order": [
@@ -166,119 +166,165 @@
       "unmeasured_5plus"
     ],
     "fitted_parameters": {
-      "measured": 2.2638199913015424,
-      "unmeasured_2body": 0.0010018437935001932,
-      "unmeasured_3body": 0.764626934344527,
-      "unmeasured_4body": 0.0010002746819346472,
-      "unmeasured_5plus": 0.027457418939889382
+      "measured": 2.2638644842796034,
+      "unmeasured_2body": 0.0010004160107867873,
+      "unmeasured_3body": 0.7646134093452721,
+      "unmeasured_4body": 0.0010000717086968188,
+      "unmeasured_5plus": 0.027381417977425885
     },
     "best_weights": {
-      "BBbar_measured_hadronic": 2.2638199913015424,
-      "BBbar_unmeasured:2-body": 0.0010018437935001932,
-      "BBbar_unmeasured:3-body": 0.764626934344527,
-      "BBbar_unmeasured:4-body": 0.0010002746819346472,
-      "BBbar_unmeasured:5+-body": 0.027457418939889382,
+      "BBbar_measured_hadronic": 2.2638644842796034,
+      "BBbar_unmeasured:2-body": 0.0010004160107867873,
+      "BBbar_unmeasured:3-body": 0.7646134093452721,
+      "BBbar_unmeasured:4-body": 0.0010000717086968188,
+      "BBbar_unmeasured:5+-body": 0.027381417977425885,
       "BBbar_semileptonic": 1.0,
       "bkg_fakeD": 1.0
     },
     "hesse_errors": {
-      "measured": 0.05674432897687676,
-      "unmeasured_2body": 0.16497282286428444,
-      "unmeasured_3body": 0.1161916574038101,
-      "unmeasured_4body": 0.03098958154152447,
-      "unmeasured_5plus": 0.04384893433966888
+      "measured": 0.05673199560402509,
+      "unmeasured_2body": 0.16568211928249574,
+      "unmeasured_3body": 0.11630095556415365,
+      "unmeasured_4body": 0.03119512906080258,
+      "unmeasured_5plus": 0.043945620995469024
     },
-    "minos_errors": {},
+    "minos_errors": {
+      "measured": {
+        "lower": -0.056715440289424233,
+        "upper": 0.05675325273268232,
+        "is_valid": true,
+        "lower_valid": true,
+        "upper_valid": true,
+        "at_lower_limit": false,
+        "at_upper_limit": false
+      },
+      "unmeasured_2body": {
+        "lower": -4.160107867873068e-07,
+        "upper": 0.15766319584520894,
+        "is_valid": true,
+        "lower_valid": true,
+        "upper_valid": true,
+        "at_lower_limit": true,
+        "at_upper_limit": false
+      },
+      "unmeasured_3body": {
+        "lower": -0.11824318479646857,
+        "upper": 0.11390736918436989,
+        "is_valid": true,
+        "lower_valid": true,
+        "upper_valid": true,
+        "at_lower_limit": false,
+        "at_upper_limit": false
+      },
+      "unmeasured_4body": {
+        "lower": -7.170869681881985e-08,
+        "upper": 0.03114077358738364,
+        "is_valid": true,
+        "lower_valid": true,
+        "upper_valid": true,
+        "at_lower_limit": true,
+        "at_upper_limit": false
+      },
+      "unmeasured_5plus": {
+        "lower": -0.026381417977425884,
+        "upper": 0.04561773726359803,
+        "is_valid": true,
+        "lower_valid": true,
+        "upper_valid": true,
+        "at_lower_limit": true,
+        "at_upper_limit": false
+      }
+    },
     "covariance": [
       [
-        0.0032206352193655174,
-        -5.773545828130839e-08,
-        -0.004779871064552898,
-        -2.487997969641611e-09,
-        0.0005338497471066891
+        0.003219235044426035,
+        -3.0547810813460005e-08,
+        -0.004779422730333233,
+        -1.6481360052776173e-09,
+        0.0005349613921164734
       ],
       [
-        -5.773545828130839e-08,
-        1.2303286347715547e-06,
-        -1.0249701348947352e-07,
-        -4.567672182485458e-14,
-        -1.0682837434086827e-09
+        -3.0547810813460005e-08,
+        2.7880310426219716e-07,
+        -5.407233247306506e-08,
+        -2.2833385630420627e-14,
+        -5.841204574264518e-10
       ],
       [
-        -0.004779871064552898,
-        -1.0249701348947352e-07,
-        0.013857133467145111,
-        -1.499695083168439e-08,
-        -0.004061868539424108
+        -0.004779422730333233,
+        -5.407233247306506e-08,
+        0.013883902492063437,
+        -9.777773742875434e-09,
+        -0.004079167859737082
       ],
       [
-        -2.487997969641611e-09,
-        -4.567672182485458e-14,
-        -1.499695083168439e-08,
-        3.440714078674723e-08,
-        -7.39646396231943e-09
+        -1.6481360052776173e-09,
+        -2.2833385630420627e-14,
+        -9.777773742875434e-09,
+        9.042568041559112e-09,
+        -4.89092828274496e-09
       ],
       [
-        0.0005338497471066891,
-        -1.0682837434086827e-09,
-        -0.004061868539424108,
-        -7.39646396231943e-09,
-        0.002030277723139429
+        0.0005349613921164734,
+        -5.841204574264518e-10,
+        -0.004079167859737082,
+        -4.89092828274496e-09,
+        0.0020400853833226263
       ]
     ],
     "correlation": [
       [
-        0.9999999999999999,
-        -0.0009171941636286931,
-        -0.7154984757540904,
-        -0.0002363496483203463,
-        0.20877118085309054
-      ],
-      [
-        -0.0009171941636286931,
-        1.0000000000000002,
-        -0.0007849896765688128,
-        -2.2200362669803024e-07,
-        -2.1374616375368686e-05
-      ],
-      [
-        -0.7154984757540904,
-        -0.0007849896765688128,
-        0.9999999999999999,
-        -0.0006868184852484136,
-        -0.7657930822474515
-      ],
-      [
-        -0.0002363496483203463,
-        -2.2200362669803024e-07,
-        -0.0006868184852484136,
         1.0,
-        -0.000884956917978902
+        -0.0010196589754246149,
+        -0.7148967518563356,
+        -0.00030547157987905686,
+        0.20874780850648464
       ],
       [
-        0.20877118085309054,
-        -2.1374616375368686e-05,
-        -0.7657930822474515,
-        -0.000884956917978902,
-        0.9999999999999998
+        -0.0010196589754246149,
+        1.0,
+        -0.0008691015487077094,
+        -4.5475304558000777e-07,
+        -2.4492292761675246e-05
+      ],
+      [
+        -0.7148967518563356,
+        -0.0008691015487077094,
+        0.9999999999999999,
+        -0.0008726464240613281,
+        -0.7664637638768698
+      ],
+      [
+        -0.00030547157987905686,
+        -4.5475304558000777e-07,
+        -0.0008726464240613281,
+        1.0,
+        -0.0011387312258657636
+      ],
+      [
+        0.20874780850648464,
+        -2.4492292761675246e-05,
+        -0.7664637638768698,
+        -0.0011387312258657636,
+        1.0
       ]
     ],
     "best_weights_by_run_period": {
       "run1": {
-        "BBbar_measured_hadronic": 2.2638199913015424,
-        "BBbar_unmeasured:2-body": 0.0010018437935001932,
-        "BBbar_unmeasured:3-body": 0.764626934344527,
-        "BBbar_unmeasured:4-body": 0.0010002746819346472,
-        "BBbar_unmeasured:5+-body": 0.027457418939889382,
+        "BBbar_measured_hadronic": 2.2638644842796034,
+        "BBbar_unmeasured:2-body": 0.0010004160107867873,
+        "BBbar_unmeasured:3-body": 0.7646134093452721,
+        "BBbar_unmeasured:4-body": 0.0010000717086968188,
+        "BBbar_unmeasured:5+-body": 0.027381417977425885,
         "BBbar_semileptonic": 1.0,
         "bkg_fakeD": 0.87
       },
       "run2": {
-        "BBbar_measured_hadronic": 2.2638199913015424,
-        "BBbar_unmeasured:2-body": 0.0010018437935001932,
-        "BBbar_unmeasured:3-body": 0.764626934344527,
-        "BBbar_unmeasured:4-body": 0.0010002746819346472,
-        "BBbar_unmeasured:5+-body": 0.027457418939889382,
+        "BBbar_measured_hadronic": 2.2638644842796034,
+        "BBbar_unmeasured:2-body": 0.0010004160107867873,
+        "BBbar_unmeasured:3-body": 0.7646134093452721,
+        "BBbar_unmeasured:4-body": 0.0010000717086968188,
+        "BBbar_unmeasured:5+-body": 0.027381417977425885,
         "BBbar_semileptonic": 1.0,
         "bkg_fakeD": 1.0
       }

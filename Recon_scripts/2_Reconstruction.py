@@ -271,11 +271,11 @@ if __name__ == "__main__":
     loose_track = 'dr<10 and abs(dz)<20 and thetaInCDCAcceptance and E < 5.5' 
     loose_gamma = "0.05< clusterE < 5.5"
     tight_track = 'nCDCHits>=0 and thetaInCDCAcceptance and pValue>=0.0005 and \
-                    [pt<0.15 and formula(dr**2/36+dz**2/16)<1] or \
+                    [[pt<0.15 and formula(dr**2/36+dz**2/16)<1] or \
                     [0.15<pt<0.25 and formula(dr**2/49+dz**2/64)<1] or \
                     [0.25<pt<0.5 and formula(dr**2/49+dz**2/16)<1] or \
                     [0.5<pt<1 and formula(dr**2/25+dz**2/36)<1] or \
-                    [pt>1 and formula(dr**2+dz**2)<1]'
+                    [pt>1 and formula(dr**2+dz**2)<1]]'
     tight_gamma = 'clusterE>0.05 and abs(clusterTiming)<formula(2*clusterErrorTiming) and abs(clusterTiming)<200 and \
                     beamBackgroundSuppression>0.5 and fakePhotonSuppression>0.1'
     roe_mask1 = ('my_mask',  loose_track, loose_gamma)
