@@ -14,6 +14,7 @@
 !Old_scripts/
 !scripts/
 !scripts/tests/
+!MC16_sys_tables/*
 Toy_pipeline/pyhf_toys_wrapper/*
 Toy_pipeline/n_toys_per_point=50/*
 Toy_pipeline/Toy_results_MM2/*
