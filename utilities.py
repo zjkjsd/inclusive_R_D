@@ -86,6 +86,14 @@ offline_cut = '(5<B0_roeMbc_my_mask) & (-4<B0_roeDeltae_my_mask) & (B0_roeDeltae
 
 Dst_veto_cut = '( (DstVeto_massDiff_0<0.135) | (0.145<DstVeto_massDiff_0) )'
 
+# pyhf fit bin edges
+MM2_bins_sr = np.concatenate((np.linspace(-2.5,2.5,11), np.linspace(2.8,10,31) ) )
+p_D_l_bins_sr = np.concatenate(([0.4, 0.6, 0.8], np.linspace(1,3,41), 
+                             [3.1, 3.2, 3.3, 3.4, 3.6, 3.8, 4, 4.2, 4.4, 4.6, 4.8]))
+
+MM2_bins_sb = np.linspace(-2.5,10,21)
+p_D_l_bins_sb = np.linspace(0.4,4.8,21)
+
 ############################## derived (post-loading) variables ########################
 
 # name -> pandas.eval expression. Evaluated in insertion order, so a later
