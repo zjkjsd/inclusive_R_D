@@ -94,6 +94,18 @@ p_D_l_bins_sr = np.concatenate(([0.4, 0.6, 0.8], np.linspace(1,3,41),
 MM2_bins_sb = np.linspace(-2.5,10,21)
 p_D_l_bins_sb = np.linspace(0.4,4.8,21)
 
+
+FIT_VARIABLES = ['B0_recMissM2', 'p_D_l']
+MVA_OUTPUTS = ['sig_prob', 'fakeD_prob', 'continuum_prob', 'combinatorial_prob']
+
+FIT_VARIABLE_LABELS = {
+    'B0_recMissM2': r'$M_{\mathrm{miss}}^2$ [GeV$^2$]',
+    'p_D_l':        r'$|p^*_D| + |p^*_\ell|$ [GeV]',
+}
+
+D_MASS_SR = '1.855<D_M<1.885'       # same window as create_templates_new
+D_MASS_SB = 'D_M<1.85 or 1.9<D_M'   # same sidebands as create_templates_new
+
 ############################## derived (post-loading) variables ########################
 
 # name -> pandas.eval expression. Evaluated in insertion order, so a later
@@ -1669,18 +1681,6 @@ try:
     import dcor as _dcor  # fast O(n log n) distance correlation for 1D inputs
 except ImportError:
     _dcor = None
-
-
-FIT_VARIABLES = ['B0_recMissM2', 'p_D_l']
-MVA_OUTPUTS = ['sig_prob', 'fakeD_prob', 'continuum_prob', 'combinatorial_prob']
-
-FIT_VARIABLE_LABELS = {
-    'B0_recMissM2': r'$M_{\mathrm{miss}}^2$ [GeV$^2$]',
-    'p_D_l':        r'$|p^*_D| + |p^*_\ell|$ [GeV]',
-}
-
-D_MASS_SR = '1.855<D_M<1.885'       # same window as create_templates_new
-D_MASS_SB = 'D_M<1.85 or 1.9<D_M'   # same sidebands as create_templates_new
 
 # Coarse binning for the decorrelation plots (the fit binning is too fine to be
 # split into several slices). 2D default = the D_M sideband-channel grid.
