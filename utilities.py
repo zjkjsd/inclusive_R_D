@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# region
+import numpy as np
 ############################## define relevant variables ########################
 
 spectators = ['__weight__', 'D_CMS_p', 'ell_CMS_p', ]
@@ -873,7 +873,6 @@ def plot_density_over_efficiency(perf_table, counts, p_bins, cosTheta_bins,
     
 
 ################################ dataframe samples ###########################
-import numpy as np
 # from autogluon.tabular import TabularPredictor
 import lightgbm as lgb
 

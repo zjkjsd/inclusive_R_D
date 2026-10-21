@@ -36,6 +36,7 @@ if __name__ == "__main__":
     b2.B2INFO(f"Appending analysis GT: {analysis_gt}")
     b2.conditions.append_globaltag(analysis_gt)
     b2.conditions.prepend_globaltag('pid_nn_release08_v1')
+    b2.conditions.prepend_globaltag("performance_release08_20260623") # needed for clusterTimeNorm90 and Differential Track Momentum Scale and Energy Loss Corrections
 
     # Define the path
     main_path = b2.Path()
@@ -58,39 +59,49 @@ if __name__ == "__main__":
     ma.fillParticleList('pi+:mypi', cut=goodTrack + ' and [pionIDNN > 0.1] and [p>0.1]', path=main_path)
     ma.fillParticleList('K-:goodk', cut=goodTrack + ' and [kaonIDNN > 0.9] and [p>0.3]', path=main_path)
 
-    ma.fillParticleList("e+:uncorrected",cut=goodTrack + ' and [electronIDNN>0.9]', path=main_path)
-    ma.fillParticleList("mu+:mymu",cut=goodTrack + " and [muonIDNN>0.9]", path=main_path)
+    ma.fillParticleList("e+:uncorrected",cut=goodTrack + ' and [electronIDNN>0.9] and [p>0.3]', path=main_path)
+    ma.fillParticleList("mu+:goodmu",cut=goodTrack + " and [muonIDNN>0.9] and inKLMAcceptance and [p>0.6]", path=main_path)
 
     stdPhotons.stdPhotons(listtype="cdc", beamBackgroundMVAWeight="MC16rd", fakePhotonMVAWeight="MC16rd", path=main_path)
-    ma.cutAndCopyList("gamma:brems", "gamma:cdc", cut="[0.05<clusterE<2.5] and [beamBackgroundSuppression>0.2]", path=main_path)
+    gamma_cut = '[E > 0.020] and [E < 1.500] and [clusterNHits >= 1.5] and [abs(clusterTiming) < 200] and [abs(clusterTimeNorm90) < 3]'
+    ma.fillParticleList('gamma:brems', gamma_cut, path=main_path)
 
+
+    # ------------------------------------------------------------
+    # Brems correction and event cut
+    # ------------------------------------------------------------
+    # brems correction
+    # ma.correctBremsBelle(outputListName="e+:goode", inputListName="e+:uncorrected_p", gammaListName="gamma:brems",
+    #                      angleThreshold=0.15, multiplePhotons=True, path=main_path)
+    ma.correctBrems(outputList='e+:goode', inputList='e+:uncorrected', gammaList='gamma:brems', 
+                    maximumAcceptance=3.0, multiplePhotons=False, usePhotonOnlyOnce=True, path=main_path)
+    vm.addAlias("isBremsCorrected", "extraInfo(bremsCorrected)")
+    
+    # select events only containing 1 lepton
+    ma.applyEventCuts('formula(nParticlesInList(e-:goode) + nParticlesInList(mu-:goodmu)) == 1', path=main_path)
+
+    # Event Kinematics
+    ma.buildEventKinematics(fillWithMostLikely=True,path=main_path) 
+
+    
     # ---------------------------------------------------------------------------
     # Differential Track Momentum Scale and Energy Loss Corrections & Systematics
     # ---------------------------------------------------------------------------
-    ## Choose the GT, payload, particle lists and SF name
-
-    # global tag containing the payloads. Valid for both MC16rd and data (Run1 + Run2 2025). 
-    gt_name = "tracking_release08_20260119_EnergyMomentumScale"
-    # For more information on this separation see appendix C of BELLE2-NOTE-PH-2023-069 V7.
+    # there are different payloads for data and MC
+    # starting from light-2607-kasei, the correct version (data or MC) is automatically picked, so you need only the following two lines:
+    payload_name_cosTheta = "tracking_MomentumScaling"
+    payload_name_Eloss = "tracking_EnergyLoss"
+    # if instead you use light-2604-jellyfish or older, uncomment the block below (6 lines),
+    # and choose by hand if you are running on data or on MC:
+    #data_or_mc = "MC" # "MC" or "data" 
+    #payload_name_cosTheta = "tracking_MomentumScaling_data"
+    #payload_name_Eloss = "tracking_EnergyLoss_data"
+    #if data_or_mc == "MC":
+    #  payload_name_cosTheta = "tracking_MomentumScaling_MC"
+    #  payload_name_Eloss = "tracking_EnergyLoss_MC"
     
-    # !!! Important: There are different payloads to be used for Data and MC, so you need to pick the correct payloads corresponding to the dataset you running over!
-    data_or_mc = args.data_type # "MC" or "Data" 
     
-    payload_name_cosTheta = "tracking_MomentumScaling_Data"
-    payload_name_Eloss = "tracking_EnergyLoss_Data"
-    
-    if data_or_mc == "MC":
-        payload_name_cosTheta = "tracking_MomentumScaling_MC"
-        payload_name_Eloss = "tracking_EnergyLoss_MC"
-        
-        # create a MC K_L list for counting K_L in the event
-        ma.fillParticleListFromMC('K_L0:mc', cut='', path=main_path)
-        vm.addAlias('nMC_K_L', 'nParticlesInList(K_L0:mc)')
-
-    print('data_or_mc' ,data_or_mc)
-    print('payload_name_cosTheta', payload_name_cosTheta)
-    
-    particle_lists = ["pi+:mypi", 'K+:goodk', 'e+:uncorrected', 'mu+:mymu'] #choose your lists
+    particle_lists = ["pi+:mypi", 'K+:goodk', 'e+:goode', 'mu+:goodmu'] #choose your lists
     sf_name = "central"
     
     sf_keys = ["central",
@@ -101,15 +112,8 @@ if __name__ == "__main__":
             "total_down", "total_up"]
     
     ## scale track momenta according to SFs given in the payload
-    b2.conditions.prepend_globaltag(gt_name)
-    ma.scaleTrackMomenta(inputListNames=particle_lists,
-        payloadName=payload_name_cosTheta,
-        scalingFactorName=sf_name,
-        path=main_path)
-    ma.correctTrackEnergy(inputListNames=particle_lists,
-        payloadName=payload_name_Eloss,
-        correctionName=sf_name,
-        path=main_path)
+    ma.scaleTrackMomenta(inputListNames=particle_lists,payloadName=payload_name_cosTheta,scalingFactorName=sf_name,path=main_path)
+    ma.correctTrackEnergy(inputListNames=particle_lists,payloadName=payload_name_Eloss,correctionName=sf_name,path=main_path)
     ##
     ## Add aliases for the corrections to store as new variables.
     ## Here the tracks are scaled according to "central" but the variations
@@ -117,30 +121,13 @@ if __name__ == "__main__":
     ## offline.
     ##
     track_variables = []
+    var_names = []
     for sf_key in sf_keys:
       vm.addAlias(f"{sf_key}_momScale", f"extraInfo({payload_name_cosTheta}_{sf_key})")
       vm.addAlias(f"{sf_key}_Ecorrection", f"extraInfo({payload_name_Eloss}_{sf_key})")
-      track_variables += [f"{sf_key}_momScale", f"{sf_key}_Ecorrection"]
+      var_names += [f"{sf_key}_momScale", f"{sf_key}_Ecorrection"]
+    track_variables += var_names
     
-    # ------------------------------------------------------------
-    # Brems correction and event cut
-    # ------------------------------------------------------------
-    ma.cutAndCopyList("e+:uncorrected_p", "e+:uncorrected", cut="[p>0.3]", path=main_path)
-    ma.cutAndCopyList("mu+:goodmu", "mu+:mymu", cut="inKLMAcceptance and [p>0.6]", path=main_path)
-
-    # brems correction
-    ma.correctBremsBelle(outputListName="e+:goode", inputListName="e+:uncorrected_p", gammaListName="gamma:brems",
-                         angleThreshold=0.15, multiplePhotons=True, path=main_path)
-    # ma.correctBrems(outputList="e+:corrected", inputList="e+:uncorrected", gammaList="gamma:bremsinput", 
-    #                 maximumAcceptance=3.0, multiplePhotons=False, usePhotonOnlyOnce=True, path=main_path)
-    vm.addAlias("isBremsCorrected", "extraInfo(bremsCorrected)")
-    
-    # select events only containing 1 lepton
-    ma.applyEventCuts('formula(nParticlesInList(e-:goode) + nParticlesInList(mu-:goodmu)) == 1', path=main_path)
-
-    # Event Kinematics
-    ma.buildEventKinematics(fillWithMostLikely=True,path=main_path) 
-
 
     # --------------------------------------------------------
     # Reconstruct D, 1 sigma == 0.005, mean==1.87, vertex fit
@@ -176,11 +163,10 @@ if __name__ == "__main__":
 
     # create a pi0
     pi0_list ='eff50_May2020Fit'
-    stdPi0s(listtype=pi0_list, beamBackgroundMVAWeight='MC16rd',
-            fakePhotonMVAWeight='MC16rd', path=main_path)
+    stdPi0s(listtype=pi0_list, beamBackgroundMVAWeight='MC16rd',fakePhotonMVAWeight='MC16rd', path=main_path)
     pi0_daughter_cut = '''daughter(0, beamBackgroundSuppression)>0.5 and daughter(1, beamBackgroundSuppression)>0.5
      and daughter(0, fakePhotonSuppression)>0.1 and daughter(1, fakePhotonSuppression)>0.1'''
-    ma.cutAndCopyList('pi0:slow',f'pi0:{pi0_list}', cut=pi0_daughter_cut, path=main_path)
+    ma.cutAndCopyList('pi0:slow',f'pi0:{pi0_list}', cut=pi0_daughter_cut+' and useCMSFrame(p) < 0.25', path=main_path)
     vm.addAlias('nPi0', 'nParticlesInList(pi0:slow)')
 
     # use good D± from the correct mass window
@@ -356,7 +342,7 @@ if __name__ == "__main__":
     ma.buildContinuumSuppression(list_name="B0:Dmu", roe_mask="my_mask", path=main_path)
     
 
-    vm.addAlias('KSFWV1','KSFWVariables(et)') #correlates with p_D + p_l
+    # vm.addAlias('KSFWV1','KSFWVariables(et)') #correlates with p_D + p_l
     vm.addAlias('KSFWV2','KSFWVariables(mm2)') #correlates with mm2
     vm.addAlias('KSFWV3','KSFWVariables(hso00)')
     vm.addAlias('KSFWV4','KSFWVariables(hso01)')
@@ -386,7 +372,7 @@ if __name__ == "__main__":
 
     CSVariables = [
         'isContinuumEvent',  "R2",  "thrustBm",  "thrustOm",  "cosTBTO",  "cosTBz",
-        "KSFWV1",        "KSFWV2",  "KSFWV3",    "KSFWV4",    "KSFWV5",   "KSFWV6",
+                          "KSFWV2",  "KSFWV3",    "KSFWV4",    "KSFWV5",   "KSFWV6",
         "KSFWV7",        "KSFWV8",  "KSFWV9",    "KSFWV10",   "KSFWV11",  "KSFWV12",
         "KSFWV13",      "KSFWV14",  "KSFWV15",   "KSFWV16",   "KSFWV17",  "KSFWV18",
     #     "CC1",              "CC2",  "CC3",       "CC4",       "CC5",      "CC6",
@@ -438,8 +424,8 @@ if __name__ == "__main__":
         prefix=['ell'])
 
     candidate_e_vars = ['Ecms', 'nPi0',] + veto_vars + b_e_vars + D_e_vars + D_daughter_e_vars + e_vars
-    if data_or_mc == "MC":
-        candidate_e_vars.append('nMC_K_L')
+    # if data_or_mc == "MC":
+    #     candidate_e_vars.append('nMC_K_L')
 
     ma.variablesToNtuple('B0:De', candidate_e_vars, useFloat=True,
                          filename=output_file, treename='B0_e', path=main_path, basketsize=1_000_000)
@@ -473,8 +459,8 @@ if __name__ == "__main__":
         prefix=['ell'])
 
     candidate_mu_vars = ['Ecms', 'nPi0',] + veto_vars + b_mu_vars + D_mu_vars + D_daughter_mu_vars + mu_vars
-    if data_or_mc == "MC":
-        candidate_mu_vars.append('nMC_K_L')
+    # if data_or_mc == "MC":
+    #     candidate_mu_vars.append('nMC_K_L')
 
     ma.variablesToNtuple('B0:Dmu', candidate_mu_vars, useFloat=True,
                          filename=output_file, treename='B0_mu', path=main_path, basketsize=1_000_000)
@@ -559,8 +545,8 @@ if __name__ == "__main__":
             prefix=['ell'])
     
         candidate_wc_e_vars = ['Ecms', 'nPi0',] + veto_vars + b_wc_e_vars + D_wc_e_vars + D_daughter_wc_e_vars + wc_e_vars
-        if data_or_mc == "MC":
-            candidate_wc_e_vars.append('nMC_K_L')
+        # if data_or_mc == "MC":
+        #     candidate_wc_e_vars.append('nMC_K_L')
     
         ma.variablesToNtuple('B0:wc_De', candidate_wc_e_vars, useFloat=True,
                              filename=output_file, treename='B0_wc_e', path=main_path, basketsize=1_000_000)
@@ -594,8 +580,8 @@ if __name__ == "__main__":
             prefix=['ell'])
     
         candidate_wc_mu_vars = ['Ecms', 'nPi0',] + veto_vars + b_wc_mu_vars + D_wc_mu_vars + D_daughter_wc_mu_vars + wc_mu_vars
-        if data_or_mc == "MC":
-            candidate_wc_mu_vars.append('nMC_K_L')
+        # if data_or_mc == "MC":
+        #     candidate_wc_mu_vars.append('nMC_K_L')
     
         ma.variablesToNtuple('B0:wc_Dmu', candidate_wc_mu_vars, useFloat=True,
                              filename=output_file, treename='B0_wc_mu', path=main_path, basketsize=1_000_000)
