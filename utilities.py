@@ -78,7 +78,7 @@ DecayMode_new = {'bkg_fakeTracks':0,         'bkg_fakeD':1,           'bkg_fakeL
                  r'$D^{\ast\ast}\ell\nu$_narrow':13,   r'$D^{\ast\ast}\ell\nu$_broad':14,
                  r'$D\ell\nu$_gap_pi':15,              r'$D\ell\nu$_gap_eta':16,     r'$D\ell\nu$_gap':17}
 
-lgb_tight = 'sig_prob>0.5 and fakeD_prob<0.06 and continuum_prob<0.4 and combinatorial_prob<0.6'
+lgb_tight = 'sig_prob>0.52 and fakeD_prob<0.13 and continuum_prob<0.11'
 lgb_loose = 'sig_prob>0.2 and fakeD_prob<0.15 and continuum_prob<0.5 and combinatorial_prob<0.6'
 lgb_comb = 'fakeD_prob<0.15 and continuum_prob<0.5 and combinatorial_prob>0.5'
 
@@ -442,6 +442,45 @@ def apply_event_by_event_weight(df, weights, weight_col):
 # Backwards-compatible spelling used by existing notebooks.
 apply_eventByEvent_weight = apply_event_by_event_weight
 
+
+def pid_variation_columns(df, weight_col):
+    """Variation columns `weight_col`_0, _1, ... made by apply_pid_corrections, in order."""
+    found = []
+    for col in df.columns:
+        head, _, tail = str(col).rpartition('_')
+        if head == weight_col and tail.isdigit():
+            found.append((int(tail), col))
+    return [col for _, col in sorted(found)]
+
+
+def pid_toy_histograms(sample, variable, bins, base_weight, weight_col):
+    """Histogram of `variable` filled once per PID-weight variation.
+
+    base_weight: per-event weight WITHOUT the PID correction (the luminosity scale).
+    Returns an array (n_bins, n_toys), or None if `sample` has no variation columns.
+    Same binning convention as np.histogram (last bin includes its right edge).
+    """
+    cols = pid_variation_columns(sample, weight_col)
+    if not cols:
+        return None
+    bins = np.asarray(bins, float)
+    n_bins = len(bins) - 1
+    x = sample[variable].to_numpy(dtype=float)
+    idx = np.searchsorted(bins, x, side='right') - 1
+    idx[x == bins[-1]] = n_bins - 1
+    ok = (idx >= 0) & (idx < n_bins)
+    w = np.broadcast_to(np.asarray(base_weight, float), x.shape)[ok, None] \
+        * sample[cols].to_numpy(dtype=float)[ok]
+    return np.stack([np.bincount(idx[ok], weights=w[:, k], minlength=n_bins)
+                     for k in range(w.shape[1])], axis=1)
+
+
+def draw_mc_band(ax, bins, nominal, err, label='MC unc.'):
+    """Shaded +-err band on top of a stacked MC histogram."""
+    lo, hi = nominal - err, nominal + err
+    ax.fill_between(bins, np.append(lo, lo[-1]), np.append(hi, hi[-1]), step='post',
+                    color='gray', alpha=0.4, linewidth=0, label=label, zorder=3)
+
 def apply_pi0_eff_correction(df, corr_table, corr_col_name='pi0_eff_weight'):
     """Merge momentum/angular pi0-efficiency corrections into a DataFrame."""
     df = df.copy()
@@ -489,7 +528,26 @@ def apply_pi0_eff_correction(df, corr_table, corr_col_name='pi0_eff_weight'):
 import warnings
 import pandas as pd
 
-def apply_pid_corrections(df, MC='MC16', run='run1', channel='e', corr_col_name='total_PIDweight'):
+def apply_pid_corrections(df, MC='MC16', run='run1', channel='e', corr_col_name='total_PIDweight',
+                          n_variations=100, seed=1, keep_particle_variations=False):
+    """Add the PID correction weight `corr_col_name` (product over the lepton, K, pi1, pi2
+    weights) and, for n_variations > 0, its variations `corr_col_name`_0 ... _{n-1}.
+
+    sysvar draws each variation from the stat + sys uncertainties of the PID tables
+    (sys fully correlated within a table, stat independent between table bins), so a
+    histogram filled with variation i is one toy of the PID uncertainty; the spread
+    over toys is the PID uncertainty of that histogram, including all correlations.
+    Toy i of the total weight is the product of toy i of every particle.
+
+    seed: makes the variations reproducible and, more importantly, makes particles
+        that use the SAME tables (pi1 and pi2) get the SAME variations, so their
+        uncertainties add coherently. Without it pi1 and pi2 are varied independently
+        and the PID uncertainty is underestimated. Needs a basf2 release whose sysvar
+        supports `seed`; otherwise a warning is printed. Use the same seed for every
+        MC sample that ends up in one plot.
+    keep_particle_variations: keep the per-particle variation columns (4 x n_variations
+        columns; dropped by default to save memory).
+    """
     import sysvar
 
     e_eff_table = pd.read_csv(f'/home/belle/zhangboy/inclusive_R_D/{MC}_sys_tables/{MC}_pid_tables/e_efficiency_{run}_TwophotonEe.csv')
@@ -532,25 +590,58 @@ def apply_pid_corrections(df, MC='MC16', run='run1', channel='e', corr_col_name=
 
 
     assert channel in ['e', 'mu'], 'channel must be either e or mu'
+    # sysvar silently ignores keyword arguments it does not know, so check for `seed`
+    seed_supported = hasattr(sysvar, '_derive_seed')
+    if n_variations > 0 and seed is not None and not seed_supported:
+        print("Warning: this sysvar version has no `seed` option: pi1 and pi2 get independent "
+              "PID variations and the PID uncertainty is underestimated.")
+    kw = dict(generate_variations=n_variations > 0, n_variations=n_variations)
+    if seed is not None and seed_supported:
+        kw['seed'] = seed
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         if channel=='e':
-            sysvar.add_weights_to_dataframe('ell_BFbrems', df, systematic='custom_PID', custom_tables=e_tables, custom_thresholds=e_thresholds)
+            sysvar.add_weights_to_dataframe('ell_BFbrems', df, systematic='custom_PID', custom_tables=e_tables, custom_thresholds=e_thresholds, **kw)
             weight_cols = ['ell_BFbrems_Weight', 'K_Weight', 'pi1_Weight', 'pi2_Weight',]
         elif channel=='mu':
-            sysvar.add_weights_to_dataframe('ell', df, systematic='custom_PID', custom_tables=mu_tables, custom_thresholds=mu_thresholds)
+            sysvar.add_weights_to_dataframe('ell', df, systematic='custom_PID', custom_tables=mu_tables, custom_thresholds=mu_thresholds, **kw)
             weight_cols = ['ell_Weight', 'K_Weight', 'pi1_Weight', 'pi2_Weight',]
         
-        sysvar.add_weights_to_dataframe('K', df, systematic='custom_PID', custom_tables=k_tables, custom_thresholds=k_thresholds)
-        sysvar.add_weights_to_dataframe('pi1', df, systematic='custom_PID', custom_tables=pi_tables, custom_thresholds=pi_thresholds)
-        sysvar.add_weights_to_dataframe('pi2', df, systematic='custom_PID', custom_tables=pi_tables, custom_thresholds=pi_thresholds)
+        sysvar.add_weights_to_dataframe('K', df, systematic='custom_PID', custom_tables=k_tables, custom_thresholds=k_thresholds, **kw)
+        sysvar.add_weights_to_dataframe('pi1', df, systematic='custom_PID', custom_tables=pi_tables, custom_thresholds=pi_thresholds, **kw)
+        sysvar.add_weights_to_dataframe('pi2', df, systematic='custom_PID', custom_tables=pi_tables, custom_thresholds=pi_thresholds, **kw)
     
     # Consolidate the fragmented internal memory layout.
     df = df.copy()
 
     df[corr_col_name] = df[weight_cols].product(axis=1)
 
+    if n_variations > 0:
+        _check_shared_table_variations(df, 'pi1_Weight', 'pi2_Weight', n_variations)
+        toys = np.ones((len(df), n_variations))
+        for col in weight_cols:
+            toys *= df[[f'{col}_{i}' for i in range(n_variations)]].to_numpy()
+        if not keep_particle_variations:
+            df = df.drop(columns=[f'{col}_{i}' for col in weight_cols for i in range(n_variations)])
+        toy_df = pd.DataFrame(toys.astype(np.float32), index=df.index,
+                              columns=[f'{corr_col_name}_{i}' for i in range(n_variations)])
+        df = pd.concat([df, toy_df], axis=1)
+
     return df
+
+
+def _check_shared_table_variations(df, col_a, col_b, n_variations, n_check=5):
+    """pi1 and pi2 use the same tables, so tracks in the same table bin (same nominal
+    weight) must get the same variations. Warn if they do not (no common seed)."""
+    same_bin = (df[col_a] == df[col_b]) & (df[col_a] != 1.0)
+    if not same_bin.any():
+        return
+    n = min(n_check, n_variations)
+    a = df.loc[same_bin, [f'{col_a}_{i}' for i in range(n)]].to_numpy()
+    b = df.loc[same_bin, [f'{col_b}_{i}' for i in range(n)]].to_numpy()
+    if np.nanmax(np.abs(a - b)) > 1e-9:
+        print(f"Warning: {col_a} and {col_b} come from the same PID tables but were varied "
+              f"independently; their PID uncertainties will not add coherently.")
 
 
 ################################ PID performance evaluation ###########################
@@ -1084,8 +1175,8 @@ def apply_mva_bcs(df, features, cut, library='lgbm', version='', model=None,
 
     # rename column names -- done last, since the BCS evaluation above
     # still relies on the original group_cols names
-    df_bestSelected = df_bestSelected.rename(columns={"__experiment__": "experiment", '__run__': 'run',
-                                                      '__event__': 'event', '__production__': 'production'})
+    # df_bestSelected = df_bestSelected.rename(columns={"__experiment__": "experiment", '__run__': 'run',
+    #                                                   '__event__': 'event', '__production__': 'production'})
 
     return df_bestSelected
 
@@ -1149,10 +1240,17 @@ def bcs_correct_pick_metrics(df_cut, df_best, group_cols, mode='mu'):
     category ('B2D_tau'), as defined centrally in get_truth_categories()
     (this module).
 
+    The headline correct-pick rate is restricted to events that (a) contain
+    a truth-matched candidate and (b) have more than one candidate after the
+    MVA cut. Single-candidate events are excluded because BCS trivially
+    picks the true candidate there, which would inflate the rate without
+    reflecting the BCS variable's discriminating power. The inclusive rate
+    over all events with a true candidate is kept for reference.
+
     Parameters
     ----------
     df_cut : DataFrame
-        All candidates surviving preselection, before BCS.
+        All candidates surviving the MVA cut, before BCS.
     df_best : DataFrame
         One candidate per event, after BCS (e.g. df_bestSelected),
         still carrying the original group_cols names.
@@ -1176,27 +1274,45 @@ def bcs_correct_pick_metrics(df_cut, df_best, group_cols, mode='mu'):
     has_true_candidate = df_cut.groupby(group_cols)['is_true_signal'].any()
     events_with_true = set(has_true_candidate[has_true_candidate].index)
 
+    # per event: how many candidates compete in the BCS?
+    n_cands_per_event = df_cut.groupby(group_cols).size()
+    events_multi_cand = set(n_cands_per_event[n_cands_per_event > 1].index)
+
     # tag the BCS-selected candidates with the same truth definition
     df_best = df_best.copy()
     df_best['is_true_signal'] = df_best.eval(truth_query)
     df_best_idx = df_best.set_index(group_cols)
 
-    # restrict to events where a correct answer was actually available
+    # events where a correct answer was available
     mask_true_exists = df_best_idx.index.isin(events_with_true)
-    n_true_exists = mask_true_exists.sum()
+    # ... and where BCS actually had to choose
+    mask_true_multi = mask_true_exists & df_best_idx.index.isin(events_multi_cand)
 
-    # BCS correct-pick rate == purity, once conditioned on true candidate existing
-    bcs_correct_pick_rate = df_best_idx.loc[mask_true_exists, 'is_true_signal'].mean()
+    n_true_exists = int(mask_true_exists.sum())
+    n_true_multi = int(mask_true_multi.sum())
+
+    # headline: BCS correct-pick rate on multi-candidate events only
+    bcs_correct_pick_rate = (df_best_idx.loc[mask_true_multi, 'is_true_signal'].mean()
+                             if n_true_multi else float('nan'))
+
+    # reference: inclusive rate, includes trivially-correct single-candidate events
+    bcs_correct_pick_rate_inclusive = (df_best_idx.loc[mask_true_exists, 'is_true_signal'].mean()
+                                       if n_true_exists else float('nan'))
 
     # for reference only -- NOT a BCS-performance number, folds in preselection acceptance
     overall_selected_purity = df_best_idx['is_true_signal'].mean()
 
+    n_events_total = len(df_best_idx)
+
     return {
         'bcs_correct_pick_rate': bcs_correct_pick_rate,
+        'bcs_correct_pick_rate_inclusive': bcs_correct_pick_rate_inclusive,
         'overall_selected_purity': overall_selected_purity,
-        'n_events_total': len(df_best_idx),
-        'n_events_with_true_candidate': int(n_true_exists),
-        'frac_events_with_true_candidate': n_true_exists / len(df_best_idx),
+        'n_events_total': n_events_total,
+        'n_events_with_true_candidate': n_true_exists,
+        'n_events_with_true_candidate_multi': n_true_multi,
+        'frac_events_with_true_candidate': n_true_exists / n_events_total if n_events_total else float('nan'),
+        'frac_true_events_multi': n_true_multi / n_true_exists if n_true_exists else float('nan'),
     }
 
 
@@ -1232,18 +1348,22 @@ def _print_mva_cut_metrics(metrics, cut, decimals=4):
 def _print_bcs_metrics(metrics, bcs, decimals=4):
     """
     Print the output of bcs_correct_pick_metrics() in aligned form,
-    keeping the BCS-performance number visually separate from the
+    keeping the BCS-performance numbers visually separate from the
     reference-only sample-composition number.
     """
     n_total = metrics['n_events_total']
     n_true = metrics['n_events_with_true_candidate']
+    n_true_multi = metrics['n_events_with_true_candidate_multi']
 
     print(f"\nBCS performance  [bcs: {bcs}]")
-    print(f"  Correct-pick rate (events with a true candidate): {metrics['bcs_correct_pick_rate']:.{decimals}f}")
+    print(f"  Correct-pick rate (true cand., >1 cand.):         {metrics['bcs_correct_pick_rate']:.{decimals}f}")
+    print(f"  Correct-pick rate (true cand., inclusive):        {metrics['bcs_correct_pick_rate_inclusive']:.{decimals}f}")
     print(f"  Overall selected purity (reference only):         {metrics['overall_selected_purity']:.{decimals}f}")
     print(f"  Events after BCS:                                 {n_total:,d}")
     print(f"  Events with a true candidate:                     {n_true:,d} "
-          f"({metrics['frac_events_with_true_candidate']:.2%})")
+          f"({metrics['frac_events_with_true_candidate']:.2%} of all events)")
+    print(f"    ... of which with >1 candidate:                 {n_true_multi:,d} "
+          f"({metrics['frac_true_events_multi']:.2%})")
 
 
 ######################################################################
@@ -1366,6 +1486,260 @@ def _check_classification_completeness(df, samples):
 ######################################################################
 # BBbar background reweighting + hadronic B decay classification     #
 ######################################################################
+# The decay classification and mode-replacement factors are invariant
+# during a fit.  prepare_bbbar_reweighting() computes them once; only the
+# cheap category lookup in apply_bbbar_weights() belongs in an optimizer
+# loop.  (Merged from the former standalone bbbar_reweighting.py.)
+
+from collections.abc import Mapping
+
+BBBAR_SAMPLE_NAMES = frozenset({"bkg_combinatorial", "bkg_hadronicB_secondaryL"})
+COMBINATORIAL_SAMPLE_NAME = "bkg_combinatorial"
+PDG_CORRECTIONS = {
+    10431 * 411: 0.00105 / 0.00737857,
+    10431 * 413: 0.0015 / 0.01768717,
+    10431 * 421: 0.00079 / 0.00761729,
+    10431 * 423: 0.0009 / 0.01706301,
+}
+
+
+def _compute_dmID(df: pd.DataFrame, daughter_cols: list[str]) -> pd.Series:
+    """Decay-mode ID of a B decay: |product of the B-daughter PDG codes|.
+
+    ``daughter_cols`` holds the neutral-B and charged-B daughter columns of
+    one side (D or lepton).  Unfilled slots are -1, so they only affect the
+    sign, which the absolute value removes.
+    """
+    return df[daughter_cols].astype("int64").prod(axis=1).abs()
+
+
+def add_dmID(data, combinatorial: bool | None = None, verbose: bool = False):
+    """Add the decay-mode ID column(s) to MC events, in place.
+
+    The decay-mode ID is the absolute product of the PDG codes of the B
+    daughters, the quantity compared against ``measured_pdg_list`` and used
+    as key in ``hadronicB_replacement_map``.
+
+    * Combinatorial background: the D and the lepton come from different B
+      decays, so two columns are added, ``D_dmID`` (from the D-side daughter
+      columns ``combinatorial_vars_D``) and ``ell_dmID`` (from the
+      lepton-side columns ``combinatorial_vars_ell``).
+    * All other MC samples: the D and the lepton come from the same B, so a
+      single column ``dmID`` is added, built from the D-side columns.
+
+    Parameters
+    ----------
+    data : dict[str, pd.DataFrame] or pd.DataFrame
+        Either the dictionary returned by ``classify_mc_dict`` (the sample
+        named ``'bkg_combinatorial'`` gets the two-column treatment), or a
+        single DataFrame.
+    combinatorial : bool, optional
+        Only used for a single DataFrame: set True if it holds combinatorial
+        background.  Ignored for a dictionary unless given explicitly, in
+        which case it overrides the name-based choice for every sample.
+    verbose : bool
+        Print which columns were added to which sample.
+
+    Returns
+    -------
+    The same object that was passed in (modified in place).
+    """
+    if isinstance(data, pd.DataFrame):
+        items = [(None, data)]
+    else:
+        items = list(data.items())
+
+    for name, df in items:
+        if combinatorial is None:
+            is_comb = (name == COMBINATORIAL_SAMPLE_NAME)
+        else:
+            is_comb = combinatorial
+        targets = (
+            {"D_dmID": combinatorial_vars_D, "ell_dmID": combinatorial_vars_ell}
+            if is_comb
+            else {"dmID": combinatorial_vars_D}
+        )
+        for column, daughter_cols in targets.items():
+            missing = [c for c in daughter_cols if c not in df.columns]
+            if missing:
+                warnings.warn(
+                    f"add_dmID: sample {name!r} lacks B-daughter PDG columns "
+                    f"(e.g. {missing[0]!r}); '{column}' not added.",
+                    stacklevel=2,
+                )
+                continue
+            df[column] = _compute_dmID(df, daughter_cols)
+            if verbose:
+                print(f"add_dmID: added '{column}' to {name if name is not None else 'DataFrame'}")
+    return data
+
+
+def _prepare_side(
+    df: pd.DataFrame,
+    *,
+    prefix: str,
+    combinatorial_vars: list[str],
+    neutral_cols: list[str],
+    charged_cols: list[str],
+    replacement_map: Mapping[int, int],
+    replacement_use_pdg_corr: bool,
+    cap_nbody: int | None,
+    verbose: bool,
+) -> None:
+    """Add parameter-independent classification columns to ``df`` in place."""
+    df[f"{prefix}dmID"] = _compute_dmID(df, combinatorial_vars)
+    df[f"{prefix}mask_sl"] = df[combinatorial_vars].isin(leptons).any(axis=1)
+    neutral_n = (~df[neutral_cols].isin([-1, 22])).sum(axis=1)
+    charged_n = (~df[charged_cols].isin([-1, 22])).sum(axis=1)
+    df[f"{prefix}n_daughters"] = np.maximum(neutral_n, charged_n).astype(int)
+    df[f"{prefix}is_measured"] = df[f"{prefix}dmID"].isin(measured_pdg_list)
+
+    n_daughters = df[f"{prefix}n_daughters"].clip(lower=2)
+    if cap_nbody is None:
+        labels = n_daughters.astype(str) + "-body"
+    else:
+        labels = np.where(
+            n_daughters >= cap_nbody,
+            f"{cap_nbody}+-body",
+            n_daughters.astype(str) + "-body",
+        )
+    hadronic = np.where(
+        df[f"{prefix}is_measured"],
+        "BBbar_measured_hadronic",
+        "BBbar_unmeasured:" + labels,
+    )
+    df[f"{prefix}category"] = np.where(
+        df[f"{prefix}mask_sl"], "BBbar_semileptonic", hadronic
+    )
+    mapped_correction = df[f"{prefix}dmID"].map(PDG_CORRECTIONS).fillna(1.0)
+    df[f"{prefix}pdg_corr"] = np.where(
+        df[f"{prefix}is_measured"], mapped_correction, 1.0
+    )
+
+    replacement_column = f"{prefix}replacement_w"
+    df[replacement_column] = 1.0
+    count_base = (
+        df[f"{prefix}pdg_corr"]
+        if replacement_use_pdg_corr
+        else pd.Series(1.0, index=df.index)
+    )
+    new_to_old: dict[int, list[int]] = {}
+    for old_dmid, new_dmid in replacement_map.items():
+        new_to_old.setdefault(abs(int(new_dmid)), []).append(abs(int(old_dmid)))
+    for new_dmid, old_dmids in new_to_old.items():
+        old_mask = df[f"{prefix}dmID"].isin(old_dmids)
+        new_mask = df[f"{prefix}dmID"] == new_dmid
+        n_old = count_base[old_mask].sum()
+        n_new = count_base[new_mask].sum()
+        df.loc[old_mask, replacement_column] = 0.0
+        if n_new <= 0:
+            if verbose:
+                print(f"[{prefix}] cannot transfer {old_dmids} -> {new_dmid}: n_new=0")
+            continue
+        factor = (n_old + n_new) / n_new
+        df.loc[new_mask, replacement_column] *= factor
+        if verbose:
+            print(
+                f"[{prefix}] replacement {old_dmids} -> {new_dmid}: "
+                f"N_old={n_old:.3f}, N_new={n_new:.3f}, R={factor:.3f}"
+            )
+
+
+def prepare_bbbar_reweighting(
+    samples: Mapping[str, pd.DataFrame],
+    *,
+    weight_ell_side: bool = False,
+    cap_nbody: int | None = None,
+    D_replacement_map: Mapping[int, int] | None = None,
+    ell_replacement_map: Mapping[int, int] | None = None,
+    replacement_use_pdg_corr: bool = False,
+    copy: bool = True,
+    verbose: bool = False,
+) -> dict[str, pd.DataFrame]:
+    """Classify BBbar events and calculate invariant correction factors once.
+
+    By default the returned dictionary and DataFrames are copies.  Set
+    ``copy=False`` to opt into in-place preparation for memory-heavy workflows.
+    """
+    prepared = {
+        name: (df.copy() if copy else df)
+        for name, df in samples.items()
+    }
+    for name, df in prepared.items():
+        if name not in BBBAR_SAMPLE_NAMES:
+            continue
+        _prepare_side(
+            df,
+            prefix="D_",
+            combinatorial_vars=combinatorial_vars_D,
+            neutral_cols=neutral_cols_D,
+            charged_cols=charged_cols_D,
+            replacement_map=D_replacement_map or {},
+            replacement_use_pdg_corr=replacement_use_pdg_corr,
+            cap_nbody=cap_nbody,
+            verbose=verbose,
+        )
+        if name == COMBINATORIAL_SAMPLE_NAME and weight_ell_side:
+            _prepare_side(
+                df,
+                prefix="ell_",
+                combinatorial_vars=combinatorial_vars_ell,
+                neutral_cols=neutral_cols_ell,
+                charged_cols=charged_cols_ell,
+                replacement_map=ell_replacement_map or {},
+                replacement_use_pdg_corr=replacement_use_pdg_corr,
+                cap_nbody=cap_nbody,
+                verbose=verbose,
+            )
+    return prepared
+
+
+def apply_bbbar_weights(
+    prepared_samples: Mapping[str, pd.DataFrame],
+    weight_map: Mapping[str, float],
+    *,
+    out_weight_col: str = "BB_weight",
+    weight_ell_side: bool = False,
+    copy: bool = True,
+    warn_missing_weight_keys: bool = True,
+) -> dict[str, pd.DataFrame]:
+    """Apply category weights to already-prepared samples using vectorized maps."""
+    weighted = {
+        name: (df.copy() if copy else df)
+        for name, df in prepared_samples.items()
+    }
+    warned: set[str] = set()
+    for name, df in weighted.items():
+        df[out_weight_col] = 1.0
+        if name not in BBBAR_SAMPLE_NAMES:
+            continue
+        prefixes = ["D_"]
+        if name == COMBINATORIAL_SAMPLE_NAME and weight_ell_side:
+            prefixes.append("ell_")
+        for prefix in prefixes:
+            category_column = f"{prefix}category"
+            if category_column not in df:
+                raise ValueError(
+                    "BBbar samples have not been prepared; call "
+                    "prepare_bbbar_reweighting() first."
+                )
+            missing = set(pd.unique(df[category_column])) - set(weight_map)
+            new_missing = missing - warned
+            if new_missing and warn_missing_weight_keys:
+                warnings.warn(
+                    f"Missing BBbar weights default to 1.0: {sorted(new_missing)}",
+                    stacklevel=2,
+                )
+                warned.update(new_missing)
+            manual = df[category_column].map(weight_map).fillna(1.0).astype(float)
+            df[f"{prefix}manual_w"] = manual
+            side_weight = (
+                df[f"{prefix}pdg_corr"] * manual * df[f"{prefix}replacement_w"]
+            )
+            df[f"{prefix}side_weight"] = side_weight
+            df[out_weight_col] *= side_weight
+    return weighted
+
 
 def reweight_BBbar_background(
     samples: dict[str, pd.DataFrame],
@@ -1381,14 +1755,12 @@ def reweight_BBbar_background(
 ):
     """Prepare and weight BBbar samples in place (legacy compatibility API).
 
-    New fitting code should call ``bbbar_reweighting.prepare_bbbar_reweighting``
-    once and ``apply_bbbar_weights`` for each parameter point.  This wrapper
+    New fitting code should call ``prepare_bbbar_reweighting`` once and
+    ``apply_bbbar_weights`` for each parameter point.  This wrapper
     preserves the historical structural mutation when ``weight_ell_side`` is
     false.
     """
-    import bbbar_reweighting as bbbar
-
-    prepared = bbbar.prepare_bbbar_reweighting(
+    prepared = prepare_bbbar_reweighting(
         samples,
         weight_ell_side=weight_ell_side,
         cap_nbody=cap_nbody,
@@ -1398,7 +1770,7 @@ def reweight_BBbar_background(
         copy=False,
         verbose=verbose,
     )
-    weighted = bbbar.apply_bbbar_weights(
+    weighted = apply_bbbar_weights(
         prepared,
         weight_map,
         out_weight_col=out_weight_col,
@@ -1417,165 +1789,12 @@ def reweight_BBbar_background(
     return weighted
 
 
-# def reweight_BBbar_background(
-#     samples: dict[str, pd.DataFrame],
-#     weight_map: dict[str, float],
-#     out_weight_col: str = "BB_weight",
-#     weight_ell_side: bool = False,
-#     verbose: bool = False,
-#     cap_nbody: int | None = None,
-#     warn_missing_weight_keys: bool = True,
-# ):
-#     """
-#     Reweight BBbar background components in-place in `samples`:
-#       - For bkg_hadronicB_secondaryL: apply D-side classification only
-#       - For bkg_combinatorial: apply D-side *and* lepton-side classification
-
-#     Adds columns (when relevant):
-#       D_dmID, D_is_measured, D_n_daughters, D_category, D_manual_w, D_pdg_corr, D_side_weight
-#       ell_dmID, ell_is_measured, ell_n_daughters, ell_category, ell_manual_w, ell_pdg_corr, ell_side_weight
-
-#     PDG BF correction is applied ONLY for measured modes:
-#       pdg_corr = pdg_corr_dict[dmID] if is_measured and dmID in dict, else 1
-#     """
-
-#     pdg_corr = {
-#         # dmID : (PDG BF)/(Generated BF) as of 2025PDG and MC16
-#         10431 * 411: 0.00105 / 0.00737857,    # B0 -> D_s0*+ D-
-#         10431 * 413: 0.0015  / 0.01768717,    # B0 -> D_s0*+ D*-
-#         10431 * 421: 0.00079 / 0.00761729,    # B+ -> D_s0*+ D0
-#         10431 * 423: 0.0009  / 0.01706301,    # B+ -> D_s0*+ D*0
-#     }
-
-#     def add_side_columns_inplace(
-#         df: pd.DataFrame,
-#         *,
-#         prefix: str,
-#         combinatorial_vars: list[str],
-#         neutral_cols: list[str],
-#         charged_cols: list[str],
-#     ):
-#         """
-#         Writes the following columns onto df (prefixed):
-#           {prefix}dmID
-#           {prefix}mask_sl
-#           {prefix}n_daughters
-#           {prefix}is_measured
-#           {prefix}category
-#           {prefix}manual_w
-#           {prefix}pdg_corr
-#           {prefix}side_weight
-
-#         Requires globals in your environment:
-#           leptons, measured_pdg_list
-#         """
-#         # --- dmID (your encoding)
-#         df[f"{prefix}dmID"] = df[combinatorial_vars].astype("int64").prod(axis=1).abs()
-
-#         # --- semileptonic flag (top-level)
-#         df[f"{prefix}mask_sl"] = df[combinatorial_vars].isin(leptons).any(axis=1)
-
-#         # --- n_daughters proxy (exclude missing & photons)
-#         neutral_n = (~df[neutral_cols].isin([-1, 22])).sum(axis=1)
-#         charged_n = (~df[charged_cols].isin([-1, 22])).sum(axis=1)
-#         df[f"{prefix}n_daughters"] = np.maximum(neutral_n, charged_n).astype(int)
-
-#         # --- measured flag
-#         df[f"{prefix}is_measured"] = df[f"{prefix}dmID"].isin(measured_pdg_list)
-
-#         # --- hadronic categories
-#         n_clip = df[f"{prefix}n_daughters"].clip(lower=2)
-#         if cap_nbody is not None:
-#             n_lbl = np.where(n_clip >= cap_nbody, f"{cap_nbody}+-body", n_clip.astype(str) + "-body",)
-#         else:
-#             n_lbl = n_clip.astype(str) + "-body"
-#         had_cat = np.where(df[f"{prefix}is_measured"], "BBbar_measured_hadronic", "BBbar_unmeasured:" + n_lbl,)
-
-#         # --- final category: semileptonic overrides everything
-#         df[f"{prefix}category"] = np.where(df[f"{prefix}mask_sl"], "BBbar_semileptonic", had_cat)
-
-#         # --- manual weights from dict
-#         df[f"{prefix}manual_w"] = df[f"{prefix}category"].map(weight_map).fillna(1.0).astype(float)
-        
-#         if warn_missing_weight_keys:
-#             present = set(pd.unique(df[f"{prefix}category"]))
-#             missing = sorted(present - set(weight_map.keys()))
-#             if missing and verbose:
-#                 print(f"[{prefix}] Missing weight_map keys (defaulting to 1): {missing}")
-
-#         # --- PDG correction ONLY for measured modes, AND only when dmID is in the dict
-#         mapped_corr = df[f"{prefix}dmID"].map(pdg_corr).fillna(1.0).astype(float)
-#         df[f"{prefix}pdg_corr"] = np.where(df[f"{prefix}is_measured"], mapped_corr, 1.0)
-
-#         # --- combined side weight
-#         df[f"{prefix}side_weight"] = df[f"{prefix}pdg_corr"] * df[f"{prefix}manual_w"]
-
-#     # ---- main loop
-#     for name, df in samples.items():
-#         # default: no reweighting
-#         df[out_weight_col] = 1.0
-
-#         if name not in ["bkg_combinatorial", "bkg_hadronicB_secondaryL"]:
-#             continue
-
-#         # D-side always
-#         add_side_columns_inplace(df, prefix="D_",
-#             combinatorial_vars=combinatorial_vars_D,
-#             neutral_cols=neutral_cols_D,
-#             charged_cols=charged_cols_D,
-#         )
-
-#         df[out_weight_col] = df["D_side_weight"]
-
-#         # For combinatorial, also apply lepton-side
-#         if name == "bkg_combinatorial" and weight_ell_side:
-#             add_side_columns_inplace(df, prefix="ell_",
-#                 combinatorial_vars=combinatorial_vars_ell,
-#                 neutral_cols=neutral_cols_ell,
-#                 charged_cols=charged_cols_ell,
-#             )
-#             df[out_weight_col] *= df["ell_side_weight"]
-            
-
-#         # --- diagnostics
-#         if verbose:
-#             print(f"\n[{name}] N={len(df)}  sum({out_weight_col})={df[out_weight_col].sum():.3f}")
-
-#             # Weighted yields AFTER all applied weights (using out_weight_col)
-#             D_yields = df.groupby("D_category", dropna=False)['D_pdg_corr'].sum().sort_values(ascending=False)
-#             print(D_yields)
-#             if weight_ell_side and name == "bkg_combinatorial":
-#                 ell_yields = df.groupby("ell_category", dropna=False)['ell_pdg_corr'].sum().sort_values(ascending=False)
-#                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 7))
-#                 ax1.pie(D_yields.to_numpy(), labels=D_yields.index.to_list(),autopct="%1.1f%%", startangle=90)
-#                 ax2.pie(ell_yields.to_numpy(), labels=ell_yields.index.to_list(),autopct="%1.1f%%", startangle=90)
-#                 fig.suptitle(f"MC composition {name}: measured vs unmeasured (split by n-body)", fontsize=16)
-#                 ax1.set_title("D ancestor B decay")
-#                 ax2.set_title("Lepton ancestor B decay (pdg_corr only)")
-#                 ax1.axis("equal")
-#                 ax2.axis("equal")
-#                 plt.tight_layout()
-#                 plt.show()
-                
-#             else:
-#                 fig, ax = plt.subplots(figsize=(7, 7))
-#                 ax.pie(D_yields.to_numpy(), labels=D_yields.index.to_list(),autopct="%1.1f%%", startangle=90)
-#                 ax.set_title(f"MC composition {name}: D-side categories")
-#                 ax.axis("equal")
-#                 plt.tight_layout()
-#                 plt.show()
-
-#     if not weight_ell_side:
-#         BBbar_bkg = pd.concat([samples['bkg_combinatorial'], samples['bkg_hadronicB_secondaryL'] ])
-#         BBbar_by_category = dict(tuple(BBbar_bkg.groupby("D_category")))
-#         samples.pop('bkg_combinatorial')
-#         samples.pop('bkg_hadronicB_secondaryL')
-#         samples.update(BBbar_by_category)
-        
-#     return samples
-    
-
 def classify_measured_modes(df, base='D',corr_col_name='BF_corr_w_D'):
+    # decay-mode ID column: 'dmID', or the per-side '<base>_dmID' that
+    # add_dmID() writes for the combinatorial background
+    dmID_col = "dmID" if "dmID" in df.columns else f"{base}_dmID"
+    if dmID_col not in df.columns:
+        raise KeyError(f"No 'dmID' or '{base}_dmID' column found; call add_dmID() first.")
     # number of daughters of neutral and charged B
     if base=='D':
         neutral_n = (~df[neutral_cols_D].isin([-1, 22])).sum(axis=1) # count # of B daughters, excluding photons
@@ -1588,7 +1807,7 @@ def classify_measured_modes(df, base='D',corr_col_name='BF_corr_w_D'):
     
     # define important variables
     # df["B_type"] = np.where(neutral_n >= charged_n, "B0", "B+")
-    df["dmIsMeasured"] = df["dmID"].isin(measured_pdg_list)
+    df["dmIsMeasured"] = df[dmID_col].isin(measured_pdg_list)
     df["n_daughters"] = np.where(neutral_n >= charged_n, neutral_n, charged_n)
     df["pie_category"] = np.where(df["dmIsMeasured"],'measured_modes','unmeasured:'+df["n_daughters"].astype(str)+"-body" )
     dfs_by_category = dict(tuple(df.groupby("pie_category")))
@@ -1700,8 +1919,8 @@ DECORR_MERGED_TEMPLATES = {
                                     r'$D\ell\nu$_gap_pi', r'$D\ell\nu$_gap_eta'],
 }
 
-# Event-ID columns after apply_mva_bcs has renamed the __xxx__ columns
-EVENT_ID_COLUMNS = ['experiment', 'run', 'event', 'production']
+# Event-ID columns after apply_mva_bcs
+EVENT_ID_COLUMNS = ['__experiment__', '__run__', '__event__', '__production__']
 
 
 ############################## sample handling ################################
@@ -2875,7 +3094,7 @@ def create_2d_template_from_1d(template_flat: dict, data_flat: unp.uarray,
 
 def compare_2d_hist(data, model, bins_x, bins_y, 
                     xlabel='X-axis', ylabel='Y-axis', 
-                    data_label='Data', model_label='Model'):
+                    data_label='Data', model_label='Model', n_par=0):
     """
     Compare two 2D histograms with residual plots by projecting onto x and y axes.
     Parameters:
@@ -2887,6 +3106,9 @@ def compare_2d_hist(data, model, bins_x, bins_y,
         ylabel (str): Label for the y-axis.
         data_label (str): Label for the first histogram (data).
         model_label (str): Label for the second histogram (model).
+        n_par (int): Number of parameters floated to obtain the model (post-fit plots);
+            reduces ndf of the shape term. After a fit, data/MC = R is ~1 by
+            construction, so only the shape line of the residual legend is meaningful.
     """
 
     def compute_residuals(data, model):
@@ -2897,17 +3119,19 @@ def compare_2d_hist(data, model, bins_x, bins_y,
         res_err = unp.std_devs(residuals)
         return res_val, res_err
 
-    def plot_residuals(ax, bin_centers, res_val, res_err):
-        # Mask bins with zero errors
-        mask = res_err != 0
-        chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
-        ndf = len(res_val[mask])
-        label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
+    def plot_residuals(ax, bin_centers, res_val, res_err, label):
+        # label: normalization / shape / chi2 text from mismodeling_label
         ax.errorbar(x=bin_centers,y=res_val,yerr=res_err,fmt='.',color='black',
                      markeredgecolor='white',markeredgewidth=0.5, label=label)
         ax.axhline(0, color='gray', linestyle='--')
         ax.set_ylabel('Residuals')
         ax.legend()
+
+    def label_for(d, m):
+        # nominal values -> data error from the expected count (Pearson), MC error from the uarray
+        res = excess_variance(unp.nominal_values(d), unp.nominal_values(m),
+                              model_err=unp.std_devs(m), normalize=True, n_par=n_par)
+        return mismodeling_label(res)
 
     # Project histograms onto x-axis
     projData_x = np.sum(data, axis=0)
@@ -2916,6 +3140,9 @@ def compare_2d_hist(data, model, bins_x, bins_y,
     # Project histograms onto y-axis
     projData_y = np.sum(data, axis=1)
     projModel_y = np.sum(model, axis=1)
+
+    lab_x = label_for(projData_x, projModel_x)
+    lab_y = label_for(projData_y, projModel_y)
 
     # Bin centers
     bin_centers_x = (bins_x[:-1] + bins_x[1:]) / 2
@@ -2933,14 +3160,14 @@ def compare_2d_hist(data, model, bins_x, bins_y,
                     histtype='step', label=model_label)
     axes[0, 0].errorbar(x=bin_centers_x,y=unp.nominal_values(projData_x),
                         yerr=unp.std_devs(projData_x),fmt='.',color='black',
-                     markeredgecolor='white',markeredgewidth=0.5, label=label)
+                     markeredgecolor='white',markeredgewidth=0.5, label=data_label)
     axes[0, 0].set_ylabel('# of Events')
     axes[0, 0].set_title(f'Projection onto {xlabel}')
     axes[0, 0].grid()
     axes[0, 0].legend()
 
     # X-axis residuals (bottom-left)
-    plot_residuals(axes[1, 0], bin_centers_x, res_x, res_err_x)
+    plot_residuals(axes[1, 0], bin_centers_x, res_x, res_err_x, lab_x)
     axes[1, 0].set_xlabel(xlabel)
 
     # Y-axis projection (top-right)
@@ -2954,7 +3181,7 @@ def compare_2d_hist(data, model, bins_x, bins_y,
     axes[0, 1].legend()
 
     # Y-axis residuals (bottom-right)
-    plot_residuals(axes[1, 1], bin_centers_y, res_y, res_err_y)
+    plot_residuals(axes[1, 1], bin_centers_y, res_y, res_err_y, lab_y)
     axes[1, 1].set_xlabel(ylabel)
 
     plt.tight_layout()
@@ -2996,7 +3223,7 @@ def create_workspace(temp_data_channels: list,
     normfactor += ['BBbar_measured_hadronic', 'BBbar_semileptonic',      'BBbar_unmeasured:2-body',
                    'BBbar_unmeasured:3-body', 'BBbar_unmeasured:4-body', 'BBbar_unmeasured:5-body',
                    'BBbar_unmeasured:6-body', 'BBbar_unmeasured:7-body', 'BBbar_unmeasured:5+-body',] # combinatorial bkg control sample
-    # NOTE (BBbar categories): bbbar_reweighting emits ':5+-body' when called
+    # NOTE (BBbar categories): prepare_bbbar_reweighting emits ':5+-body' when called
     # with cap_nbody=5, which is what the tuning script uses; the separate
     # 5-, 6- and 7-body keys are only produced with cap_nbody=None and are
     # retained for backwards compatibility with earlier workspaces.
@@ -3949,7 +4176,7 @@ import matplotlib.colors as mcolors
 # Original tab20 colors
 original_colors = plt.cm.tab20.colors
 # New order for the colors
-new_order_indices = [0,1,2,3,16,5,10,4,12,13,19,8,18,7,6]
+new_order_indices = [0,1,2,3,16,5,10,4,15,17,19,8,18,7,6,12,13]
 # Create a new ordered list of colors
 reordered_colors = [original_colors[i] for i in new_order_indices]
 # Add the rest of the colors that are not explicitly ordered
@@ -4231,6 +4458,157 @@ def plot_PID_weight_heatmap_mpl(
             # plt.tight_layout()
             plt.show()
             plt.close()
+
+
+def merge_low_count_groups(model, min_count=10):
+    """Group adjacent bins so that every group has >= min_count expected entries.
+
+    Sweeps left to right, closing a group as soon as its summed model reaches
+    min_count; a leftover tail that never reaches it joins the last closed group.
+    Returns an int array of group labels (0, 1, ...), one per bin.
+    """
+    m = np.asarray(model, float).ravel()
+    groups = np.empty(len(m), dtype=int)
+    g, acc = 0, 0.0
+    for i, mi in enumerate(m):
+        groups[i] = g
+        acc += mi
+        if acc >= min_count:
+            g, acc = g + 1, 0.0
+    if len(m) and groups[-1] == g and g > 0:   # open tail below min_count
+        groups[groups == g] = g - 1
+    return groups
+
+
+def excess_variance(data, model, data_err=None, model_err=None, normalize=True,
+                    n_par=0, min_count=10, model_cov=None, low_count='merge'):
+    """Data/MC mismodeling of a histogram as two numbers: normalization and shape.
+
+    Normalization: R = sum(data) / sum(model) over all bins (model > 0), with its
+    statistical uncertainty R_err from data and MC (stat + PID if model_cov has it).
+
+    Low-count bins: the chi2 needs roughly Gaussian bins, i.e. >= min_count expected
+    entries. low_count='merge' (default) merges adjacent bins of the MC prediction
+    (before scaling) until each group has >= min_count (merge_low_count_groups);
+    low_count='drop' leaves bins below min_count out. The same groups are used for
+    the absolute chi2 and the shape test.
+
+    Shape (excess variance): after scaling the model by R (normalize=True), the
+    residuals r_g = d_g - m_g of the groups are compared with their statistical
+    spread sigma_g (sigma^2 = data var + MC var):
+        perfect model:            mean r_g^2 = sigma_g^2           -> chi2 ~ ndf
+        model off by delta_g:     mean r_g^2 = sigma_g^2 + m_g^2 delta_g^2
+    The variance beyond statistics gives the typical fractional mismodeling
+        delta^2 = (chi2 - ndf) / sum_g (m_g / sigma_g)^2 ,   ndf = n_groups - n_par
+    (one dof is used by R when normalize=True). Its statistical error is
+    sqrt(2 ndf) / sum (m/sigma)^2; when delta^2 is not significant an upper limit
+    is quoted by mismodeling_label.
+
+    Absolute chi2 (chi2_raw, ndf_raw): the same groups against the UNSCALED model,
+    testing normalization and shape together (ndf_raw = n_groups - n_par).
+
+    data, model : arrays (any shape) or unumpy uarrays (errors taken from them)
+    data_err    : default: Poisson error of the EXPECTED count (Pearson)
+    model_err   : MC error per bin (default 0)
+    model_cov   : full MC covariance (n_bins x n_bins), e.g. MC stat on the
+                  diagonal + PID covariance from toys; needed to merge bins whose
+                  errors are correlated. Overrides model_err.
+    normalize   : False -> no scaling: delta then contains the normalization too
+    n_par       : parameters fitted to obtain the model (post-fit plots)
+    Returns dict(R, R_err, delta, delta_err, delta2, delta2_err, ul95, chi2, ndf,
+                 chi2_raw, ndf_raw, groups, low_count_bins).
+    low_count_bins: bins below min_count that were merged into a group (or
+    dropped), i.e. that do not enter the chi2 on their own.
+    """
+    try:
+        import uncertainties.unumpy as unp
+        if data_err is None and hasattr(np.asarray(data).flat[0], 'std_dev'):
+            data, data_err = unp.nominal_values(data), unp.std_devs(data)
+        if model_err is None and hasattr(np.asarray(model).flat[0], 'std_dev'):
+            model, model_err = unp.nominal_values(model), unp.std_devs(model)
+    except ImportError:
+        pass
+    assert low_count in ('merge', 'drop'), "low_count must be 'merge' or 'drop'"
+    d = np.asarray(data, float).ravel()
+    m = np.asarray(model, float).ravel()
+    n = len(m)
+    ed = None if data_err is None else np.asarray(data_err, float).ravel()
+    if model_cov is not None:
+        C = np.asarray(model_cov, float)
+        assert C.shape == (n, n), 'model_cov must be n_bins x n_bins'
+    else:
+        em = np.zeros(n) if model_err is None else np.asarray(model_err, float).ravel()
+        C = np.diag(em ** 2)
+
+    pos = m > 0
+    D, M = d[pos].sum(), m[pos].sum()
+    R = D / M if M > 0 else np.nan
+    mc_var_tot = C[np.ix_(pos, pos)].sum()
+    # statistical error of R; with no data at all use the 1-event scale
+    R_err = np.sqrt(max(D, 1.0) / M ** 2 + (R ** 2 if D > 0 else 0.0) * mc_var_tot / M ** 2) \
+        if M > 0 else np.nan
+
+    # aggregation matrix A (n_groups x n_bins): row g sums the bins of group g
+    if low_count == 'merge':
+        groups = merge_low_count_groups(m, min_count)
+        A = np.zeros((groups.max() + 1 if n else 0, n))
+        A[groups, np.arange(n)] = 1.0
+        sizes = np.bincount(groups)
+        low = (m < min_count) & (sizes[groups] > 1)
+    else:
+        sel = m >= min_count
+        groups = np.where(sel, np.cumsum(sel) - 1, -1)
+        A = np.eye(n)[sel]
+        low = ~sel
+    out = dict(R=R, R_err=R_err, groups=groups, low_count_bins=low.reshape(np.shape(model)))
+
+    def grouped_chi2(scale, npar):
+        mg = A @ (m * scale)
+        dg = A @ d
+        data_var = mg if ed is None else A @ ed ** 2      # Pearson: expected count
+        var = data_var + np.einsum('gi,ij,gj->g', A, C * scale ** 2, A)
+        ok = (mg >= min_count) & (var > 0)
+        ndf = int(ok.sum()) - npar
+        if ndf < 1:
+            return np.nan, ndf, np.nan
+        r2 = (dg[ok] - mg[ok]) ** 2
+        return float(np.sum(r2 / var[ok])), ndf, float(np.sum(mg[ok] ** 2 / var[ok]))
+
+    # absolute chi2: unscaled model, tests normalization and shape together
+    out['chi2_raw'], out['ndf_raw'], _ = grouped_chi2(1.0, n_par)
+
+    scale = 1.0
+    if normalize and np.isfinite(R) and R > 0:
+        scale, n_par = R, n_par + 1
+    chi2, ndf, info = grouped_chi2(scale, n_par)
+    if ndf < 1:
+        return dict(out, delta=np.nan, delta_err=np.nan, delta2=np.nan, delta2_err=np.nan,
+                    ul95=np.nan, chi2=np.nan, ndf=ndf)
+    delta2 = (chi2 - ndf) / info
+    delta2_err = np.sqrt(2.0 * ndf) / info
+    out.update(delta2=delta2, delta2_err=delta2_err, delta=np.sqrt(max(delta2, 0.0)),
+               delta_err=delta2_err / (2 * np.sqrt(delta2)) if delta2 > 0 else np.nan,
+               ul95=np.sqrt(max(delta2, 0.0) + 1.645 * delta2_err), chi2=chi2, ndf=ndf)
+    return out
+
+
+def mismodeling_label(res):
+    """Three-line legend text for a data/MC residual plot from excess_variance():
+    normalization, shape, absolute chi2/ndf (unscaled model)."""
+    lines = [f"norm:  data/MC = {res['R']:.3f} $\\pm$ {res['R_err']:.3f}"]
+    dim = res.get('shape_dim')
+    tag = ' (M$^2_\\mathrm{miss}$ projection)' if dim == '1d' else ''
+    if dim == 'none' or not np.isfinite(res.get('delta2', np.nan)):
+        lines.append('shape: too few events (not used)')
+    elif res['delta2'] > 2 * res['delta2_err']:
+        lines.append(f"shape{tag}: $\\delta$ = {100 * res['delta']:.1f} $\\pm$ {100 * res['delta_err']:.1f}%")
+    else:
+        lines.append(f"shape{tag}: $\\delta$ < {100 * res['ul95']:.1f}% (95% CL)")
+    if np.isfinite(res.get('chi2_raw', np.nan)):
+        from scipy.stats import chi2 as chi2_dist
+        p = chi2_dist.sf(res['chi2_raw'], res['ndf_raw'])
+        lines.append(f"$\\chi^2$/ndf = {res['chi2_raw']:.1f}/{res['ndf_raw']}  (p = {p:.2g})")
+    return '\n'.join(lines)
     
 
 class mpl:
@@ -4430,7 +4808,27 @@ class mpl:
 
     def plot_mc_1d(self, bins, ax, sub_df=None, sub_name=None, variable=None, cut=None,
                   weights={}, mask=[], legend='full', density=False,
-                  apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight'):
+                  apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight',
+                  mc_uncertainty=False):
+        """mc_uncertainty: add the PID-correction uncertainty (spread over the variation
+        columns of eventByEvent_weight_col, see apply_pid_corrections) to the MC
+        statistical error of the returned histogram, and draw the total MC uncertainty
+        (stat + PID) as a band. The MC statistical error is always included."""
+        pid_toys = None   # (n_bins, n_toys): toy histograms of the whole stack
+
+        def add_pid_toys(sample, base_weight, scale=1.0):
+            # accumulate toy histograms; the same toy index is used for every component,
+            # so the PID correlations between components are kept
+            nonlocal pid_toys
+            if not mc_uncertainty or not apply_eventByEvent_correction or len(sample) == 0:
+                return
+            toys = pid_toy_histograms(sample, variable, bins, base_weight, eventByEvent_weight_col)
+            if toys is None:
+                return
+            toys = toys * scale
+            if pid_toys is not None and pid_toys.shape != toys.shape:
+                raise ValueError('MC components have different numbers of PID variations')
+            pid_toys = toys if pid_toys is None else pid_toys + toys
 
         def normalize_to_density(counts, staterror, bins, integral=None):
             # Scale both values and errors so the uncertainty array stays
@@ -4455,6 +4853,7 @@ class mpl:
             else:
                 weight = get_weights(sample, weights.get(sub_name, 1) )
 
+            base_weight = weight  # without the PID correction
             if apply_eventByEvent_correction: # update the weight
                 weight = apply_eventByEvent_weight(sample, weight, eventByEvent_weight_col)
 
@@ -4462,7 +4861,10 @@ class mpl:
             (staterr_squared, _) = np.histogram(sample[variable], bins=bins,weights=weight**2)
             staterror = poisson_error(staterr_squared)
 
+            raw_integral = np.sum(counts * np.diff(bins))
             counts, staterror = normalize_to_density(counts, staterror, bins)
+            add_pid_toys(sample, base_weight,
+                         1.0 / raw_integral if density and raw_integral > 0 else 1.0)
 
             if ax is not None:
                 if legend== 'simple_color':
@@ -4522,6 +4924,7 @@ class mpl:
                 else:
                     weight = get_weights(sample, weights.get(name, 1) )
 
+                base_weight = weight  # without the PID correction
                 if apply_eventByEvent_correction: # update the weight
                     weight = apply_eventByEvent_weight(sample, weight, eventByEvent_weight_col)
 
@@ -4534,6 +4937,8 @@ class mpl:
                 counts, staterror = normalize_to_density(
                     counts, staterror, bins, density_integral
                 )
+                add_pid_toys(sample, base_weight,
+                             1.0 / density_integral if density and density_integral else 1.0)
                 b = unp.nominal_values(bottom)
                 
                 if ax is not None:
@@ -4551,11 +4956,30 @@ class mpl:
                 sample_counts = unp.uarray(counts, staterror)
                 bottom += sample_counts
 
+        # full MC covariance of this stack (MC stat; + PID below) for the chi2
+        self.mc_model_cov = np.diag(unp.std_devs(bottom) ** 2)
+        if mc_uncertainty:
+            nominal, stat_err = unp.nominal_values(bottom), unp.std_devs(bottom)
+            if pid_toys is None:
+                print(f"Warning: no PID variations of '{eventByEvent_weight_col}' found "
+                      f"(needs apply_eventByEvent_correction=True and apply_pid_corrections "
+                      f"with n_variations > 0); showing the MC statistical uncertainty only")
+                pid_err = np.zeros_like(nominal)
+                self.mc_pid_cov = None
+            else:
+                pid_err = pid_toys.std(axis=1, ddof=1)
+                self.mc_pid_cov = np.atleast_2d(np.cov(pid_toys))  # bin-to-bin PID covariance
+                self.mc_model_cov = self.mc_model_cov + self.mc_pid_cov
+            bottom = unp.uarray(nominal, np.hypot(stat_err, pid_err))
+            if ax is not None:
+                draw_mc_band(ax, bins, nominal, unp.std_devs(bottom),
+                             label='MC unc.\n(stat + PID)' if pid_toys is not None else 'MC unc. (stat)')
+
         return bottom
     
     
     def plot_mc_1d_overlaid(self,variable,bins,cut=None,mask=[],show_only=None,density=False, errorbars=False, 
-                            weights={},figsize=(8,5),legend_nc=3,text_fs=14):
+                            weights={},figsize=(8,5),legend_nc=3,text_fs=14,title=None):
         if show_only is not None:
             # this will overwrite the mask argument
             if show_only == 'sig_and_gap':
@@ -4591,7 +5015,11 @@ class mpl:
 
         # restrict title length
         print('cut=',cut)
-        axs.set_title(f'MC distribution', fontsize=text_fs)
+        if title is None:
+            axs.set_title(f'MC distribution', fontsize=text_fs)
+        else: 
+            axs.set_title(title, fontsize=text_fs)
+
         axs.set_xlabel(f'{variable}', fontsize=text_fs)
         ylabel = 'density' if density else f'# of events per bin {(bins[1]-bins[0]):.3f} GeV'
         axs.set_ylabel(ylabel, fontsize=text_fs)
@@ -4658,7 +5086,14 @@ class mpl:
         
         return counts_err
 
-    def plot_residuals(self, bins, data, model, ax, fig=None):
+    def plot_residuals(self, bins, data, model, ax, fig=None, n_par=0, model_cov=None, min_count=10):
+        """Residual panel (1D: normalized residuals; 2D: |data - model| map) with the
+        mismodeling legend: data/MC = R +- sigma_R, shape delta (or upper limit), chi2/ndf.
+        n_par: parameters floated to obtain the model (post-fit plots). After a fit
+        R is ~1 by construction, so only the shape line is meaningful there.
+        1D: bins with < min_count expected entries are merged with neighbours for the
+        chi2 (not in the plot) and drawn as hollow markers. model_cov: full MC
+        covariance (stat + PID), used for the merged bins' errors."""
         if len(bins)>2: # 1d residual
             # Compute residuals (Data - Model) and their errors
             # at bins where data is not 0
@@ -4675,14 +5110,21 @@ class mpl:
             mask = res_err != 0
             # compute the normalized residuals
             normalized_residuals[mask] = res_val[mask] / res_err[mask]
-            # Compute chi-squared excluding those points
-            chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
-            ndf = len(res_val[mask])
-            label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}' if ndf else 'reChi2 not calculated'
+            # legend: normalization, shape (excess variance) and chi2/ndf
+            if model_cov is not None and np.shape(model_cov) != (len(bin_centers),) * 2:
+                model_cov = None
+            res = excess_variance(unp.nominal_values(data), unp.nominal_values(model),
+                                  model_err=unp.std_devs(model), model_cov=model_cov,
+                                  normalize=True, n_par=n_par, min_count=min_count)
+            label = mismodeling_label(res)
+            low = res['low_count_bins']
 
-            # Plot the residuals in ax
+            # Plot the residuals in ax: solid = own bin in the chi2, hollow = merged
             # ax.errorbar(x=bin_centers, y=res_val, yerr=res_err, fmt='ok',label=label) # absolute residuals
-            ax.plot(bin_centers, normalized_residuals, 'ok', label=label) # normalized residuals
+            ax.plot(bin_centers[~low], normalized_residuals[~low], 'ok', label=label) # normalized residuals
+            if low.any():
+                ax.plot(bin_centers[low], normalized_residuals[low], 'o', mfc='none', mec='black',
+                        label=f'merged in $\\chi^2$ (MC < {min_count:g})')
             
             # Add a horizontal line at y=0 for reference
             ax.axhline(0, color='gray', linestyle='--')
@@ -4692,18 +5134,13 @@ class mpl:
         elif len(bins)==2: # 2d residual
             residuals = abs(data - model) # abs to make the plot simpler
             res_val = unp.nominal_values(residuals)
-            res_err = unp.std_devs(residuals)
-            
-            # Create a mask to exclude points where residual_errors are zero
-            mask = res_val != 0
-            # Compute chi-squared excluding those points
-            chi2 = np.sum((res_val[mask] / res_err[mask]) ** 2)
-            ndf = len(res_val[mask])
-            
-            if ndf==0:
-                label = 'reChi2 not calculated'
-            else:
-                label = f'reChi2 = {chi2:.3f} / {ndf} = {chi2/ndf:.3f}'
+            # full 2D arrays: excess_variance flattens them itself
+            # 2D: bins are not merged (neighbours in the flattened array are not
+            # neighbours in the plane), low-count bins are left out of the chi2
+            res = excess_variance(unp.nominal_values(data), unp.nominal_values(model),
+                                  model_err=unp.std_devs(model), normalize=True, n_par=n_par,
+                                  min_count=min_count, low_count='drop')
+            label = mismodeling_label(res)
                 
             # Plot the residuals in ax
             self.plot_2d(bins=bins, hist=res_val, fig=fig, ax=ax,title_name=label)
@@ -4728,17 +5165,23 @@ class mpl:
     def plot_data_mc_stacked(self,variable,bins,cut=None,weights={},data_sig_mask=False, density=False,mask=[],
                              apply_eventByEvent_correction=False, eventByEvent_weight_col='total_PID_weight',
                              ratio_or_residual='residual', bottom_plot=r'$D\tau\nu$',
-                             figsize=(8,5),legend_nc=2,legend_fs=12,text_fs=14,title=None):
-        
+                             figsize=(8,5),legend_nc=2,legend_fs=12,text_fs=14,title=None, n_par=0,
+                             mc_uncertainty=False, save_path=None, dpi=300, min_count=10):
+        # n_par: parameters floated to obtain the MC (post-fit plots), passed to plot_residuals
+        # mc_uncertainty: add the PID uncertainty to the MC error and draw the MC band
+        # min_count: bins with fewer expected MC entries are merged for the chi2
         assert ratio_or_residual in ['ratio', 'residual'], 'must choose ratio or residual'
         
         # Create a figure with two subplots: one for the histogram, one for the residual plot
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, sharex=True,
+                                       gridspec_kw={'height_ratios': [5, 1]})
             
         # MC
         mc_counts = self.plot_mc_1d(bins=bins, variable=variable, ax=ax1, cut=cut,mask=mask, density=density,
                                     weights=weights, apply_eventByEvent_correction=apply_eventByEvent_correction, 
-                                    eventByEvent_weight_col=eventByEvent_weight_col,)
+                                    eventByEvent_weight_col=eventByEvent_weight_col,
+                                    mc_uncertainty=mc_uncertainty)
+        mc_cov = self.mc_model_cov
         # Data
         if self.data is not None:
             data_counts = self.plot_data_1d(bins=bins, variable=variable, sig_mask=data_sig_mask,
@@ -4748,7 +5191,8 @@ class mpl:
                 self.plot_ratios(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
             elif ratio_or_residual=='residual':
                 # Residuals (Data - Model)
-                self.plot_residuals(bins=bins, data=data_counts, model=mc_counts, ax=ax2)
+                self.plot_residuals(bins=bins, data=data_counts, model=mc_counts, ax=ax2, n_par=n_par,
+                                    model_cov=mc_cov, min_count=min_count)
                 ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=legend_fs)
             
         else: # if MC only
@@ -4756,7 +5200,8 @@ class mpl:
             bottom_comp = self.plot_mc_1d(bins=bins, sub_df=self.samples[bottom_plot], sub_name=bottom_plot, 
                                         variable=variable, ax=ax2, cut=cut,mask=mask, density=density, legend='simple_color',
                                         weights=weights, apply_eventByEvent_correction=apply_eventByEvent_correction, 
-                                        eventByEvent_weight_col=eventByEvent_weight_col,)
+                                        eventByEvent_weight_col=eventByEvent_weight_col,
+                                        mc_uncertainty=mc_uncertainty)
             ax2.set_ylabel(bottom_plot, fontsize=text_fs)
         
         # restrict title length
@@ -4772,9 +5217,13 @@ class mpl:
         ax1.set_ylabel(f'# of events per bin {(bins[1]-bins[0]):.3f} GeV', fontsize=text_fs)
         ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=legend_fs)
         ax1.grid()
+        ax1.set_xlim(bins[0], bins[-1])   # shared, so ax2 follows
+        ax2.grid(axis='x')                # optional: vertical gridlines in the residual panel too
         ax2.set_xlabel(self.var_name_dictionary.get(variable, variable), fontsize=text_fs)
         
         plt.tight_layout()
+        if save_path is not None:
+            fig.savefig(save_path, dpi=dpi, bbox_inches='tight')
         plt.show()
 
         return data_counts, mc_counts
@@ -4787,97 +5236,15 @@ class mpl:
                             figsize=(10,5),legend_nc=1,text_fs=12):
         if type(variable)==str:
             # Create a figure with two subplots: one for the histogram, one for the residual plot
-            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={'height_ratios': [5, 1]})
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, sharex=True, 
+                                           gridspec_kw={'height_ratios': [5, 1]})
         elif type(variable)==list:
             # Create a figure with two subplots: one for sig, one for the control
             fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=figsize)
         
         if bkg_name=='bkg_fakeD':
             print('This part of the function needs to be rewritten!')
-            
-            # norm in sig region, for tail removal
-#             Dellnu = self.samples[r'$D\ell\nu$'].query('1.84<D_M<1.9').copy()
-#             Dstellnu = self.samples[r'$D^\ast\ell\nu$'].query('1.84<D_M<1.9').copy()
-                    
-#             # fakeD in the signal region
-#             fakeD = self.samples[bkg_name]
-#             fakeD_in_sig = fakeD.query('1.84<D_M<1.9').copy()
-            
-#             # fakeD in sidebands vs. everything in the sidebands (concatenate all components)
-#             fakeD_left = fakeD.query('D_M<1.83').copy()
-#             fakeD_right = fakeD.query('1.91<D_M').copy()
-            
-#             df_concatenated = pd.concat(self.samples.values(), ignore_index=True)
-#             all_left = df_concatenated.query('D_M<1.83').copy()
-#             all_right = df_concatenated.query('1.91<D_M').copy()
-                
-#             regions = {'left sideband': all_left if full_sideband else fakeD_left,
-#                        'signal region': fakeD_in_sig,
-#                        'right sideband': all_right if full_sideband else fakeD_right}
-            
-#             sb_total = 0 # total counts in sidebands used in residual calculation
-#             sig_total = 0
-#             if type(variable)==str:
-#                 ###################################
-#                 D_counts = self.plot_mc_1d(bins=bins, sub_df=Dellnu, sub_name=r'$D\ell\nu$', variable=variable, 
-#                                            ax=None, cut=cut, correction=correction,mask=mask,
-#                                            weights={'sub_df':weights.get('signal region',1)})
-#                 Dst_counts = self.plot_mc_1d(bins=bins, sub_df=Dstellnu, sub_name=r'$D^\ast\ell\nu$', variable=variable, 
-#                                              ax=None, cut=cut, correction=correction,mask=mask,
-#                                              weights={'sub_df':weights.get('signal region',1)},)
-#                 ###################################
-                    
-#                 for region, df in regions.items():
-#                     if region=='signal region':
-#                         sig_total = self.plot_data_1d(bins=bins, sub_df=df, variable=variable, ax=ax1, 
-#                                                 cut=cut, name=region, scale=weights.get(region,1) )
 
-#                     elif region in ['left sideband', 'right sideband']:
-#                         bkg_counts = self.plot_mc_1d(bins=bins, sub_df=df, sub_name=region, variable=variable, 
-#                                                     ax=None, cut=cut, correction=correction,mask=mask,
-#                                                     weights={'sub_df':weights.get(region,1)})
-
-                        
-#                         if region == 'left sideband':
-#                             sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_left)
-#                         elif region == 'right sideband':
-#                             sb_total += bkg_counts * len(fakeD_in_sig) / len(fakeD_right)
-                        
-#                         if not merge_sidebands:
-#                             count1 = unp.nominal_values(bkg_counts)
-#                             ax1.hist(bins[:-1], bins, weights=count1,histtype='step',
-#                     label=f'{region} \n{self.statistics(hist=[count1, bins],count_only=False)} ')
-                    
-#                 if merge_sidebands:
-#                     count2 = unp.nominal_values(sb_total)
-#                     ax1.hist(bins[:-1], bins, weights=count2,histtype='step',
-#                 label=f'sidebands \n{self.statistics(hist=[count2, bins],count_only=False)} ')
-
-#                 # Residuals (Data - Model) and their errors
-#                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, ax=ax2)
-#                 ax2.set_xlabel(f'{variable}')
-                
-#             elif type(variable)==list:
-#                 assert merge_sidebands==True, 'merge_sidebands must be True'
-#                 for region, df in regions.items():
-#                     if region=='signal region':
-#                         sig_total = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
-#                                     weights={'sub_df': weights.get(region,1)},fig=fig, ax=ax1, cut=cut)
-#                     elif region in ['left sideband', 'right sideband']:
-#                         bkg_counts = self.plot_2d(bins=bins, sub_df=df, variables=variable, title_name=region,
-#                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
-#                         D_counts = self.plot_2d(bins=bins, sub_df=Dellnu, variables=variable, title_name=region,
-#                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
-#                         Dst_counts = self.plot_2d(bins=bins, sub_df=Dstellnu, variables=variable, title_name=region,
-#                                     weights={'sub_df': weights.get(region,1)},fig=None, ax=None, cut=cut)
-# #                         sb_total -= r_D * D_counts
-# #                         sb_total -= r_Dst * Dst_counts
-#                         sb_total += bkg_counts
-                        
-#                 self.plot_2d(bins=bins, hist=unp.nominal_values(sb_total),title_name='sidebands',fig=fig, ax=ax2, cut=cut)
-                        
-#                 # Residuals (Data - Model) and their errors
-#                 self.plot_residuals(bins=bins, data=sig_total, model=sb_total, fig=fig, ax=ax3)
             
         elif bkg_name == 'bkg_BBbar':
 
@@ -4986,6 +5353,8 @@ class mpl:
             ax1.set_ylabel(ylabel, fontsize=text_fs)
             ax1.legend(bbox_to_anchor=(1,1),ncol=legend_nc, fancybox=True, shadow=True,labelspacing=1.5, fontsize=text_fs)
             ax1.grid()
+            ax1.set_xlim(bins[0], bins[-1])   # shared, so ax2 follows
+            ax2.grid(axis='x')                # optional: vertical gridlines in the residual panel too
             ax2.legend(bbox_to_anchor=(1,1),fancybox=True, shadow=True, fontsize=text_fs)
             ax2.set_xlabel(f'{variable}', fontsize=text_fs)
         elif type(variable)==list:

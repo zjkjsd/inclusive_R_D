@@ -27,7 +27,6 @@ from optuna.trial import TrialState
 from iminuit import Minuit
 
 import utilities as util
-import bbbar_reweighting as bbbar
 
 
 # ============================================================
@@ -474,7 +473,7 @@ def apply_category_weights(
     replacement_map,
 ) -> Dict[str, pd.DataFrame]:
     """Apply a parameter point to the invariant, prepared classification."""
-    samples_weighted = bbbar.apply_bbbar_weights(
+    samples_weighted = util.apply_bbbar_weights(
         samples_base,
         weights,
         out_weight_col=TUNE_WEIGHT_COL,
@@ -899,7 +898,7 @@ def main() -> None:
     # Decay classification and replacement factors do not depend on fit
     # parameters, so calculate them once rather than during every likelihood
     # evaluation.
-    samples_base = bbbar.prepare_bbbar_reweighting(
+    samples_base = util.prepare_bbbar_reweighting(
         samples_base,
         weight_ell_side=True,
         cap_nbody=5,
