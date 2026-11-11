@@ -20,8 +20,9 @@ import json
 import yaml
 
 import sys
-sys.path.append('/home/belle/zhangboy/inclusive_R_D/')
+sys.path.append('/home/belle/zhangboy/inclusive_R_D/scripts/tools/')
 import utilities as util
+import fitting
 
 def to_string(x):
     """
@@ -107,7 +108,7 @@ class pyhf_toy_mle_part_fitTask(b2luigi.Task):
         yield self.add_to_output('toy_part_results.json')
 
     def run(self):
-        toy_tools = util.toy_utils(toy_workspace=self.toy_workspace,
+        toy_tools = fitting.toy_utils(toy_workspace=self.toy_workspace,
                                    fit_workspace=self.fit_workspace,
                                    pars_toFix = self.pars_toFix, 
                                    part=self.part, binning=self.binning)
@@ -174,10 +175,10 @@ class pyhf_toy_fitTask(b2luigi.Task):
 
     def run(self):
         # load and merge all the toy results
-        merged_dict = util.toy_utils.merge_toy_results(result_files=self.get_input_file_names('toy_part_results.json') )
+        merged_dict = fitting.toy_utils.merge_toy_results(result_files=self.get_input_file_names('toy_part_results.json') )
         
         # calculate the pulls
-        merged_dict = util.toy_utils.calculate_pulls(merged_dict=merged_dict, minos_error=True,
+        merged_dict = fitting.toy_utils.calculate_pulls(merged_dict=merged_dict, minos_error=True,
                                                     normalize=self.normalize_by_uncertainty)
 
         # fit and plot the gaussians
@@ -198,7 +199,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
             
             # fit pulls with a gaussian
             pulls = np.array(merged_dict['toy_results']['pulls'])[:,poi_index]
-            mu, sigma = util.fit_pull_linearity.fit_gauss(pulls)
+            mu, sigma = fitting.fit_pull_linearity.fit_gauss(pulls)
             merged_dict['gauss_results'][poi] = {
                 'mu': [float(mu.n), float(mu.s)],
                 'sigma': [float(sigma.n), float(sigma.s)],
@@ -210,7 +211,7 @@ class pyhf_toy_fitTask(b2luigi.Task):
             }
 
             # make plots
-            util.toy_utils.plot_toy_gaussian(
+            fitting.toy_utils.plot_toy_gaussian(
                 pulls,
                 mu=mu if abs(sigma.n)<5 else uncertainties.ufloat(0, 0.1),
                 sigma=sigma if 0<abs(sigma.n)<5 else uncertainties.ufloat(1, 0.1),
@@ -280,10 +281,10 @@ class pyhf_linearity_fitTask(b2luigi.Task):
 
     def run(self):
         # load all the results
-        merged_dict = util.toy_utils.merge_toy_results(result_files=self.get_input_file_names('toy_part_results.json') )
+        merged_dict = fitting.toy_utils.merge_toy_results(result_files=self.get_input_file_names('toy_part_results.json') )
 
         # calculate the line x y coordinates and yerr
-        merged_dict = util.toy_utils.calculate_linear_xy(merged_dict=merged_dict, minos_error=True)
+        merged_dict = fitting.toy_utils.calculate_linear_xy(merged_dict=merged_dict, minos_error=True)
         
         # fit and plot the line
         nplot = 0
@@ -298,7 +299,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
             error = np.array(merged_dict['toy_results']['SEM'])[:,poi_index]
         
             # fit the line with a linear function
-            slope, intercept = util.fit_pull_linearity.fit_linear(truth, fitted, error)
+            slope, intercept = fitting.fit_pull_linearity.fit_linear(truth, fitted, error)
             merged_dict['linearity_results'][poi] = {
                 'fitted': fitted.tolist(),
                 'error_bar': error.tolist(),
@@ -307,7 +308,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
             }
             
             # make plots
-            util.toy_utils.plot_linearity_test(truth,fitted,error,slope,intercept,
+            fitting.toy_utils.plot_linearity_test(truth,fitted,error,slope,intercept,
                                                bonds=[0,self.linearity_parameter_bonds[1]],
                                                x_offset=[0],title_info= poi,
                                                file_name=self.get_output_file_name(f'toy_fit_linearity_{nplot}.pdf') )
@@ -352,7 +353,7 @@ class pyhf_linearity_fitTask(b2luigi.Task):
 #         if self.create_templates:
 #             import uproot
 #             import sys
-#             sys.path.append('/home/belle/zhangboy/inclusive_R_D/')
+#             sys.path.append('/home/belle/zhangboy/inclusive_R_D/scripts/tools/')
 #             import utilities as util
             
 #             ## Loading Ntuples

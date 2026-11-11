@@ -30,10 +30,10 @@ starts only then. Appendix A lists the pieces and their status.
 
 | File | Role | Status |
 |---|---|---|
-| `bdt_cut_optimization.py` | module: candidate loading, fast FOM, control regions, Fisher target, search, working points, diagnostics | DONE |
+| `scripts/tools/bdt_cut_optimization.py` | module: candidate loading, fast FOM, control regions, Fisher target, search, working points, diagnostics | DONE |
 | `7_bdt_cut_optimization.ipynb` | driver notebook for Part A | DONE |
 | `scripts/tests/test_bdt_cut_optimization.py` | tests of the module | DONE |
-| `5_BBbkg_weights_optuna_minuit.py` | current BBbar weight tuning; to be extended in Part B | DONE (current version) |
+| `scripts/5_BBbkg_weights_optuna_minuit.py` | current BBbar weight tuning; to be extended in Part B | DONE (current version) |
 | `bbbar_reweighting.py` | BBbar decay classification and weights; to hold the shared model definition of Part B | DONE (current version) |
 | notebook 8 | Part B, MC only: composition study and comb CR cut optimization | PROPOSED |
 | K_L notebook | Part C | PROPOSED |

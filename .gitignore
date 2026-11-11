@@ -14,6 +14,7 @@
 !Old_scripts/
 !scripts/
 !scripts/tests/
+!scripts/tools/
 !MC16_sys_tables/
 !MC16_sys_tables/*.csv
 !MC16_sys_tables/*/

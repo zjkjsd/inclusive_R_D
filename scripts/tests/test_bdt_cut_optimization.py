@@ -16,8 +16,8 @@ import sys
 import numpy as np
 import pandas as pd
 
-REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(REPO_ROOT))
+TOOLS_DIR = pathlib.Path(__file__).resolve().parent.parent / 'tools'
+sys.path.insert(0, str(TOOLS_DIR))
 
 import utilities as util            # noqa: E402
 import bdt_cut_optimization as bco  # noqa: E402

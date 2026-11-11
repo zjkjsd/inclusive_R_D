@@ -15,7 +15,10 @@ import gc
 import numpy as np
 import matplotlib.pyplot as plt
 from termcolor import colored
-import utilities as util
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'tools'))
+import utilities as util  # noqa: E402  (lives in scripts/tools/)
 
 import lightgbm as lgb
 import optuna
