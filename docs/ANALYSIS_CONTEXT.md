@@ -25,7 +25,7 @@ up after a break.
 3. **Final candidate / event selection**
    - Multiclass LightGBM BDT (4 classes: signal, fakeD, continuum,
      combinatorial) trained on continuum-suppression + D/B kinematic
-     variables (`2_LightGBM_Tuner.py`, `4_LightGBM_Multiclass_Training.py`).
+     variables (`scripts/2_LightGBM_Tuner.py`, `scripts/4_LightGBM_Multiclass_Training.py`).
    - Final event selection cuts on the BDT output probabilities
      (`sig_prob`, `fakeD_prob`, `continuum_prob`, `combinatorial_prob`).
 4. **MC validation in data control regions**
@@ -100,11 +100,11 @@ yield via an `(N_old + N_new)/N_new` rescaling of the surviving mode.
   `p_D_l` (`|p*_D| + |p*_ℓ|`, scalar sum of D and lepton CM-frame momenta).
 - **Templates:** 2D histograms built per MC category (see §2).
 - **Yield extraction:** binned likelihood fit with `pyhf`
-  (`utilities.create_workspace`, `create_templates_new`), fit executed via
-  `cabinetry`/`iminuit` (`utilities.pyhf_utils`, `toy_utils`).
+  (`fitting.create_workspace`, `create_templates_new`), fit executed via
+  `cabinetry`/`iminuit` (`fitting.pyhf_utils`, `toy_utils`).
 - **BBbar background weight tuning** (a separate, upstream step feeding the
   main fit): joint 2D Poisson-deviance minimization
-  (`5_BBbkg_weights_optuna_minuit.py`), using Optuna (TPE sampler +
+  (`scripts/5_BBbkg_weights_optuna_minuit.py`), using Optuna (TPE sampler +
   `MedianPruner`) for global exploration, then `iminuit`
   MIGRAD/HESSE/MINOS for the local refinement and uncertainties. The
   fit-bin mask is built once from raw unweighted MC support
@@ -148,11 +148,14 @@ pending an updated MC16rd table (expected summer 2026).
 |---|---|
 | `Recon_scripts/1_Reconstruction_test.py`, `2_Reconstruction.py` | basf2 steering scripts, signal-side + ROE/tag-side reconstruction, e and μ channels, includes wrong-charge reconstruction for `4S` energy |
 | `Recon_scripts/submit_local_jobs.sh` | Local batch submission helper for the steering scripts |
-| `2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV tuning for the binary off-resonance data/MC check; currently does not tune the final four-class classifier |
-| `3_LightGBM_Binary_Training.py` | Binary data/MC BDT (off-resonance validation) |
-| `4_LightGBM_Multiclass_Training.py` | Final 4-class signal-selection BDT training |
-| `5_BBbkg_weights_optuna_minuit.py` | BBbar background weight tuning (Optuna + iminuit joint 2D Poisson fit) |
-| `utilities.py` | Shared library: variable lists, MC classification (`classify_mc_dict`), BBbar reweighting, template/workspace construction for `pyhf`, plotting helpers |
+| `scripts/2_LightGBM_Tuner.py` | Optuna/LightGBMTunerCV tuning for the binary off-resonance data/MC check; currently does not tune the final four-class classifier |
+| `scripts/3_LightGBM_Binary_Training.py` | Binary data/MC BDT (off-resonance validation) |
+| `scripts/4_LightGBM_Multiclass_Training.py` | Final 4-class signal-selection BDT training |
+| `scripts/5_BBbkg_weights_optuna_minuit.py` | BBbar background weight tuning (Optuna + iminuit joint 2D Poisson fit) |
+| `scripts/tools/utilities.py` | Shared library: variable lists, MC classification (`classify_mc_dict`), corrections, MVA/BCS, BBbar reweighting, decorrelation study |
+| `scripts/tools/fitting.py` | Template/workspace construction for `pyhf`, D-mass fit, `pyhf_utils`, `toy_utils` |
+| `scripts/tools/plotting.py` | Plotting helpers (`mpl` class, PID heatmap, fit projections) |
+| `scripts/tools/bdt_cut_optimization.py` | BDT working-point optimization |
 | `Notebooks/` | MC-truth checks, PID studies, BDT sample preparation, fit examples, and data/MC control-region plots |
 | `Fit_toys/` | Toy-fit workflow and example `pyhf` workspaces |
 | `BBbkg_weights/` | Small, selected BBbar reweighting results retained for downstream use |
@@ -177,7 +180,7 @@ pending an updated MC16rd table (expected summer 2026).
 - **Run/channel parameterization:** offline work is generally evaluated for
   `run1`/`run2` and `e`/`mu`. New reusable stages should expose these choices
   rather than silently hard-coding one combination; see `parse_arguments()`
-  in `5_BBbkg_weights_optuna_minuit.py` for an example.
+  in `scripts/5_BBbkg_weights_optuna_minuit.py` for an example.
 - **Category names are interfaces:** strings such as
   `BBbar_measured_hadronic`, `BBbar_unmeasured:2-body`, and `bkg_fakeD` are
   dictionary keys shared by classification, reweighting, and workspace code.

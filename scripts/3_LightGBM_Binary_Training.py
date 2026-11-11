@@ -18,7 +18,10 @@ import matplotlib.pyplot as plt
 from termcolor import colored
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-import utilities as util
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'tools'))
+import utilities as util  # noqa: E402  (lives in scripts/tools/)
 
 def argparser():
     """
