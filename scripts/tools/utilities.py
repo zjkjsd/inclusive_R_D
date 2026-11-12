@@ -1886,13 +1886,19 @@ def decay_mode_table(df, side, b_code, out_csv=None, verbose=True, weight_col=No
     daughter_0..6 (canonical order), raw_0..6 (order in the event), n_daughters (photons
     included), truncated (7th slot filled), n_candidates, sum_w, mode_total (candidates of the
     canonical mode), n_orders (distinct raw orders of the canonical mode). Sorted by mode_total,
-    n_candidates.
+    then by mode, then by n_candidates; the order does not depend on the order of the input.
     """
     cols = [f'{side}_{b_code}_{i}_daughterPDG' for i in range(7)]
-    d_all = df[cols].to_numpy(dtype=np.int64)
+    d_float = df[cols].to_numpy(dtype=float)
+    if not np.isfinite(d_float).all():
+        raise ValueError(f'{side}_{b_code}_*_daughterPDG contains NaN; empty slots must be -1')
+    d_all = d_float.astype(np.int64)
     filled = (d_all != -1).any(axis=1)
     d = d_all[filled]
     w = np.ones(len(d)) if weight_col is None else df[weight_col].to_numpy(dtype=float)[filled]
+    if not np.isfinite(w).all():
+        raise ValueError(f'{weight_col}: {(~np.isfinite(w)).sum()} of {len(w)} candidates have a '
+                         f'non-finite weight')
 
     if verbose:
         gap = ((d[:, :-1] == -1) & (d[:, 1:] != -1)).any(axis=1)
@@ -1916,8 +1922,9 @@ def decay_mode_table(df, side, b_code, out_csv=None, verbose=True, weight_col=No
     grp = counts.groupby(mode_cols)['n_candidates']
     counts['mode_total'] = grp.transform('sum')
     counts['n_orders'] = grp.transform('size')
-    counts = counts.sort_values(['mode_total', 'n_candidates'] + raw_cols, ascending=False,
-                                ignore_index=True)
+    # largest mode first; the rows of one mode stay together, its most frequent order first
+    counts = counts.sort_values(['mode_total'] + mode_cols + ['n_candidates'] + raw_cols,
+                                ascending=False, ignore_index=True)
 
     if out_csv is not None:
         import os
@@ -1962,7 +1969,8 @@ def export_bbbar_decay_mode_tables(samples, tag, out_dir='csv_output', selection
         that the file documents itself.
     weight_col : optional column with the candidate weight (e.g. the PID weight). Its sum goes to
         `sum_w`; without it `sum_w` equals `n_candidates`.
-    overwrite : by default an existing file is not replaced.
+    overwrite : by default an existing file is not replaced, so that two samples can't end up in
+        one file name by mistake. Pass True when rerunning the same sample.
 
     Columns of the file: tag, selection, component ('comb' or 'hadB'), side ('D' or 'ell'),
     b_abs (511 or 521), then the columns of `decay_mode_table`.
@@ -1971,8 +1979,12 @@ def export_bbbar_decay_mode_tables(samples, tag, out_dir='csv_output', selection
     hadB_{charged,neutral}.
     """
     import os, re
-    if not re.fullmatch(r'[A-Za-z0-9_.+-]+', str(tag)):
-        raise ValueError(f"tag {tag!r}: use letters, digits, '_', '-', '+' and '.' only")
+    if not isinstance(tag, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.+-]*', tag):
+        raise ValueError(f"tag {tag!r}: a string of letters, digits, '_', '-', '+' and '.', "
+                         f"starting with a letter or digit")
+    if not isinstance(selection, str):
+        raise ValueError('selection must be a string')
+    selection = ' '.join(selection.split())             # one line
     out_csv = os.path.join(out_dir, f'bbbar_modes_{tag}.csv')
     if os.path.exists(out_csv) and not overwrite:
         raise FileExistsError(f'{out_csv} exists; choose another tag or pass overwrite=True')
@@ -1980,6 +1992,10 @@ def export_bbbar_decay_mode_tables(samples, tag, out_dir='csv_output', selection
     comb = samples['bkg_combinatorial']
     hadB = samples.get('bkg_hadronicB_secondaryL')
     has_hadB = hadB is not None and len(hadB) > 0
+    if len(comb) == 0:
+        raise ValueError('bkg_combinatorial is empty; nothing is written')
+    if not has_hadB:
+        print('no bkg_hadronicB_secondaryL candidates: only the comb tables are written')
     for side in ('D', 'ell'):
         b_ancestry_check(comb, side, 'comb')
     if has_hadB:

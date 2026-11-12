@@ -168,6 +168,9 @@ def test_quark_content():
         assert dt.is_baryon(np.array([n[name]]), incl)[0], name
     for name in ['pi+', 'D+', 'K_S0', 'cd_0', 'Xsd', 'e-', 'gamma']:
         assert not dt.is_baryon(np.array([n[name]]), incl)[0], name
+    # generator-specific and exotic codes are not baryons
+    for code in (9052513, 9152513, 88511, 99513, 99523):
+        assert code in PDL.pdg_to_name and not dt.is_baryon(np.array([code]), incl)[0], code
     # every particle of the list: the digit rule agrees with the name
     for name, code in n.items():
         if abs(code) <= 100 or code in incl or -code in incl or abs(code) >= 1_000_000_000:
@@ -207,6 +210,13 @@ def test_classify_synthetic():
     # same set, other order: not EvtGen
     r = classify([[-11, -413, 12]], 511)
     assert r['gen_class'][0] == dt.GEN_PYTHIA and r['set_match'][0] and not r['order_match'][0]
+    assert not r['set_match_all'][0] and np.isnan(r['bf_mc'][0]) and r['dec_line'][0] == -1
+    # a photon that is not last is not stripped
+    r = classify([[22, 313], [-413, 22, -11, 12]], 511)
+    assert (r['gen_class'] == dt.GEN_PYTHIA).all() and list(r['n_fsr']) == [0, 0]
+    # leptons without a neutrino, or a neutrino pair, are not semileptonic; tau modes are
+    r = classify([[321, -11, 11], [311, 12, -12], [-413, -15, 16], [-15, 16]], 511)
+    assert list(r['is_sl']) == [False, False, True, True] and list(r['sl_lepton']) == [0, 0, 15, 15]
 
     # a genuine photon is kept (B0 -> K*0 gamma, line 871); extra photons are FSR
     r = classify([[313, 22], [313, 22, 22]], 511)
@@ -225,6 +235,14 @@ def test_classify_synthetic():
     # final state listed for both flavors in the same order (lines 797 and 2607): flavor ambiguous
     r = classify([[-413, 311, 211]], 511)
     assert r['gen_class'][0] == dt.GEN_EXCLUSIVE and r['flavor_ambiguous'][0] and r['b_flavor'][0] == 0
+    assert abs(r['bf_mc'][0] - 3.0e-4) < 1e-12 and r['dec_line'][0] == 797 and not r['bf_blocks_differ'][0]
+    # J/psi K*0 with a K*0: both blocks, different BFs -> the mean, flagged
+    r = classify([[443, 313]], 511)
+    assert r['flavor_ambiguous'][0] and r['bf_blocks_differ'][0] and not r['zero_bf'][0]
+    assert abs(r['bf_mc'][0] - 0.5 * (1.270001e-3 + 4.23334e-4)) < 1e-12
+    # with an anti-K*0 it is listed for the anti-B0 only
+    r = classify([[443, -313]], 511)
+    assert r['b_flavor'][0] == -511 and abs(r['bf_mc'][0] - 8.46667e-4) < 1e-12
     # listed for both flavors in different orders (D*+ D*-): the order gives the flavor
     r = classify([[413, -413], [-413, 413]], 511)
     assert (r['gen_class'] == dt.GEN_EXCLUSIVE).all() and not r['flavor_ambiguous'].any()
@@ -235,6 +253,11 @@ def test_classify_synthetic():
     assert (r['gen_class'] == dt.GEN_EXCLUSIVE).all() and list(r['b_flavor']) == [521, -521]
     # the B- line is not accepted for a B+ (charge +1) and vice versa
     assert TABLE.get(521, dt.mode_key([423, 11, -12])) is None
+    r = classify([[423, 11, -12, 22, 22, 22, 22]], 521)     # exclusive + photons: charge known
+    assert r['b_flavor'][0] == -521 and r['list_state'][0] == dt.LIST_COMPLETE
+    # 7 daughters with the wrong total charge: flavor unknown, list truncated
+    r = classify([[-421, 211, -211, 211, 211, 211, 111]], 521)
+    assert r['b_flavor'][0] == 0 and r['list_state'][0] == dt.LIST_TRUNCATED
 
     # inclusive pseudo-particles: exclusive lines, flagged, not counted as charm
     r = classify([[-44, -11, 12]], 511)
@@ -286,6 +309,189 @@ def test_classify_csv_tables():
         assert rep['ok'] and abs(rep['exclusive'] + rep['pythia'] - 1) < 1e-12
 
 
+def test_validation_report_flags():
+    def report(lists, b_abs=511, **kw):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter('always')
+            rep = dt.validation_report(classify(lists, b_abs), verbose=False, **kw)
+        return rep, len(caught)
+    good = [[-413, -11, 12]] * 50 + [[-411, 213, 223]] * 50
+    rep, n = report(good)
+    assert rep['ok'] and n == 0 and rep['exclusive'] == 0.5
+    rep, n = report(good + [[443, 311]])                  # a decay on a zero-BF mode
+    assert not rep['ok'] and n == 1 and rep['zero_bf'] > 0
+    rep, n = report(good + [[-411, -11, 12, 111, 111]])   # an unlisted semileptonic decay
+    assert not rep['ok'] and rep['pythia_sl'] > 0
+    rep, n = report(good + [[-411, 9000111]])             # an unlisted 2-body decay
+    assert not rep['ok'] and rep['pythia_few_body'] > 0
+    rep, n = report(good + [[-11, -413, 12]])             # listed for one flavor, other order: 1 %
+    assert not rep['ok'] and rep['wrong_order'] > 3e-4 and rep['wrong_order_all'] == 0
+    rep, n = report(good + [[311, -413, 211]])            # listed for both flavors, other order
+    assert not rep['ok'] and rep['wrong_order_all'] > 0
+    rep, n = report([[-423, -11, 12]] * 10 + [[12, -11, -423]], 521)   # charged B, other order
+    assert not rep['ok'] and rep['wrong_order_all'] > 0
+    w = np.r_[np.ones(100), 0.0]
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        assert dt.validation_report(classify(good + [[443, 311]], 511), w, verbose=False)['ok']
+
+
+def test_parser_follows_evtgen_rules():
+    def parse(text, mothers, **kw):
+        with tempfile.NamedTemporaryFile('w', suffix='.dec', delete=False) as f:
+            f.write(text)
+        try:
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                return dt.parse_dec(f.name, mothers=mothers, pdl=PDL, **kw), len(caught)
+        finally:
+            os.unlink(f.name)
+    # a second Decay block replaces the first
+    d, n = parse('Decay B0\n1.0 D- pi+ PHSP;\nEnddecay\nDecay B0\n1.0 D*- pi+ SVS;\nEnddecay\n', ['B0'])
+    assert n == 1 and list(d['names']) == [('D*-', 'pi+')]
+    # CDecay copies the conjugate block as it stands; a later Decay replaces the copy
+    d, n = parse('Decay B-\n1.0 D0 pi- PHSP;\nEnddecay\nCDecay B+\nDecay B-\n1.0 D*0 pi- SVS;\nEnddecay\n',
+                 ['B+', 'B-'])
+    assert list(d['names']) == [('anti-D0', 'pi+'), ('D*0', 'pi-')] and list(d['from_cdecay']) == [True, False]
+    d, n = parse('Decay B-\n1.0 D0 pi- PHSP;\nEnddecay\nCDecay B+\nDecay B+\n1.0 anti-D*0 pi+ SVS;\nEnddecay\n',
+                 ['B+'])
+    assert list(d['names']) == [('anti-D*0', 'pi+')]
+    # a second statement on the line is not silently taken as a comment
+    d, n = parse('Decay B0\n0.5 D- pi+ PHSP; 0.5 D*- pi+ SVS;\nEnddecay\n', ['B0'])
+    assert n == 1 and len(d) == 1
+    d, n = parse('Decay B0\n1.0 D- pi+ PHSP;; # c ; d\nEnddecay\n', ['B0'])
+    assert n == 0 and d['comment'][0] == '# c ; d'
+    for bad in ('Define x 0.3\nDecay B0\nx D- pi+ PHSP;\nEnddecay\n',            # BF is not a number
+                'Decay B0\n1.0 PHSP;\nEnddecay\n',                                # no daughters
+                'Decay Foo\n1.0 D- pi+ PHSP;\nEnddecay\n',                        # unknown mother
+                'CDecay B+\n',                                                     # nothing to conjugate
+                'Alias D0x D0\nDecay B-\n1.0 D0x pi- PHSP;\nEnddecay\nCDecay B+\n'):  # alias w/o ChargeConj
+        try:
+            parse(bad, None)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('accepted: ' + bad)
+    # alias mothers sharing a PDG code can't go into one table
+    d, n = parse('Alias B0sig B0\nDecay B0\n1.0 D- pi+ PHSP;\nEnddecay\nDecay B0sig\n1.0 D- pi+ PHSP;\nEnddecay\n', None)
+    try:
+        dt.ModeTable(d, PDL)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('alias mothers merged')
+    # is_pythia: quark-level lines only. The tau uses the PYTHIA model with hadron daughters.
+    full = dt.parse_dec(mothers=None, pdl=PDL)
+    tau = full[full['mother'] == 'tau-']
+    assert (tau['model'] == 'PYTHIA').any() and not tau['is_pythia'].any()
+
+
+def _utilities_functions():
+    """decay_mode_table and export_bbbar_decay_mode_tables, taken from the source of utilities.py so
+    that the test needs numpy and pandas only (importing utilities needs uproot, lightgbm, ...)."""
+    import re
+    src = open(os.path.join(ROOT, 'scripts', 'tools', 'utilities.py')).read()
+    ns = {'np': np, 'pd': pd}
+    for start in ('QUARK_LIKE_PDG = ', 'def decay_mode_table', 'def b_ancestry_check',
+                  'def export_bbbar_decay_mode_tables'):
+        a = src.index(start)
+        exec(src[a:a + re.search(r'\n\n\n', src[a:]).start()], ns)
+    return ns
+
+
+def _fake_ntuple(names, b_abs_list, n_head=400, seed=0):
+    """Candidates with '<side>_<b>_<i>_daughterPDG' columns built from rows of the CSVs."""
+    cols = [f'{s}_{b}_{i}_daughterPDG' for s in ('D', 'ell') for b in (511, 521) for i in range(7)]
+    parts = []
+    for (name_d, name_l), b in zip(names, b_abs_list):
+        d = pd.read_csv(os.path.join(CSV_DIR, name_d + '.csv')).head(n_head)
+        d = np.repeat(d[RAW].to_numpy(), np.minimum(d['n_candidates'], 5), axis=0)
+        ell = d if name_l is None else pd.read_csv(os.path.join(CSV_DIR, name_l + '.csv'))[RAW].to_numpy()[:len(d)]
+        df = pd.DataFrame(-1.0, index=range(len(d)), columns=cols, dtype='float32')
+        df[[f'D_{b}_{i}_daughterPDG' for i in range(7)]] = d
+        df[[f'ell_{b}_{i}_daughterPDG' for i in range(7)]] = ell
+        parts.append(df)
+    out = pd.concat(parts, ignore_index=True)
+    return out.sample(frac=1, random_state=seed).reset_index(drop=True)
+
+
+def test_export_and_long_format():
+    import contextlib
+    import io
+    ns = _utilities_functions()
+    export = ns['export_bbbar_decay_mode_tables']
+    comb = _fake_ntuple([('comb_charged_Dside', 'comb_charged_ellside'),
+                         ('comb_neutral_Dside', 'comb_neutral_ellside')], [521, 511])
+    hadB = _fake_ntuple([('hadB_charged', None), ('hadB_neutral', None)], [521, 511])
+    comb['w'], hadB['w'] = 0.5, 2.0
+    samples = {'bkg_combinatorial': comb, 'bkg_hadronicB_secondaryL': hadB}
+    quiet = contextlib.redirect_stdout(io.StringIO())
+    with tempfile.TemporaryDirectory() as out_dir:
+        with quiet:
+            tabs = export(samples, 'unit_test', out_dir=out_dir, selection='cut a,\n "b"', weight_col='w')
+        path = os.path.join(out_dir, 'bbbar_modes_unit_test.csv')
+        assert sorted(tabs) == sorted(CSVS)
+        long = dt.load_mode_tables(path)
+        assert sorted(long) == [('comb', 'D', 511), ('comb', 'D', 521), ('comb', 'ell', 511),
+                                ('comb', 'ell', 521), ('hadB', 'D', 511), ('hadB', 'D', 521)]
+        t = long[('comb', 'D', 511)]
+        assert (t['tag'] == 'unit_test').all() and (t['selection'] == 'cut a, "b"').all()
+        assert t['n_candidates'].sum() == (comb['D_511_0_daughterPDG'] != -1).sum()
+        assert np.allclose(t['sum_w'], 0.5 * t['n_candidates'])
+        assert np.allclose(long[('hadB', 'D', 521)]['sum_w'], 2.0 * long[('hadB', 'D', 521)]['n_candidates'])
+        # counts against a direct count
+        direct = comb.loc[comb['D_511_0_daughterPDG'] != -1, [f'D_511_{i}_daughterPDG' for i in range(7)]]
+        direct = direct.astype('int64').value_counts()
+        assert len(direct) == len(t) and (direct.reindex(pd.MultiIndex.from_frame(t[RAW])).to_numpy()
+                                          == t['n_candidates'].to_numpy()).all()
+        # each mode is one block of rows; mode_total and n_orders are consistent
+        modes = t[[f'daughter_{i}' for i in range(7)]].astype(str).agg(' '.join, axis=1)
+        assert (modes != modes.shift()).sum() == modes.nunique()
+        assert (t.groupby(modes)['n_candidates'].transform('sum') == t['mode_total']).all()
+        assert t['mode_total'].is_monotonic_decreasing
+        # the table does not depend on the order of the candidates
+        with quiet:
+            tabs2 = export({'bkg_combinatorial': comb.iloc[::-1], 'bkg_hadronicB_secondaryL': hadB.iloc[::-1]},
+                           'unit_test2', out_dir=out_dir, weight_col='w')
+        for k in tabs:
+            assert tabs[k].equals(tabs2[k]), k
+        # the long file can be classified directly
+        with quiet:
+            cls = dt.classify_mode_tables(long, TABLE)
+        assert set(cls[('comb', 'ell', 521)]['gen_class']) <= {dt.GEN_EXCLUSIVE, dt.GEN_PYTHIA}
+        # no silent overwrite; no hadB is fine; bad inputs are refused
+        for kw in (dict(tag='unit_test'), dict(tag=None), dict(tag='a/b'), dict(tag='.x'),
+                   dict(tag='ok1', selection=['a'])):
+            try:
+                with quiet:
+                    export(samples, out_dir=out_dir, **kw)
+            except (FileExistsError, ValueError):
+                pass
+            else:
+                raise AssertionError(f'accepted {kw}')
+        with quiet:
+            export(samples, 'unit_test', out_dir=out_dir, overwrite=True)
+            only_comb = export({'bkg_combinatorial': comb}, 'wc', out_dir=out_dir)
+        assert len(only_comb) == 4 and len(dt.load_mode_tables(os.path.join(out_dir, 'bbbar_modes_wc.csv'))) == 4
+        for bad_col, bad_val in (('w', np.nan), ('D_511_2_daughterPDG', np.nan)):
+            broken = comb.copy()
+            broken.loc[broken.index[3], bad_col] = bad_val
+            try:
+                with quiet:
+                    export({'bkg_combinatorial': broken}, 'broken', out_dir=out_dir, weight_col='w')
+            except ValueError:
+                pass
+            else:
+                raise AssertionError(f'NaN in {bad_col} accepted')
+        try:
+            with quiet:
+                export({'bkg_combinatorial': comb.iloc[:0]}, 'empty', out_dir=out_dir)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError('empty sample accepted')
+
+
 def test_classify_b_decays_ntuple():
     """Ntuple-level wrapper: the CSV rows expanded into '<side>_<b>_<i>_daughterPDG' columns."""
     cn = pd.read_csv(os.path.join(CSV_DIR, 'hadB_neutral.csv')).head(300)
@@ -306,6 +512,23 @@ def test_classify_b_decays_ntuple():
         exp = np.concatenate([rn[col].to_numpy(), rc[col].to_numpy()])
         assert np.array_equal(got[:-1].astype(float), exp.astype(float), equal_nan=True), col
     assert out['D_B_gen_class'].iloc[-1] == 0 and out['D_B_dec_line'].iloc[-1] == -1
+    assert out['D_B_gen_class'].dtype.kind == 'i' and out['D_B_is_sl'].dtype == bool
+    # a candidate with both ancestor lists filled is not classified
+    both = df.copy()
+    both.iloc[0, 7:] = both.iloc[len(cn), 7:].to_numpy()
+    assert dt.classify_b_decays(both, 'D', TABLE)['D_B_abs'].iloc[0] == 0
+    # the report works on the prefixed columns and leaves out the unclassified row
+    rep = dt.validation_report(out, verbose=False, prefix='D_B_')
+    assert rep['ok'] and abs(rep['unclassified'] - 1 / len(df)) < 1e-12
+    assert abs(rep['exclusive'] + rep['pythia'] - 1) < 1e-12
+    bad = df.copy()
+    bad.iloc[0, 0] = np.nan
+    try:
+        dt.classify_b_decays(bad, 'D', TABLE)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('NaN accepted')
 
 
 def main():

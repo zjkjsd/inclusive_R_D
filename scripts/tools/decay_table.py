@@ -14,8 +14,8 @@ In the Belle II generic MC, PYTHIA is not allowed to produce a final state that 
 exclusive channel of the same B (zero-BF lines included); it retries until the final state is new.
 So the exclusive and the PYTHIA final states are disjoint: a daughter set that is in the decay file
 comes from EvtGen, any other comes from PYTHIA. EvtGen stores the daughters in the order of the
-decay-file line, PHOTOS appends its photons at the end. Both facts are checked by
-`validation_report` on every sample that is classified.
+decay-file line, PHOTOS appends its photons at the end. `validation_report` tests this mechanism
+on every sample that is classified (see there for what it can't test).
 
 Conventions
 -----------
@@ -152,6 +152,8 @@ def _quark_digits(pdg):
     nq1, nq2, nq3 = (a // 1000) % 10, (a // 100) % 10, (a // 10) % 10
     hadron = (a > 100) & (a < 1_000_000_000) & (nq2 != 0) & (nq3 != 0)   # nq3 = 0: diquark
     hadron &= ~np.isin(a, _CHARMONIUM_LIKE)
+    hadron &= ~((a >= 80_000) & (a < 100_000))      # generator-specific codes (B0long, B0heavy, ...)
+    nq1 = np.where(a >= 9_000_000, 0, nq1)          # exotic mesons (Z_b): the thousands digit is no quark
     # K_S0 (310) and K_L0 (130) do not follow the scheme and drop out here; they have no charm
     # and are not baryons, so the rules below still give the right answer for them.
     return np.where(hadron, nq1, 0), np.where(hadron, nq2, 0), np.where(hadron, nq3, 0)
@@ -249,14 +251,18 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
       n_daughters : number of daughters.
       model, model_args : decay model and its arguments (one string).
       photos      : True if the line carries the PHOTOS keyword.
-      is_pythia   : True for PYTHIA lines (model PYTHIA, daughters are quarks or diquarks).
+      is_pythia   : True for quark-level PYTHIA lines (model PYTHIA; daughters are quarks, gluons
+                    or diquarks, or none).
       comment     : text after the ';'.
       directive   : the '#$ ...' line directly above, if any (e.g. 'forbid_pythia()').
       from_cdecay : True for lines created by a CDecay statement.
     The aliases and the block sums are in `.attrs['aliases']` and `.attrs['bf_sum']`.
 
     Raises ValueError if the token after the daughters is not a known decay model, so that a
-    particle missing from the particle list is never taken silently for the model.
+    particle missing from the particle list is never taken silently for the model; also for a line
+    inside a block that does not start with a number. As in EvtGen, a second Decay block of the
+    same particle replaces the first (with a warning), and CDecay copies the conjugate block as
+    it stands at that line.
     """
     pdl = pdl or load_pdl()
     with open(path) as f:
@@ -292,14 +298,27 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
     def conj_name(name):
         if name in conj_pair:
             return conj_pair[name]
-        if name in alias:                      # alias without a ChargeConj statement: self-conjugate
+        if name in alias:
+            # an alias without a ChargeConj statement is its own conjugate; EvtGen allows this
+            # only if the particle behind it is self-conjugate
+            pdg = pdl.name_to_pdg[base_name(name)]
+            if pdl.conjugate(pdg) != pdg:
+                raise ValueError(f'{path}: alias {name!r} of a particle with a distinct antiparticle '
+                                 f'has no ChargeConj statement; its conjugate is not defined')
             return name
         pdg = pdl.name_to_pdg[name]
         return pdl.pdg_to_name[pdl.conjugate(pdg)]
 
+    def conjugate_block(name, i):
+        known = name in conj_pair or name in alias or name in pdl.name_to_pdg
+        partner = conj_name(name) if known else None
+        if partner is None or partner not in blocks:
+            raise ValueError(f'{path}:{i}: CDecay {name}: no Decay block of its conjugate above')
+        return [dict(r, mother=name, names=tuple(conj_name(n) for n in r['names']),
+                     from_cdecay=True) for r in blocks[partner]]
+
     rows, blocks = [], {}
     current, directive = None, ''
-    cdecays = []
     for i, raw in enumerate(text, start=1):
         s = raw.strip()
         if not s:
@@ -314,21 +333,32 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
         t = stmt.split()
         if not t:
             continue
+        if comment and not comment.startswith('#'):
+            warnings.warn(f'{path}:{i}: text after the ";" is not a comment and is ignored: '
+                          f'{comment!r}')
         if t[0] == 'Decay' and len(t) >= 2:
             current = t[1]
-            blocks.setdefault(current, [])
+            if not is_particle(current):
+                raise ValueError(f'{path}:{i}: Decay {current}: unknown particle')
+            if current in blocks:               # EvtGen: a later block replaces the earlier one
+                warnings.warn(f'{path}:{i}: the decay of {current} is defined again; the earlier '
+                              f'definition is dropped')
+            blocks[current] = []
             directive = ''
             continue
         if t[0] == 'Enddecay':
             current, directive = None, ''
             continue
         if t[0] == 'CDecay' and len(t) >= 2:
-            cdecays.append((t[1], i))
+            blocks[t[1]] = conjugate_block(t[1], i)     # conjugate of the block as it stands here
             directive = ''
             continue
-        if current is None or not _NUMBER.match(t[0]):
+        if current is None:
             directive = ''
-            continue                            # global statement (Alias, Define, ...) or junk
+            continue                            # global statement (Alias, Define, yesPhotos, ...)
+        if not _NUMBER.match(t[0]):
+            raise ValueError(f'{path}:{i}: inside the decay of {current}, the line does not start '
+                             f'with a branching fraction: {s}')
 
         bf = float(t[0])
         names, j = [], 1
@@ -344,22 +374,13 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
             raise ValueError(f'{path}:{i}: {bad!r} is neither a known particle nor a known decay '
                              f'model (line: {s}). If it is a particle, it is missing from '
                              f'{pdl.path}; if it is a model, pass it in extra_models.')
+        if not names and t[j] != 'PYTHIA':
+            raise ValueError(f'{path}:{i}: decay line without daughters: {s}')
         row = dict(mother=current, line=i, bf=bf, names=tuple(names), model=t[j],
                    model_args=' '.join(t[j + 1:]), photos=photos, comment=comment,
                    directive=directive, from_cdecay=False)
         blocks[current].append(row)
         directive = ''
-
-    # CDecay X: the block of X is the charge conjugate of the block of conj(X)
-    for name, i in cdecays:
-        partner = conj_name(name) if (name in conj_pair or name in alias or name in pdl.name_to_pdg) \
-            else None
-        if partner is None or partner not in blocks:
-            if mothers is None or name in mothers:
-                raise ValueError(f'{path}:{i}: CDecay {name}: no Decay block of its conjugate')
-            continue
-        blocks[name] = [dict(r, mother=name, names=tuple(conj_name(n) for n in r['names']),
-                             from_cdecay=True) for r in blocks[partner]]
 
     wanted = list(blocks) if mothers is None else list(mothers)
     missing = [m for m in wanted if m not in blocks]
@@ -373,9 +394,11 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
     out['daughters'] = [tuple(pdl.name_to_pdg[base_name(n)] for n in ns) for ns in out['names']]
     out['key'] = [mode_key(d) for d in out['daughters']]
     out['n_daughters'] = [len(d) for d in out['daughters']]
-    quark = [all(abs(p) < 10 or (1000 < abs(p) < 6000 and (abs(p) // 10) % 10 == 0) for p in d)
-             for d in out['daughters']]
-    out['is_pythia'] = (out['model'] == 'PYTHIA') | np.array(quark, dtype=bool)
+    # PYTHIA lines of the B blocks: model PYTHIA with quark or diquark daughters. (Other particles
+    # also use the PYTHIA model with hadron daughters, e.g. the tau; those lines are final states.)
+    parton = [all(abs(p) < 10 or abs(p) == 21 or (1000 < abs(p) < 6000 and (abs(p) // 10) % 10 == 0)
+                  for p in d) for d in out['daughters']]
+    out['is_pythia'] = (out['model'] == 'PYTHIA') & np.array(parton, dtype=bool)
     cols = ['mother', 'mother_pdg', 'line', 'bf', 'names', 'daughters', 'key', 'n_daughters', 'model',
             'model_args', 'photos', 'is_pythia', 'comment', 'directive', 'from_cdecay']
     out = out[cols]
@@ -410,6 +433,11 @@ class ModeTable:
     def __init__(self, dec, pdl):
         self.pdl = pdl
         self.dec = dec
+        n_names = dec.groupby('mother_pdg')['mother'].nunique()
+        if (n_names > 1).any():
+            raise ValueError('ModeTable: several decay blocks share a PDG code (alias mothers such as '
+                             'B0sig and B0); build the table from one block per particle. Codes: '
+                             f'{list(n_names[n_names > 1].index)}')
         excl = dec[~dec['is_pythia']]
         self.pythia = dec[dec['is_pythia']].reset_index(drop=True)
         self.pythia_bf = self.pythia.groupby('mother_pdg')['bf'].sum().to_dict()
@@ -518,8 +546,8 @@ def _classify_one(row, b_abs, q3, q_known, table):
         flavors = (511, -511)
 
     res = dict(gen_class=GEN_PYTHIA, n_fsr=n_trail, b_flavor=flavors[0] if len(flavors) == 1 else 0,
-               flavor_ambiguous=False, dec_line=-1, bf_mc=np.nan, zero_bf=False, order_match=False,
-               set_match=False)
+               flavor_ambiguous=False, bf_blocks_differ=False, dec_line=-1, bf_mc=np.nan,
+               zero_bf=False, order_match=False, set_match=False, set_match_all=False)
 
     # Try the full list first (a decay with a genuine photon, e.g. K* gamma), then remove the
     # trailing photons one at a time.
@@ -532,6 +560,7 @@ def _classify_one(row, b_abs, q3, q_known, table):
         if not hits:
             continue
         res['set_match'] = True
+        res['set_match_all'] = len(hits) == len(flavors)
         res['n_fsr'] = k
         # EvtGen keeps the order of the decay-file line. A PYTHIA decay of the other flavor can
         # have the same daughter set (the blocks are not exact mirrors); its order differs.
@@ -543,6 +572,7 @@ def _classify_one(row, b_abs, q3, q_known, table):
         use = ordered
         bfs = [table.modes['bf_mc'].iat[i] for _, i in use]
         res['bf_mc'] = float(np.mean(bfs))
+        res['bf_blocks_differ'] = bool(max(bfs) - min(bfs) > 1e-12)
         res['zero_bf'] = bool(all(b == 0 for b in bfs))
         res['dec_line'] = int(table.modes['lines'].iat[use[0][1]][0])
         if len(use) == 1:
@@ -574,15 +604,24 @@ def classify_decays(d, b_abs, table=None):
       list_state    : LIST_COMPLETE (0), LIST_FULL (1) or LIST_TRUNCATED (2).
       b_flavor      : signed PDG code of the B if known (charge of the daughters, or the only
                       block that lists the final state), else 0.
-      flavor_ambiguous : exclusive, and listed in the blocks of both flavors.
+      flavor_ambiguous : exclusive, and listed in the same order in the blocks of both flavors.
+      bf_blocks_differ : flavor ambiguous, and the two blocks give different BFs (e.g. J/psi K*0:
+                      the anti-B0 block writes one third of it with a K*0 instead of an anti-K*0).
+                      `bf_mc` is then the mean of the two and is not the BF of a physical mode.
       dec_line      : line of the matched decay (first one of the mode), -1 for PYTHIA.
       bf_mc         : BF of the matched mode in the decay file (mean of the two flavors if
                       ambiguous), NaN for PYTHIA.
       zero_bf       : matched a mode whose BF is 0. Should never happen (see `validation_report`).
       set_match     : the daughter set is listed for one of the allowed flavors.
+      set_match_all : it is listed for every allowed flavor.
       order_match   : and the stored order is the order of a decay-file line.
     A decay whose set is listed but whose order is not (`set_match and not order_match`) is
-    classified as PYTHIA: it is a PYTHIA decay of the flavor whose block lacks the line.
+    classified as PYTHIA: it is a PYTHIA decay of the flavor whose block lacks the line. This
+    explanation requires `set_match_all` to be False; `validation_report` warns otherwise.
+
+    Known limitation: where the decay file lists both 'X Y' and 'X Y gamma' (eta K+, eta' K+,
+    phi K+, anti-Lambda0 p+ and conjugates), a decay 'X Y' with one PHOTOS photon is assigned to
+    the radiative line. The class is right; `dec_line` and `bf_mc` are those of the radiative line.
     """
     if b_abs not in (511, 521):
         raise ValueError('b_abs must be 511 or 521')
@@ -603,11 +642,13 @@ def classify_decays(d, b_abs, table=None):
     q3, q_known = _charge3(uniq, pdl)
     recs = [_classify_one(uniq[i], b_abs, int(q3[i]), bool(q_known[i]), table)
             for i in range(len(uniq))]
-    u = pd.DataFrame(recs, columns=['gen_class', 'n_fsr', 'b_flavor', 'flavor_ambiguous', 'dec_line',
-                                    'bf_mc', 'zero_bf', 'order_match', 'set_match'])
+    u = pd.DataFrame(recs, columns=['gen_class', 'n_fsr', 'b_flavor', 'flavor_ambiguous',
+                                    'bf_blocks_differ', 'dec_line', 'bf_mc', 'zero_bf', 'order_match',
+                                    'set_match', 'set_match_all'])
     if not len(u):
-        u = u.astype(dict(gen_class=int, n_fsr=int, b_flavor=int, flavor_ambiguous=bool, dec_line=int,
-                          bf_mc=float, zero_bf=bool, order_match=bool, set_match=bool))
+        u = u.astype(dict(gen_class=int, n_fsr=int, b_flavor=int, flavor_ambiguous=bool,
+                          bf_blocks_differ=bool, dec_line=int, bf_mc=float, zero_bf=bool,
+                          order_match=bool, set_match=bool, set_match_all=bool))
 
     props = decay_properties(uniq, pdl)
     for c, v in props.items():
@@ -627,8 +668,8 @@ def classify_decays(d, b_abs, table=None):
     u['list_state'] = state
 
     cols = ['gen_class', 'is_sl', 'sl_lepton', 'n_charm', 'n_charmonium', 'n_baryon', 'is_inclusive',
-            'n_body', 'n_fsr', 'list_state', 'b_flavor', 'flavor_ambiguous', 'dec_line', 'bf_mc',
-            'zero_bf', 'set_match', 'order_match']
+            'n_body', 'n_fsr', 'list_state', 'b_flavor', 'flavor_ambiguous', 'bf_blocks_differ',
+            'dec_line', 'bf_mc', 'zero_bf', 'set_match', 'set_match_all', 'order_match']
     out = u[cols].iloc[inverse].reset_index(drop=True)
     return out
 
@@ -653,6 +694,9 @@ def classify_b_decays(df, side, table=None, prefix=None):
     prefix = f'{side}_B_' if prefix is None else prefix
     arr = {b: df[[f'{side}_{b}_{i}_daughterPDG' for i in range(N_SLOTS)]].to_numpy()
            for b in (511, 521)}
+    for b in arr:
+        if not np.all(np.isfinite(arr[b].astype(float))):
+            raise ValueError(f'{side}_{b}_*_daughterPDG contains NaN; empty slots must be -1')
     has = {b: (arr[b] != EMPTY).any(axis=1) for b in arr}
     b_abs = np.where(has[511] & ~has[521], 511, np.where(has[521] & ~has[511], 521, 0))
 
@@ -682,50 +726,112 @@ def classify_b_decays(df, side, table=None, prefix=None):
 # --------------------------------------------------------------------------------------------
 # Checks
 # --------------------------------------------------------------------------------------------
-def validation_report(res, weights=None, label='', verbose=True):
-    """Check the assumptions behind the lookup on a classified sample.
+def validation_report(res, weights=None, label='', verbose=True, prefix=''):
+    """Check on a classified sample that it behaves as the lookup assumes.
 
-    res : output of `classify_decays`.
+    res : output of `classify_decays`, or of `classify_b_decays` with its column `prefix`
+        (e.g. 'D_B_'). Rows without an ancestor B (gen_class 0) are left out and counted in
+        `unclassified`.
     weights : optional candidate counts or weights per row.
-    Returns a dict of fractions (of the summed weight):
+
+    What it tests, and what it can't
+    --------------------------------
+    It tests the mechanism: no decay on a zero-BF mode, the daughter-order convention, and that
+    every semileptonic or 2-body decay is listed. A sample generated with a decay file that lacks
+    some of these lines, or orders the daughters differently, is flagged.
+    It does not test the content of the hadronic part: a decay file with other hadronic lines of
+    3 or more daughters, or with other BFs, passes. A decay that is missing from the file used
+    here is simply classified as PYTHIA. So this is no proof that the file is the one of the
+    production; that rests on the release information.
+
+    Returns a dict of fractions of the summed weight:
       exclusive, pythia        : the two classes.
       zero_bf                  : exclusive decays on a zero-BF mode. Expected 0: these modes are
                                  only vetoed for PYTHIA.
-      wrong_order              : daughter set listed, stored order not. Expected ~1e-5 (PYTHIA
-                                 decays of the other flavor).
+      wrong_order              : daughter set listed for one flavor only, stored order not that of
+                                 a line. Expected ~1e-5 for neutral B (PYTHIA decays of the other
+                                 flavor); warns above 3e-4.
+      wrong_order_all          : the same with the set listed for every allowed flavor. Expected 0:
+                                 neither EvtGen nor PYTHIA should produce it; warns if not 0.
       pythia_sl                : PYTHIA decays with a lepton and a neutrino. Expected 0.
-      pythia_few_body          : PYTHIA decays with fewer than 3 daughters. Expected ~0.
+      pythia_few_body          : PYTHIA decays with fewer than 3 daughters. Expected 0.
       full, truncated          : lists with 7 filled slots (see LIST_FULL, LIST_TRUNCATED).
       flavor_unknown           : decays with unknown B flavor.
-    Warns if an expectation fails.
+      unclassified             : rows with gen_class 0, as a fraction of all rows.
+      ok                       : False if a warning was issued.
     """
+    if prefix:
+        res = res.rename(columns=lambda c: c[len(prefix):] if c.startswith(prefix) else c)
     w = np.ones(len(res)) if weights is None else np.asarray(weights, dtype=float)
+    keep = (res['gen_class'] != 0).to_numpy()
+    unclassified = float(w[~keep].sum() / w.sum()) if w.sum() > 0 else 0.0
+    res, w = res[keep], w[keep]
     tot = w.sum()
     frac = lambda m: float(w[np.asarray(m)].sum() / tot) if tot > 0 else 0.0
     excl = res['gen_class'] == GEN_EXCLUSIVE
     pyth = res['gen_class'] == GEN_PYTHIA
+    wrong = res['set_match'] & ~res['order_match']
     out = dict(
         exclusive=frac(excl), pythia=frac(pyth),
         zero_bf=frac(excl & res['zero_bf']),
-        wrong_order=frac(res['set_match'] & ~res['order_match']),
+        wrong_order=frac(wrong & ~res['set_match_all']),
+        wrong_order_all=frac(wrong & res['set_match_all']),
         pythia_sl=frac(pyth & res['is_sl']),
         pythia_few_body=frac(pyth & (res['n_body'] < 3)),
         full=frac(res['list_state'] == LIST_FULL),
         truncated=frac(res['list_state'] == LIST_TRUNCATED),
         flavor_unknown=frac(res['b_flavor'] == 0),
+        unclassified=unclassified,
     )
     problems = []
     if out['zero_bf'] > 0:
         problems.append(f"{out['zero_bf']:.2e} of the decays sit on a zero-BF mode")
-    if out['wrong_order'] > 1e-3:
-        problems.append(f"{out['wrong_order']:.2e} match a listed set in a different order")
-    if out['pythia_sl'] > 1e-4:
+    if out['wrong_order'] > 3e-4:
+        problems.append(f"{out['wrong_order']:.2e} match a set listed for the other flavor only, "
+                        f"in a different order")
+    if out['wrong_order_all'] > 0:
+        problems.append(f"{out['wrong_order_all']:.2e} match a listed set in a different order")
+    if out['pythia_sl'] > 1e-5:
         problems.append(f"{out['pythia_sl']:.2e} are unlisted semileptonic decays")
-    if out['pythia_few_body'] > 1e-4:
+    if out['pythia_few_body'] > 1e-5:
         problems.append(f"{out['pythia_few_body']:.2e} are unlisted decays with < 3 daughters")
     if verbose:
         print(f'{label}: ' + ', '.join(f'{k} {v:.4g}' for k, v in out.items()))
     if problems:
-        warnings.warn(f'{label}: the decay file may not match this sample: ' + '; '.join(problems))
+        warnings.warn(f'{label}: the sample does not behave as the decay file predicts: '
+                      + '; '.join(problems))
     out['ok'] = not problems
+    return out
+
+
+# --------------------------------------------------------------------------------------------
+# Decay-mode tables written by utilities.export_bbbar_decay_mode_tables
+# --------------------------------------------------------------------------------------------
+RAW_COLUMNS = [f'raw_{i}' for i in range(N_SLOTS)]
+
+
+def load_mode_tables(path):
+    """Read a 'bbbar_modes_<tag>.csv' file of `utilities.export_bbbar_decay_mode_tables`.
+
+    Returns {(component, side, b_abs): DataFrame}, e.g. ('comb', 'ell', 511). Each table has the
+    stored daughter lists in `RAW_COLUMNS`, the candidate count `n_candidates` and the summed
+    weight `sum_w`.
+    """
+    df = pd.read_csv(path)
+    return {(c, s_, int(b)): g.reset_index(drop=True)
+            for (c, s_, b), g in df.groupby(['component', 'side', 'b_abs'], sort=False)}
+
+
+def classify_mode_tables(tables, table=None, verbose=True):
+    """Classify every table of `load_mode_tables` and run `validation_report` on it.
+
+    Returns {(component, side, b_abs): DataFrame}: the input table with the columns of
+    `classify_decays` added.
+    """
+    table = table or build_mode_table()
+    out = {}
+    for key, t in tables.items():
+        res = classify_decays(t[RAW_COLUMNS].to_numpy(), key[2], table)
+        validation_report(res, t['sum_w'], label=' '.join(str(k) for k in key), verbose=verbose)
+        out[key] = pd.concat([t, res], axis=1)
     return out

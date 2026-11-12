@@ -523,11 +523,12 @@ now is).
 
 ### B.11 Decay-mode tables: input for the decay-table parser (B0)
 
-**Code (DONE).** `utilities.export_bbbar_decay_mode_tables(samples)` writes six CSVs from the
+**Code (DONE).** `utilities.export_bbbar_decay_mode_tables` writes the decay-mode tables from the
 `classify_mc_dict` samples: comb {charged, neutral} B × {D side, ℓ side}, and hadB {charged,
 neutral} (D side only, since D and lepton share one B). One row per (canonical mode, raw daughter
 order), with signed PDG codes, the candidate count, `mode_total`, `n_orders`, `n_daughters`
-(photons included) and `truncated`.
+(photons included) and `truncated`. It first wrote six files with fixed names (the run1 e files
+used below); it now writes one tagged file per sample (B.13).
 
 **Design choices.**
 
@@ -572,8 +573,9 @@ order), with signed PDG codes, the candidate count, `mode_total`, `n_orders`, `n
 generic production. It is byte-identical to `decfiles/dec/DECAY_BELLE2.DEC` of basf2 release-08-00-10
 and release-08-03-00, and differs from release-08-00-00. STATED: MC16rd used release-08-00-08,
 -08-00-10, -08-01-10 and -08-03-00; their differences are taken as negligible here and are not
-followed up. The externals version is not known; instead of tracing it, `validation_report` checks
-on every classified sample that the decay file describes it (B.13).
+followed up. The externals version is not known and is not traced. `validation_report` tests on
+every classified sample that the veto and the daughter-order convention hold (B.13); it can't tell
+whether the hadronic lines or the BFs of the file are those of the production.
 
 ### B.12 Scouting for B0: findings from the decay file, the CSVs and the PDG API (2026-11-12)
 
@@ -672,7 +674,8 @@ independent script. Sample: the six CSVs (run1 e, `MC_e_comb`).
 | `build_mode_table` | exclusive final states per B flavor: summed BF (alias lines share a final state), line numbers, daughter orders, zero-BF flag; PYTHIA lines kept apart |
 | `classify_decays` | per stored daughter list: exclusive or PYTHIA, semileptonic flag and lepton, numbers of open-charm hadrons, charmonia and baryons, number of daughters without PHOTOS photons, B flavor where known, BF_MC, decay-file line, state of the list |
 | `classify_b_decays` | the same on ntuple columns (`<side>_<511|521>_<i>_daughterPDG`) |
-| `validation_report` | checks that the decay file describes the sample; warns otherwise |
+| `validation_report` | tests the mechanism on a classified sample; warns if it fails |
+| `load_mode_tables`, `classify_mode_tables` | read a `bbbar_modes_<tag>.csv` file and classify its tables |
 
 Rules of the classification:
 
@@ -689,12 +692,25 @@ Rules of the classification:
   of daughters are lower bounds in the last two.
 - Inclusive pseudo-particles (Xu, Xsd, Xsu) are exclusive lines with a flag; they are not counted as
   charm.
-- `validation_report` expects: no decay on a zero-BF mode, set-but-not-order matches at the 10⁻⁵
-  level, no PYTHIA decay that is semileptonic or has fewer than 3 daughters.
+- `validation_report` expects: no decay on a zero-BF mode; set-but-not-order matches only for sets
+  listed for the other flavor, at the 10⁻⁵ level; no PYTHIA decay that is semileptonic or has fewer
+  than 3 daughters. It is blind to missing or extra hadronic lines with 3 or more daughters and to
+  different BFs: a decay missing from the file is simply called PYTHIA.
+- Flavor-ambiguous modes whose two blocks give different BFs (J/ψ K\*⁰ and 12 others) are flagged
+  (`bf_blocks_differ`); piece 2 must combine them per physical mode before forming a c_k.
+- Where the file lists both X Y and X Y γ (ηK⁺, η′K⁺, φK⁺, Λ̄p), a decay X Y with one PHOTOS photon is
+  assigned to the radiative line. About 10⁻⁶ of B⁺ decays; the class is unaffected.
 
 Tests (`scripts/tests/test_decay_table.py`): block sizes and sums, single lines, alias groups and the
 B⁰/B̄⁰ asymmetry, CDecay, the ten signal decay files, the quark-content rules against every particle
-of the list, the photon rules, and the six CSVs (reference yields of B.12, to the candidate).
+of the list, the photon rules, the six CSVs (reference yields of B.12, to the candidate), the
+warnings of `validation_report` on doctored samples, EvtGen's rules for repeated blocks, and the
+export function with its long format.
+
+Independent review (2026-11-12): a second implementation written from the decay-file text agreed
+on every row of the six tables (88,605 rows) and on all 363 blocks of the decay file. It found no
+wrong result; its robustness points are implemented. One input oddity: `1263752000.dec` line 54 has
+a stray `sig` after the `;` (the parser warns and ignores it).
 
 **Decay-mode tables per sample (DONE).** `export_bbbar_decay_mode_tables(samples, tag, ...)` writes one
 file `bbbar_modes_<tag>.csv` per sample, with the columns `tag`, `selection`, `component`, `side`,
