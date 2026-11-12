@@ -1,0 +1,132 @@
+# EventType: 1193710005
+# Descriptor: [B0 -> Xc l nu]cc
+# NickName: Bd_Xclnu
+# Documentation: b->c l nu process
+# Tested: Yes
+# PhysicsWG: SL
+# Responsible: Thomas Lueck
+# Email: thomas.lueck@pi.infn.it 
+# Cuts: None
+# Date: 2018 April 14th 
+#
+#
+
+
+yesPhotos
+
+Alias D_1+sig D_1+
+Alias D_1-sig D_1-
+ChargeConj D_1+sig D_1-sig
+
+Alias D_0*+sig D_0*+
+Alias D_0*-sig D_0*-
+ChargeConj D_0*+sig D_0*-sig
+
+Alias D'_1+sig D'_1+
+Alias D'_1-sig D'_1-
+ChargeConj D'_1+sig D'_1-sig
+
+Alias D_2*+sig D_2*+
+Alias D_2*-sig D_2*-
+ChargeConj D_2*+sig D_2*-sig
+
+
+Decay Upsilon(4S)
+1.0 B0sig anti-B0sig B0 anti-B0 VSS_BMIX dm;
+Enddecay
+
+
+# same BF as in the updated DECAY_BELLE2.dec (as of April 12th 2018)
+Decay anti-B0sig  # Updated to PDG 2017 b -> c semileptonic
+
+0.00704    D_1+sig      e-   anti-nu_e    LLSW 0.71 -1.6 -0.5 2.9;
+0.00362    D_0*+sig     e-   anti-nu_e    LLSW 0.68 -0.2 0.3;
+0.00401    D'_1+sig     e-   anti-nu_e    LLSW 0.68 -0.2 0.3;
+0.00347    D_2*+sig     e-   anti-nu_e    LLSW 0.71 -1.6 -0.5 2.9;
+
+# the values below give a rough estimate of max. allowed BF taking into uncertainties
+0.00092   D*0     pi+   e-   anti-nu_e    GOITY_ROBERTS;
+0.00046   D*+sig  pi0   e-   anti-nu_e    GOITY_ROBERTS;
+0.00092   D0      pi+   e-   anti-nu_e    GOITY_ROBERTS;
+0.00046   D+sig   pi0   e-   anti-nu_e    GOITY_ROBERTS;
+# the B->Dpipilnu is the measured rate not covered by B->D_1lnu; D_1->Dpipi; modes with pi0 are infered asuming isospin symmetry
+0.00021  D+sig pi+ pi-  e-   anti-nu_e    PHSP;
+0.00014  D0    pi+ pi0  e-   anti-nu_e    PHSP;
+0.00014  D+sig pi0 pi0  e-   anti-nu_e    PHSP;
+# B->D*pipilnu ; modes with pi0 are infered asuming isospin symmetry
+0.00105  D*+sig pi+ pi- e-   anti-nu_e    PHSP;
+0.00070  D*0    pi+ pi0 e-   anti-nu_e    PHSP;
+0.00070  D*+sig pi0 pi0 e-   anti-nu_e    PHSP;
+# fill the gap between inclusive B->X_clnu and sum of exclusive with hypothetical decay (unmeasured)
+0.00217  D+sig  eta     e-   anti-nu_e    PHSP;
+0.00217  D*+sig eta     e-   anti-nu_e    PHSP;
+
+
+0.00704  D_1+sig    mu-  anti-nu_mu           LLSW 0.71 -1.6 -0.5 2.9;
+0.00362  D_0*+sig   mu-  anti-nu_mu           LLSW 0.68 -0.2 0.3;
+0.00401  D'_1+sig   mu-  anti-nu_mu           LLSW 0.68 -0.2 0.3;
+0.00347  D_2*+sig   mu-  anti-nu_mu           LLSW 0.71 -1.6 -0.5 2.9;
+# the measured modes are already covered by B->X_clnu; X_c->D(*)pi
+0.00092   D*0  pi+   mu-  anti-nu_mu       GOITY_ROBERTS; 
+0.00046   D*+sig  pi0   mu-  anti-nu_mu       GOITY_ROBERTS;
+0.00092   D0   pi+   mu-  anti-nu_mu       GOITY_ROBERTS;
+0.00046   D+sig   pi0   mu-  anti-nu_mu       GOITY_ROBERTS;
+# the B->Dpipilnu is the measured rate not covered by B->D_1lnu; D_1->Dpipi; modes with pi0 are infered asuming isospin symmetry
+0.00021  D+sig pi+ pi- mu-   anti-nu_mu        PHSP;
+0.00014  D0 pi+ pi0 mu-   anti-nu_mu        PHSP;
+0.00014  D+sig pi0 pi0 mu-   anti-nu_mu        PHSP;
+# B->D*pipilnu ; modes with pi0 are infered asuming isospin symmetry
+0.00105  D*+sig pi+ pi- mu-   anti-nu_mu        PHSP;
+0.00070  D*0 pi+ pi0 mu-   anti-nu_mu        PHSP;
+0.00070  D*+sig pi0 pi0 mu-   anti-nu_mu        PHSP;
+# fill the gap between inclusive B->X_clnu and sum of exclusive with hypothetical decay (unmeasured)
+0.00217  D+sig  eta  mu-   anti-nu_mu        PHSP;
+0.00217  D*+sig eta  mu-   anti-nu_mu        PHSP;
+Enddecay
+
+CDecay B0sig
+
+
+Decay D_1+sig
+0.199700000   D*+sig  pi0                                     VVS_PWAVE  0.0 0.0 0.0 0.0 1.0 0.0;
+0.399400000   D*0  pi+                                     VVS_PWAVE  0.0 0.0 0.0 0.0 1.0 0.0;
+0.171900000   D+sig  pi+  pi-                                 PHSP;
+0.114500000   D+sig  pi0  pi0                                 PHSP;
+0.114500000   D0  pi+  pi0                                 PHSP;
+Enddecay
+CDecay D_1-sig
+
+Decay D_0*+sig
+0.333300000   D+sig  pi0                                      PHSP;
+0.666700000   D0  pi+                                      PHSP;
+Enddecay
+CDecay D_0*-sig
+
+Decay D'_1+sig
+0.333300000   D*+sig  pi0                                     VVS_PWAVE  1.0 0.0 0.0 0.0 0.0 0.0;
+0.666700000   D*0  pi+                                     VVS_PWAVE  1.0 0.0 0.0 0.0 0.0 0.0;
+Enddecay
+CDecay D'_1-sig
+
+Decay D_2*+sig
+0.133400000   D*+sig  pi0                                     TVS_PWAVE  0.0 0.0 1.0 0.0 0.0 0.0;
+0.266900000   D*0  pi+                                     TVS_PWAVE  0.0 0.0 1.0 0.0 0.0 0.0;
+0.199900000   D+sig  pi0                                      TSS;
+0.399800000   D0  pi+                                      TSS;
+Enddecay
+CDecay D_2*-sig
+
+
+Decay D*+sig
+0.677000000   D0  pi+                                      VSS;
+0.307000000   D+sig  pi0                                      VSS;
+0.016000000   D+sig  gamma                                    VSP_PWAVE;
+Enddecay
+CDecay D*-sig
+
+Decay D+sig
+1.0            K-   pi+   pi+                          D_DALITZ;
+Enddecay
+CDecay D-sig
+
+End

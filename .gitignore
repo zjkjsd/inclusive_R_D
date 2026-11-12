@@ -9,6 +9,8 @@
 !Notebooks/Plotting/
 !Notebooks/Plotting/plots/
 !Notebooks/Plotting/plots/bdt_cut_optimization/
+!Notebooks/Plotting/csv_output/
+!Notebooks/Plotting/csv_output/*.csv
 !Notebooks/Old_tests/
 !Notebooks/figures/
 !Recon_scripts/
@@ -21,6 +23,7 @@
 !MC16_sys_tables/*.csv
 !MC16_sys_tables/*/
 !MC16_sys_tables/*/*.csv
+!Samples/
 !Samples/dec/
 Toy_pipeline/pyhf_toys_wrapper/*
 Toy_pipeline/n_toys_per_point=50/*
