@@ -30,11 +30,12 @@ starts only then. Appendix A lists the pieces and their status.
 
 | File | Role | Status |
 |---|---|---|
-| `scripts/tools/bdt_cut_optimization.py` | module: candidate loading, fast FOM, control regions, Fisher target, search, working points, diagnostics | DONE |
+| `bdt_cut_optimization.py` | module: candidate loading, fast FOM, control regions, Fisher target, search, working points, diagnostics | DONE |
 | `7_bdt_cut_optimization.ipynb` | driver notebook for Part A | DONE |
 | `scripts/tests/test_bdt_cut_optimization.py` | tests of the module | DONE |
-| `scripts/5_BBbkg_weights_optuna_minuit.py` | current BBbar weight tuning; to be extended in Part B | DONE (current version) |
-| `bbbar_reweighting.py` | BBbar decay classification and weights; to hold the shared model definition of Part B | DONE (current version) |
+| `5_BBbkg_weights_optuna_minuit.py` | current BBbar weight tuning; to be extended in Part B | DONE (current version) |
+| `utilities.py` (now split into `utilities.py`, fitting and plotting files) | shared library; the BBbar classification and weights of the former `bbbar_reweighting.py` are merged into it, and it will hold the shared model definition of Part B | DONE (current version) |
+| `utilities.decay_mode_table`, `export_bbbar_decay_mode_tables` | decay-mode tables (CSV) of the BBbar background, input for B0 (B.11) | DONE |
 | notebook 8 | Part B, MC only: composition study and comb CR cut optimization | PROPOSED |
 | K_L notebook | Part C | PROPOSED |
 
@@ -483,7 +484,8 @@ run separately:
 - the tuning script (data);
 - a validation section, or notebook 9.
 
-The shared model definition lives in `bbbar_reweighting.py`.
+The shared model definition lives in `utilities.py` (where the former `bbbar_reweighting.py` code
+now is).
 
 ### B.8 Validation (PROPOSED; piece 7)
 
@@ -515,6 +517,55 @@ The shared model definition lives in `bbbar_reweighting.py`.
 - Observables: p\*_D and p\*_ℓ separately (their sum blurs H1 and H3), nROE, M²miss.
 - A parameter is kept only if it improves the fit in both RS and WC, improves the cross-predictions,
   and has a physically sensible value. What remains after the last useful parameter sets u.
+
+### B.11 Decay-mode tables: input for the decay-table parser (B0)
+
+**Code (DONE).** `utilities.export_bbbar_decay_mode_tables(samples)` writes six CSVs from the
+`classify_mc_dict` samples: comb {charged, neutral} B × {D side, ℓ side}, and hadB {charged,
+neutral} (D side only, since D and lepton share one B). One row per (canonical mode, raw daughter
+order), with signed PDG codes, the candidate count, `mode_total`, `n_orders`, `n_daughters`
+(photons included) and `truncated`.
+
+**Design choices.**
+
+- Signed PDG codes: `abs()` merges different decays (B⁺ → D⁻π⁺π⁺ vs B⁺ → D⁺π⁻π⁺) and loses the B
+  flavor needed to match the right block of the decay table.
+- Canonical order (by |PDG|, particle before antiparticle, empty slots last) identifies the mode; the
+  raw order is kept because it carries generator information.
+- **Daughter order as a PYTHIA tag (STATED):** EvtGen writes the daughters in the order of the `.dec`
+  line, PYTHIA does not. A mode seen in more than one order has PYTHIA contributions; candidates in
+  the `.dec` order are EvtGen or PYTHIA by chance (likely in 2-body modes). This gives at least a
+  lower bound on the PYTHIA share per mode and helps with the exclusive-vs-PYTHIA ambiguity of piece 3.
+
+**Findings from the run1 e comb CR sample (`MC_e_comb`, `lgb_comb` + BCS, no `common_cut`).**
+
+| Table | Candidates | Distinct modes | Top 150 modes cover | Candidates in modes seen in > 1 order |
+|---|---|---|---|---|
+| comb charged, D side | 32,745 | 4,479 | 62 % | 31 % |
+| comb charged, ℓ side | 32,745 | 5,332 | 66 % | 12 % |
+| comb neutral, D side | 138,712 | 13,321 | 45 % | 52 % |
+| comb neutral, ℓ side | 138,712 | 15,831 | 52 % | 32 % |
+| hadB charged | 10,827 | 1,138 | 80 % | 31 % |
+| hadB neutral | 26,935 | 2,014 | 79 % | 24 % |
+
+- Checks passed: no quark or string codes and no −1 before a filled slot, so −1 always means an empty
+  slot; every candidate has exactly one ancestor-B list; for comb the D- and ℓ-side B's are both
+  charged or both neutral (B⁺B⁻ or B⁰B̄⁰ pairs); for hadB the D and lepton lists are identical in
+  100 % of candidates.
+- The top 150 modes cover only 45–66 % of the comb candidates, so a hand-made measured list can't be
+  complete: automate the classification (B0).
+- Many modes appear in several daughter orders (up to 52 % of the comb neutral D-side candidates):
+  PYTHIA contributes widely.
+- Photons among the B daughters: 16–21 % of ℓ-side candidates (final-state radiation in semileptonic
+  decays) vs 3–6 % on the D side. The parser should remove photons to identify the mode and keep a
+  radiative flag, consistent with `measured_pdg_rad`.
+- The 7th daughter slot is filled for 4–7 % of comb candidates (< 1 % of hadB); such decays may have
+  more than 7 daughters. Harmless for the n-body classes (5+), but a hidden 8th daughter could be a
+  second charm hadron. See the variables notes.
+
+**Decay table.** `DECAY_BELLE2.DEC` (release 08-00) could not be read from the cloud session (GitHub
+blocks automated access); read it locally in Claude Code or attach it. Check first that this is the
+decay file used to produce MC16rd.
 
 ---
 
@@ -616,6 +667,7 @@ effect seen on-resonance but not off-resonance would point to the last row.
 | K_L ancestry (mother / grandmother PDG) | attribute K_L to its source, correct the right decay step | only if C1 shows K_L matters |
 | K_L momentum and polar angle | K_L spectrum and detector-response studies | only if C1 shows K_L matters |
 | calorimeter cluster from the K_L entering the ROE (flag, energy) | K_L detector response | only if C1 shows K_L matters; if feasible |
+| number of daughters of the ancestor B (or more than 7 daughter slots) | detect truncated daughter lists (7th slot filled in 4–7 % of comb candidates); a hidden 8th daughter could be a second charm hadron | low priority; with the next reprocessing |
 | daughter list of the ROE's (tag-side) B ancestor | apply B-decay parameters to the tag side of all components | only if the tag-side check (piece 7) matches the H1 fingerprint |
 
 New reconstruction variables are requested together, in one reprocessing, because reprocessing is

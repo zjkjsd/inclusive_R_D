@@ -1846,6 +1846,132 @@ def classify_mc_KL(df):
     return dfs_by_nKL
 
 
+############################## decay-mode tables (input for the decay-table parser) ##########
+#
+# One CSV per sample / B charge / side, listing every distinct decay mode of the ancestor B of
+# the D (side 'D') or of the lepton (side 'ell'), with its candidate count. These are the input
+# for matching MC decays to the lines of DECAY_BELLE2.DEC (step B0 of
+# docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md).
+#
+# * Signed PDG codes are kept: abs() would merge different decays, e.g. B+ -> D- pi+ pi+ and
+#   B+ -> D+ pi- pi+, and loses the B flavor (sum of daughter charges) needed to match the
+#   right block of the decay table.
+# * Each mode is stored in a canonical order (daughter_0..6: by |PDG|, particle before
+#   antiparticle, empty slots last) and in the order found in the event (raw_0..6). EvtGen
+#   writes the daughters in the order of the .dec line, PYTHIA does not, so a mode seen in more
+#   than one order has PYTHIA contributions (a single order can still be PYTHIA by chance).
+# * -1 marks an empty slot. QUARK_LIKE_PDG flags quark/cluster/string codes, which would make
+#   -1 ambiguous with the anti-d quark (none were found in the run1 e comb sample).
+# * The B daughter lists have 7 slots; 'truncated' marks lists with the 7th slot filled, where
+#   the decay may have had more daughters.
+
+QUARK_LIKE_PDG = (set(range(-8, 9)) - {0}) | {91, 92, -91, -92}   # quarks, cluster, string
+
+
+def decay_mode_table(df, side, b_code, out_csv=None, verbose=True):
+    """Distinct decay modes of the ancestor B of the D (side='D') or of the lepton (side='ell').
+
+    Parameters
+    ----------
+    df : DataFrame with the B-daughter columns '<side>_<b_code>_<i>_daughterPDG', i = 0..6.
+    side : 'D' or 'ell'.
+    b_code : 521 (charged B) or 511 (neutral B).
+    out_csv : optional path; the table is written there.
+
+    Returns
+    -------
+    DataFrame, one row per (canonical mode, raw daughter order):
+    daughter_0..6 (canonical order), raw_0..6 (order in the event), n_daughters (photons
+    included), truncated, n_candidates, mode_total (candidates of the canonical mode),
+    n_orders (distinct raw orders of the canonical mode). Sorted by mode_total, n_candidates.
+    """
+    cols = [f'{side}_{b_code}_{i}_daughterPDG' for i in range(7)]
+    d_all = df[cols].to_numpy(dtype=np.int64)
+    filled = (d_all != -1).any(axis=1)
+    d = d_all[filled]
+
+    if verbose:
+        gap = ((d[:, :-1] == -1) & (d[:, 1:] != -1)).any(axis=1)
+        quark = np.isin(d, list(QUARK_LIKE_PDG - {-1})).any(axis=1)
+        print(f'{out_csv or f"{side}_{b_code}"}: {filled.sum()} candidates; -1 before a filled slot: '
+              f'{gap.sum()}; quark/string codes: {quark.sum()}; 7th slot filled: {(d[:, -1] != -1).sum()}')
+
+    # canonical order: by |PDG|, particle before antiparticle; empty slots last
+    key = np.where(d == -1, np.iinfo(np.int64).max, np.abs(d) * 2 + (d < 0))
+    canon = np.take_along_axis(d, np.argsort(key, axis=1, kind='stable'), axis=1)
+
+    mode_cols = [f'daughter_{i}' for i in range(7)]
+    raw_cols = [f'raw_{i}' for i in range(7)]
+    out = pd.DataFrame(np.hstack([canon, d]), columns=mode_cols + raw_cols)
+    out['n_daughters'] = (d != -1).sum(axis=1)
+    out['truncated'] = d[:, -1] != -1
+
+    counts = out.value_counts().rename('n_candidates').reset_index()
+    grp = counts.groupby(mode_cols)['n_candidates']
+    counts['mode_total'] = grp.transform('sum')
+    counts['n_orders'] = grp.transform('size')
+    counts = counts.sort_values(['mode_total', 'n_candidates'], ascending=False, ignore_index=True)
+
+    if out_csv is not None:
+        import os
+        os.makedirs(os.path.dirname(out_csv) or '.', exist_ok=True)
+        counts.to_csv(out_csv, index=False)
+    if verbose:
+        modes = counts.drop_duplicates(mode_cols)
+        print(f'    {len(modes)} distinct modes, {(modes["n_orders"] > 1).sum()} of them seen in more '
+              f'than one order')
+    return counts
+
+
+def b_ancestry_check(df, side, label=''):
+    """Candidates whose D (side='D') or lepton (side='ell') ancestor B is charged, neutral, both
+    or neither. Returns the four counts as a dict and prints them."""
+    c = df[f'{side}_521_0_daughterPDG'] != -1
+    n = df[f'{side}_511_0_daughterPDG'] != -1
+    res = dict(charged=int((c & ~n).sum()), neutral=int((n & ~c).sum()),
+               both=int((c & n).sum()), neither=int((~c & ~n).sum()))
+    print(f'{label} {side} side: ' + ', '.join(f'{k} {v}' for k, v in res.items()))
+    return res
+
+
+def export_bbbar_decay_mode_tables(samples, out_dir='csv_output', prefix=''):
+    """Write the six decay-mode tables of the BBbar background and run the sanity checks.
+
+    samples : dict from classify_mc_dict(..., template=False), with 'bkg_combinatorial' and
+              'bkg_hadronicB_secondaryL'.
+    Files (in out_dir, names prefixed by `prefix`): comb_{charged,neutral}_{Dside,ellside}.csv
+    and hadB_{charged,neutral}.csv. For hadronicB_secondaryL the D and the lepton come from the
+    same B, so only the D side is written; the check below confirms the two lists agree.
+    Returns {name: table}.
+    """
+    comb = samples['bkg_combinatorial']
+    hadB = samples['bkg_hadronicB_secondaryL']
+    for side in ('D', 'ell'):
+        b_ancestry_check(comb, side, 'comb')
+    b_ancestry_check(hadB, 'D', 'hadB')
+
+    path = lambda name: f'{out_dir}/{prefix}{name}.csv'
+    tables = {
+        'comb_charged_Dside':   decay_mode_table(comb, 'D',   521, path('comb_charged_Dside')),
+        'comb_charged_ellside': decay_mode_table(comb, 'ell', 521, path('comb_charged_ellside')),
+        'comb_neutral_Dside':   decay_mode_table(comb, 'D',   511, path('comb_neutral_Dside')),
+        'comb_neutral_ellside': decay_mode_table(comb, 'ell', 511, path('comb_neutral_ellside')),
+        'hadB_charged':         decay_mode_table(hadB, 'D',   521, path('hadB_charged')),
+        'hadB_neutral':         decay_mode_table(hadB, 'D',   511, path('hadB_neutral')),
+    }
+
+    # hadronicB_secondaryL: D and lepton share one B, so the two daughter lists should agree
+    for b in (511, 521):
+        dc = [f'D_{b}_{i}_daughterPDG' for i in range(7)]
+        lc = [f'ell_{b}_{i}_daughterPDG' for i in range(7)]
+        m = hadB[dc[0]] != -1
+        if m.any():
+            same = (np.sort(hadB.loc[m, dc].to_numpy(), axis=1)
+                    == np.sort(hadB.loc[m, lc].to_numpy(), axis=1)).all(axis=1)
+            print(f'hadB B{b}: D and lepton daughter lists identical in {same.mean():.1%} of candidates')
+    return tables
+
+
 # Function to check for duplicate entries in a dictionary of Pandas DataFrames
 def check_duplicate_entries(data_dict):
     # Create an empty list to store duplicate pairs

@@ -7,6 +7,8 @@
 !docs/
 !Notebooks/
 !Notebooks/Plotting/
+!Notebooks/Plotting/plots/
+!Notebooks/Plotting/plots/bdt_cut_optimization/
 !Notebooks/Old_tests/
 !Notebooks/figures/
 !Recon_scripts/
