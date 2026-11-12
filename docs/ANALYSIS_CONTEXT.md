@@ -5,6 +5,8 @@ and validation plan for the inclusive-tagging R(D±) measurement at Belle II
 (Proc16 + Prompt16 data, MC16rd, `light-2505-deimos`, Run 1 + Run 2,
 approximately 490 fb⁻¹ total). The next major production update is expected
 to use `light-2607-kasei`.
+**Before that reprocessing, read `docs/NEXT_REPROCESSING.md`**: it lists the
+variables that must be added to the ntuples.
 It is meant as a map for anyone (including future me) picking the repo back
 up after a break.
 

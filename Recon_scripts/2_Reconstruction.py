@@ -228,6 +228,10 @@ if __name__ == "__main__":
     vm.addAlias('mcDaughter_0_M', 'daughterMCInvariantMass(0)')
     B_mcDaughters_vars = ['mcDaughter_0_PDG','mcDaughter_1_PDG','mcDaughter_0_M']
 
+    # ============================================================================================
+    # TODO BEFORE THE NEXT REPROCESSING: add the variables listed in docs/NEXT_REPROCESSING.md
+    # (signed PDG code and number of daughters of the ancestor B, 10 daughter slots instead of 7).
+    # ============================================================================================
     Ancestor_info = []
     B_types = ['511','521']
 

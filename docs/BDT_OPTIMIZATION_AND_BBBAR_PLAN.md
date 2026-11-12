@@ -25,7 +25,7 @@ starts only then. Appendix A lists the pieces and their status.
 | Part | Topic | Status |
 |---|---|---|
 | A | Signal-region (SR) BDT cut optimization | DONE: the final tight cut is the new `util.lgb_tight` |
-| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); B0 scouted (B.12), its open points under discussion; coding not started |
+| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); B0 piece 1 DONE (B.13), pieces 2–5 under discussion |
 | C | Global K_L check | AGREED as a separate track; not started |
 
 | File | Role | Status |
@@ -35,7 +35,10 @@ starts only then. Appendix A lists the pieces and their status.
 | `scripts/tests/test_bdt_cut_optimization.py` | tests of the module | DONE |
 | `5_BBbkg_weights_optuna_minuit.py` | current BBbar weight tuning; to be extended in Part B | DONE (current version) |
 | `utilities.py` (now split into `utilities.py`, fitting and plotting files) | shared library; the BBbar classification and weights of the former `bbbar_reweighting.py` are merged into it, and it will hold the shared model definition of Part B | DONE (current version) |
-| `utilities.decay_mode_table`, `export_bbbar_decay_mode_tables` | decay-mode tables (CSV) of the BBbar background, input for B0 (B.11) | DONE |
+| `utilities.decay_mode_table`, `export_bbbar_decay_mode_tables` | decay-mode tables (CSV) of the BBbar background, input for B0 (B.11); one tagged file per sample since 2026-11-12 (B.13) | DONE |
+| `scripts/tools/decay_table.py`, `scripts/tests/test_decay_table.py` | B0 piece 1: decay-file parser, final-state table, generator classification (B.13). To be merged into `utilities.py` once B0 is complete | DONE |
+| `Samples/dec/evt_rel08.pdl` | EvtGen particle list of release 08 (names → PDG codes, charges) | STATED |
+| `docs/NEXT_REPROCESSING.md` | variables to add at the next ntuple reprocessing | DONE; keep updated |
 | notebook 8 | Part B, MC only: composition study and comb CR cut optimization | PROPOSED |
 | K_L notebook | Part C | PROPOSED |
 
@@ -43,7 +46,7 @@ starts only then. Appendix A lists the pieces and their status.
 
 | Step | What | Purpose | Inputs | Notes |
 |---|---|---|---|---|
-| B0 | Decay-table parser + PDG matching | classify modes (exclusive measured / estimated / PYTHIA); BF_MC; priors c_k ± σ_k | decay table, PDG | no data; written together |
+| B0 | Decay-table parser + PDG matching | classify modes (exclusive measured / estimated / PYTHIA); BF_MC; priors c_k ± σ_k | decay table, PDG | no data; five pieces (B.13): piece 1 DONE, pieces 2–5 to discuss |
 | B1 | Composition study | truth-class fractions in RS corner, RS band, WC (comb cut), WC (SR cut), SR comb | MC only | class codes stored at load time |
 | B2 | Fingerprints of H1–H3 | which generator weakness matches the observed data/MC patterns | MC + existing data/MC plots | looking only, no fit |
 | B3 | Fisher model design (Use A) | which parameters are measurable; free vs prior vs merged | MC only | first: predicted vs HESSE errors of the existing JSON |
@@ -567,8 +570,10 @@ order), with signed PDG codes, the candidate count, `mode_total`, `n_orders`, `n
 
 **Decay table (STATED).** `Samples/dec/DECAY_BELLE2_rel08.DEC` is the master decay file of the MC16rd
 generic production. It is byte-identical to `decfiles/dec/DECAY_BELLE2.DEC` of basf2 release-08-00-10
-and release-08-03-00, and differs from release-08-00-00. The exact release and externals version of
-MC16rd are OPEN.
+and release-08-03-00, and differs from release-08-00-00. STATED: MC16rd used release-08-00-08,
+-08-00-10, -08-01-10 and -08-03-00; their differences are taken as negligible here and are not
+followed up. The externals version is not known; instead of tracing it, `validation_report` checks
+on every classified sample that the decay file describes it (B.13).
 
 ### B.12 Scouting for B0: findings from the decay file, the CSVs and the PDG API (2026-11-12)
 
@@ -648,19 +653,58 @@ independent script. Sample: the six CSVs (run1 e, `MC_e_comb`).
 - The yield-weighted r_meas width is 3–4 % if the modes are uncorrelated and 14–19 % if fully
   correlated. The "~15 %" of B.6 is the fully correlated case.
 
-**OPEN, raised by the scouting (to discuss piece by piece before coding).**
+### B.13 B0 in five pieces
 
-1. Generator classification as a set lookup, replacing the daughter-order tag.
-2. The unit of the PDG comparison (PDG final state, not decay-file line) and the definition of
-   "measured"; product-of-BF modes; K⁰ vs K_S; upper limits.
-3. Exclusive modes with no measurement are not covered by the first-model proposal (B.6): r_meas is for
-   measured modes, N₁/N₂/a for PYTHIA. They are mostly double charm, so their treatment decides what
-   N₂ measures.
-4. Priors: whether c_k are applied as weights or only set widths; correlations between modes; one r_SL
-   or a split (well-known D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a
-   theory R(D\*), so a PDG correction would be circular here).
-5. Code layout: a small module without heavy dependencies vs `utilities.py`; committed inputs (`evt.pdl`,
-   cached PDG table, mode table).
+| # | Piece | Status |
+|---|---|---|
+| 1 | Generator classification: parser + lookup of the final state | AGREED and DONE |
+| 2 | PDG comparison: the unit (PDG final state, not decay-file line), the definition of "measured", product-of-BF modes, K⁰ vs K_S, upper limits | OPEN |
+| 3 | Exclusive modes without a measurement: how they enter the model. They are generated by EvtGen with a BF chosen by the decay-file authors (isospin, symmetry or a guess). The first-model proposal (B.6) covers measured modes (r_meas) and PYTHIA (N₁, N₂, a), not these; they are mostly double charm, so their treatment decides what N₂ measures | OPEN |
+| 4 | Priors: c_k applied as weights or only setting widths; correlations between modes; one r_SL or a split (D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a theory R(D\*), so a PDG correction would be circular) | OPEN |
+| 5 | Code layout and committed inputs | AGREED: develop and test in separate modules; merge into `utilities.py` at the end if it fits. `evt_rel08.pdl` is committed next to the decay file. Cached PDG table: with piece 2 |
+
+**Piece 1 (DONE): `scripts/tools/decay_table.py`.** Needs numpy and pandas only.
+
+| Function | What it does |
+|---|---|
+| `load_pdl` | names, PDG codes and charges from `evt_rel08.pdl` |
+| `parse_dec` | one row per decay line: BF, daughters (aliases resolved, order kept), model, comment, `#$` directive. Handles Alias, ChargeConj, CDecay, ModelAlias and the PHOTOS keyword; stops on an unknown particle or model |
+| `build_mode_table` | exclusive final states per B flavor: summed BF (alias lines share a final state), line numbers, daughter orders, zero-BF flag; PYTHIA lines kept apart |
+| `classify_decays` | per stored daughter list: exclusive or PYTHIA, semileptonic flag and lepton, numbers of open-charm hadrons, charmonia and baryons, number of daughters without PHOTOS photons, B flavor where known, BF_MC, decay-file line, state of the list |
+| `classify_b_decays` | the same on ntuple columns (`<side>_<511|521>_<i>_daughterPDG`) |
+| `validation_report` | checks that the decay file describes the sample; warns otherwise |
+
+Rules of the classification:
+
+- A decay is **exclusive** if its daughter set is listed for an allowed B flavor and its stored order
+  is the order of a decay-file line. Otherwise it is **PYTHIA**.
+- A genuine photon is kept: the full list is tried first, then trailing photons are removed one at a
+  time (K\*γ + FSR stays K\*γ; ηK⁰γ is not read as ηK⁰).
+- Set listed, order not: PYTHIA. These are PYTHIA decays of the flavor whose block lacks the line (8
+  candidates in the six tables).
+- B flavor: from the charge for a charged B; for a neutral B from the block (or the order) that
+  matches, when only one does. Otherwise unknown, and BF_MC is the mean of the two blocks.
+- The 7-slot list has three states: complete; full (7 slots, charge consistent, more daughters
+  possible); truncated (charge inconsistent, daughters certainly missing). Charm counts and the number
+  of daughters are lower bounds in the last two.
+- Inclusive pseudo-particles (Xu, Xsd, Xsu) are exclusive lines with a flag; they are not counted as
+  charm.
+- `validation_report` expects: no decay on a zero-BF mode, set-but-not-order matches at the 10⁻⁵
+  level, no PYTHIA decay that is semileptonic or has fewer than 3 daughters.
+
+Tests (`scripts/tests/test_decay_table.py`): block sizes and sums, single lines, alias groups and the
+B⁰/B̄⁰ asymmetry, CDecay, the ten signal decay files, the quark-content rules against every particle
+of the list, the photon rules, and the six CSVs (reference yields of B.12, to the candidate).
+
+**Decay-mode tables per sample (DONE).** `export_bbbar_decay_mode_tables(samples, tag, ...)` writes one
+file `bbbar_modes_<tag>.csv` per sample, with the columns `tag`, `selection`, `component`, `side`,
+`b_abs`, the mode columns, `n_candidates` and `sum_w` (optional weights). It refuses to overwrite an
+existing file and accepts samples without hadronicB_secondaryL (wrong-charge). The six older files
+(run1 e) stay as test inputs.
+
+**Tables to produce (STATED: run locally).** For B1 and the priors of piece 4, each for e and μ and
+for run1 and run2: the comb CR (baseline), the wrong-charge sample with the comb cut, and the SR cut
+(`lgb_tight`). Suggested tags: `run1_e_combCR`, `run2_mu_wc_combCR`, `run1_e_SR`, …
 
 ---
 
@@ -762,11 +806,13 @@ effect seen on-resonance but not off-resonance would point to the last row.
 | K_L ancestry (mother / grandmother PDG) | attribute K_L to its source, correct the right decay step | only if C1 shows K_L matters |
 | K_L momentum and polar angle | K_L spectrum and detector-response studies | only if C1 shows K_L matters |
 | calorimeter cluster from the K_L entering the ROE (flag, energy) | K_L detector response | only if C1 shows K_L matters; if feasible |
-| number of daughters of the ancestor B (or more than 7 daughter slots) | detect truncated daughter lists (7th slot filled in 4–7 % of comb candidates); a hidden 8th daughter could be a second charm hadron | low priority; with the next reprocessing |
+| number of daughters of the ancestor B, and 10 daughter slots instead of 7 | detect truncated daughter lists (7 non-photon daughters in 3.5–6.5 % of comb candidates); a hidden 8th daughter could be a second charm hadron | with the next reprocessing |
+| signed PDG code of the ancestor B | B flavor (unknown for 0.3–1.9 % of neutral-B candidates; 34 final states differ between the B⁰ and B̄⁰ blocks) | with the next reprocessing |
 | daughter list of the ROE's (tag-side) B ancestor | apply B-decay parameters to the tag side of all components | only if the tag-side check (piece 7) matches the H1 fingerprint |
 
 New reconstruction variables are requested together, in one reprocessing, because reprocessing is
 the expensive part.
+The list to act on is `docs/NEXT_REPROCESSING.md` (also flagged in `Recon_scripts/2_Reconstruction.py`).
 
 ## Reasoning behind the main choices
 

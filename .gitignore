@@ -43,6 +43,7 @@ Toy_pipeline/workspace*
 !*.gitignore
 !*.dec
 !*.DEC
+!*.pdl
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

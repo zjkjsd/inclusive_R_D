@@ -24,6 +24,7 @@ lepton channel (`e` or `mu`). The current samples are Proc16 + Prompt16 data
 and MC16rd simulation for Run 1 and Run 2. The current basf2 release is
 `light-2505-deimos`; the next major production update is expected to use
 `light-2607-kasei`.
+Before that reprocessing, read `docs/NEXT_REPROCESSING.md` (variables to add to the ntuples).
 
 ## Repository layout
 

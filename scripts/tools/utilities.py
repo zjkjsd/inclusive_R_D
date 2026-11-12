@@ -1868,7 +1868,7 @@ def classify_mc_KL(df):
 QUARK_LIKE_PDG = (set(range(-8, 9)) - {0}) | {91, 92, -91, -92}   # quarks, cluster, string
 
 
-def decay_mode_table(df, side, b_code, out_csv=None, verbose=True):
+def decay_mode_table(df, side, b_code, out_csv=None, verbose=True, weight_col=None):
     """Distinct decay modes of the ancestor B of the D (side='D') or of the lepton (side='ell').
 
     Parameters
@@ -1877,18 +1877,22 @@ def decay_mode_table(df, side, b_code, out_csv=None, verbose=True):
     side : 'D' or 'ell'.
     b_code : 521 (charged B) or 511 (neutral B).
     out_csv : optional path; the table is written there.
+    weight_col : optional column of candidate weights; its sum per row is written to 'sum_w'.
+        Without it, 'sum_w' equals 'n_candidates'.
 
     Returns
     -------
     DataFrame, one row per (canonical mode, raw daughter order):
     daughter_0..6 (canonical order), raw_0..6 (order in the event), n_daughters (photons
-    included), truncated, n_candidates, mode_total (candidates of the canonical mode),
-    n_orders (distinct raw orders of the canonical mode). Sorted by mode_total, n_candidates.
+    included), truncated (7th slot filled), n_candidates, sum_w, mode_total (candidates of the
+    canonical mode), n_orders (distinct raw orders of the canonical mode). Sorted by mode_total,
+    n_candidates.
     """
     cols = [f'{side}_{b_code}_{i}_daughterPDG' for i in range(7)]
     d_all = df[cols].to_numpy(dtype=np.int64)
     filled = (d_all != -1).any(axis=1)
     d = d_all[filled]
+    w = np.ones(len(d)) if weight_col is None else df[weight_col].to_numpy(dtype=float)[filled]
 
     if verbose:
         gap = ((d[:, :-1] == -1) & (d[:, 1:] != -1)).any(axis=1)
@@ -1905,12 +1909,15 @@ def decay_mode_table(df, side, b_code, out_csv=None, verbose=True):
     out = pd.DataFrame(np.hstack([canon, d]), columns=mode_cols + raw_cols)
     out['n_daughters'] = (d != -1).sum(axis=1)
     out['truncated'] = d[:, -1] != -1
+    out['_w'] = w
 
-    counts = out.value_counts().rename('n_candidates').reset_index()
+    by = mode_cols + raw_cols + ['n_daughters', 'truncated']
+    counts = (out.groupby(by, sort=False)['_w'].agg(n_candidates='size', sum_w='sum').reset_index())
     grp = counts.groupby(mode_cols)['n_candidates']
     counts['mode_total'] = grp.transform('sum')
     counts['n_orders'] = grp.transform('size')
-    counts = counts.sort_values(['mode_total', 'n_candidates'], ascending=False, ignore_index=True)
+    counts = counts.sort_values(['mode_total', 'n_candidates'] + raw_cols, ascending=False,
+                                ignore_index=True)
 
     if out_csv is not None:
         import os
@@ -1934,34 +1941,70 @@ def b_ancestry_check(df, side, label=''):
     return res
 
 
-def export_bbbar_decay_mode_tables(samples, out_dir='csv_output', prefix=''):
-    """Write the six decay-mode tables of the BBbar background and run the sanity checks.
+def export_bbbar_decay_mode_tables(samples, tag, out_dir='csv_output', selection='',
+                                   weight_col=None, overwrite=False):
+    """Write the decay-mode table of the BBbar background of one sample and run the sanity checks.
 
-    samples : dict from classify_mc_dict(..., template=False), with 'bkg_combinatorial' and
-              'bkg_hadronicB_secondaryL'.
-    Files (in out_dir, names prefixed by `prefix`): comb_{charged,neutral}_{Dside,ellside}.csv
-    and hadB_{charged,neutral}.csv. For hadronicB_secondaryL the D and the lepton come from the
-    same B, so only the D side is written; the check below confirms the two lists agree.
-    Returns {name: table}.
+    One file per sample: '<out_dir>/bbbar_modes_<tag>.csv'. It holds up to six tables, told apart
+    by the columns `component`, `side` and `b_abs`: comb {charged, neutral} B x {D side, lepton
+    side}, and hadB {charged, neutral} (D side only: for hadronicB_secondaryL the D and the lepton
+    come from the same B; the check below confirms that the two lists agree).
+
+    Parameters
+    ----------
+    samples : dict from classify_mc_dict(..., template=False), with 'bkg_combinatorial' and,
+        if present, 'bkg_hadronicB_secondaryL' (the wrong-charge sample has almost none).
+    tag : short name of the sample, used in the file name and written to the `tag` column.
+        Suggested form: '<run>_<channel>_<region>', e.g. 'run1_e_combCR', 'run2_mu_wc_combCR',
+        'run2_e_SR'. Letters, digits, '_', '-', '+' and '.' only.
+    out_dir : output directory.
+    selection : the cut that defines the sample (free text, written to the `selection` column), so
+        that the file documents itself.
+    weight_col : optional column with the candidate weight (e.g. the PID weight). Its sum goes to
+        `sum_w`; without it `sum_w` equals `n_candidates`.
+    overwrite : by default an existing file is not replaced.
+
+    Columns of the file: tag, selection, component ('comb' or 'hadB'), side ('D' or 'ell'),
+    b_abs (511 or 521), then the columns of `decay_mode_table`.
+
+    Returns {name: table} with the names comb_{charged,neutral}_{Dside,ellside} and
+    hadB_{charged,neutral}.
     """
+    import os, re
+    if not re.fullmatch(r'[A-Za-z0-9_.+-]+', str(tag)):
+        raise ValueError(f"tag {tag!r}: use letters, digits, '_', '-', '+' and '.' only")
+    out_csv = os.path.join(out_dir, f'bbbar_modes_{tag}.csv')
+    if os.path.exists(out_csv) and not overwrite:
+        raise FileExistsError(f'{out_csv} exists; choose another tag or pass overwrite=True')
+
     comb = samples['bkg_combinatorial']
-    hadB = samples['bkg_hadronicB_secondaryL']
+    hadB = samples.get('bkg_hadronicB_secondaryL')
+    has_hadB = hadB is not None and len(hadB) > 0
     for side in ('D', 'ell'):
         b_ancestry_check(comb, side, 'comb')
-    b_ancestry_check(hadB, 'D', 'hadB')
+    if has_hadB:
+        b_ancestry_check(hadB, 'D', 'hadB')
 
-    path = lambda name: f'{out_dir}/{prefix}{name}.csv'
-    tables = {
-        'comb_charged_Dside':   decay_mode_table(comb, 'D',   521, path('comb_charged_Dside')),
-        'comb_charged_ellside': decay_mode_table(comb, 'ell', 521, path('comb_charged_ellside')),
-        'comb_neutral_Dside':   decay_mode_table(comb, 'D',   511, path('comb_neutral_Dside')),
-        'comb_neutral_ellside': decay_mode_table(comb, 'ell', 511, path('comb_neutral_ellside')),
-        'hadB_charged':         decay_mode_table(hadB, 'D',   521, path('hadB_charged')),
-        'hadB_neutral':         decay_mode_table(hadB, 'D',   511, path('hadB_neutral')),
-    }
+    spec = [('comb_charged_Dside', 'comb', comb, 'D', 521), ('comb_charged_ellside', 'comb', comb, 'ell', 521),
+            ('comb_neutral_Dside', 'comb', comb, 'D', 511), ('comb_neutral_ellside', 'comb', comb, 'ell', 511)]
+    if has_hadB:
+        spec += [('hadB_charged', 'hadB', hadB, 'D', 521), ('hadB_neutral', 'hadB', hadB, 'D', 511)]
+    tables, parts = {}, []
+    for name, component, df, side, b in spec:
+        print(f'{tag} {name}:')
+        t = decay_mode_table(df, side, b, weight_col=weight_col)
+        tables[name] = t
+        head = pd.DataFrame(dict(tag=tag, selection=selection, component=component, side=side, b_abs=b),
+                            index=t.index)
+        parts.append(pd.concat([head, t], axis=1))
+    os.makedirs(out_dir, exist_ok=True)
+    pd.concat(parts, ignore_index=True).to_csv(out_csv, index=False)
+    print(f'wrote {out_csv}')
 
     # hadronicB_secondaryL: D and lepton share one B, so the two daughter lists should agree
     for b in (511, 521):
+        if not has_hadB:
+            break
         dc = [f'D_{b}_{i}_daughterPDG' for i in range(7)]
         lc = [f'ell_{b}_{i}_daughterPDG' for i in range(7)]
         m = hadB[dc[0]] != -1
