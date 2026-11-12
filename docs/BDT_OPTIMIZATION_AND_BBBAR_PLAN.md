@@ -754,6 +754,35 @@ the PDG match).** Percent of the PID-weighted comb + hadB yield, e and μ, run1 
 - The PDG classes come from the scouting prototype and are indicative only (known false negatives,
   e.g. J/ψ K₁).
 
+**Piece 2 plan (PROPOSED, 2026-11-13; to discuss before coding).**
+
+1. *PDG table, cached.* A script reads every B⁰ and B⁺ branching fraction from the `pdg` package
+   (all levels, including those the API hides by default) and writes one JSON file with the PDG
+   identifier, the text, value, errors, limit flag and the edition. Analysis code reads only this
+   file. A parser of the PDG text gives each node its daughter set, or a product chain
+   (B → X Y, X → …).
+2. *Unit of comparison = PDG node.* For each measured node, BF_MC(node) is the sum over the
+   decay-file lines that produce its final state, following the decay file's own sub-decays of the
+   resonances the node folds in (e.g. J/ψ K⁺π⁻ includes the K\* lines). Nested nodes are resolved
+   from the most exclusive one down; the non-resonant line gets the remainder. Product nodes compare
+   with BF(B line) × BF(sub-decay) of the decay file. Then c = BF_PDG / BF_MC and σ from the PDG
+   error, for every line that feeds the node.
+3. *Classes of an exclusive line.* Measured: it feeds a measured node (final state or product).
+   Estimated: no node, or only an upper limit (flagged).
+4. *Hand-checked list.* Automatic matching for all lines; a hand-checked override file (one line of
+   justification per entry) only for the ~150 modes that carry 95 % of the exclusive hadronic yield
+   in some region, plus every node whose c is more than 3σ from 1. The resonance list of each node
+   is part of that file.
+5. *Fixed conventions.* K⁰ in the decay file vs K_S in PDG: factor 2 per kaon, multi-K_S modes
+   flagged. PDG "ℓ" nodes apply to e and μ, fully correlated. Asymmetric errors: the mean. Modes
+   whose two flavor blocks differ (J/ψ K\*⁰ etc.) are combined per physical mode first.
+6. *Output.* A mode table per (B flavor, final state): class, BF_MC, c, σ, PDG identifiers, and a
+   flag for the hand-checked entries. Tests: the node sums, the product nodes, and the known cases
+   (J/ψ K⁺π⁻, D̄⁰π⁺π⁻, D_s0\*, D\*\*ℓν, J/ψ K₁).
+
+Not in piece 2: whether c is applied as a weight or only sets a prior width, correlations between
+modes, and the source of the semileptonic BFs (piece 4).
+
 ---
 
 ## Part C: global K_L check (AGREED as a separate track)
