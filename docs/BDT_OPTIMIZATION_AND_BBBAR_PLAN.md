@@ -4,7 +4,7 @@ Working document for the inclusive tagged R(D+) analysis. It records what was do
 signal-region BDT cut optimization, and the plan and decisions so far for the combinatorial control
 region, the BBbar background model and a global K_L check.
 
-Last updated: 2026-11-09.
+Last updated: 2026-11-12.
 
 **Status labels**
 
@@ -25,7 +25,7 @@ starts only then. Appendix A lists the pieces and their status.
 | Part | Topic | Status |
 |---|---|---|
 | A | Signal-region (SR) BDT cut optimization | DONE: the final tight cut is the new `util.lgb_tight` |
-| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); coding not started |
+| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); B0 scouted (B.12), its open points under discussion; coding not started |
 | C | Global K_L check | AGREED as a separate track; not started |
 
 | File | Role | Status |
@@ -536,6 +536,8 @@ order), with signed PDG codes, the candidate count, `mode_total`, `n_orders`, `n
   line, PYTHIA does not. A mode seen in more than one order has PYTHIA contributions; candidates in
   the `.dec` order are EvtGen or PYTHIA by chance (likely in 2-body modes). This gives at least a
   lower bound on the PYTHIA share per mode and helps with the exclusive-vs-PYTHIA ambiguity of piece 3.
+  **Superseded by B.12:** exclusive and PYTHIA final states turn out to be disjoint, so the mode itself
+  identifies the generator and the order is only a cross-check.
 
 **Findings from the run1 e comb CR sample (`MC_e_comb`, `lgb_comb` + BCS, no `common_cut`).**
 
@@ -563,9 +565,102 @@ order), with signed PDG codes, the candidate count, `mode_total`, `n_orders`, `n
   more than 7 daughters. Harmless for the n-body classes (5+), but a hidden 8th daughter could be a
   second charm hadron. See the variables notes.
 
-**Decay table.** `DECAY_BELLE2.DEC` (release 08-00) could not be read from the cloud session (GitHub
-blocks automated access); read it locally in Claude Code or attach it. Check first that this is the
-decay file used to produce MC16rd.
+**Decay table (STATED).** `Samples/dec/DECAY_BELLE2_rel08.DEC` is the master decay file of the MC16rd
+generic production. It is byte-identical to `decfiles/dec/DECAY_BELLE2.DEC` of basf2 release-08-00-10
+and release-08-03-00, and differs from release-08-00-00. The exact release and externals version of
+MC16rd are OPEN.
+
+### B.12 Scouting for B0: findings from the decay file, the CSVs and the PDG API (2026-11-12)
+
+Throwaway prototypes only, no repository code yet. Every number was reproduced by a second,
+independent script. Sample: the six CSVs (run1 e, `MC_e_comb`).
+
+**Decay file.**
+
+- Four explicit B blocks (B0, anti-B0, B+, B-), one decay per line, no continuation lines.
+
+| Block | Lines | PYTHIA lines (BF) | Exclusive lines with BF > 0 (BF) | Zero-BF lines |
+|---|---|---|---|---|
+| B0 / anti-B0 | 1381 | 20 (48.3 %) | 1299 (51.7 %) | 62 |
+| B+ / B- | 1181 | 16 (43.3 %) | 1131 (56.7 %) | 34 |
+
+- The conjugate blocks are not exact mirrors: 34 (neutral) and 18 (charged) final states differ, e.g.
+  the K\*S / K\*L alias lines keep K\*0 in the anti-B0 block. All four blocks must be parsed as written.
+- Alias lines (K\*S, K\*L, K\*0T) share one final state; their BFs are summed.
+- The `particle` package fails on 17 names (D'_1±, D(2S), D\*(2S), Xu, Xsd, Xsu) and gives a wrong code
+  for f'_0. The name → PDG-code map must come from basf2's `evt.pdl`.
+- Comments can't define "measured": about 85 % of the exclusive lines carry no marker, the inline
+  `Gamma_N` numbers are stale (0 of 42 correct in PDG 2026), and some `#$ BF(...)` directives point to
+  the wrong particle.
+
+**Exclusive vs PYTHIA (changes B.11).**
+
+- After removing the trailing photons, a decay either matches an exclusive line, and is then stored in
+  that line's daughter order, or matches no line. Exceptions: 8 of about 390,000 candidates. No
+  candidate sits on a zero-BF line.
+- Reason: a Belle II patch of EvtGen (`evtgen-02-00-01-avoid-double-counting.patch` in the externals)
+  makes PYTHIA retry when its final state equals any listed channel of the same B, including zero-BF
+  lines. That the MC16rd externals contain this patch is not confirmed, but the data behave so.
+- So the generator class is a lookup of (B charge, daughter set). The daughter order is a cross-check.
+
+| Table | Exclusive | PYTHIA |
+|---|---|---|
+| comb charged, D side | 54.5 % | 45.5 % |
+| comb charged, ℓ side | 73.8 % | 26.2 % |
+| comb neutral, D side | 40.9 % | 59.1 % |
+| comb neutral, ℓ side | 58.5 % | 41.5 % |
+| hadB charged | 62.3 % | 37.7 % |
+| hadB neutral | 71.6 % | 28.5 % |
+
+- All semileptonic decays are exclusive; PYTHIA modes never contain a lepton.
+- PYTHIA modes are a long tail (the top 40 cover 10–40 %), so PYTHIA can only be treated by class
+  (charm count, multiplicity), not per mode.
+- Photons are always last in the stored order. A few lines have a genuine photon (K\* γ, Xsd γ): match
+  the full list first, then strip.
+- 7 filled slots does not mean truncated: 484 candidates are an exclusive decay plus photons; the lists
+  with 7 non-photon daughters (3.5–6.5 % of comb) are certainly PYTHIA, with unknown true multiplicity
+  and charm count.
+- The B flavor is not stored. For neutral B it can't be recovered for 0.3–1.9 % of candidates; the
+  class does not depend on it, BF_MC does for the 34 asymmetric final states.
+
+**PDG matching (pdg package, 2026 edition, works offline).**
+
+| Exclusive lines, share of all B decays | B0 | B+ |
+|---|---|---|
+| PDG measurement of the same final state | 34.1 % | 38.5 % |
+| only a product of BFs measured (D\*\*, D_s0\*, D_s1) | 5.8 % | 7.0 % |
+| only an upper limit | 1.0 % | 0.3 % |
+| no PDG entry | 10.4 % | 10.6 % |
+
+- "No PDG entry" is mostly double-charm placeholders (D(\*)D(\*)K\*, D_s(\*)D nπ: 6.7 % of B decays) and
+  the semileptonic gap and D\*\*τν modes (about 2 %). In the tables it is 10–44 % of the D-side
+  candidates.
+- Where PDG and the decay file agree on the meaning of a mode, c = BF_PDG/BF_MC is 1 within 1σ for
+  most modes; about half of the nodes have c = 1 exactly.
+- Matching line by line is wrong for multi-body final states: the PDG value includes the resonances
+  that the decay file lists separately (J/ψ K⁺π⁻: naive c = 3.8, 0.87 after adding the K\* lines). The
+  comparison must be made per PDG final state, summing the lines that feed it.
+- The same summing shows real double counting in the decay file (D̄⁰π⁺π⁻: c = 0.53).
+- D_s0\*(2317): the lines B → D(\*) D_s0\* carry the D_s\* BFs, 7–12 times the PDG product. These decays
+  are 2–8 % of the candidates. `PDG_CORRECTIONS` already corrects exactly these four modes, without
+  uncertainty.
+- Broad D\*\* ℓν (D_0\*, D'_1) are 40–65 % above the PDG products; the narrow states agree.
+- The yield-weighted r_meas width is 3–4 % if the modes are uncorrelated and 14–19 % if fully
+  correlated. The "~15 %" of B.6 is the fully correlated case.
+
+**OPEN, raised by the scouting (to discuss piece by piece before coding).**
+
+1. Generator classification as a set lookup, replacing the daughter-order tag.
+2. The unit of the PDG comparison (PDG final state, not decay-file line) and the definition of
+   "measured"; product-of-BF modes; K⁰ vs K_S; upper limits.
+3. Exclusive modes with no measurement are not covered by the first-model proposal (B.6): r_meas is for
+   measured modes, N₁/N₂/a for PYTHIA. They are mostly double charm, so their treatment decides what
+   N₂ measures.
+4. Priors: whether c_k are applied as weights or only set widths; correlations between modes; one r_SL
+   or a split (well-known D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a
+   theory R(D\*), so a PDG correction would be circular here).
+5. Code layout: a small module without heavy dependencies vs `utilities.py`; committed inputs (`evt.pdl`,
+   cached PDG table, mode table).
 
 ---
 
