@@ -2,8 +2,9 @@
 
 Run from the repository root:  python3 scripts/tests/test_decay_table.py
 
-The tests need only the files in the repository: the decay file, evt.pdl and the six decay-mode
-CSVs in Notebooks/Plotting/csv_output (run1 e, MC_e_comb).
+The tests need only the files in the repository: the decay file, evt.pdl and the decay-mode
+tables in Notebooks/Plotting/csv_output. The reference sample is bbbar_modes_run1_e_combCR.csv
+(run1 e, MC_e_comb); the other bbbar_modes_*.csv files are checked with validation_report.
 """
 import os
 import sys
@@ -18,6 +19,11 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts', 'tools'))
 import decay_table as dt  # noqa: E402
 
 CSV_DIR = os.path.join(ROOT, 'Notebooks', 'Plotting', 'csv_output')
+REFERENCE = os.path.join(CSV_DIR, 'bbbar_modes_run1_e_combCR.csv')
+# table name -> (component, side, B type) in the per-sample files
+TABLE_KEYS = {'comb_charged_Dside': ('comb', 'D', 521), 'comb_charged_ellside': ('comb', 'ell', 521),
+              'comb_neutral_Dside': ('comb', 'D', 511), 'comb_neutral_ellside': ('comb', 'ell', 511),
+              'hadB_charged': ('hadB', 'D', 521), 'hadB_neutral': ('hadB', 'D', 511)}
 CSVS = {'comb_charged_Dside': 521, 'comb_charged_ellside': 521, 'comb_neutral_Dside': 511,
         'comb_neutral_ellside': 511, 'hadB_charged': 521, 'hadB_neutral': 511}
 RAW = [f'raw_{i}' for i in range(7)]
@@ -25,6 +31,12 @@ RAW = [f'raw_{i}' for i in range(7)]
 PDL = dt.load_pdl()
 DEC = dt.parse_dec(pdl=PDL)
 TABLE = dt.build_mode_table(DEC, PDL)
+_REF_TABLES = dt.load_mode_tables(REFERENCE)
+
+
+def ref_table(name):
+    """One of the six tables of the reference sample, by its old file name."""
+    return _REF_TABLES[TABLE_KEYS[name]]
 
 
 def pad(codes):
@@ -112,18 +124,14 @@ def test_other_files():
     assert list(sm['names']) == [('anti-D0', 'pi-'), ('D-', 'pi0'), ('D-', 'gamma')]
     assert list(sm['bf']) == list(sp['bf']) == [0.677, 0.307, 0.016]
     assert sm['mother_pdg'].eq(-413).all() and list(sm['line']) == list(sp['line'])
-    # signal decay files: aliases come from the master file; PHOTOS keyword before the model
-    dec_dir = os.path.join(ROOT, 'Samples', 'dec')
-    n_files = 0
-    for f in sorted(os.listdir(dec_dir)):
-        if f.endswith('.dec'):
-            d = dt.parse_dec(os.path.join(dec_dir, f), mothers=None, pdl=PDL, alias_from=dt.DEFAULT_DEC)
-            assert len(d) > 0
-            n_files += 1
-    assert n_files == 10
-    d = dt.parse_dec(os.path.join(dec_dir, '1293710005_mod.dec'), mothers=['B+sig'], pdl=PDL,
-                     alias_from=dt.DEFAULT_DEC)
-    assert d['photos'].any() and d['mother_pdg'].eq(521).all() and 'LLSW' in set(d['model'])
+    # the PHOTOS keyword before the model (EvtGen syntax; not used in the B blocks of the master)
+    with tempfile.NamedTemporaryFile('w', suffix='.dec', delete=False) as f:
+        f.write('Decay B+\n1.0 anti-D0 e+ nu_e PHOTOS ISGW2;\nEnddecay\nEnd\n')
+    try:
+        d = dt.parse_dec(f.name, mothers=['B+'], pdl=PDL)
+    finally:
+        os.unlink(f.name)
+    assert d['photos'][0] and d['model'][0] == 'ISGW2' and d['daughters'][0] == (-421, -11, 12)
 
 
 def test_unknown_tokens_stop_the_parser():
@@ -185,7 +193,7 @@ def test_quark_content():
 
 def test_canonical_order_matches_csv():
     for name in CSVS:
-        c = pd.read_csv(os.path.join(CSV_DIR, name + '.csv'))
+        c = ref_table(name)
         canon = dt.canonical_order(c[RAW].to_numpy())
         assert (canon == c[[f'daughter_{i}' for i in range(7)]].to_numpy()).all(), name
     assert dt.mode_key([413, -1, 22, -413, 311, -311]) == (22, 311, -311, 413, -413)
@@ -287,7 +295,7 @@ def test_classify_csv_tables():
                 'comb_neutral_ellside': 81145, 'hadB_charged': 6748, 'hadB_neutral': 19272}
     ref_wrong_order = {'comb_neutral_ellside': 8}
     for name, b in CSVS.items():
-        c = pd.read_csv(os.path.join(CSV_DIR, name + '.csv'))
+        c = ref_table(name)
         w = c['n_candidates']
         r = dt.classify_decays(c[RAW].to_numpy(), b, TABLE)
         excl = r['gen_class'] == dt.GEN_EXCLUSIVE
@@ -307,6 +315,22 @@ def test_classify_csv_tables():
             warnings.simplefilter('error')
             rep = dt.validation_report(r, w, name, verbose=False)
         assert rep['ok'] and abs(rep['exclusive'] + rep['pythia'] - 1) < 1e-12
+
+
+def test_all_samples():
+    """Every per-sample file: the mechanism holds (no warning), and weights are finite."""
+    import glob
+    files = sorted(glob.glob(os.path.join(CSV_DIR, 'bbbar_modes_*.csv')))
+    assert REFERENCE in files
+    for f in files:
+        tables = dt.load_mode_tables(f)
+        assert set(tables) <= set(TABLE_KEYS.values()) and len(tables) in (4, 6), f
+        for key, t in tables.items():
+            assert np.isfinite(t['sum_w']).all() and (t['n_candidates'] > 0).all(), (f, key)
+            r = dt.classify_decays(t[RAW].to_numpy(), key[2], TABLE)
+            with warnings.catch_warnings():
+                warnings.simplefilter('error')
+                assert dt.validation_report(r, t['sum_w'], f'{f} {key}', verbose=False)['ok']
 
 
 def test_validation_report_flags():
@@ -404,9 +428,9 @@ def _fake_ntuple(names, b_abs_list, n_head=400, seed=0):
     cols = [f'{s}_{b}_{i}_daughterPDG' for s in ('D', 'ell') for b in (511, 521) for i in range(7)]
     parts = []
     for (name_d, name_l), b in zip(names, b_abs_list):
-        d = pd.read_csv(os.path.join(CSV_DIR, name_d + '.csv')).head(n_head)
+        d = ref_table(name_d).head(n_head)
         d = np.repeat(d[RAW].to_numpy(), np.minimum(d['n_candidates'], 5), axis=0)
-        ell = d if name_l is None else pd.read_csv(os.path.join(CSV_DIR, name_l + '.csv'))[RAW].to_numpy()[:len(d)]
+        ell = d if name_l is None else ref_table(name_l)[RAW].to_numpy()[:len(d)]
         df = pd.DataFrame(-1.0, index=range(len(d)), columns=cols, dtype='float32')
         df[[f'D_{b}_{i}_daughterPDG' for i in range(7)]] = d
         df[[f'ell_{b}_{i}_daughterPDG' for i in range(7)]] = ell
@@ -494,8 +518,8 @@ def test_export_and_long_format():
 
 def test_classify_b_decays_ntuple():
     """Ntuple-level wrapper: the CSV rows expanded into '<side>_<b>_<i>_daughterPDG' columns."""
-    cn = pd.read_csv(os.path.join(CSV_DIR, 'hadB_neutral.csv')).head(300)
-    cc = pd.read_csv(os.path.join(CSV_DIR, 'hadB_charged.csv')).head(200)
+    cn = ref_table('hadB_neutral').head(300)
+    cc = ref_table('hadB_charged').head(200)
     empty = np.full((1, 7), -1)
     d511 = np.vstack([cn[RAW].to_numpy(), np.full((len(cc), 7), -1), empty])
     d521 = np.vstack([np.full((len(cn), 7), -1), cc[RAW].to_numpy(), empty])

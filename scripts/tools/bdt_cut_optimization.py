@@ -212,7 +212,8 @@ FIT_VARIABLES = util.FIT_VARIABLES          # ['B0_recMissM2', 'p_D_l']
 MVA_OUTPUTS = util.MVA_OUTPUTS              # ['sig_prob', 'fakeD_prob', ...]
 D_MASS_SR_RANGE = (1.855, 1.885)            # same window as util.D_MASS_SR
 BCS_RANK_VAR = 'B_D_ReChi2'                 # BCS keeps the minimum, as bcs='vtx'
-EVENT_ID_COLUMNS = util.EVENT_ID_COLUMNS    # after apply_mva_bcs renamed them
+EVENT_ID_COLUMNS = util.EVENT_ID_COLUMNS    # basf2 names, kept by util.apply_mva_bcs
+EVENT_NUMBER_COLUMN = EVENT_ID_COLUMNS[2]   # '__event__': its parity defines the halves
 
 CUT_DIRECTIONS = {'sig_prob': '>', 'fakeD_prob': '<',
                   'continuum_prob': '<', 'combinatorial_prob': '<'}
@@ -570,7 +571,7 @@ class _Channel:
         self.unit_weights = bool(np.all(w == 1.0))
 
         if half_col == 'event':
-            self.half = (df['event'].to_numpy()[order] % 2).astype(np.int8)
+            self.half = (df[EVENT_NUMBER_COLUMN].to_numpy()[order] % 2).astype(np.int8)
         else:
             self.half = df[half_col].to_numpy()[order].astype(np.int8)
 
@@ -588,7 +589,8 @@ class FOMInput:
                  MC; 1 for data). Yields, Z and sigma_S/S are then at data
                  luminosity, which the control-region target needs (see the
                  module docstring). Bin thresholds still count raw events.
-    half_col   : 'event' splits by event-number parity (half A = even, B = odd);
+    half_col   : 'event' splits by the parity of the event number (column EVENT_NUMBER_COLUMN;
+                 half A = even, B = odd);
                  or the name of a 0/1 column.
     """
 

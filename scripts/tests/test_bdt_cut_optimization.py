@@ -46,7 +46,7 @@ def toy_channel(n_events, seed):
         'p_D_l': rng.uniform(0.3, 5.0, n),
         'D_M': rng.uniform(1.83, 1.91, n),
         'B_D_ReChi2': rng.exponential(2, n),
-        'experiment': 26, 'run': ev // 1000, 'event': ev, 'production': 1,
+        '__experiment__': 26, '__run__': ev // 1000, '__event__': ev, '__production__': 1,
         'category': cat,
         # qq origin: all continuum, 30 % of the fake D
         'B0_isContinuumEvent': ((cat == 'bkg_continuum')
@@ -68,7 +68,7 @@ def reference(df, theta, half, bcs_order, bcs_base=None, min_count=10, count_on=
         d = d[d['B_D_ReChi2'].notna()]
         return d.loc[d.groupby(util.EVENT_ID_COLUMNS)['B_D_ReChi2'].idxmin()]
 
-    d = df if half == 'all' else df[df['event'] % 2 == {'A': 0, 'B': 1}[half]]
+    d = df if half == 'all' else df[df['__event__'] % 2 == {'A': 0, 'B': 1}[half]]
     if bcs_order == 'cut_then_bcs':
         best = bcs(apply(d, theta))
     else:
@@ -125,8 +125,7 @@ def test_beam_energy_correction(tmpdir):
     def stub(df, features, cut, **kw):
         seen['mbc'] = df['B0_roeMbc_my_mask'].to_numpy().copy()
         seen['de'] = df['B0_roeDeltae_my_mask'].to_numpy().copy()
-        out = df.rename(columns={'__experiment__': 'experiment', '__run__': 'run',
-                                 '__event__': 'event', '__production__': 'production'})
+        out = df.copy()                 # util.apply_mva_bcs keeps the basf2 event-ID names
         for v in bco.MVA_OUTPUTS:
             out[v] = 0.25
         return out
@@ -206,7 +205,7 @@ def main():
     fast_keys = set(zip(ch.group[sel], ch.probs['sig_prob'][sel]))
     ok &= check('same number of BCS candidates', len(sel) == len(best))
     ok &= check('same BCS candidates (sig_prob per event)',
-                sorted(np.float32(best.sort_values('event')['sig_prob']))
+                sorted(np.float32(best.sort_values('__event__')['sig_prob']))
                 == sorted(p for _, p in fast_keys))
 
     # the full optimization runs and does not end below its starting points
@@ -600,7 +599,7 @@ def main():
     # changing only half-B data leaves the half-A measurement untouched
     sh_b = {c: df.assign(category='data') for c, df in sh_df.items()}
     for c, df in sh_b.items():
-        odd = df['event'] % 2 == 1
+        odd = df['__event__'] % 2 == 1
         df.loc[odd, 'B0_recMissM2'] += 2.0
     sb_mod = bco.d_mass_sideband_cr(bco.FOMInput(sh_b), m_sh, bins=sb_sh.bins)
     ok &= check('CR measurement on half A is independent of the half-B data',
@@ -621,7 +620,7 @@ def main():
                 and np.isclose(rs.attrs['R_total'], m_open['R']))
     # a mismodeled output: data events with high continuum_prob get duplicated
     dup = {c: pd.concat([df.assign(category='data'),
-                         df[df['continuum_prob'] > 0.3].assign(category='data', event=df['event'] + 10 ** 7)])
+                         df[df['continuum_prob'] > 0.3].assign(category='data', __event__=df['__event__'] + 10 ** 7)])
            for c, df in sh_df.items()}
     rs_dup = bco.ratio_slices(bco.offres_cr(bco.FOMInput(dup), m_sh, bins=off_sh.bins),
                               util.lgb_loose, 'continuum_prob')
@@ -651,7 +650,7 @@ def main():
                          'p_D_l': np.where(hard_h, rng_h.uniform(4.5, 6.5, n_ev * n_c),
                                            rng_h.uniform(0.3, 3.0, n_ev * n_c)),
                          'D_M': 1.87, 'B_D_ReChi2': rank_h,
-                         'experiment': 26, 'run': 1, 'event': ev_h, 'production': 1,
+                         '__experiment__': 26, '__run__': 1, '__event__': ev_h, '__production__': 1,
                          'category': 'data', 'B0_isContinuumEvent': 1})
     in_h = bco.FOMInput({'e': df_h})
     cr_h = bco.offres_cr(in_h, in_h)
@@ -676,7 +675,12 @@ def main():
     cr_s = bco.offres_cr(as_data_l, mc_l)
     rng_s = np.random.default_rng(3)
     mx = np.outer(np.exp(-np.linspace(0, 3, 20)), np.ones(20))          # 20 x 20 expectation
-    for total, expect in ((2e6, '2d'), (400, '1d'), (40, 'none')):
+    # util.excess_variance merges adjacent low-count bins (low_count='merge', its default) into
+    # groups of >= 10 expected events. The number of usable groups is then about total / 10 in 2D,
+    # and never more in the M2_miss projection: 400 events still give a 2D measurement, and when
+    # 2D has too few groups the projection has too few as well. (With low_count='drop', which
+    # docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md A.5 describes, 400 events would fall back to 1D.)
+    for total, expect in ((2e6, '2d'), (400, '2d'), (40, 'none')):
         m_h = total * mx / mx.sum()
         d_h = rng_s.poisson(m_h * (1 + rng_s.normal(0, 0.05, 20))[:, None])  # 5 % distortion in M2_miss
         r_s = cr_s._shape_measurement(d_h.astype(float), m_h, np.zeros_like(m_h))

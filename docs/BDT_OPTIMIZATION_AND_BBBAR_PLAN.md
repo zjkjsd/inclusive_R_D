@@ -702,15 +702,14 @@ Rules of the classification:
   assigned to the radiative line. About 10⁻⁶ of B⁺ decays; the class is unaffected.
 
 Tests (`scripts/tests/test_decay_table.py`): block sizes and sums, single lines, alias groups and the
-B⁰/B̄⁰ asymmetry, CDecay, the ten signal decay files, the quark-content rules against every particle
+B⁰/B̄⁰ asymmetry, CDecay, the quark-content rules against every particle
 of the list, the photon rules, the six CSVs (reference yields of B.12, to the candidate), the
 warnings of `validation_report` on doctored samples, EvtGen's rules for repeated blocks, and the
 export function with its long format.
 
 Independent review (2026-11-12): a second implementation written from the decay-file text agreed
 on every row of the six tables (88,605 rows) and on all 363 blocks of the decay file. It found no
-wrong result; its robustness points are implemented. One input oddity: `1263752000.dec` line 54 has
-a stray `sig` after the `;` (the parser warns and ignores it).
+wrong result; its robustness points are implemented.
 
 **Decay-mode tables per sample (DONE).** `export_bbbar_decay_mode_tables(samples, tag, ...)` writes one
 file `bbbar_modes_<tag>.csv` per sample, with the columns `tag`, `selection`, `component`, `side`,

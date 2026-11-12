@@ -225,7 +225,7 @@ def _split_statement(line):
     return line.strip(), ''
 
 
-def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extra_models=()):
+def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, extra_models=()):
     """Parse the decay blocks of `mothers` in an EvtGen decay file.
 
     Parameters
@@ -233,9 +233,6 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
     path : decay file.
     mothers : names of the decaying particles to read; None reads every block.
     pdl : `ParticleTable`, or None to read the default evt.pdl.
-    alias_from : other decay files whose Alias, ChargeConj and ModelAlias statements also apply.
-        A signal decay file is loaded on top of the master file and uses the master's aliases
-        (B0sig, D+sig, ...), so pass the master file here when parsing one.
     extra_models : decay-model names to accept in addition to `KNOWN_MODELS`.
 
     Returns
@@ -270,11 +267,7 @@ def parse_dec(path=DEFAULT_DEC, mothers=B_MOTHERS, pdl=None, alias_from=(), extr
 
     # first pass: aliases and charge-conjugate pairs (they may be used before they are defined)
     alias, conj_pair, model_alias = {}, {}, set()
-    header = []
-    for other in ([alias_from] if isinstance(alias_from, str) else alias_from):
-        with open(other) as f:
-            header += f.read().splitlines()
-    for line in header + text:
+    for line in text:
         t = line.split('#')[0].split()
         if len(t) >= 3 and t[0] == 'Alias':
             alias[t[1]] = t[2]
