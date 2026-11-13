@@ -678,8 +678,9 @@ def main():
     # util.excess_variance merges adjacent low-count bins (low_count='merge', its default) into
     # groups of >= 10 expected events. The number of usable groups is then about total / 10 in 2D,
     # and never more in the M2_miss projection: 400 events still give a 2D measurement, and when
-    # 2D has too few groups the projection has too few as well. (With low_count='drop', which
-    # docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md A.5 describes, 400 events would fall back to 1D.)
+    # 2D has too few groups the projection has too few as well. Merging is the chosen rule
+    # (docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md A.5); with low_count='drop' 400 events would fall
+    # back to 1D.
     for total, expect in ((2e6, '2d'), (400, '2d'), (40, 'none')):
         m_h = total * mx / mx.sum()
         d_h = rng_s.poisson(m_h * (1 + rng_s.normal(0, 0.05, 20))[:, None])  # 5 % distortion in M2_miss

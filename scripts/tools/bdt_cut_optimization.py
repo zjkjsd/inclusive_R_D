@@ -1152,9 +1152,11 @@ class ControlRegion:
         return dict(self._cache[key])
 
     def _shape_measurement(self, d, m, mw2):
-        """excess_variance on the 2D histograms; if fewer than min_shape_bins
-        (default 10; ndf = 9, so chi2 itself fluctuates by ~ +-47 %) bins are
-        usable (too sparse, e.g. off-resonance after a tight cut), on
+        """excess_variance on the 2D histograms. Bins below min_count expected events
+        are merged with their neighbors into groups, not dropped (the chosen rule for all
+        data/MC comparisons; excess_variance default low_count='merge'). If fewer than
+        min_shape_bins (default 10; ndf = 9, so chi2 itself fluctuates by ~ +-47 %) groups
+        are usable (too sparse, e.g. off-resonance after a tight cut), on
         the M2_miss projection instead; if that is too sparse as well, no shape
         measurement (delta = 0). 'shape_dim' records which: '2d', '1d', 'none'.
         The normalization R is the same in all cases (totals)."""

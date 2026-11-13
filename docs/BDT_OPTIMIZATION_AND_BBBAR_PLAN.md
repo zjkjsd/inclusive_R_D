@@ -122,8 +122,13 @@ axis, with overflow counted in the edge bins. It gives two fractions:
 
 - **Normalization** n = max(|R − 1|, σ_R), with R = data/MC. The offset is kept as an uncertainty. On
   one half: n² = max((R − 1)² − σ_R,half², 0) + σ_R².
-- **Shape** δ = excess variance after scaling MC to the data total, from bins with ≥ 10 expected
-  events. If too few bins pass, δ comes from the M²miss projection, or is 0.
+- **Shape** δ = excess variance after scaling MC to the data total. Adjacent bins with fewer than 10
+  expected events are **merged** into groups of ≥ 10 (not dropped), so no event is lost
+  (`utilities.excess_variance`, `low_count='merge'`). At least 10 groups are needed; with fewer,
+  δ comes from the M²miss projection, or is 0. In practice the projection is almost never used: a
+  sample too sparse for 10 groups in 2D is too sparse in the projection as well.
+- **Rule for future code (STATED 2026-11-13):** data/MC comparisons merge low-count bins; they do not
+  drop them. This applies to the comb CR and to the tuning (Part B) too.
 
 | Region | Data / MC | Describes in the SR |
 |---|---|---|
@@ -230,11 +235,8 @@ cut.
   lot), then re-check.
 - Re-optimize on the total R(D) uncertainty once the full Asimov fit is ready.
 - A global K_L correction from Part C, if one is needed, would apply to all MC.
-- OPEN (found 2026-11-13 while fixing the tests): the shape term δ of a control region uses
-  `utilities.excess_variance` with its default `low_count='merge'`: adjacent bins below 10 expected
-  events are merged into groups, not dropped as A.5 says. With merging, the M²miss-projection
-  fallback is practically never used (a sample too sparse for 10 groups in 2D is too sparse in the
-  projection as well). Which rule was intended, and which produced the A.8 numbers?
+- SETTLED 2026-11-13: low-count bins are merged, not dropped (A.5 corrected). The A.8 numbers were
+  produced with merging.
 - FIXED 2026-11-13: the half A/B split read a column `event` that the loader no longer keeps since
   `apply_mva_bcs` stopped renaming the event IDs (e33ce1d); it now uses `__event__`. A fresh run of
   notebook 7 would have stopped with a KeyError; cached candidate files written before e33ce1d have
