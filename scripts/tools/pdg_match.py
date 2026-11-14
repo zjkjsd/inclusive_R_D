@@ -32,17 +32,33 @@ Rules
                  are combined with inverse-variance weights (the chi2 is kept).
     3. node    : the final state feeds a measured node through folding. Lines already fixed (by
                  1, 2 or an earlier node) are subtracted; the others share the remainder. The
-                 nodes are taken from the fewest bodies up. If the remainder is <= 0 or more than
-                 100 % uncertain, the inclusive ratio BF_PDG(node)/BF_MC(node) is used instead
-                 (`remainder_unstable`). A line takes its c from a node only if at least `P_MIN`
-                 of it feeds the node.
+                 nodes are taken from the fewest bodies up (then the smaller relative PDG error).
+                 If the remainder is <= 0 or more than 100 % uncertain, the inclusive ratio
+                 BF_PDG(node)/BF_MC(node) is used instead (`remainder_unstable`). A line takes
+                 its c from a node only if at least `P_MIN` of it feeds the node. A line with
+                 its own PDG upper limit (plain node of its final state, or product node) does
+                 not take a remainder c that would put it above that limit: it is left out of
+                 the sharing (`limit_capped`, class limit, c = 1) and its part of the node is
+                 subtracted as limit/2 +- limit/2.
   `PRODUCT_BEFORE_NODE = False` swaps 2 and 3: the products are then used only where the nodes
   gave nothing. The product result is always stored (`c_prod`), whatever was used for c.
+  Product nodes of one line that repeat one measurement are dropped before the mean: of nodes
+  with the same sub-decays the most precise is kept, and a node whose sub-decay alternatives are
+  a part of another node's (the components of a PDG sum node) is dropped for the sum node.
+* Checks: `above_limit` compares max(1, c) x BF_MC with every own limit of a line. After all c are
+  set, every measured final-state node is checked for closure (sum of c x BF x P against
+  BF_PDG); |pull| > 3 sets `node_not_closed` on its feeding lines (column `unclosed_nodes`).
+  `node_ambiguous`: the line was free in another measured node with as many bodies as the node
+  that gave its c (column `alt_pdgids`). `flavor_twin`: a 'none' line equals a measured or limit
+  final state of its block once the K0 / K*0 flavor is ignored or the state is conjugated
+  (column `twin_pdgids`); c is not changed.
 * Classes: measured, limit (only an upper limit; c = 1), none (no PDG node; c = 1), inclusive
   (Xu, Xsd, Xsu lines; c = 1).
 * The B0 and B+ blocks are matched; anti-B0 and B- final states take the result of their
   charge conjugate. Where the conjugate is not listed, the neutral-kaon and K*0 flavor is ignored
-  and `block_asymmetric` is set.
+  and `block_asymmetric` is set. Where it is listed with another BF (the blocks are not mirrors),
+  `block_asymmetric` is set too, and a c from an exact, plain-node or product match is not carried
+  over (c = 1, how = '').
 
 Exceptions file (`Samples/dec/pdg_exceptions.json`): a JSON list of entries
     {"pdgid": "S042.1", "action": "exclude_node", "reason": "..."}
@@ -603,7 +619,31 @@ def _new_result():
     return dict(pdg_class='none', how='', pdgids=[], bf_pdg=np.nan, bf_pdg_err=np.nan, c=1.0,
                 sigma_c=np.nan, flags=set(), f_res_mc=np.nan, f_res_pdg=np.nan, res_node='',
                 p_node=np.nan, c_prod=np.nan, sigma_c_prod=np.nan, chi2_prod=np.nan, n_prod=0,
-                prod_pdgids=[], _diff=-np.inf)
+                prod_pdgids=[], alt_pdgids=[], unclosed_nodes=[], twin_pdgids=[], _diff=-np.inf)
+
+
+def _sub_signature(node):
+    """Sub-decays of a product node: per sub-mother, the set of alternative daughter sets."""
+    return tuple(sorted((m, frozenset(tuple(sorted(a)) for a in alts)) for m, alts in node['subs']))
+
+
+def _independent_products(meas):
+    """Reduce the measured product nodes of one line, [(node, pred)], to independent ones:
+    (a) of nodes with the same sub-decays (one measurement listed twice), keep the most precise;
+    (b) drop a node whose alternatives are a strict part of another node's (a component of a PDG
+    sum node such as 'D_s1 --> D*0 K+ + D*+ K0'); the sum node is kept."""
+    def rel(item):
+        n = item[0]
+        return n['err'] / n['value'] if n['value'] > 0 else np.inf
+    best = {}
+    for it in meas:
+        s = _sub_signature(it[0])
+        if s not in best or rel(it) < rel(best[s]):
+            best[s] = it
+
+    def part_of(s, t):
+        return s != t and len(s) == len(t) and all(ms == mt and a <= b for (ms, a), (mt, b) in zip(s, t))
+    return [it for s, it in best.items() if not any(part_of(s, t) for t in best)]
 
 
 def _match_block(mother, lines, nodes, graph, exceptions=()):
@@ -663,6 +703,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                            err=n['err'], is_limit=n['is_limit'], multi_ks=n['multi_ks'],
                            n_bodies=n['n_bodies'], bf_mc=np.nan, ratio=np.nan, n_feeders=0,
                            role='', c_assigned=np.nan, f_res_mc=np.nan, f_res_pdg=np.nan,
+                           bf_mc_weighted=np.nan, closure=np.nan, closure_pull=np.nan,
                            reason=n['reason']) for n in mine}
 
     def flag_exception(keys):
@@ -746,7 +787,11 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
     def assign_products():
         for k, lst in prod.items():
             r = results[k]
-            meas = [(n, pred) for n, pred in lst if not n['is_limit']]
+            meas = _independent_products([(n, pred) for n, pred in lst if not n['is_limit']])
+            kept = {n['uid'] for n, _ in meas}
+            for n, pred in lst:
+                if not n['is_limit'] and n['uid'] not in kept:
+                    rows[n['uid']]['role'] = 'duplicate'
             for n, pred in lst:
                 if n['is_limit'] and pred > n['value']:
                     r['flags'].add('above_limit')
@@ -775,37 +820,87 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
             r.update(pdg_class='limit', pdgids=[m['pdgid'] for m, _ in lst], bf_pdg=n['value'],
                      bf_pdg_err=0.0)
 
+    # own upper limits of a line, as a bound on its c: plain limit nodes of its final state
+    # (value / BF_MC) and product limit nodes (value / (BF_line x BF_sub of the decay file))
+    cap = {}
+    for n in final_state:
+        if n['uid'] in feed and n['usable'] and n['is_limit'] and len(n['targets']) == 1:
+            k = n['targets'][0]
+            if cmode_bf.get(k, 0.0) > 0:
+                cap[k] = min(cap.get(k, np.inf), n['value'] / cmode_bf[k])
+    for k, lst in prod.items():
+        for n, pred in lst:
+            if n['is_limit']:
+                cap[k] = min(cap.get(k, np.inf), n['value'] / pred)
+    capped = set()                                  # lines kept out of the remainders by their limit
+
     # final-state nodes, the most exclusive first; the lines without a c share the remainder
     def node_pass():
         rest_nodes = [n for n in measured if n['uid'] not in exact_uids]
         rest_nodes.sort(key=lambda n: (n['n_bodies'], n['err'] / n['value'] if n['value'] > 0 else np.inf,
                                        n['uid']))
+        cand, used_nb = {}, {}                      # line -> {pdgid: n_bodies} of the nodes it could take
+        for n in rest_nodes:
+            for k, v in feed[n['uid']].items():
+                if not results[k]['how'] and v / cmode_bf[k] >= P_MIN:
+                    cand.setdefault(k, {})[n['pdgid']] = n['n_bodies']
         for n in rest_nodes:
             f = feed[n['uid']]
             tot = sum(f.values())
-            free = [k for k in f if not results[k]['how'] and f[k] / cmode_bf[k] >= P_MIN]
-            rows[n['uid']]['role'] = 'node' if free else 'covered'
-            if not free:
-                continue
-            num, var = n['value'], n['err'] ** 2
-            for k in f:
-                if k in free:
-                    continue
-                r = results[k]
-                num -= r['c'] * f[k]
-                if r['how'] and np.isfinite(r['sigma_c']):
-                    var += (r['sigma_c'] * f[k]) ** 2
-            den = sum(f[k] for k in free)
-            c, sigma = num / den, np.sqrt(var) / den
-            unstable = c <= 0 or sigma > c
+            free = [k for k in f if not results[k]['how'] and k not in capped and f[k] / cmode_bf[k] >= P_MIN]
+            out_here = []
+
+            def remainder(free):
+                num, var = n['value'], n['err'] ** 2
+                for k in f:
+                    if k in free:
+                        continue
+                    r = results[k]
+                    if k in capped:                 # bounded by its own limit: [0, cap]
+                        half = 0.5 * cap[k] * f[k]
+                        num -= half
+                        var += half ** 2
+                        continue
+                    num -= r['c'] * f[k]
+                    if r['how'] and np.isfinite(r['sigma_c']):
+                        var += (r['sigma_c'] * f[k]) ** 2
+                den = sum(f[k] for k in free)
+                return num / den, np.sqrt(var) / den
+            c = sigma = np.nan
+            while free:
+                c, sigma = remainder(free)
+                over = [k for k in free if c > cap.get(k, np.inf)]
+                if not over:
+                    break
+                capped.update(over)
+                out_here += over
+                free = [k for k in free if k not in over]
+            unstable = bool(free) and (c <= 0 or sigma > c)
             if unstable:
                 c = n['value'] / tot
                 sigma = c * n['err'] / n['value'] if n['value'] > 0 else np.nan
+                over = [k for k in free if c > cap.get(k, np.inf)]
+                capped.update(over)
+                out_here += over
+                free = [k for k in free if k not in over]
+            for k in out_here:
+                results[k]['flags'].add('limit_capped')
+            rows[n['uid']]['role'] = 'node' if free else ('capped' if out_here else 'covered')
+            if not free:
+                continue
             for k in free:
                 assign(k, 'node', n, c, sigma, f[k] / cmode_bf[k])
+                used_nb[k] = n['n_bodies']
                 if unstable:
                     results[k]['flags'].add('remainder_unstable')
             rows[n['uid']]['c_assigned'] = c
+        # the choice between nodes of the same size rests on the order above: flag it
+        for k, nb in used_nb.items():
+            used = results[k]['pdgids'][0]
+            alt = sorted(p for p, m in cand.get(k, {}).items() if p != used and m == nb)
+            if alt:
+                results[k]['flags'].add('node_ambiguous')
+                results[k]['alt_pdgids'] = alt
 
     # 2 and 3. A line with product nodes has a resonance-explicit measurement of its own. With
     # PRODUCT_BEFORE_NODE it is fixed by them before the remainders of the final-state nodes are
@@ -920,6 +1015,25 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
             r.update(how='', c=1.0, sigma_c=np.nan)
         r['flags'].add('exception_applied')
 
+    # own limits against the corrected BF: max(1, c) x BF_MC above any limit of the line
+    for k, c_max in cap.items():
+        if max(1.0, results[k]['c']) > c_max:
+            results[k]['flags'].add('above_limit')
+
+    # closure of every measured final-state node with the final c of its feeding lines
+    for n in measured:
+        f = feed[n['uid']]
+        w = sum(results[k]['c'] * v for k, v in f.items())
+        pull = (w - n['value']) / n['err'] if n['err'] > 0 else np.nan
+        rows[n['uid']].update(bf_mc_weighted=w, closure=w / n['value'] if n['value'] > 0 else np.nan,
+                              closure_pull=pull)
+        if np.isfinite(pull) and abs(pull) > PULL_REVIEW:
+            for k, v in f.items():
+                if v / cmode_bf[k] >= P_MIN:
+                    results[k]['flags'].add('node_not_closed')
+                    if n['pdgid'] not in results[k]['unclosed_nodes']:
+                        results[k]['unclosed_nodes'] = results[k]['unclosed_nodes'] + [n['pdgid']]
+
     for k, r in results.items():
         r['bf_mc_sum'] = cmode_bf[k]
         del r['_diff']
@@ -932,7 +1046,26 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
 TABLE_COLUMNS = ['mother_pdg', 'key', 'names', 'n_daughters', 'is_sl', 'tau', 'n_charm', 'bf_mc',
                  'pdg_class', 'how', 'pdgids', 'bf_pdg', 'bf_pdg_err', 'c', 'sigma_c', 'pull',
                  'f_res_mc', 'f_res_pdg', 'flags', 'res_node', 'p_node', 'bf_mc_sum', 'c_prod',
-                 'sigma_c_prod', 'chi2_prod', 'n_prod', 'prod_pdgids']
+                 'sigma_c_prod', 'chi2_prod', 'n_prod', 'prod_pdgids', 'alt_pdgids', 'unclosed_nodes',
+                 'twin_pdgids']
+
+
+def _flag_twins(results, pdl):
+    """`flavor_twin`: a 'none' final state with BF > 0 that equals a measured or limit final state
+    of the same block once the K0 / K*0 flavor is ignored, or after charge conjugation. The twin's
+    PDG identifiers go to `twin_pdgids`; c is not changed."""
+    index = {}
+    for k, r in results.items():
+        if r['pdg_class'] in ('measured', 'limit') and r['pdgids']:
+            index.setdefault(_loose_key(k), []).append(k)
+    for k, r in results.items():
+        if r['pdg_class'] != 'none' or r['bf_mc_sum'] <= 0:
+            continue
+        twins = [t for lk in {_loose_key(k), _loose_key(conjugate_key(k, pdl))}
+                 for t in index.get(lk, ()) if t != k]
+        if twins:
+            r['flags'].add('flavor_twin')
+            r['twin_pdgids'] = sorted({p for t in twins for p in results[t]['pdgids']})
 
 
 def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_all=None, pdl=None,
@@ -965,8 +1098,14 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                    and in PDG (lower bound); of the nodes the mode feeds, the one with the largest
                    difference.
       flags      : names separated by ';': tau, resonance_mismatch, multi_ks, remainder_unstable,
-                   above_limit, exception_applied, block_asymmetric; and two more: zero_bf (the
-                   line has BF 0 in the decay file; c = 1) and c_extreme (c outside [1/3, 3]).
+                   above_limit (max(1, c) x BF_MC above an own limit), exception_applied,
+                   block_asymmetric; and more: zero_bf (the line has BF 0 in the decay file;
+                   c = 1), c_extreme (c outside [1/3, 3]), limit_capped (kept out of a node
+                   remainder by its own limit), node_ambiguous, node_not_closed, flavor_twin
+                   (see the module docstring).
+      alt_pdgids : node_ambiguous: the other nodes of the same size the line was free in.
+      unclosed_nodes : node_not_closed: the nodes fed by the line that do not close (|pull| > 3).
+      twin_pdgids : flavor_twin: PDG identifiers of the twin final state.
       p_node     : share of the final state that feeds the node used (1 for exact).
       bf_mc_sum  : BF_MC used for c: summed over the K_S0 / K_L0 / K0 versions of the mode, in
                    the B0 or B+ block.
@@ -978,8 +1117,11 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     lepton flavor: uid, pdgid, mother, kind, description, value and err (with the K_S0 factor),
     is_limit, multi_ks, n_bodies, bf_mc (BF_MC of the node: the sum over the lines that feed it;
     for a product node BF_line x BF_sub), ratio (value / bf_mc), n_feeders, role ('exact', 'node',
-    'covered' = every feeding line was already fixed, 'product', 'limit', 'multi_ks', 'excluded'),
-    c_assigned, f_res_mc, f_res_pdg, reason (why a node is unkeyed).
+    'covered' = every feeding line was already fixed, 'capped' = the free lines were all kept out
+    by their own limits, 'product', 'duplicate' = product node dropped as a repeat of another,
+    'limit', 'multi_ks', 'excluded'), c_assigned, f_res_mc, f_res_pdg, bf_mc_weighted (sum of
+    c x BF x P over the feeding lines), closure (bf_mc_weighted / value), closure_pull ((weighted
+    - value) / PDG error), reason (why a node is unkeyed).
     """
     pdl = pdl or (mode_table.pdl if mode_table is not None else dt.load_pdl())
     if mode_table is None:
@@ -1000,11 +1142,27 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         if not len(lines):
             continue
         results[mother], nt = _match_block(mother, lines, nodes, graph, exceptions)
+        _flag_twins(results[mother], pdl)
         node_tables.append(nt)
     loose = {m: {} for m in results}
     for m, res in results.items():
         for k in res:
             loose[m].setdefault(_loose_key(k), []).append(k)
+    kind_of = {n['pdgid']: n['kind'] for n in nodes}
+    # summed BF of every block per collapsed and per loose key, and the loose keys of the anti-B
+    # blocks that hold a final state without a conjugate (alias quirks such as J/psi K*0 in anti-B0)
+    csum, lsum, lasym = {}, {}, set()
+    for mother, key, bf in zip(mode_table.modes['mother_pdg'], mode_table.modes['key'], mode_table.modes['bf_mc']):
+        mother = int(mother)
+        ck = (mother, collapse_key(key))
+        csum[ck] = csum.get(ck, 0.0) + float(bf)
+        lk = (mother, _loose_key(key))
+        lsum[lk] = lsum.get(lk, 0.0) + float(bf)
+        if mother < 0 and (-mother, conjugate_key(key, pdl)) not in mode_table.lookup:
+            lasym.add(lk)
+
+    def differ(a, b):
+        return abs(a - b) > 1e-6 * max(abs(a), abs(b))
 
     rows = []
     modes = mode_table.modes
@@ -1015,10 +1173,17 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         b = abs(mother)
         asym = (-mother, conjugate_key(key, pdl)) not in mode_table.lookup
         r = None
+        bf_mismatch = False
         if b in results:
             bkey = key if mother > 0 else conjugate_key(key, pdl)
             if mother > 0 or (b, bkey) in mode_table.lookup:
                 r = results[b].get(collapse_key(bkey))
+                if mother < 0 and r is not None:
+                    # the conjugate exists: is it written with the same BF?
+                    own = csum[(mother, collapse_key(key))]
+                    lk = (mother, _loose_key(key))
+                    alias_quirk = lk in lasym and not differ(lsum[lk], lsum.get((b, _loose_key(bkey)), 0.0))
+                    bf_mismatch = differ(own, r['bf_mc_sum']) and not alias_quirk
             else:
                 cands = loose[b].get(_loose_key(bkey), [])
                 if cands:
@@ -1027,8 +1192,13 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
             r = dict(_new_result(), bf_mc_sum=np.nan)
             r.pop('_diff')
         flags = set(r['flags'])
-        if asym:
+        if asym or bf_mismatch:
             flags.add('block_asymmetric')
+        if bf_mismatch and r['how'] and not (r['how'] == 'node' and kind_of.get(r['pdgids'][0]) == 'sum'):
+            # a c formed with the BF of the other block does not apply here
+            r = dict(r, how='', c=1.0, sigma_c=np.nan, p_node=np.nan, alt_pdgids=[],
+                     bf_mc_sum=csum[(mother, collapse_key(key))])
+            flags -= {'remainder_unstable', 'node_ambiguous'}
         tau = any(abs(c) == 15 for c in key)
         if tau:
             flags.add('tau')
@@ -1040,7 +1210,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                                       'f_res_mc', 'f_res_pdg', 'res_node', 'p_node', 'bf_mc_sum',
                                       'c_prod', 'sigma_c_prod', 'chi2_prod', 'n_prod')})
         row['pdgids'] = ';'.join(r['pdgids'])
-        row['prod_pdgids'] = ';'.join(r['prod_pdgids'])
+        for c in ('prod_pdgids', 'alt_pdgids', 'unclosed_nodes', 'twin_pdgids'):
+            row[c] = ';'.join(r[c])
         if incl:
             row.update(pdg_class='inclusive', how='', c=1.0, sigma_c=np.nan)
         if row['how'] and not (1.0 / C_EXTREME <= row['c'] <= C_EXTREME):
@@ -1087,7 +1258,8 @@ def read_table(path):
     """Read a table written by `write_table` (the key is a tuple again)."""
     out = pd.read_csv(path, keep_default_na=False, na_values=[''])
     out['key'] = [tuple(int(c) for c in str(k).split()) for k in out['key']]
-    for c in ('how', 'pdgids', 'flags', 'res_node', 'prod_pdgids', 'tables_top95'):
+    for c in ('how', 'pdgids', 'flags', 'res_node', 'prod_pdgids', 'tables_top95', 'alt_pdgids',
+              'unclosed_nodes', 'twin_pdgids'):
         if c in out:
             out[c] = out[c].fillna('')
     return out
@@ -1164,7 +1336,8 @@ def review_report(table, sample_csvs=None, mode_table=None):
                 elif table['is_sl'].iat[j]:
                     c = 'excl_sl'
                 else:
-                    c = {'measured': 'had_' + how[j], 'limit': 'had_limit', 'none': 'had_none'}[cls[j]]
+                    # 'measured' without a c (BF 0, or BF differs from the conjugate block): no c
+                    c = {'measured': 'had_' + (how[j] or 'none'), 'limit': 'had_limit', 'none': 'had_none'}[cls[j]]
                 acc[c] += w[i]
                 # merge the conjugate into the B0 / B+ row
                 m = int(table['mother_pdg'].iat[j])
@@ -1206,6 +1379,8 @@ def review_report(table, sample_csvs=None, mode_table=None):
                          how=r['how'], pdgids=r['pdgids'], bf_mc=r['bf_mc'], bf_pdg=r['bf_pdg'],
                          c=r['c'], sigma_c=r['sigma_c'], pull=r['pull'], f_res_mc=r['f_res_mc'],
                          f_res_pdg=r['f_res_pdg'], c_prod=r['c_prod'], flags=r['flags'],
+                         alt_pdgids=r['alt_pdgids'], unclosed_nodes=r['unclosed_nodes'],
+                         twin_pdgids=r['twin_pdgids'],
                          max_share=max_share.get(j, 0.0), max_share_table=max_table.get(j, ''),
                          n_top95=n_top.get(j, 0), why=';'.join(why)))
     review = pd.DataFrame(rows)

@@ -16,5 +16,21 @@
   "action": "rewrite",
   "description": "B0 --> D_sJ(2457)+ D^*(2010)- , D_sJ()+ --> D_s()+ gamma",
   "reason": "PDG text: 'B0 --> D_sJ(2457)+ D^*(2010) , D_sJ()+ --> D_s()+ gamma', without the charge of the D*. Charge conservation in a B0 decay with a D_sJ+ fixes it to D*(2010)-."
+ },
+ {
+  "pdgid": "S042.511",
+  "action": "rewrite",
+  "description": "B0 --> D^*(2010)+ D- + D^*(2010)- D+",
+  "reason": "PDG text: 'B0 --> D+- D^*()-+ (CP-averaged)' (6.14e-4): the sum of the two charge states D*+ D- and D*- D+, which the decay file lists as two lines of 3.05e-4."
+ },
+ {
+  "pdgid": "S042.155",
+  "action": "exclude_node",
+  "reason": "PDG text: 'B0 --> D^*(2010)+ D-' = 6.12e-4, equal to S042.511 'D+- D^*()-+ (CP-averaged)' = 6.14e-4; read as the same charge sum, it would give the D*+ D- line c = 2 and leave D*- D+ without a node. The 'sum' reading rests on the two values (listing not checked): to be confirmed by the analyst."
+ },
+ {
+  "pdgid": "S041.858",
+  "action": "exclude_node",
+  "reason": "PDG text: 'B+ --> psi(2S) K_1(1270)+ , K_1(1270)+ --> K+ pi+ pi-' (3.30e-5) is listed next to '[ same ](P-wave)' S041.859 (3.26e-5) and '[ same ](D-wave)' S041.860 (2.96e-5), whose sum exceeds it: one component of the psi(2S) K+ pi+ pi- amplitude fit, not the total rate."
  }
 ]
