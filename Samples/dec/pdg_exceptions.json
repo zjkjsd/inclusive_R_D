@@ -1,0 +1,20 @@
+[
+ {
+  "pdgid": "S042.124",
+  "action": "rewrite",
+  "description": "B0 --> D_2^*(2460)- pi+ , D_2^*()- --> Dbar0 pi-",
+  "reason": "PDG text: 'B0 --> Dbar_2^*(2460)- pi+ , D^*_2()- --> D0 pi-'. A D_2*(2460)- (anti-c d) decays strongly to Dbar0 pi-; D0 pi- would change charm by two units. The listing means Dbar0 pi-, as it writes for S042.320 and S042.419."
+ },
+ {
+  "pdgid": "S042.385",
+  "action": "rewrite",
+  "description": "B0 --> D_0^*(2300)- pi+ , D_0^*()- --> Dbar0 pi-",
+  "reason": "PDG text: 'B0 --> Dbar_0^*(2400)- pi+ , D^*_0()- --> D0 pi-'. Same misprint as S042.124: a D_0*- decays to Dbar0 pi-, as the listing writes for S042.554 and S042.418."
+ },
+ {
+  "pdgid": "S042.100",
+  "action": "rewrite",
+  "description": "B0 --> D_sJ(2457)+ D^*(2010)- , D_sJ()+ --> D_s()+ gamma",
+  "reason": "PDG text: 'B0 --> D_sJ(2457)+ D^*(2010) , D_sJ()+ --> D_s()+ gamma', without the charge of the D*. Charge conservation in a B0 decay with a D_sJ+ fixes it to D*(2010)-."
+ }
+]

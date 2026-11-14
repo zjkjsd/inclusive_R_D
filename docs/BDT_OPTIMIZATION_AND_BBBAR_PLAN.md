@@ -785,6 +785,111 @@ the PDG match).** Percent of the PID-weighted comb + hadB yield, e and μ, run1 
 Not in piece 2: whether c is applied as a weight or only sets a prior width, correlations between
 modes, and the source of the semileptonic BFs (piece 4).
 
+**Piece 2 (implemented, results to discuss).** `scripts/tools/pdg_match.py`; analysis code needs
+numpy, pandas and `decay_table` only. Status of the results: DONE as code, the numbers are
+PROPOSED until the review list is checked.
+
+| Function | What it does |
+|---|---|
+| `build_pdg_table` | writes `Samples/dec/pdg_bf_B_2026.json`: all 1273 BF nodes of B⁰ (584) and B⁺ (689), every level, with edition, release time, citation and license. The only place that imports `pdg` |
+| `load_pdg_table`, `load_exceptions` | read the cached table and `Samples/dec/pdg_exceptions.json` |
+| `parse_description`, `make_nodes` | PDG text → node kind (plain, product, sum, nonres, unkeyed) and daughters as evt.pdl codes; name table `PDG_NAMES` |
+| `DecayGraph` | sub-decay tables of the decay file (aliases keep their own); folds broad resonances |
+| `build_mode_pdg_table` | one row per (B flavor, final state): class, how, BF_MC, BF_PDG, c, σ_c, pull, resonant fractions, flags, PDG identifiers; optional node table |
+| `pdg_info`, `has_flag`, `write_table`, `read_table` | lookup and CSV |
+| `review_report` | modes to check by hand, and the yield by class per region |
+
+Run `python3 scripts/tools/pdg_match.py`: writes `b_mode_pdg_table.csv` (5017 rows) and
+`b_mode_pdg_review.csv` in `Notebooks/Plotting/csv_output`. Tests:
+`scripts/tests/test_pdg_match.py` (24 tests: cache, parser, toy decay files with known answers,
+the known cases on the real files; no `pdg` package, no network).
+
+Rules as implemented:
+
+- Node kinds: 742 plain, 4 sum, 176 product, 37 non-resonant (stored, not used), 314 unkeyed
+  (inclusive, charge sums, D-decay brackets, names not in the table). Nothing is guessed. 60 unkeyed
+  nodes have a value above 10⁻⁴; all but a few are inclusive (X) or CP-eigenstate nodes.
+- Folding: a daughter is replaced by its decays if its evt.pdl width is ≥ 10 MeV, its lifetime is 0
+  and the node does not name it. Not folded although wider: η_c, η_c(2S), χ_c0 (PDG charmless nodes
+  exclude them; folding η_c turned p p̄ K from c = 1.05 to 0.47). At most 4 nested levels.
+- K⁰, K̄⁰, K_S, K_L are one symbol. A node with one K_S is doubled; nodes with two or more get
+  `multi_ks` and no c.
+- A "lepton" node is compared with the e and with the μ line, each with the full value.
+- Priority: (1) exact: a plain node equal to the final state and fed by no other line.
+  (2) product: PDG product / (BF_line × BF_sub of the decay file), inverse-variance mean, χ² kept.
+  (3) node: lines not yet fixed share the remainder of the node, nodes taken from the fewest bodies
+  up; a line takes part only if ≥ 10 % of it feeds the node. Remainder ≤ 0 or more than 100 %
+  uncertain: inclusive ratio, `remainder_unstable`.
+- **OPEN: order of (2) and (3).** The agreed text had products last. With that order D\*\*ℓν takes
+  the D\*πℓν node (c = 0.74 for D₁, D₁′, D₂\* alike) and B⁰ → D₁⁻π⁺ gets c = 29 ± 18 from the
+  D\*⁻π⁺π⁰ remainder. With products first each line keeps its own measurement (D₁ℓν 0.96, D₁′ℓν 0.93,
+  D₂\*ℓν 0.84). Implemented: products first; `PRODUCT_BEFORE_NODE = False` gives the other order.
+  `c_prod` is stored in both cases.
+- σ_c is the uncertainty of c (c × relative PDG uncertainty of what was used); pull = (c − 1)/σ_c.
+  Asymmetric errors: the mean.
+- Classes: measured, limit (c = 1), none (c = 1), inclusive (Xu, Xsd, Xsu; c = 1).
+- Flags: `tau`, `resonance_mismatch` (f_res,PDG − f_res,MC > 0.3 for a node with ≥ 3 bodies; f_res,PDG
+  is capped at 1 for the test), `multi_ks`, `remainder_unstable`, `above_limit`,
+  `exception_applied`, `block_asymmetric`; added: `zero_bf`, `c_extreme` (c outside [1/3, 3]).
+- anti-B⁰ and B⁻ rows take the result of the conjugate B⁰ / B⁺ final state; where it is missing the
+  K⁰ and K\*⁰ flavor is ignored (`block_asymmetric`, 39 rows).
+- Exceptions file: actions `exclude_node`, `fold`, `no_fold`, `force_class`, `rewrite`. It holds
+  three `rewrite` entries for misprints of the listing (S042.124, S042.385: D⁰π⁻ for D̄⁰π⁻;
+  S042.100: D\* without charge). Everything else is left to the review.
+
+Headline numbers (exclusive lines, share of all B decays):
+
+| Class | B⁰ | B⁺ |
+|---|---|---|
+| measured, exact | 31.6 % | 35.1 % |
+| measured, node | 3.7 % | 4.5 % |
+| measured, product | 5.7 % | 6.8 % |
+| limit only | 0.2 % | 0.1 % |
+| no PDG node | 10.1 % | 9.8 % |
+| inclusive | 0.4 % | 0.4 % |
+
+- Close to the scouting numbers of B.12 (34 / 38.5 % plain, 6–7 % product, 10 % none).
+- Final states with a c: 288 (B⁰) and 262 (B⁺); |pull| < 1 for 162 and 173; |pull| > 3 for 65 and
+  41, which carry 4.1 % and 5.0 % of all B decays.
+- Known cases: D⁻e⁺ν c = 0.991 ± 0.028; J/ψ K⁺π⁻ node ratio 0.87 (3.8 line by line), the direct
+  line gets 0.65 ± 0.13; D̄⁰π⁺π⁻ node ratio 0.53, direct line 0.28 ± 0.06 (the file lists the full PDG
+  value as a direct line and the resonances on top; same pattern in D⁻K⁰π⁺, c = 0.39);
+  D(\*)D_s0\*(2317) c = 0.05–0.14; J/ψ K₁(1270) found, c = 1.00.
+- Broad D\*\*ℓν in B⁺: D₀\* 0.35 ± 0.21, D₁′ 0.59 ± 0.20 (products). In B⁰ the D₀\* product is only a
+  limit, which the file exceeds (`above_limit`).
+- `resonance_mismatch`: 11 final states of B⁰/B⁺, e.g. D\*⁻ωπ⁺ (file: PHSP only; PDG: ≥ 59 % via
+  ρ(1450) and D₁, D₂\* ω).
+- Review list: 413 final states (181 among the modes covering 95 % of the exclusive hadronic yield
+  of some table, 111 with |pull| > 3, 205 with a flag). Of the 181: 65 exact, 31 node, 13 product,
+  71 without a PDG node, 1 limit. 18 have |pull| > 3 and more than 0.2 % of the exclusive yield of
+  some table.
+
+Yield by class, percent of the PID-weighted yield (e and μ, run1 and run2, charged and neutral B):
+
+| Region | Table | excl. SL | had. exact | had. node | had. product | had. no node | inclusive | PYTHIA, 1 charm | PYTHIA, ≥ 2 charm |
+|---|---|---|---|---|---|---|---|---|---|
+| SR | comb, D side | 13.4 | 10.8 | 4.1 | 1.7 | 14.3 | 0.0 | 38.6 | 17.1 |
+| SR | comb, ℓ side | 50.5 | 7.6 | 1.7 | 1.8 | 5.8 | 0.5 | 26.8 | 5.0 |
+| SR | hadB | 0.8 | 32.7 | 9.6 | 9.1 | 25.7 | 0.0 | 2.2 | 19.8 |
+| comb CR | comb, D side | 7.6 | 14.6 | 3.8 | 2.9 | 14.3 | 0.0 | 42.8 | 13.8 |
+| comb CR | comb, ℓ side | 45.3 | 10.2 | 1.7 | 2.5 | 6.4 | 0.6 | 28.2 | 4.8 |
+| comb CR | hadB | 0.6 | 22.0 | 9.3 | 6.7 | 31.4 | 0.0 | 5.1 | 24.8 |
+| WC | comb, D side | 7.0 | 11.8 | 3.3 | 2.9 | 14.3 | 0.0 | 50.5 | 10.1 |
+| WC | comb, ℓ side | 76.4 | 5.2 | 0.9 | 1.5 | 3.9 | 1.1 | 7.8 | 3.2 |
+| WC | hadB | 6.0 | 14.2 | 2.5 | 3.3 | 14.3 | 0.0 | 51.8 | 7.8 |
+
+- Hadronic limit-only modes and PYTHIA without charm are ≤ 0.2 % everywhere. "inclusive" is X_u ℓν,
+  counted apart from "excl. SL".
+
+To discuss:
+
+- The order of products and nodes (above).
+- The remainder can load a poorly known inclusive node onto a small line (B⁰ → D₁′⁻π⁺: c = 79 ± 51;
+  B⁺ → D̄\*\*⁰ρ⁺: 5.5 ± 2.6). These carry `c_extreme`; a weight needs a rule for them.
+- A product c also absorbs a wrong sub-decay BF of the decay file (D_s0\*, ψ(2S)K₁).
+- PDG is not always consistent with itself (J/ψ K⁰π⁺π⁻ against J/ψ K₁ and J/ψ K\*π); such nodes
+  end as `remainder_unstable`.
+
 ---
 
 ## Part C: global K_L check (AGREED as a separate track)
