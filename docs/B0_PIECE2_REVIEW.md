@@ -64,7 +64,7 @@ file is above a PDG limit), `resonance_mismatch`, `multi_ks` (several K_S: no c)
 | E1–E6 | The six exceptions | OPEN | |
 | D1 | B⁰ → D⁻ a₁⁺ | OPEN | |
 | D2 | B → D(\*) D_s0\*(2317) | OPEN | |
-| D3 | B⁰ → D\*± D∓ | OPEN | |
+| D3 | B⁰ → D\*± D∓ | AGREED (2026-11-16): the paper confirms the sum | both lines take c from S042.511; S042.155 is not used |
 | C1–C18 | The cases of `B0_PIECE2_CASES.md` | OPEN | |
 
 ## 2. Method points
@@ -178,8 +178,8 @@ checked entry by entry against `evt.pdl` in the review.
 | E1 | S042.124, B⁰ → D₂\*(2460)⁻π⁺, D₂\*⁻ → "D⁰π⁻" | rewrite to D̄⁰π⁻ | A D₂\*⁻ (c̄d) decays to D̄⁰π⁻; "D⁰π⁻" would change charm by two units. PDG writes D̄⁰π⁻ in the neighboring entries | D₂\*⁻π⁺ gets c = 1.39 ± 0.09 from its product entry | OPEN |
 | E2 | S042.385, B⁰ → D₀\*⁻π⁺, D₀\*⁻ → "D⁰π⁻" | rewrite to D̄⁰π⁻ | same misprint | D₀\*⁻π⁺ gets c = 0.27 ± 0.03 | OPEN |
 | E3 | S042.100, B⁰ → D_sJ(2457)⁺ D\*(2010), D_sJ⁺ → D_s⁺γ | rewrite: D\*(2010)⁻ | PDG gives no charge for the D\*; charge conservation fixes it | adds a cross-check for D\*⁻D_s1⁺ (its c stays the exact one, 1.00) | OPEN |
-| E4 | S042.511, B⁰ → D±D\*∓ (CP-averaged) = 6.14·10⁻⁴ | rewrite as the sum D\*⁺D⁻ + D\*⁻D⁺ | see D3 | both lines c = 1.01 ± 0.10 | OPEN (D3) |
-| E5 | S042.155, B⁰ → D\*(2010)⁺D⁻ = 6.12·10⁻⁴ | exclude | see D3 | avoids c = 2 for one charge state | OPEN (D3) |
+| E4 | S042.511, B⁰ → D±D\*∓ (CP-averaged) = 6.14·10⁻⁴ | rewrite as the sum D\*⁺D⁻ + D\*⁻D⁺ | see D3 | both lines c = 1.01 ± 0.10 | AGREED (D3) |
+| E5 | S042.155, B⁰ → D\*(2010)⁺D⁻ = 6.12·10⁻⁴ | exclude | see D3 | avoids c = 2 for one charge state | AGREED (D3); its own sources not checked |
 | E6 | S041.858, B⁺ → ψ(2S)K₁(1270)⁺, K₁ → K⁺π⁺π⁻ = 3.3·10⁻⁵ | exclude | listed next to "(P-wave)" 3.26·10⁻⁵ and "(D-wave)" 2.96·10⁻⁵ of the same decay; their sum exceeds it, so it is one component of an amplitude fit, not the total | ψ(2S)K₁⁺ gets c = 0.75 ± 0.09 from the ψ(2S)K⁺π⁺π⁻ total instead of 0.23 | OPEN |
 
 ## 4. The three modes that need a decision
@@ -244,13 +244,25 @@ D_s0\*, so the D⁺ in these events is the other D; the correction is a pure rat
 - Read literally, S042.155 is one charge state: that line would get c = 2.0 and the other no c.
 - Both PDG values equal the *sum* of the two decay-file lines. The experiments measure the two
   charge states together. So I read both entries as the sum: both lines c = 1.01 ± 0.10 (E4, E5).
-- I could not check the wording of the PDG listing for S042.155 (the cached table has no footnotes).
+- **Checked against the source (2026-11-16).** The value of S042.511 is the Belle measurement
+  M. Röhrken et al., arXiv:1203.6647: B(B⁰ → D\*±D∓) = (6.14 ± 0.29 ± 0.50)·10⁻⁴; the two errors in
+  quadrature give the ±0.58 of the PDG entry. In the paper:
+  - the signal is one yield, 886.8 ± 39.3 events "in all reconstructed modes combined", from B
+    candidates built from a D\*⁺ and a D⁻ with charge conjugates implied (its ref. 18), i.e. D\*⁺D⁻
+    and D\*⁻D⁺ together;
+  - one branching fraction is derived from that yield and the number of BB̄ pairs;
+  - the text states that D\*⁺D⁻ and D\*⁻D⁺ are not CP eigenstates and that the decay has four
+    flavor-charge configurations (its Eq. 2), all of which enter the sample.
+  So the number is the **sum** of the two charge states, averaged over B⁰ and B̄⁰ ("CP-averaged" in
+  PDG's wording). The paper has no sentence that says "sum" in so many words; the conclusion
+  follows from how the yield is defined.
+- This agrees with the decay file: 2 × 0.0305 % = 0.061 %.
+- S042.155 (6.12 ± 1.53)·10⁻⁴ comes from other, older measurements, which were not checked. It is
+  less precise by a factor 2.6, and S042.511 alone fixes both lines, so it is not needed.
 
-*What I need from you.* A look at the PDG listing of B⁰ → D\*(2010)⁺D⁻: does it say that both charge
-states are included? If you can't tell, the alternative is to keep E4 (the CP-averaged entry is
-unambiguous) and E5 as a consequence.
-
-*Decision:* OPEN.
+*Decision:* AGREED (2026-11-16). Both lines take c = 1.01 ± 0.10 from S042.511 as the sum (E4).
+S042.155 stays excluded (E5); if its sources turn out to be the single charge state, the conclusion
+does not change, because it would then be superseded by the more precise sum.
 
 ## 5. Cases
 
@@ -309,4 +321,5 @@ Prompt for a new Claude Code session in this repository:
 > and implement it only when I say so: through the exceptions file where possible, then rerun
 > `python3 scripts/tools/pdg_match.py`, `python3 scripts/tools/pdg_review_cases.py` and the tests,
 > and tell me what changed. Raise anything abnormal instead of fixing it silently.
-> Start with M1.
+> D3 (with E4, E5) is already settled. Start with M1. When all points are decided and implemented,
+> update section B.13 of the working document and propose how to proceed with piece 3.

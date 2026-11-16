@@ -21,12 +21,12 @@
   "pdgid": "S042.511",
   "action": "rewrite",
   "description": "B0 --> D^*(2010)+ D- + D^*(2010)- D+",
-  "reason": "PDG text: 'B0 --> D+- D^*()-+ (CP-averaged)' (6.14e-4): the sum of the two charge states D*+ D- and D*- D+, which the decay file lists as two lines of 3.05e-4."
+  "reason": "PDG text: 'B0 --> D+- D^*()-+ (CP-averaged)' (6.14e-4): the sum of the two charge states D*+ D- and D*- D+, which the decay file lists as two lines of 3.05e-4. Confirmed with the source, Belle arXiv:1203.6647: B(B0 -> D*+- D-+) = (6.14 +- 0.29 +- 0.50)e-4 from one yield of both charge states."
  },
  {
   "pdgid": "S042.155",
   "action": "exclude_node",
-  "reason": "PDG text: 'B0 --> D^*(2010)+ D-' = 6.12e-4, equal to S042.511 'D+- D^*()-+ (CP-averaged)' = 6.14e-4; read as the same charge sum, it would give the D*+ D- line c = 2 and leave D*- D+ without a node. The 'sum' reading rests on the two values (listing not checked): to be confirmed by the analyst."
+  "reason": "PDG text: 'B0 --> D^*(2010)+ D-' = 6.12e-4, equal to S042.511 'D+- D^*()-+ (CP-averaged)' = 6.14e-4; read as the same charge sum, it would give the D*+ D- line c = 2 and leave D*- D+ without a node. Its own sources were not checked; S042.511 (confirmed to be the sum, 2.6 times more precise) fixes both lines, so this entry is not needed."
  },
  {
   "pdgid": "S041.858",
