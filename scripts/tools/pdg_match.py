@@ -1037,6 +1037,9 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
     for k, r in results.items():
         r['bf_mc_sum'] = cmode_bf[k]
         del r['_diff']
+    # feeders of each node, for the review: (collapsed key of the line, BF x P, BF of the line)
+    for uid, f in feed.items():
+        rows[uid]['feeders'] = sorted(((k, v, cmode_bf[k]) for k, v in f.items()), key=lambda x: -x[1])
     return results, pd.DataFrame(list(rows.values()))
 
 
