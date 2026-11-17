@@ -793,7 +793,7 @@ def test_real_coverage():
     known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit',
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
              'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin',
-             'remainder_clamped', ''}
+             'remainder_clamped', 'measurement_conflict', ''}
     assert set(f for fl in TABLE['flags'] for f in fl.split(';')) <= known
     # shares of all B decays (scouting, B.12: 34 / 38.5 % plain, 6-7 % product, ~10 % none)
     for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
@@ -977,6 +977,14 @@ def test_real_review_fixes():
         r = row(511, names)
         assert r['how'] == 'isospin' and r['pdgids'] == 'S041.360', names
         assert close(r['c'], src['c'] * src['bf_mc'] / 0.00048 / pm.TAU_RATIO)
+    # P1 (c): psi(3770) K+ keeps its PDG c, with 80 % added (conflict with the LHCb fit fraction);
+    # the D+ D- K+ phase-space line and the isospin image psi(3770) K0 carry the wider uncertainty
+    r = row(521, 'psi(3770) K+')
+    assert r['how'] == 'exact' and close(r['sigma_c'], math.hypot(0.2258, 0.8 * r['c']), 2e-3)
+    assert {'measurement_conflict', 'exception_applied'} <= flags(r)
+    assert 'measurement_conflict' in flags(row(511, 'psi(3770) K_S0')) and row(511, 'psi(3770) K_S0')['sigma_c'] > 0.6
+    d = row(521, 'D+ D- K+')
+    assert d['how'] == 'node' and 0.05 < d['c'] < 0.15 and d['sigma_c'] > 0.7
     # own limits are not exceeded by a remainder
     for names, pid in (('anti-D_2*0 rho+', 'S041.213'), ('K*+ chi_c0', 'S041.435')):
         r = row(521, names)

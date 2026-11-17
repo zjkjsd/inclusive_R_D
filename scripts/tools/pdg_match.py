@@ -85,6 +85,7 @@ sigma_c = limit/2 (how = 'half_limit', class limit):
 `force_class` is applied before the totals are split: a forced line takes no c from a total.
 `extra_uncertainty` adds a relative uncertainty in quadrature to the sigma_c of a line with a c:
     {"mother": 511, "key": [...], "action": "extra_uncertainty", "relative": 0.2, "reason": "..."}
+    (optional "flag": a flag added to the line, e.g. "measurement_conflict")
 
 Analysis-time code needs numpy and pandas only. The `pdg` package is imported inside
 `build_pdg_table` only.
@@ -789,12 +790,12 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                  bf_pdg_err=node['err'], c=c, sigma_c=sigma, p_node=p_node)
 
     # lines fixed by an 'isospin' exception: the c of the partner line of the other B block
-    for k, (c, sigma, ids) in (preset or {}).items():
+    for k, (c, sigma, ids, inherited) in (preset or {}).items():
         if cmode_bf.get(k, 0.0) <= 0:
             raise ValueError(f'exceptions: isospin target {k} of {mother} is not a line with BF > 0')
         results[k].update(pdg_class='measured', how='isospin', pdgids=list(ids),
                           bf_pdg=c * cmode_bf[k], bf_pdg_err=sigma * cmode_bf[k], c=c, sigma_c=sigma)
-        results[k]['flags'].update(('isospin', 'exception_applied'))
+        results[k]['flags'].update(('isospin', 'exception_applied', *inherited))
 
     # 1. exact nodes: one target, fed by the line of that final state alone
     exact = [n for n in measured if len(n['targets']) == 1 and set(feed[n['uid']]) == {n['targets'][0]}]
@@ -931,6 +932,29 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                  bf_pdg=cap[k] * cmode_bf[k], bf_pdg_err=0.0)
         r['flags'].add('exception_applied')
 
+    # extra relative uncertainty on a c (e.g. from a sub-decay BF the decay file fixes at 100 %, or
+    # two measurements in conflict); optional 'flag' is added to the line
+    extra_done = set()
+
+    def apply_extra(final):
+        for i, e in enumerate(exceptions):
+            if e['action'] != 'extra_uncertainty' or int(e['mother']) != mother or i in extra_done:
+                continue
+            k = collapse_key(e['key'])
+            if k not in results:
+                raise ValueError(f'exceptions: extra_uncertainty on {e["key"]} of {mother}: no such line')
+            r = results[k]
+            if not r['how']:
+                if final:
+                    raise ValueError(f'exceptions: extra_uncertainty on {e["key"]} of {mother}, which has no c')
+                continue
+            r['sigma_c'] = float(np.hypot(r['sigma_c'], float(e['relative']) * r['c']))
+            r['extra_rel'] = float(np.hypot(r['extra_rel'], float(e['relative'])))
+            r['flags'].add('exception_applied')
+            if e.get('flag'):
+                r['flags'].add(str(e['flag']))
+            extra_done.add(i)
+
     # final-state nodes, the most exclusive first. Only the DIRECT lines of a node (their final
     # state is the node's own; in the decay file the PHSP line meant as the non-resonant part)
     # take a c from it: the remainder of the total after all other lines, clamped at 0. Lines with
@@ -1002,7 +1026,8 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
     # 2 and 3. A line with product nodes has a resonance-explicit measurement of its own: it is
     # fixed by them before the remainders of the final-state nodes are formed.
     assign_products()
-    node_pass()
+    apply_extra(final=False)                    # lines with an exact, product or isospin c: before the
+    node_pass()                                 # pass, so that remainders use the widened sigma_c
     assign_product_limits()
 
     # limits and zero-BF final states: plain nodes equal to the final state
@@ -1094,17 +1119,9 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             if diff > RES_MISMATCH:
                 r['flags'].add('resonance_mismatch')
 
-    # extra relative uncertainty on a c (e.g. from a sub-decay BF the decay file fixes at 100 %)
-    for e in exceptions:
-        if e['action'] != 'extra_uncertainty' or int(e['mother']) != mother:
-            continue
-        k = collapse_key(e['key'])
-        if k not in results or not results[k]['how']:
-            raise ValueError(f'exceptions: extra_uncertainty on {e["key"]} of {mother}, which has no c')
-        r = results[k]
-        r['sigma_c'] = float(np.hypot(r['sigma_c'], float(e['relative']) * r['c']))
-        r['extra_rel'] = float(np.hypot(r['extra_rel'], float(e['relative'])))
-        r['flags'].add('exception_applied')
+    # extra relative uncertainty on the c of the lines fixed by the node pass (the others got it
+    # before the pass, see apply_extra)
+    apply_extra(final=True)
 
     # `unmeasured`: a line without a c (class none) that feeds a measured final-state node. The
     # node measures the sum, not this line: c = 1 with an uncertainty of 100 %.
@@ -1273,7 +1290,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
             raise ValueError(f'exceptions: isospin target {e["key"]} of {e["mother"]} is not a line with BF > 0')
         scale = (1.0 / TAU_RATIO if int(e['mother']) == 511 else TAU_RATIO) * src['bf_mc_sum'] / own['bf_mc_sum']
         preset.setdefault(int(e['mother']), {})[collapse_key(e['key'])] = (src['c'] * scale, src['sigma_c'] * scale,
-                                                                             src['pdgids'])
+                                                                             src['pdgids'],
+                                                                             src['flags'] & {'measurement_conflict'})
     for mother, pre in preset.items():
         results[mother], node_tables[mother] = _match_block(mother, block_lines[mother], nodes, graph,
                                                              exceptions, preset=pre)

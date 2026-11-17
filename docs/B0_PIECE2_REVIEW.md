@@ -81,7 +81,7 @@ PDG limit (it is counted as limit/2 ± limit/2 when a total is split).
 | G3–G4 | Direct (non-resonant PHSP) lines of a PDG total | DONE (2026-11-18), section 5a | every direct line: c = remainder of the total, clamped at 0; σ_c adds 20 % of the subtracted part (option 1b); M2 kept; B⁺ → D̄₁⁰ρ⁺ c = 0.19 ± 0.19 (half_limit) |
 | G5–G7 | The case groups of section 5 | OPEN | |
 | R1 | Findings of the independent review of 2026-11-17 | DONE (2026-11-18), section 5b | fixed: R1.1, R1.2, R1.5, R1.6, R1.9; R1.3 superseded; R1.4, R1.8, R1.10 noted |
-| P1 | Amplitude analyses against the remainders | OPEN (section 5c) | B⁺ → D⁺D⁻K⁺ inconsistent between PDG entries |
+| P1 | B⁺ → ψ(3770)K⁺ and the D⁺D⁻K⁺ total | (c) DONE (2026-11-18); revision proposed with G5 (section 5d) | ψ(3770)K⁺ keeps c = 0.89, σ_c widened to 0.75 (measurement_conflict) |
 
 ## 2. Method points
 
@@ -739,6 +739,52 @@ c ≈ 0.80 × 2.2·10⁻⁴ / 2.2·10⁻⁴ ≈ 0.8 ± 0.3, and the D⁺D⁻ par
 which would put the ψ(3770)K⁺ line at c ≈ 0.16, against its own PDG value; (c) as (a), with a flag
 and a wider σ on ψ(3770)K⁺. The ψ(3770)K⁺ line also feeds D⁰D̄⁰K⁺ (4210, c = 0.83) and appears in
 the isospin transfer to ψ(3770)K⁰ (I1), so (b) moves those too.
+
+## 5d. G5: ψ(3770) and the D D̄ K totals (2026-11-18)
+
+*P1 option (c) implemented.* ψ(3770)K⁺ (line 4162): c = 0.89, σ_c 0.23 → 0.75 (extra_uncertainty
+80 %, new flag `measurement_conflict`), carried to the isospin image ψ(3770)K⁰ and into the
+remainders of the D D̄ K totals (they are now computed with the widened σ). D⁺D⁻K⁺ line: 0.10 ±
+0.77.
+
+*Correction to the explanation of P1.* PDG lists B⁺ → ψ(3770)K⁺ three times:
+
+| PDG entry | Value | c for line 4162 |
+|---|---|---|
+| S041.360, ψ(3770)K⁺ (total) | (4.34 ± 1.10)·10⁻⁴ | 0.89 ± 0.23 (used: exact match first) |
+| S041.362, ψ(3770)K⁺ × B(ψ → D⁺D⁻) | (0.94 ± 0.35)·10⁻⁴ | 0.47 ± 0.17 |
+| S041.361, ψ(3770)K⁺ × B(ψ → D⁰D̄⁰) | (1.55 ± 0.49)·10⁻⁴ | 0.61 ± 0.19 |
+
+The two per-channel entries agree with each other (combined c = 0.53 ± 0.13, χ² = 0.3) but not with
+the total (0.89 ± 0.23). The "81 %" of 5c combined the total with the decay file's 41 % for
+ψ → D⁺D⁻. PDG's own D⁺D⁻ product is 0.94·10⁻⁴, i.e. 43 % of the D⁺D⁻K⁺ total, against LHCb's 14.5 %
+(0.32·10⁻⁴): a 1.8σ difference in the product, not a factor 5.6. The main inconsistency is inside
+PDG, between the ψ(3770)K⁺ total and its channels. (PDG's ψ(4040), ψ(4160), ψ(4415) → D⁺D⁻ products
+are LHCb's fit fractions times the D⁺D⁻K⁺ total.)
+
+*Options for line 4162* (simulated; the lines that depend on it move with it):
+
+| | ψ(3770)K⁺ (4162) | D⁺D⁻K⁺ (4216) | D̄⁰D⁰K⁺ (4210) | ψ(3770)K⁰ (593, 594) | D⁻D⁺K⁰ (652) | D̄⁰D⁰K⁰ (658) |
+|---|---|---|---|---|---|---|
+| (c), now: total, widened | 0.89 ± 0.75 | 0.10 ± 0.77 | 0.83 ± 0.26 | 0.84 ± 0.71 | 0.78 ± 0.30 | 0.22 ± 0.79 |
+| P: per-channel products | 0.53 ± 0.13 | 0.43 ± 0.36 | 0.89 ± 0.23 | 0.50 ± 0.12 | 0.87 ± 0.23 | 0.54 ± 0.44 |
+| P+: products, widened to reach LHCb (c ≈ 0.16) | 0.53 ± 0.37 | 0.43 ± 0.48 | 0.89 ± 0.24 | 0.50 ± 0.35 | 0.87 ± 0.25 | 0.54 ± 0.53 |
+
+P and P+ need one exception: exclude S041.360 for this line (so the products set c), plus the
+extra uncertainty (65 %) for P+. Recommendation: P+. The products are the like-for-like
+comparison for a line whose events are D D̄ K (M1), they agree with each other, and the remaining
+tension with LHCb is covered.
+
+*Other G5 cases.*
+- **B⁰ → D⁰D̄⁰K⁺π⁻ (S042.609).** PDG (3.51 ± 0.47)·10⁻⁴; the decay file gives 5.72·10⁻⁴ (4.7σ above),
+  all through resonance lines without an own entry: ψ(3770)K\*⁰ (597–600, share 1.08 %),
+  ψ(3770)K⁺π⁻ (602), D̄⁰K\*⁰D⁰ (674). There is no direct line, so under M1 nothing takes a c; all
+  three stay unmeasured (1 ± 1) and the total stays flagged. Proposal: keep.
+- **New case B⁰ → D⁻π⁺π⁻ℓν (S042.556) and B⁺ → D̄⁰π⁺π⁻ℓν (S041.649).** Their direct lines (379,
+  403 μ; 4011, 4038 μ) are non-resonant semileptonic gap modes like those of M2; under the new rule
+  they took the remainder: 1.38 ± 1.6 and 2.38 ± 1.16 (share 0.13 %). Proposal: extend M2 to them
+  (c = 1 ± 1, force_class none), as for the D(\*)πℓν lines.
+- B⁺ → D⁻D⁺K⁺ (S041.336): follows the choice above.
 
 ## 6. Starting a new session on this
 

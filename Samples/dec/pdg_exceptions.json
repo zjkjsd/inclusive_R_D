@@ -238,5 +238,16 @@
   ],
   "action": "half_limit",
   "reason": "G3 (2026-11-18). PDG text: 'B+ --> Dbar_1^*(2420)0 rho+' < 1.4e-3 (S041.215, CLEO). The decay file (line 4319) has 3.72e-3, set as twice B+ --> anti-D_10 pi+ (the D**rho = 2 x D**pi assumption of BELLE2-NOTE-PH-2022-002), 2.7 times the limit. The line takes c = limit/2 +- limit/2, i.e. 0.19 +- 0.19."
+ },
+ {
+  "mother": 521,
+  "key": [
+   30443,
+   321
+  ],
+  "action": "extra_uncertainty",
+  "relative": 0.8,
+  "flag": "measurement_conflict",
+  "reason": "P1 option (c), 2026-11-18. PDG text: 'B+ --> psi(3770) K+' (S041.360, 4.34e-4) times B(psi(3770) --> D+ D-) = 0.41 is 81 % of 'B+ --> D- D+ K+' (S041.336, 2.2e-4). The LHCb amplitude analysis (arXiv:2009.00026, Table 4) measures a psi(3770) fit fraction of 14.5 +- 1.4 % in B+ --> D+ D- K+, i.e. c = 0.16 for this line with the PDG total. The two measurements conflict; it is not known which is wrong. The PDG central value is kept and 80 % is added in quadrature to sigma_c (0.23 --> 0.75), so that the LHCb-based value lies within 1 sigma."
  }
 ]

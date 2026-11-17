@@ -125,8 +125,8 @@ Columns of the line table:
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| D- K+ D+ | 4216 | 0.00022 | 1.00 | measured | node | S041.336 | 0.102 | 0.42 | yes | c_extreme, remainder_unstable, resonance_mismatch | 2.38 |
-| K+ psi(3770) | 4162 | 0.000488 | 0.41 | measured | exact | S041.360 | 0.89 | 0.23 |  | resonance_mismatch | 1.65 |
+| D- K+ D+ | 4216 | 0.00022 | 1.00 | measured | node | S041.336 | 0.102 | 0.77 | yes | c_extreme, remainder_unstable, resonance_mismatch | 2.38 |
+| K+ psi(3770) | 4162 | 0.000488 | 0.41 | measured | exact | S041.360 | 0.89 | 0.75 |  | exception_applied, measurement_conflict, resonance_mismatch | 1.65 |
 | K+ psi(4160) | 4171 | 0.000509 | 0.04 | measured | exact | S041.619 | 0.993 | 0.53 |  |  | 0.68 |
 
 ## Case 7: S042.609, B0 --> D0 Dbar()0 K+ pi-
@@ -234,7 +234,7 @@ Columns of the line table:
 | K_2*+ J/psi | 4080 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
 | pi- pi+ K+ J/psi | 4083 | 5.51e-05 | 1.00 | measured | node | S041.19 | 1.04 | 5.1 | yes | remainder_unstable | 0.00 |
 | J/psi K'_1+ | 4078 | 0.0001 | 0.44 | limit |  | S041.272 | 1 | – |  |  | 0.00 |
-| K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | exact | S041.360 | 0.89 | 0.23 |  | resonance_mismatch | 1.65 |
+| K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | exact | S041.360 | 0.89 | 0.75 |  | exception_applied, measurement_conflict, resonance_mismatch | 1.65 |
 
 ## Case 15: S041.528, B+ --> J/psi(1S) omega K+
 
@@ -265,7 +265,7 @@ Columns of the line table:
 | pi- pi+ K0 J/psi | 453 | 0.000435 | 1.00 | measured | node | S042.211 | 0 | 1.2 | yes | c_extreme, node_not_closed, remainder_clamped, remainder_unstable | 0.02 |
 | K_2*0 J/psi | 459 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
 | J/psi K'_10 | 458 | 0.0001 | 0.44 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
-| K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | measured | isospin | S041.360 | 0.841 | 0.21 |  | above_limit, exception_applied, isospin | 0.00 |
+| K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | measured | isospin | S041.360 | 0.841 | 0.71 |  | above_limit, exception_applied, isospin, measurement_conflict | 0.00 |
 
 ## Case 17: S042.212, B0 --> J/psi(1S) K0 rho0
 
