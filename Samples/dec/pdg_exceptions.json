@@ -160,5 +160,74 @@
    14
   ],
   "reason": "M2 (2026-11-17). B0 --> D_0*- mu+ nu has only an upper limit in PDG (S042.418, product with D_0*- --> Dbar0 pi- < 4.4e-4). The isospin partner B+ --> Dbar_0*0 l+ nu is measured as a product (S041.503). Semileptonic b --> c decays conserve isospin, so the B0 line takes the c of the B+ line. Accepted: the corrected B0 product stays above the limit, within the B+ error."
+ },
+ {
+  "pdgid": "S042.93",
+  "action": "exclude_node",
+  "reason": "D1 (2026-11-17). PDG text: 'B0 --> D- a_1(1260)+' = (0.60 +- 0.33) %, an old measurement with 54 % error. The decay-file line D- a_1+ (line 697, 1.071 %) carries the comment 'Interpreting D3pi BF as fully (D- a1(->3pi)) decay': its BF is the D- pi+ pi+ pi- total divided by B(a_1+ --> pi+ pi+ pi-). The total S042.88 (0.598 +- 0.061 %) is the measurement the line was built from and is five times more precise, so the line is compared with it (direct_line entry) and this entry is not used."
+ },
+ {
+  "pdgid": "S042.88",
+  "action": "direct_line",
+  "mother": 511,
+  "key": [
+   -411,
+   20213
+  ],
+  "reason": "D1 (2026-11-17). PDG text: 'B0 --> D- pi+ pi+ pi-' = (0.598 +- 0.061) %. The decay file has no direct D- pi+ pi+ pi- line: it routes the whole final state through D- a_1+ (line 697, comment 'Interpreting D3pi BF as fully (D- a1(->3pi)) decay'). The line therefore stands for this inclusive final state and takes its c from the total, after the other lines that feed it."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   10431
+  ],
+  "action": "extra_uncertainty",
+  "relative": 0.2,
+  "reason": "D2 (2026-11-17). The c of 'D- D_s0*+' comes from PDG products with D_s0*(2317)+ --> D_s+ pi0. The decay file sends the D_s0* to D_s+ pi0 in 100 % of the cases; PDG gives B(D_s0* --> D_s pi0) = (100 +0 -20) %. If the sub-decay is below 100 %, the B rate and c are larger by up to 25 %; 20 % is added in quadrature to sigma_c."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   10431
+  ],
+  "action": "extra_uncertainty",
+  "relative": 0.2,
+  "reason": "D2 (2026-11-17). The c of 'D*- D_s0*+' comes from PDG products with D_s0*(2317)+ --> D_s+ pi0. The decay file sends the D_s0* to D_s+ pi0 in 100 % of the cases; PDG gives B(D_s0* --> D_s pi0) = (100 +0 -20) %. If the sub-decay is below 100 %, the B rate and c are larger by up to 25 %; 20 % is added in quadrature to sigma_c."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   10431
+  ],
+  "action": "extra_uncertainty",
+  "relative": 0.2,
+  "reason": "D2 (2026-11-17). The c of 'anti-D0 D_s0*+' comes from PDG products with D_s0*(2317)+ --> D_s+ pi0. The decay file sends the D_s0* to D_s+ pi0 in 100 % of the cases; PDG gives B(D_s0* --> D_s pi0) = (100 +0 -20) %. If the sub-decay is below 100 %, the B rate and c are larger by up to 25 %; 20 % is added in quadrature to sigma_c."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   10431
+  ],
+  "action": "extra_uncertainty",
+  "relative": 0.2,
+  "reason": "D2 (2026-11-17). The c of 'anti-D*0 D_s0*+' comes from PDG products with D_s0*(2317)+ --> D_s+ pi0. The decay file sends the D_s0* to D_s+ pi0 in 100 % of the cases; PDG gives B(D_s0* --> D_s pi0) = (100 +0 -20) %. If the sub-decay is below 100 %, the B rate and c are larger by up to 25 %; 20 % is added in quadrature to sigma_c."
+ },
+ {
+  "mother": 511,
+  "key": [
+   30443,
+   310
+  ],
+  "action": "isospin",
+  "from_mother": 521,
+  "from_key": [
+   30443,
+   321
+  ],
+  "reason": "2026-11-17. B0 --> psi(3770) K0 (lines 592-594: K0 with BF 0, K_S0, K_L0) has only product upper limits in PDG (S042.393, S042.394), and the decay file is above them. The isospin partner B+ --> psi(3770) K+ is measured (S041.360). b --> c cbar s decays conserve isospin, so the B0 lines take the B+ value divided by the lifetime ratio."
  }
 ]

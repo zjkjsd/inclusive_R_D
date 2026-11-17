@@ -71,8 +71,14 @@ Exceptions file (`Samples/dec/pdg_exceptions.json`): a JSON list of entries
     {"mother": 511, "key": [...], "action": "isospin", "from_mother": 521, "from_key": [...], "reason": "..."}
 `states` are evt.pdl names. `rewrite` replaces the PDG text of a node before it is parsed (for
 misprints in the listing); the value is not changed. `force_class` to anything but 'measured' also resets c to 1.
-`isospin` gives a B0 (B+) line the c and sigma_c of its isospin partner in the other block, which
-must have an exact or product c (how = 'isospin', flag `isospin`).
+`isospin` gives a B0 (B+) line the corrected BF of its isospin partner in the other block, which
+must have an exact or product c: BF(B+) = TAU_RATIO x BF(B0), so c = c_partner x BF_MC(partner) /
+BF_MC(line) x (1 / TAU_RATIO for a B0 line, TAU_RATIO for a B+ line) (how = 'isospin', flag `isospin`).
+`direct_line` declares a line as the direct line of a multi-body node although it reaches it through
+a resonance (the decay file routes the whole final state through that resonance):
+    {"pdgid": "S042.88", "action": "direct_line", "mother": 511, "key": [...], "reason": "..."}
+`extra_uncertainty` adds a relative uncertainty in quadrature to the sigma_c of a line with a c:
+    {"mother": 511, "key": [...], "action": "extra_uncertainty", "relative": 0.2, "reason": "..."}
 
 Analysis-time code needs numpy and pandas only. The `pdg` package is imported inside
 `build_pdg_table` only.
@@ -283,7 +289,8 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
         exc = json.load(f)
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
-    known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin')
+    known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin', 'direct_line',
+             'extra_uncertainty')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -297,8 +304,13 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
                 raise ValueError(f'{path}: isospin needs mother, key, from_mother and from_key: {e}')
             if {int(e['mother']), int(e['from_mother'])} != {511, 521}:
                 raise ValueError(f'{path}: isospin relates a B0 (511) line and a B+ (521) line: {e}')
+        elif e['action'] == 'extra_uncertainty':
+            if 'mother' not in e or 'key' not in e or not float(e.get('relative', 0)) > 0:
+                raise ValueError(f'{path}: extra_uncertainty needs mother, key and relative > 0: {e}')
         elif 'pdgid' not in e:
             raise ValueError(f'{path}: {e["action"]} needs a pdgid: {e}')
+        if e['action'] == 'direct_line' and ('mother' not in e or 'key' not in e):
+            raise ValueError(f'{path}: direct_line needs pdgid, mother and key: {e}')
         if e['action'] in ('fold', 'no_fold') and not e.get('states'):
             raise ValueError(f'{path}: {e["action"]} needs states: {e}')
         if e['action'] == 'rewrite' and '-->' not in str(e.get('description', '')):
@@ -677,6 +689,16 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             codes = {pdl.name_to_pdg[s] for s in e['states']}
             (fold_add if e['action'] == 'fold' else fold_rm).setdefault(e['pdgid'], set()).update(codes)
 
+    # 'direct_line' exceptions: lines that stand for the final state of a node (the decay file
+    # routes the whole final state through one resonance), treated as its direct line
+    direct_extra = {}
+    for e in exceptions:
+        if e['action'] == 'direct_line' and int(e['mother']) == mother:
+            direct_extra.setdefault(e['pdgid'], set()).add(collapse_key(e['key']))
+
+    def is_direct(node, k):
+        return k in node['targets'] or k in direct_extra.get(node['pdgid'], ())
+
     def fold_of(node):
         f = graph.default_fold(node['content'])
         return (f | frozenset(fold_add.get(node['pdgid'], ()))) - frozenset(fold_rm.get(node['pdgid'], ()))
@@ -867,18 +889,23 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
     # is subtracted with c = 1 and an uncertainty of 100 %.
     def node_pass():
         rest_nodes = [n for n in measured if n['uid'] not in exact_uids]
-        rest_nodes.sort(key=lambda n: (n['n_bodies'], n['err'] / n['value'] if n['value'] > 0 else np.inf,
-                                       n['uid']))
+        # nodes with a 'direct_line' exception first: their stand-in line is a resonance line that
+        # can also feed smaller nodes, where it must enter with its c
+        rest_nodes.sort(key=lambda n: (n['pdgid'] not in direct_extra, n['n_bodies'],
+                                       n['err'] / n['value'] if n['value'] > 0 else np.inf, n['uid']))
         cand, used_nb = {}, {}                      # line -> {pdgid: n_bodies} of the nodes it could take
         for n in rest_nodes:
             for k, v in feed[n['uid']].items():
-                if not results[k]['how'] and v / cmode_bf[k] >= P_MIN and k in n['targets']:
+                if not results[k]['how'] and v / cmode_bf[k] >= P_MIN and is_direct(n, k):
                     cand.setdefault(k, {})[n['pdgid']] = n['n_bodies']
         for n in rest_nodes:
             f = feed[n['uid']]
             tot = sum(f.values())
             free = [k for k in f if not results[k]['how'] and k not in capped and f[k] / cmode_bf[k] >= P_MIN
-                    and k in n['targets']]
+                    and is_direct(n, k)]
+            for k in free:
+                if k not in n['targets']:
+                    results[k]['flags'].add('exception_applied')
             out_here = []
 
             def remainder(free):
@@ -1046,6 +1073,17 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             r['alt_pdgids'] = []
         r['flags'].add('exception_applied')
 
+    # extra relative uncertainty on a c (e.g. from a sub-decay BF the decay file fixes at 100 %)
+    for e in exceptions:
+        if e['action'] != 'extra_uncertainty' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        if k not in results or not results[k]['how']:
+            raise ValueError(f'exceptions: extra_uncertainty on {e["key"]} of {mother}, which has no c')
+        r = results[k]
+        r['sigma_c'] = float(np.hypot(r['sigma_c'], float(e['relative']) * r['c']))
+        r['flags'].add('exception_applied')
+
     # `unmeasured`: a line without a c (class none) that feeds a measured final-state node. The
     # node measures the sum, not this line: c = 1 with an uncertainty of 100 %.
     for n in measured:
@@ -1205,7 +1243,12 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         if src is None or src['how'] not in ('exact', 'product'):
             raise ValueError(f'exceptions: isospin source {e["from_key"]} of {e["from_mother"]} has no exact '
                              f'or product c')
-        preset.setdefault(int(e['mother']), {})[collapse_key(e['key'])] = (src['c'], src['sigma_c'],
+        # BF(B+) = TAU_RATIO x BF(B0) for the corrected values; c refers to the line's own BF_MC
+        own = results.get(int(e['mother']), {}).get(collapse_key(e['key']))
+        if own is None or not own['bf_mc_sum'] > 0:
+            raise ValueError(f'exceptions: isospin target {e["key"]} of {e["mother"]} is not a line with BF > 0')
+        scale = (1.0 / TAU_RATIO if int(e['mother']) == 511 else TAU_RATIO) * src['bf_mc_sum'] / own['bf_mc_sum']
+        preset.setdefault(int(e['mother']), {})[collapse_key(e['key'])] = (src['c'] * scale, src['sigma_c'] * scale,
                                                                              src['pdgids'])
     for mother, pre in preset.items():
         results[mother], node_tables[mother] = _match_block(mother, block_lines[mother], nodes, graph,

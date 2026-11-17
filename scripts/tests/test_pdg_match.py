@@ -567,7 +567,7 @@ def test_toy_exceptions():
                 raise AssertionError(f'accepted: {bad}')
         assert pm.load_exceptions(os.path.join(tmp, 'missing.json')) == []
     for e in pm.load_exceptions():
-        assert e['reason'] and e['action'] in ('rewrite', 'exclude_node', 'force_class', 'isospin')
+        assert e['reason'] and e['action']
         if 'pdgid' in e:
             assert 'PDG text' in e['reason']                       # justified from the listing
 
@@ -799,10 +799,11 @@ def test_real_semileptonic():
     for names in ('D_0*- e+ nu_e', 'D_0*- mu+ nu_mu'):
         r = row(511, names)
         assert r['pdg_class'] == 'measured' and r['how'] == 'isospin' and r['pdgids'] == 'S041.503', names
-        assert close(r['c'], src['c']) and close(r['sigma_c'], src['sigma_c']) and 0.3 < r['c'] < 0.4
+        scale = 0.00389 / 0.00362 / pm.TAU_RATIO                 # BF(B+) = TAU_RATIO x BF(B0)
+        assert close(r['c'], src['c'] * scale) and close(r['sigma_c'], src['sigma_c'] * scale) and 0.3 < r['c'] < 0.4
         assert {'isospin', 'exception_applied', 'above_limit'} <= flags(r)
         assert close(r['bf_pdg'], r['c'] * 0.00362)
-    assert close(row(-511, 'D_0*+ e- anti-nu_e')['c'], src['c'])
+    assert close(row(-511, 'D_0*+ e- anti-nu_e')['c'], row(511, 'D_0*- e+ nu_e')['c'])
     # the non-resonant D(*) pi l nu lines are not measured (exception, M2): c = 1 +- 1
     for m, names in ((511, 'anti-D0 pi- e+ nu_e'), (511, 'anti-D*0 pi- mu+ nu_mu'),
                      (521, 'D*- pi+ e+ nu_e'), (521, 'D- pi+ mu+ nu_mu')):
@@ -903,12 +904,35 @@ def test_real_misc():
     assert (NODES.loc[NODES['kind'] == 'unkeyed', 'reason'] != '').all()
 
 
+def a1_share():
+    g = pm.DecayGraph(DEC_ALL, PDL)
+    return g.decay_once('a_1+', g.default_fold()).get(pm.collapse_key(code('pi+ pi+ pi-')), 0.0)
+
+
+def d1_share():
+    g = pm.DecayGraph(DEC_ALL, PDL)
+    return g.expand(('D_1-', 'pi+'), g.default_fold()).get(pm.collapse_key(code('D- pi+ pi+ pi-')), 0.0)
+
+
 def test_real_review_fixes():
     n = NODES.set_index('uid')
-    # D- a_1+: exact node S042.93 (54 %) kept; the 10 % node S042.88 it feeds does not close
+    # D- a_1+ (D1): the line stands for the D- 3pi final state (direct_line exception); its exact
+    # node S042.93 (54 % error) is excluded and c comes from the 10 % total S042.88, which closes
     r = row(511, 'a_1+ D-')
-    assert r['how'] == 'exact' and r['pdgids'] == 'S042.93' and 'node_not_closed' in flags(r)
-    assert 'S042.88' in r['unclosed_nodes'].split(';') and n.loc['S042.88', 'closure_pull'] < -3
+    assert r['how'] == 'node' and r['pdgids'] == 'S042.88' and 1.0 < r['c'] < 1.1 and 0.09 < r['sigma_c'] < 0.13
+    assert 'exception_applied' in flags(r) and 'node_not_closed' not in flags(r)
+    assert n.loc['S042.93', 'role'] == 'excluded' and abs(n.loc['S042.88', 'closure_pull']) < 1e-6
+    d1 = row(511, 'D_1- pi+')
+    assert close(r['c'], (n.loc['S042.88', 'value'] - d1['c'] * 0.00093 * d1_share()) / (0.01071429 * a1_share()), 1e-3)
+    # D2: the D_s0* lines keep their product c; 20 % of c is added in quadrature (sub-decay BF)
+    r = row(511, 'D_s0*+ D-')
+    assert r['how'] == 'product' and close(r['sigma_c'], math.hypot(0.021656, 0.2 * r['c']), 1e-3)
+    # psi(3770) K0: isospin image of B+ -> psi(3770) K+ (exact), all three neutral-kaon lines
+    src = row(521, 'psi(3770) K+')
+    for names in ('psi(3770) K_S0', 'psi(3770) K_L0'):
+        r = row(511, names)
+        assert r['how'] == 'isospin' and r['pdgids'] == 'S041.360', names
+        assert close(r['c'], src['c'] * src['bf_mc'] / 0.00048 / pm.TAU_RATIO)
     # own limits are not exceeded by a remainder
     for names, pid in (('anti-D_10 rho+', 'S041.215'), ('anti-D_2*0 rho+', 'S041.213'),
                        ('K*+ chi_c0', 'S041.435')):
@@ -979,7 +1003,20 @@ def test_isospin():
     assert len(both) > 40 and (both['pull'].abs() > 3).sum() == 0
     # the lines fixed by the isospin exception are not counted as measured twice
     r = iso[iso['names_b0'] == 'D_0*- e+ nu_e'].iloc[0]
-    assert r['status'] == 'only_bp' and r['how_b0'] == 'isospin' and close(r['c_b0'], r['c_bp'])
+    assert r['status'] == 'only_bp' and r['how_b0'] == 'isospin' and close(r['c_b0'], r['c_other'])
+    # toy: direct_line makes a resonance line the direct line of a node; extra_uncertainty widens a c
+    exc = [dict(pdgid='T.4', action='direct_line', mother=511, key=code('J/psi K_2*0'), reason='test')]
+    pdg = [x if x[0] != 'T.4' else ('T.4', x[1], 0.0020, 0.0001, False) for x in TOY_PDG]
+    td, _, lkd = toy(exc, pdg)
+    c = (0.0020 - 1.2 * (0.0006 * 0.6667 + 0.0004)) / (0.0004 + 0.00025)   # shared by the two direct lines
+    for names in ('J/psi K+ pi-', 'J/psi K_2*0'):
+        r = row(511, names, td, lkd)
+        assert r['how'] == 'node' and r['pdgids'] == 'T.4' and close(r['c'], c), names
+    assert 'exception_applied' in flags(row(511, 'J/psi K_2*0', td, lkd))
+    exc = [dict(mother=511, key=code('D_s0*+ D-'), action='extra_uncertainty', relative=0.5, reason='test')]
+    te, _, lke = toy(exc)
+    r0, r1 = row(511, 'D_s0*+ D-', *toy()[::2]), row(511, 'D_s0*+ D-', te, lke)
+    assert close(r1['c'], r0['c']) and close(r1['sigma_c'], math.hypot(r0['sigma_c'], 0.5 * r0['c']))
     # toy: the B0 line D_1- pi+ takes the c of a B+ line; a source without an own c is refused
     t0, _, lk0 = toy()
     src = row(511, 'D_s0*+ D-', t0, lk0)
