@@ -655,7 +655,7 @@ exception, D\*∓D± as a sum); 14 of them now unstable, 7 negative.
 non-resonant (S-wave) part directly, as the LHCb paper did for E6: B⁰ → D̄⁰π⁺π⁻ (Belle 2007, LHCb
 2015), B⁺ → D⁻π⁺π⁺ (Belle 2004, BaBar 2009, LHCb 2016), B⁺ → D⁺D⁻K⁺ (LHCb 2020), B⁰ → D̄⁰K⁺π⁻
 (LHCb). The remainder absorbs every inconsistency between PDG entries; a fit fraction does not. One
-example to check: in B⁺ → D⁺D⁻K⁺ the PDG product ψ(3770)K⁺ × B(ψ(3770) → D⁺D⁻) is 91 % of the PDG
+example to check: in B⁺ → D⁺D⁻K⁺ the PDG product ψ(3770)K⁺ × B(ψ(3770) → D⁺D⁻) is 81 % of the PDG
 total, while the LHCb amplitude analysis found, as far as I remember, a ψ(3770) fit fraction of
 order 10 % (to be read from the paper). arxiv.org is not reachable from this session.
 
@@ -728,7 +728,7 @@ S-wave at 49 % of the normalised total, D₂\* at 31 %, and D\*_v, B\*_v, D₁\*
 c ≈ 1.0 instead of 1.16. Within the present uncertainties; no change proposed.
 
 *B⁺ → D⁺D⁻K⁺ (line 4216, share 2.4 %): the PDG entries contradict the amplitude analysis.* PDG's
-ψ(3770)K⁺ (S041.360) times B(ψ(3770) → D⁺D⁻) of the decay file is 91 % of PDG's D⁺D⁻K⁺ total
+ψ(3770)K⁺ (S041.360) times B(ψ(3770) → D⁺D⁻) of the decay file is 81 % (corrected 2026-11-18; 91 % was the decay-file value before c) of PDG's D⁺D⁻K⁺ total
 (S041.336, 2.2 ± 0.7 ·10⁻⁴). LHCb measures the ψ(3770) fit fraction as 14.5 ± 1.4 %; ψ(4160) is
 6.6 %, and the rest (χ_c0,2(3930) 10.9 %, ψ(4040) 5.0 %, ψ(4415) 9.2 %, X₀,₁(2900) 36.2 %, D⁻K⁺
 S-wave 24.2 %) has no own line in the decay file: about 80 % of the total after normalisation.
