@@ -775,6 +775,34 @@ extra uncertainty (65 %) for P+. Recommendation: P+. The products are the like-f
 comparison for a line whose events are D D̄ K (M1), they agree with each other, and the remaining
 tension with LHCb is covered.
 
+*The sources of the three entries (2026-11-18; pdgapi.lbl.gov listings and the papers).*
+
+| PDG entry | Measurements used in the average (pdgapi) | Listed, not used |
+|---|---|---|
+| S041.360 total, 4.34 ± 1.10 | Belle 2004 (Chistov) 4.8 ± 1.3; BaBar 2020 (Lees, recoil) 3.2 ± 2.1 | BaBar 2006 (superseded by 2020); Belle 2018 (Kato, recoil) < 2.3, central −0.2 ± 1.4 |
+| S041.361 × D⁰D̄⁰, 1.55 ± 0.49 (S = 1.4) | Belle 2008 (Brodzicka) 2.2 ± 0.6; BaBar 2015 (Dalitz, interference included) 1.18 ± 0.44 | Belle 2004 3.4 ± 0.9; BaBar 2008 1.41 ± 0.37 (both superseded) |
+| S041.362 × D⁺D⁻, 0.94 ± 0.35 | Belle 2004 1.4 ± 0.8; BaBar 2008 0.84 ± 0.38 | – |
+
+All three averages are reproduced exactly from the inputs marked as used. Facts that matter:
+- Belle 2004's total (4.8) is not a measurement of its own: it is the sum of its two products
+  (0.34 + 0.14)·10⁻³, assuming D⁰D̄⁰ + D⁺D⁻ = 100 % of ψ(3770) decays. Its D⁰D̄⁰ product (3.4) is
+  superseded in S041.361 by Belle 2008 on 4.7 times the data (2.2), but it still drives the total.
+- The recoil measurements (BaBar 2020, Belle 2018) do not use the D D̄ channels and are
+  independent; neither supports 4.34 (3.2 ± 2.1 and < 2.3; Belle 2018 states 2.7σ below the then
+  world average).
+- The products, divided by PDG's ψ(3770) → D⁰D̄⁰ = 51.6 ± 4.7 % and → D⁺D⁻ = 41.2 ± 3.8 %, give a
+  total of 2.6 ± 0.6; with BaBar 2020 and Belle 2018 added, 2.2 ± 0.6.
+- PDG also lists LHCb's ψ(3770) fit fraction as Γ(ψ(3770)K⁺)/Γ(D⁻D⁺K⁺) = 0.352 (14.5 % divided by
+  0.41); it is not part of the 4.34 average. With PDG's D⁺D⁻K⁺ total it would mean a ψ(3770)K⁺ total of
+  only 0.8·10⁻⁴.
+- The D⁺D⁻ product rests on fewer than 10 signal events per experiment.
+- PDG's ψ(3770) branching fractions equal the decay file's (0.52, 0.41), so no c changes; for the
+  weight, the decay file's values are the right ones by construction (the MC generates with them).
+
+*Conclusion.* The per-channel products are the better basis for line 4162; the total carries a
+superseded measurement. P+ (c = 0.53, σ_c widened to 0.37 so that LHCb's c ≈ 0.16 is within 1σ)
+remains the recommendation.
+
 *Other G5 cases.*
 - **B⁰ → D⁰D̄⁰K⁺π⁻ (S042.609).** PDG (3.51 ± 0.47)·10⁻⁴; the decay file gives 5.72·10⁻⁴ (4.7σ above),
   all through resonance lines without an own entry: ψ(3770)K\*⁰ (597–600, share 1.08 %),
