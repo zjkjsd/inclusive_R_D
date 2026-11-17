@@ -8,7 +8,8 @@ agreed. Status labels as in the working document: OPEN, AGREED, DONE.
 Last updated: 2026-11-17.
 
 AGREED means decided; a point becomes DONE only once it is implemented and the tables are rerun.
-Implemented on 2026-11-17: M1 and M2 (section 2a gives what changed). Not yet implemented: D1, D2. Line numbers ("line 697") refer to
+Implemented on 2026-11-17: M1, M2, D1, D2, E6 and the ψ(3770)K⁰ isospin exception (sections 2a–2c
+give what changed). Open: the case groups G3–G7. Line numbers ("line 697") refer to
 `Samples/dec/DECAY_BELLE2_rel08.DEC`, B⁰ and B⁺ blocks.
 
 ## 0. Files and how to read them
@@ -66,16 +67,18 @@ PDG limit (it is counted as limit/2 ± limit/2 when a total is split).
 
 | # | Point | Status | Decision |
 |---|---|---|---|
-| M1 | Order of the sources: exact, then product, then node | DONE (2026-11-17) | a resonance line is compared with its own (exact or product) entry only; without one it is `unmeasured`, c = 1 ± 1. A multi-body entry is compared only with the line that is that final state. Applied everywhere. Two consequences to confirm (section 2a) |
+| M1 | Order of the sources: exact, then product, then node | DONE (2026-11-17) | a resonance line is compared with its own (exact or product) entry only; without one it is `unmeasured`, c = 1 ± 1. A multi-body entry is compared only with the line that is that final state. Applied everywhere; the two consequences of section 2a confirmed |
 | M2 | Non-resonant D(\*)π ℓν lines: no measured c | DONE (2026-11-17), to be revisited | option 1: class `none`, c = 1; B⁰ → D₀\*⁻ℓν takes the B⁺ c (isospin). To be revisited with the Belle II gap-mode treatment after the BB̄ background study |
 | M3 | Which c may become weights (piece 4) | AGREED in principle (2026-11-16): exact and product, and node matches without a warning flag; the flagged cases are gone through first | |
 | M4 | Cache D-meson decays from PDG too | AGREED (2026-11-17) | not now; a short check of the chain BFs for Part B, a cached D table with Part C |
 | E1–E5 | Five exceptions | AGREED (2026-11-17; E4, E5 on 2026-11-16) | kept as written |
-| E6 | ψ(2S)K₁(1270)⁺ against the ψ(2S)K⁺π⁺π⁻ total | PROPOSED: follows from M1, to confirm | line 4108 `unmeasured`, c = 1 ± 1; line 4105 c = 0.67 ± 0.35 |
-| D1 | B⁰ → D⁻ a₁⁺ | AGREED (2026-11-17) | option 1: c from the D⁻π⁺π⁺π⁻ total S042.88 |
-| D2 | B → D(\*) D_s0\*(2317) | AGREED (2026-11-17) | the four product c as weights, with their errors and the −20 % of the sub-decay as extra uncertainty |
+| E6 | ψ(2S)K₁(1270)⁺ against the ψ(2S)K⁺π⁺π⁻ total | DONE (2026-11-17), follows from M1 | line 4108 `unmeasured`, c = 1 ± 1; line 4105 c = 0.67 ± 0.35 |
+| D1 | B⁰ → D⁻ a₁⁺ | DONE (2026-11-17) | option 1: c = 1.06 ± 0.11 from the D⁻π⁺π⁺π⁻ total S042.88 (section 2c) |
+| D2 | B → D(\*) D_s0\*(2317) | DONE (2026-11-17) | the four product c as weights, with their errors and the −20 % of the sub-decay as extra uncertainty |
 | D3 | B⁰ → D\*± D∓ | AGREED (2026-11-16): the paper confirms the sum | both lines take c from S042.511; S042.155 is not used |
-| C1–C18 | The cases of `B0_PIECE2_CASES.md` | OPEN | |
+| I1 | B⁰ → ψ(3770)K⁰ by isospin | DONE (2026-11-17) | c = 0.84 ± 0.21 from B⁺ → ψ(3770)K⁺ (section 2c) |
+| N1 | Lines with no PDG entry anywhere | NOTED (2026-11-17), to discuss with piece 3 | your suggestion: the same convention as `unmeasured` (c = 1 ± 1) instead of class `none` without an uncertainty |
+| G3–G7 | The case groups of section 5 | OPEN | |
 
 ## 2. Method points
 
@@ -219,7 +222,7 @@ Part C (K1 needs the inclusive D → K⁰ X rates) and can be built then with th
 gone: D′₁ρ⁺ (line 4321, was c = 17), D′₁⁻π⁺ (line 737, was c = 79). `c_extreme` remains on the four
 D_s0\* lines (D2), D₀\*⁻π⁺ (E2), D̄⁰π⁺π⁻ (C12) and a few lines below 0.03 %.
 
-*Two consequences that go beyond what you asked. To confirm.*
+*Two consequences that go beyond what you asked.* Confirmed on 2026-11-17.
 
 1. **A direct line whose remainder is unusable gets no c.** Before, when "total minus the rest"
    was negative or more than 100 % uncertain, all lines of the total were scaled by PDG / MC, with
@@ -286,6 +289,51 @@ each line follows its own PDG value. Column `r_mc`.
 Nothing is applied to these; the first is the only one with a visible share and a partner with an
 exact entry.
 
+## 2c. D1, D2 and ψ(3770)K⁰ implemented (2026-11-17)
+
+Three new exception actions were needed: `direct_line` (a resonance line that stands for the final
+state of a PDG total), `extra_uncertainty` (a relative uncertainty added in quadrature to σ_c), and
+the `isospin` action now transfers the corrected BF with the lifetime ratio (BF(B⁺) = 1.076 ×
+BF(B⁰)) instead of copying c. For D₀\*ℓν this changes nothing visible (0.346).
+
+| Point | Line (dec line) | Before | Now |
+|---|---|---|---|
+| D1 | B⁰ → D⁻a₁⁺ (697) | exact S042.93: 0.56 ± 0.30 | total S042.88: 1.06 ± 0.11; the total closes |
+| D2 | B⁰ → D⁻D_s0\*⁺ (790) | 0.143 ± 0.022 | 0.143 ± 0.036 |
+| D2 | B⁰ → D\*⁻D_s0\*⁺ (791) | 0.085 ± 0.034 | 0.085 ± 0.038 |
+| D2 | B⁺ → D̄⁰D_s0\*⁺ (4339) | 0.104 ± 0.019 | 0.104 ± 0.028 |
+| D2 | B⁺ → D̄\*⁰D_s0\*⁺ (4340) | 0.053 ± 0.041 | 0.053 ± 0.042 |
+| I1 | B⁰ → ψ(3770)K⁰ (592–594) | limit, c = 1 | isospin: 0.84 ± 0.21 |
+
+*D1, why a new action.* Under M1 a resonance line takes nothing from a total. D⁻a₁⁺ is the
+exception by construction: the decay file has no direct D⁻π⁺π⁺π⁻ line and its comment says the a₁
+line stands for the whole final state. The `direct_line` entry states this for S042.88; S042.93 is
+excluded.
+
+*D2.* 20 % of c is added in quadrature, as agreed. Strictly the effect is one-sided: if
+B(D_s0\* → D_sπ⁰) is below 100 %, c can only be larger, by up to 25 %.
+
+*Side effects, all expected from the mechanism but worth knowing.*
+- **D⁻K⁺K̄\*⁰ (line 795, 0.43 % share): c = 0.81 → 0.35 ± 0.14.** The decay file sends 5 % of the a₁⁺
+  to K̄\*⁰K⁺, so D⁻a₁⁺ alone gives 0.053 % of D⁻K⁺K̄\*⁰, against PDG's total of 0.077 ± 0.006 %
+  (S042.218). With the a₁ line at c = 1.06, little is left for the direct line (0.058 % in the
+  decay file). This is the side effect announced under D1; the direct line carries the correction.
+- **D⁻D⁺K⁰ (line 652, 3.4 % share): c = 0.94 → 0.78 ± 0.23.** The ψ(3770)K⁰ part of this total was
+  counted as half its PDG limit; with the isospin value it is larger, so less is left for the
+  direct line.
+- **D⁰D̄⁰K⁰ (line 658, 0.05 %): c = 0.77 → `unmeasured`.** Same cause: the ψ(3770)K⁰ part now takes
+  most of the total (0.027 ± 0.011 %), and the rest is more than 100 % uncertain.
+- ψ(3770)K⁰ keeps the flag `above_limit`: its product limits (S042.393, S042.394) are still
+  exceeded after the correction.
+
+*Case numbers.* The case file is regenerated after every change and its numbering follows the
+ranking, so the numbers C1–C18 of 2026-11-16 no longer apply. From here on, cases are referred to
+by their PDG entry (section 5).
+
+*Independent review.* The rule change and the new exceptions were given to four independent
+reviewers (logic of the rule, numbers recomputed from the files, exceptions and isospin physics,
+tests and documentation); findings and fixes are recorded here when the review is complete.
+
 ## 3. The exceptions file
 
 `Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching. Each entry names
@@ -298,7 +346,9 @@ an entry, the automatic rule applies. Actions:
 | `exclude_node` | the entry is not used at all |
 | `fold` / `no_fold` | for one final-state entry: add or remove resonances that are counted as part of it |
 | `force_class` | set the class of a final state by hand |
-| `isospin` | a B⁰ (B⁺) line takes c and σ_c of its isospin partner in the other block, which must have an exact or product c |
+| `isospin` | a B⁰ (B⁺) line takes the corrected BF of its isospin partner in the other block (divided or multiplied by the lifetime ratio 1.076), which must have an exact or product c |
+| `direct_line` | a line that reaches a PDG total through a resonance is treated as the direct line of that total (the decay file routes the whole final state through it) |
+| `extra_uncertainty` | a relative uncertainty added in quadrature to σ_c |
 
 *On the particle names.* Both `description` and the quoted text in `reason` use **PDG's** spelling,
 because `description` is parsed like any PDG text. The four spellings you noticed are PDG's own, in
@@ -317,7 +367,10 @@ checked entry by entry against `evt.pdl` in the review.
 | E5 | S042.155, B⁰ → D\*(2010)⁺D⁻ = 6.12·10⁻⁴ | 614 | exclude | see D3 | avoids c = 2 for one charge state | AGREED (D3); its own sources not checked |
 | E7 | (no PDG entry) non-resonant D̄\*⁰π⁻ℓν, D̄⁰π⁻ℓν (B⁰), D\*⁻π⁺ℓν, D⁻π⁺ℓν (B⁺), e and μ: 8 entries | 374, 376, 398, 400; 4006, 4008, 4033, 4035 | force_class `none` | M2: not measured; a c from "total minus D\*\*" is not used | c = 1 ± 1, `unmeasured` | DONE |
 | E8 | B⁰ → D₀\*⁻ℓ⁺ν, e and μ: 2 entries | 369, 393 | isospin from B⁺ → D̄₀\*⁰ℓ⁺ν (4001, 4028; S041.503) | M2: only a limit in B⁰ | c = 0.35 ± 0.21 instead of 1; stays above the limit S042.418 | DONE |
-| E6 | S041.858, B⁺ → ψ(2S)K₁(1270)⁺, K₁ → K⁺π⁺π⁻ = 3.3·10⁻⁵ | 4108 (direct line: 4105) | exclude | listed next to "(P-wave)" 3.26·10⁻⁵ and "(D-wave)" 2.96·10⁻⁵ of the same decay; their sum exceeds it, so it is one component of an amplitude fit, not the total | ψ(2S)K₁⁺ gets c = 0.75 ± 0.09 from the ψ(2S)K⁺π⁺π⁻ total instead of 0.23 | OPEN, see below |
+| E9 | S042.93, B⁰ → D⁻a₁(1260)⁺ = (0.60 ± 0.33) %, and S042.88, B⁰ → D⁻π⁺π⁺π⁻ = (0.598 ± 0.061) %: 2 entries | 697 | exclude S042.93; `direct_line` for S042.88 | D1 | c = 1.06 ± 0.11 instead of 0.56 ± 0.30 | DONE |
+| E10 | the four D(\*)D_s0\* lines: 4 entries | 790, 791, 4339, 4340 | extra_uncertainty 20 % | D2: B(D_s0\* → D_sπ⁰) = 100 +0 −20 % | σ_c larger | DONE |
+| E11 | B⁰ → ψ(3770)K⁰ | 592–594 | isospin from B⁺ → ψ(3770)K⁺ (4162; S041.360) | only product limits in B⁰, exceeded by the decay file | c = 0.84 ± 0.21 instead of 1 | DONE |
+| E6 | S041.858, B⁺ → ψ(2S)K₁(1270)⁺, K₁ → K⁺π⁺π⁻ = 3.3·10⁻⁵ | 4108 (direct line: 4105) | exclude | listed next to "(P-wave)" 3.26·10⁻⁵ and "(D-wave)" 2.96·10⁻⁵ of the same decay; their sum exceeds it, so it is one component of an amplitude fit, not the total | ψ(2S)K₁⁺ gets c = 0.75 ± 0.09 unmeasured (c = 1 ± 1); line 4105 gets 0.67 ± 0.35 | DONE, see below |
 
 ### E6. B⁺ → ψ(2S)K₁(1270)⁺ and the ψ(2S)K⁺π⁺π⁻ total (discussion of 2026-11-17)
 
@@ -410,7 +463,7 @@ not in PDG as one entry. Not recommended for a 0.02 % mode.
 
 *Recommendation.* Accept the rule's result above; nothing more to implement.
 
-*Decision:* PROPOSED, to confirm.
+*Decision:* DONE (2026-11-17), confirmed: the rule's result stands.
 
 ## 4. The three modes that need a decision
 
@@ -498,44 +551,33 @@ does not change, because it would then be superseded by the more precise sum.
 
 ## 5. Cases
 
-The cases C1–C18 are in `docs/B0_PIECE2_CASES.md`, with all numbers and the decay-file line of every mode. They fall into groups; a
-decision on the group settles its cases.
+The cases are in `docs/B0_PIECE2_CASES.md`, with all numbers and the decay-file line of every
+mode. The file is regenerated after each change, so cases are identified by their PDG entry; the
+case number is the current one (2026-11-17, after M1, M2, D1, D2). 18 cases in full, 39 small ones.
 
-| Group | Cases | dec lines concerned | What is common | Proposed handling |
+| Group | PDG entry (case now) | dec lines | What is common | Status |
 |---|---|---|---|---|
-| G1 | C1 | 697 | D⁻a₁⁺ against the D⁻3π total | D1 |
-| G2 | C2, C4, C8 | 374, 376, 398, 400 (B⁰); 4006, 4008, 4033, 4035 (B⁺) | non-resonant D(\*)π ℓν from a total minus D\*\* products | M2 |
-| G3 | C3, C7, C9 | 4319, 4321, 4315 (D\*\*ρ⁺); 736, 737, 739 (D\*\*π⁺); 693, 779 | B → D\*\*ρ, D\*\*π lines whose c comes from what is left of a D\*ππ total; PDG errors of 35–50 %, c = 17 and 79 | no c for these lines; D\*\*π lines with a product entry keep it |
-| G4 | C6, C12 | 4301, 4316, 4314 (B⁺); 692, 778, 738, 739 (B⁰) | D ππ totals where the decay file has the total as a direct line *and* the resonances on top (double counting) | to discuss: this is a real excess in the decay file; scale the direct line down (c = 0.28 for D̄⁰π⁺π⁻) or the whole group by the common ratio (0.53) |
-| G5 | C5 | 4216, 4162, 4171 | D⁺D⁻K⁺ with ψ(3770)K⁺ | to discuss, small |
-| G6 | C10, C11 | 797, 754; 4345, 4349 | lines written with the wrong K\*⁰ / K⁰ flavor in the decay file (`flavor_twin`) | to discuss: combine the twins per physical mode |
-| G7 | C13–C18 | 4078–4083; 433–436, 440, 453, 457–459, 464, 468, 469 | J/ψ K ππ and J/ψ Kπ: PDG's sub-entries do not add up to its totals | charmonium is below 2 % of the yield; propose exact matches only, no c from totals |
+| G1 | S042.88 D⁻π⁺π⁺π⁻ | 697 | D⁻a₁⁺ against the D⁻3π total | DONE (D1); no longer a case |
+| G2 | S041.419 (1), S042.312 (2), S042.311 (3) D(\*)πℓν | 374, 376, 398, 400; 4006, 4008, 4033, 4035 | non-resonant D(\*)π ℓν | DONE (M2); the totals stay open by decision, see section 2a |
+| G3 | S041.12 D\*⁻π⁺π⁺π⁰, S042.19 D\*⁻π⁺π⁰ (no longer cases), S042.239 D̄\*⁰π⁺π⁻ (7) | 4319, 4321, 4315; 736, 737, 739; 693, 779 | D\*\*ρ, D\*\*π lines that took c = 17 and 79 from what was left of a total | settled by the M1 rule (`unmeasured`); S042.239 remains, see below; to confirm |
+| G4 | S041.14 D⁻π⁺π⁺ (6), S042.1 D̄⁰π⁺π⁻ (10) | 4301, 4316, 4314; 692, 778, 738, 739 | direct line plus resonances exceed the total | OPEN |
+| G5 | S041.336 D⁻D⁺K⁺ (4); new: S042.609 D⁰D̄⁰K⁺π⁻ (5) | 4216, 4162, 4171 | ψ(3770) feeding D D̄ K totals | OPEN |
+| G6 | S042.314 D\*⁻K⁰π⁺ (8), S041.289 D̄\*⁰K⁺K̄\*⁰ (9) | 797, 754; 4345, 4349 | lines written with the wrong K\*⁰ / K⁰ flavor (`flavor_twin`) | OPEN |
+| G7 | S041.612 (11), S041.19 (12), S041.528 (13), S042.211 (14), S042.212 (15), S042.213 (16), S042.440 (17), S042.4 (18) | 4078–4087; 433–436, 440, 453, 457–459, 464, 468, 469 | J/ψ K ππ, J/ψ Kπ, J/ψ ωK: PDG's sub-entries do not add up to its totals | OPEN; the resonance lines are already `unmeasured` by M1 |
 
-Per case, to fill in during the discussion:
+Decisions per group, to fill in:
 
-| Case | Decision | Reason |
+| Group | Decision | Reason |
 |---|---|---|
-| C1 | | |
-| C2 | | |
-| C3 | | |
-| C4 | | |
-| C5 | | |
-| C6 | | |
-| C7 | | |
-| C8 | | |
-| C9 | | |
-| C10 | | |
-| C11 | | |
-| C12 | | |
-| C13 | | |
-| C14 | | |
-| C15 | | |
-| C16 | | |
-| C17 | | |
-| C18 | | |
+| G3 | | |
+| G4 | | |
+| G5 | | |
+| G6 | | |
+| G7 | | |
 
-The 33 small cases (table at the end of the case file, each below 0.05 % of the yield): proposed to
-handle by rule, not one by one: any line whose c comes from a flagged node match keeps c = 1.
+The 39 small cases (table at the end of the case file, each below 0.05 % of the yield): no
+individual treatment proposed; the M1 rule already removed every c that came from a flagged total
+for a resonance line.
 
 ## 6. Starting a new session on this
 
