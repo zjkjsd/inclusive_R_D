@@ -116,6 +116,7 @@ CSV_DIR = os.path.join(_ROOT, 'Notebooks', 'Plotting', 'csv_output')
 DEFAULT_TABLE_CSV = os.path.join(CSV_DIR, 'b_mode_pdg_table.csv')
 DEFAULT_REVIEW_CSV = os.path.join(CSV_DIR, 'b_mode_pdg_review.csv')
 DEFAULT_ISOSPIN_CSV = os.path.join(CSV_DIR, 'b_mode_isospin_check.csv')
+DEFAULT_NODES_CSV = os.path.join(CSV_DIR, 'b_mode_pdg_nodes.csv')
 
 PDG_PARENTS = {'B0': ('S042', 511), 'B+': ('S041', 521)}
 
@@ -656,6 +657,7 @@ def _new_result():
                 sigma_c=np.nan, flags=set(), f_res_mc=np.nan, f_res_pdg=np.nan, res_node='',
                 p_node=np.nan, c_prod=np.nan, sigma_c_prod=np.nan, chi2_prod=np.nan, n_prod=0,
                 prod_pdgids=[], alt_pdgids=[], unclosed_nodes=[], twin_pdgids=[], direct_node='', extra_rel=0.0,
+                fed_nodes=[], node_info=[],
                 _diff=-np.inf)
 
 
@@ -1148,6 +1150,13 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         pull = (w - n['value']) / n['err'] if n['err'] > 0 else np.nan
         rows[n['uid']].update(bf_mc_weighted=w, closure=w / n['value'] if n['value'] > 0 else np.nan,
                               closure_pull=pull)
+        info = (f"{n['pdgid']}: PDG {n['value']:.3g} +- {n['err']:.2g}, decay file {sum(f.values()):.3g}, "
+                f"after c {w:.3g} ({pull:+.1f} sigma)" if np.isfinite(pull) else
+                f"{n['pdgid']}: PDG {n['value']:.3g}, decay file {sum(f.values()):.3g}, after c {w:.3g}")
+        for k, v in f.items():
+            if v / cmode_bf[k] >= P_MIN and n['pdgid'] not in results[k]['fed_nodes']:
+                results[k]['fed_nodes'] = results[k]['fed_nodes'] + [n['pdgid']]
+                results[k]['node_info'] = results[k]['node_info'] + [info]
         if np.isfinite(pull) and abs(pull) > PULL_REVIEW:
             for k, v in f.items():
                 if v / cmode_bf[k] >= P_MIN:
@@ -1171,7 +1180,7 @@ TABLE_COLUMNS = ['mother_pdg', 'key', 'names', 'n_daughters', 'is_sl', 'tau', 'n
                  'pdg_class', 'how', 'pdgids', 'bf_pdg', 'bf_pdg_err', 'c', 'sigma_c', 'pull',
                  'f_res_mc', 'f_res_pdg', 'flags', 'res_node', 'p_node', 'bf_mc_sum', 'c_prod',
                  'sigma_c_prod', 'chi2_prod', 'n_prod', 'prod_pdgids', 'alt_pdgids', 'unclosed_nodes',
-                 'twin_pdgids', 'extra_rel']
+                 'twin_pdgids', 'extra_rel', 'dec_lines', 'fed_nodes', 'node_info']
 
 
 def _flag_twins(results, pdl):
@@ -1235,6 +1244,11 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                    c = 1, sigma_c = 1), isospin, remainder_clamped (the remainder of the total
                    was negative; c = 0).
       extra_rel  : relative uncertainty added by an extra_uncertainty exception.
+      dec_lines  : line numbers of the final state in the decay file (its own block).
+      fed_nodes  : measured PDG final-state entries that this line feeds (at least P_MIN of it).
+      node_info  : for each of them, 'id: PDG value +- error, decay file sum, after c (pull)',
+                   separated by ';'. The full entry, with every feeding line, is in the node report
+                   (`node_report`, b_mode_pdg_nodes.csv).
       alt_pdgids : node_ambiguous: the other nodes of the same size the line was free in.
       unclosed_nodes : node_not_closed: the nodes fed by the line that do not close (|pull| > 3).
       twin_pdgids : flavor_twin: PDG identifiers of the twin final state.
@@ -1320,9 +1334,9 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
 
     rows = []
     modes = mode_table.modes
-    for mother, key, bf, nd, is_sl, n_charm, incl, orders in zip(
+    for mother, key, bf, nd, is_sl, n_charm, incl, orders, dec_lines in zip(
             modes['mother_pdg'], modes['key'], modes['bf_mc'], modes['n_daughters'], modes['is_sl'],
-            modes['n_charm'], modes['is_inclusive'], modes['orders']):
+            modes['n_charm'], modes['is_inclusive'], modes['orders'], modes['lines']):
         mother = int(mother)
         b = abs(mother)
         asym = (-mother, conjugate_key(key, pdl)) not in mode_table.lookup
@@ -1359,12 +1373,13 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         if bf == 0:
             flags.add('zero_bf')
         row = dict(mother_pdg=mother, key=key, names=pdl.names(orders[0]), n_daughters=int(nd),
-                   is_sl=bool(is_sl), tau=tau, n_charm=int(n_charm), bf_mc=float(bf))
+                   is_sl=bool(is_sl), tau=tau, n_charm=int(n_charm), bf_mc=float(bf),
+                   dec_lines=' '.join(str(x) for x in sorted(dec_lines)))
         row.update({c: r[c] for c in ('pdg_class', 'how', 'bf_pdg', 'bf_pdg_err', 'c', 'sigma_c',
                                       'f_res_mc', 'f_res_pdg', 'res_node', 'p_node', 'bf_mc_sum',
                                       'c_prod', 'sigma_c_prod', 'chi2_prod', 'n_prod', 'extra_rel')})
         row['pdgids'] = ';'.join(r['pdgids'])
-        for c in ('prod_pdgids', 'alt_pdgids', 'unclosed_nodes', 'twin_pdgids'):
+        for c in ('prod_pdgids', 'alt_pdgids', 'unclosed_nodes', 'twin_pdgids', 'fed_nodes', 'node_info'):
             row[c] = ';'.join(r[c])
         if incl:
             row.update(pdg_class='inclusive', how='', c=1.0, sigma_c=np.nan)
@@ -1379,6 +1394,41 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     if return_nodes:
         return out, (pd.concat(node_tables, ignore_index=True) if node_tables else pd.DataFrame())
     return out
+
+
+def node_report(nodes, table, pdl=None):
+    """One row per measured or limit PDG entry of B0 / B+ that some decay-file line feeds: the
+    reference for the columns `fed_nodes`, `node_info` and `unclosed_nodes` of the mode table.
+
+    Columns: pdgid, uid (with [e] / [mu] for lepton entries), mother, description, kind, role,
+    value, err, is_limit, n_bodies, bf_mc (decay-file sum), bf_mc_weighted (after c), closure,
+    closure_pull, c_assigned, n_feeders, and `feeders`: one text item per feeding line,
+    'names [decay-file lines] BFxP=...; class/how c=... +- ...', separated by ' | '."""
+    pdl = pdl or dt.load_pdl()
+    look = {}
+    for r in table.itertuples():
+        if int(r.mother_pdg) in (511, 521):
+            look.setdefault((int(r.mother_pdg), collapse_key(r.key)), r)
+    out = []
+    for n in nodes.itertuples():
+        feeders = n.feeders if isinstance(n.feeders, list) else []
+        if int(n.mother) not in (511, 521) or not feeders:
+            continue
+        items = []
+        for k, v, bf in feeders:
+            r = look.get((int(n.mother), k))
+            name = ' '.join('K0' if c == KSYM else pdl.name(c) for c in k)
+            if r is None:
+                items.append(f'{name} BFxP={v:.3g}')
+                continue
+            sig = '' if not np.isfinite(r.sigma_c) else f' +- {r.sigma_c:.2g}'
+            items.append(f'{name} [{r.dec_lines}] BFxP={v:.3g}; {r.pdg_class}/{r.how or "-"} c={r.c:.3g}{sig}')
+        out.append(dict(pdgid=n.pdgid, uid=n.uid, mother=int(n.mother), description=n.description,
+                        kind=n.kind, role=n.role, value=n.value, err=n.err, is_limit=n.is_limit,
+                        n_bodies=n.n_bodies, bf_mc=n.bf_mc, bf_mc_weighted=n.bf_mc_weighted,
+                        closure=n.closure, closure_pull=n.closure_pull, c_assigned=n.c_assigned,
+                        n_feeders=len(feeders), feeders=' | '.join(items)))
+    return pd.DataFrame(out)
 
 
 def table_lookup(table):
@@ -1413,7 +1463,7 @@ def read_table(path):
     out = pd.read_csv(path, keep_default_na=False, na_values=[''])
     out['key'] = [tuple(int(c) for c in str(k).split()) for k in out['key']]
     for c in ('how', 'pdgids', 'flags', 'res_node', 'prod_pdgids', 'tables_top95', 'alt_pdgids',
-              'unclosed_nodes', 'twin_pdgids'):
+              'unclosed_nodes', 'twin_pdgids', 'dec_lines', 'fed_nodes', 'node_info'):
         if c in out:
             out[c] = out[c].fillna('')
     return out
@@ -1690,6 +1740,9 @@ def main(argv=None):
     table, nodes = build_mode_pdg_table(mode_table, pdl=pdl, return_nodes=True)
     write_table(table, DEFAULT_TABLE_CSV)
     print(f'wrote {DEFAULT_TABLE_CSV}: {len(table)} final states')
+    nrep = node_report(nodes, table, pdl)
+    nrep.to_csv(DEFAULT_NODES_CSV, index=False, float_format='%.6g')
+    print(f'wrote {DEFAULT_NODES_CSV}: {len(nrep)} PDG entries fed by decay-file lines')
     for m in (511, 521):
         sh = class_shares(table, m)
         print(f'  {pdl.name(m)}: BF by class: ' + ', '.join(f'{k} {100 * v:.2f} %' for k, v in sorted(sh.items())))

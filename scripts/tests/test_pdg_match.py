@@ -971,20 +971,27 @@ def test_real_review_fixes():
     # D2: the D_s0* lines keep their product c; 20 % of c is added in quadrature (sub-decay BF)
     r = row(511, 'D_s0*+ D-')
     assert r['how'] == 'product' and close(r['sigma_c'], math.hypot(0.021656, 0.2 * r['c']), 1e-3)
-    # psi(3770) K0: isospin image of B+ -> psi(3770) K+ (exact), all three neutral-kaon lines
+    # psi(3770) K0: isospin image of B+ -> psi(3770) K+ (products, P+), all three neutral-kaon lines
     src = row(521, 'psi(3770) K+')
     for names in ('psi(3770) K_S0', 'psi(3770) K_L0'):
         r = row(511, names)
-        assert r['how'] == 'isospin' and r['pdgids'] == 'S041.360', names
+        assert r['how'] == 'isospin' and r['pdgids'] == 'S041.361;S041.362', names
         assert close(r['c'], src['c'] * src['bf_mc'] / 0.00048 / pm.TAU_RATIO)
-    # P1 (c): psi(3770) K+ keeps its PDG c, with 80 % added (conflict with the LHCb fit fraction);
-    # the D+ D- K+ phase-space line and the isospin image psi(3770) K0 carry the wider uncertainty
+    # P1 (P+): psi(3770) K+ takes its c from the per-channel products S041.361 / S041.362 (the total
+    # S041.360 is excluded), inverse-variance mean computed here by hand, with 65 % added (LHCb)
     r = row(521, 'psi(3770) K+')
-    assert r['how'] == 'exact' and close(r['sigma_c'], math.hypot(0.2258, 0.8 * r['c']), 2e-3)
+    c1, s1 = 1.5464e-4 / (4.8808e-4 * 0.52), 4.8937e-5 / (4.8808e-4 * 0.52)
+    c2, s2 = 9.3926e-5 / (4.8808e-4 * 0.41), 3.4718e-5 / (4.8808e-4 * 0.41)
+    w1, w2 = 1 / s1 ** 2, 1 / s2 ** 2
+    c = (w1 * c1 + w2 * c2) / (w1 + w2)
+    assert r['how'] == 'product' and r['pdgids'] == 'S041.361;S041.362' and close(r['c'], c, 2e-3)
+    assert close(r['sigma_c'], math.hypot(1 / math.sqrt(w1 + w2), 0.65 * c), 2e-3) and 0.35 < r['sigma_c'] < 0.39
     assert {'measurement_conflict', 'exception_applied'} <= flags(r)
-    assert 'measurement_conflict' in flags(row(511, 'psi(3770) K_S0')) and row(511, 'psi(3770) K_S0')['sigma_c'] > 0.6
+    assert NODES.set_index('uid').loc['S041.360', 'role'] == 'excluded'
+    k0 = row(511, 'psi(3770) K_S0')
+    assert 'measurement_conflict' in flags(k0) and 0.45 < k0['c'] < 0.55 and 0.3 < k0['sigma_c'] < 0.4
     d = row(521, 'D+ D- K+')
-    assert d['how'] == 'node' and 0.05 < d['c'] < 0.15 and d['sigma_c'] > 0.7
+    assert d['how'] == 'node' and 0.38 < d['c'] < 0.48 and 0.4 < d['sigma_c'] < 0.55
     # own limits are not exceeded by a remainder
     for names, pid in (('anti-D_2*0 rho+', 'S041.213'), ('K*+ chi_c0', 'S041.435')):
         r = row(521, names)
@@ -1083,6 +1090,27 @@ def test_isospin():
             pass
         else:
             raise AssertionError('accepted an isospin source without an own c')
+
+
+def test_node_columns_and_report():
+    # decay-file line numbers, fed totals and their summary text (point 2 of 2026-11-18)
+    r = row(511, 'D_1- e+ nu_e')
+    assert r['dec_lines'] == '368'
+    r = row(511, 'K*0 psi(3770)')
+    assert r['dec_lines'] == '597 598 599 600' or set(r['dec_lines'].split()) >= {'597'}
+    assert 'S042.609' in r['fed_nodes'].split(';') and 'S042.609' in r['unclosed_nodes'].split(';')
+    info = [x for x in r['node_info'].split(';') if x.startswith('S042.609')][0]
+    assert 'PDG 0.000351' in info and 'sigma' in info
+    fed = TABLE[[('S042.609' in str(f).split(';')) for f in TABLE['fed_nodes']]]
+    assert len(fed) >= 3 and (fed['node_info'].str.contains('S042.609')).all()
+    # every unclosed node is also a fed node
+    for f, u in zip(TABLE['fed_nodes'], TABLE['unclosed_nodes']):
+        assert set(filter(None, str(u).split(';'))) <= set(filter(None, str(f).split(';')))
+    rep = pm.node_report(NODES, TABLE, PDL)
+    x = rep.set_index('uid').loc['S042.609']
+    assert close(x['value'], 3.50740e-4, 1e-4) and x['n_feeders'] == 3 and '597' in x['feeders']
+    assert abs(x['closure_pull']) > 3 and set(rep['mother']) == {511, 521}
+    assert rep['uid'].is_unique
 
 
 def test_csv_round_trip():

@@ -24,7 +24,7 @@ feed it. A line can appear in several cases, because it can feed several final s
 
 The cases are ordered by importance: the largest share that any of their lines has in the
 exclusive yield of one of the 72 sample tables. 20 cases reach 0.05 % and are written
-in full; the other 40 are in one table at the end.
+in full; the other 39 are in one table at the end.
 
 ## How to read a case
 
@@ -125,8 +125,8 @@ Columns of the line table:
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| D- K+ D+ | 4216 | 0.00022 | 1.00 | measured | node | S041.336 | 0.102 | 0.77 | yes | c_extreme, remainder_unstable, resonance_mismatch | 2.38 |
-| K+ psi(3770) | 4162 | 0.000488 | 0.41 | measured | exact | S041.360 | 0.89 | 0.75 |  | exception_applied, measurement_conflict, resonance_mismatch | 1.65 |
+| D- K+ D+ | 4216 | 0.00022 | 1.00 | measured | node | S041.336 | 0.427 | 0.48 | yes | remainder_unstable | 2.38 |
+| K+ psi(3770) | 4162 | 0.000488 | 0.41 | measured | product | S041.361, S041.362 | 0.532 | 0.37 |  | exception_applied, measurement_conflict | 1.65 |
 | K+ psi(4160) | 4171 | 0.000509 | 0.04 | measured | exact | S041.619 | 0.993 | 0.53 |  |  | 0.68 |
 
 ## Case 7: S042.609, B0 --> D0 Dbar()0 K+ pi-
@@ -232,9 +232,9 @@ Columns of the line table:
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | J/psi K_1+ | 4079 | 0.0018 | 0.36 | measured | exact | S041.271 | 1 | 0.29 |  |  | 0.07 |
 | K_2*+ J/psi | 4080 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
-| pi- pi+ K+ J/psi | 4083 | 5.51e-05 | 1.00 | measured | node | S041.19 | 1.04 | 5.1 | yes | remainder_unstable | 0.00 |
+| pi- pi+ K+ J/psi | 4083 | 5.51e-05 | 1.00 | measured | node | S041.19 | 1.05 | 5.1 | yes | remainder_unstable | 0.00 |
 | J/psi K'_1+ | 4078 | 0.0001 | 0.44 | limit |  | S041.272 | 1 | – |  |  | 0.00 |
-| K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | exact | S041.360 | 0.89 | 0.75 |  | exception_applied, measurement_conflict, resonance_mismatch | 1.65 |
+| K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | product | S041.361, S041.362 | 0.532 | 0.37 |  | exception_applied, measurement_conflict | 1.65 |
 
 ## Case 15: S041.528, B+ --> J/psi(1S) omega K+
 
@@ -254,7 +254,7 @@ Columns of the line table:
 
 - PDG: 0.000446 ± 4e-05
 - MC sum: 0.00206 (PDG / MC = 0.216)
-- after c: 0.00124 (after c / PDG = 2.79, 20σ); **not closed**
+- after c: 0.00124 (after c / PDG = 2.78, 20σ); **not closed**
 - largest yield share of its lines: 0.06 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
@@ -265,7 +265,7 @@ Columns of the line table:
 | pi- pi+ K0 J/psi | 453 | 0.000435 | 1.00 | measured | node | S042.211 | 0 | 1.2 | yes | c_extreme, node_not_closed, remainder_clamped, remainder_unstable | 0.02 |
 | K_2*0 J/psi | 459 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
 | J/psi K'_10 | 458 | 0.0001 | 0.44 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
-| K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | measured | isospin | S041.360 | 0.841 | 0.71 |  | above_limit, exception_applied, isospin, measurement_conflict | 0.00 |
+| K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | measured | isospin | S041.361, S041.362 | 0.503 | 0.35 |  | above_limit, exception_applied, isospin, measurement_conflict | 0.00 |
 
 ## Case 17: S042.212, B0 --> J/psi(1S) K0 rho0
 
@@ -326,7 +326,6 @@ Columns of the line table:
 
 | PDG id | Entry | PDG | MC sum | after c / PDG | σ | lines using it [dec line] (c) | share % |
 |---|---|---|---|---|---|---|---|
-| S042.267 | B0 --> Dbar0 D0 K0 | 0.00027 ± 0.00011 | 0.00052 | 1 | 0 | anti-D0 K0 D0 [658] (0.223) | 0.046 |
 | S042.615 | B0 --> psi(2S) K0 pi+ pi- | 0.000281 ± 3e-05 | 0.000342 | 1 | 0 | pi- pi+ K0 psi(2S) [492] (0.692) | 0.025 |
 | S041.307 | B+ --> K+ pi- pi+ gamma | 2.58e-05 ± 1.5e-06 | 4.9e-05 | 1.9 | 16 | – | 0.014 |
 | S041.308 | B+ --> K^*(892)0 pi+ gamma | 2.33e-05 ± 1.2e-06 | 4.26e-05 | 1.83 | 17 | – | 0.014 |
@@ -344,7 +343,7 @@ Columns of the line table:
 | S041.24 | B+ --> p Lambdabar pi+ pi- | 1.13e-05 ± 1.3e-06 | 1.92e-05 | 1 | 1.3e-15 | anti-Lambda0 pi- pi+ p+ [5022] (0.217) | 0.000 |
 | S041.282 | B+ --> K+ pi- pi+ | 5.1e-05 ± 2.9e-06 | 6.7e-05 | 1.06 | 1.1 | pi- pi+ K+ [4518] (0) | 0.000 |
 | S041.309 | B+ --> K+ rho0 gamma | 8.2e-06 ± 8.9e-07 | 1.41e-05 | 1.72 | 6.6 | – | 0.000 |
-| S041.345 | B+ --> K+ lepton+ lepton- | 4.71e-07 ± 4.6e-08 | 6.09e-07 | 1 | -1.1e-15 | e+ e- K+ [4430] (0.771) | 0.000 |
+| S041.345 | B+ --> K+ lepton+ lepton- | 4.71e-07 ± 4.6e-08 | 6.09e-07 | 1 | 1.1e-15 | e+ e- K+ [4430] (0.774) | 0.000 |
 | S041.346 | B+ --> K^*(892)+ lepton+ lepton- | 1.01e-06 ± 1.1e-07 | 1.31e-06 | 1 | 0 | e+ e- K*+ [4431] (0.772) | 0.000 |
 | S041.584 | B+ --> K+ pi0 pi0 | 1.62e-05 ± 1.9e-06 | 1.1e-05 | 1 | 0 | pi0 pi0 K+ [4538] (4.46) | 0.000 |
 | S041.63 | B+ --> pi+ pi+ pi- | 1.52e-05 ± 1.4e-06 | 1.69e-05 | 1 | 0 | pi- pi+ pi+ [4517] (0.585) | 0.000 |
@@ -358,7 +357,7 @@ Columns of the line table:
 | S042.229 | B0 --> K+ pi- pi0 | 3.78e-05 ± 3.2e-06 | 3.31e-05 | 1.03 | 0.33 | pi- pi0 K+ [1070] (3.04) | 0.000 |
 | S042.230 | B0 --> K+ K- pi0 | 2.17e-06 ± 6.5e-07 | 2.66e-06 | 1 | -6.6e-16 | K- pi0 K+ [1080] (0.51) | 0.000 |
 | S042.231 | B0 --> K+ pi- gamma | 4.6e-06 ± 1.4e-06 | 3.24e-05 | 7.09 | 20 | – | 0.000 |
-| S042.275 | B0 --> K0 lepton+ lepton- | 3.29e-07 ± 5.9e-08 | 5.45e-07 | 1 | 0 | e+ e- K0 [888] (0.602) | 0.000 |
+| S042.275 | B0 --> K0 lepton+ lepton- | 3.29e-07 ± 5.9e-08 | 5.45e-07 | 1 | 0 | e+ e- K0 [888] (0.605) | 0.000 |
 | S042.276 | B0 --> K^*(892)0 lepton+ lepton- | 9.87e-07 ± 1.2e-07 | 1.21e-06 | 1 | 0 | e+ e- K*0 [889] (0.811) | 0.000 |
 | S042.283 | B0 --> K0 phi gamma | 2.74e-06 ± 6.8e-07 | 2.23e-08 | 0.00814 | -4 | – | 0.000 |
 | S042.32 | B0 --> p pbar pi+ pi- | 2.87e-06 ± 1.9e-07 | 4.5e-06 | 1.57 | 8.7 | – | 0.000 |
