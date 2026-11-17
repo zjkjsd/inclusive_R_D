@@ -78,13 +78,14 @@ PDG limit (it is counted as limit/2 ± limit/2 when a total is split).
 | D3 | B⁰ → D\*± D∓ | AGREED (2026-11-16): the paper confirms the sum | both lines take c from S042.511; S042.155 is not used |
 | I1 | B⁰ → ψ(3770)K⁰ by isospin | DONE (2026-11-17) | c = 0.84 ± 0.21 from B⁺ → ψ(3770)K⁺ (section 2c) |
 | N1 | Lines with no PDG entry anywhere | NOTED (2026-11-17), to discuss with piece 3 | your suggestion: the same convention as `unmeasured` (c = 1 ± 1) instead of class `none` without an uncertainty |
-| G3–G4 | Direct (non-resonant PHSP) lines of a PDG total | DONE (2026-11-18), section 5a | every direct line: c = remainder of the total, clamped at 0; σ_c adds 20 % of the subtracted part (option 1b); M2 kept; B⁺ → D̄₁⁰ρ⁺ c = 0.19 ± 0.19 (half_limit) |
-| G6 | Lines with the wrong flavor | OPEN, proposal in section 5f | |
+| G3–G4 | Direct (non-resonant PHSP) lines of a PDG total | DONE (2026-11-17), section 5a | every direct line: c = remainder of the total, clamped at 0; σ_c adds 20 % of the subtracted part (option 1b); M2 kept; B⁺ → D̄₁⁰ρ⁺ c = 0.19 ± 0.19 (half_limit) |
+| G6 | Lines with the wrong flavor | DONE (2026-11-17), section 5f | S042.314 read as the sum of both charge combinations (797, 798: c = 0.13 ± 0.16); veto of B⁺ line 4349 (c = 0) and its B⁻ conjugate 5888; anti-B rows with a BF different from the conjugate take its corrected BF (B⁻ line 5892: c = 0.19 ± 0.23) |
+| R2 | Findings of the second independent review (2026-11-17) | DONE (2026-11-17), section 5g | |
 | G7 | J/ψ K ππ totals | OPEN | |
-| R1 | Findings of the independent review of 2026-11-17 | DONE (2026-11-18), section 5b | fixed: R1.1, R1.2, R1.5, R1.6, R1.9; R1.3 superseded; R1.4, R1.8, R1.10 noted |
-| P1 | B⁺ → ψ(3770)K⁺ and the D⁺D⁻K⁺ total | DONE (2026-11-18), option P+ (section 5d) | c from the per-channel products S041.361/362: 0.53, σ_c widened to 0.37 (measurement_conflict); total S041.360 excluded |
-| G5 | ψ(3770) and the D D̄ K totals | DONE (2026-11-18) | P+; B⁰ → D⁰D̄⁰K⁺π⁻ kept (resonance lines unmeasured, total flagged); B → Dππℓν direct lines keep the remainder (1.38 ± 1.59, 2.38 ± 1.35) until the Belle II gap-mode recommendation |
-| N2 | PDG reference attached to flagged lines | DONE (2026-11-18) | columns dec_lines, fed_nodes, node_info; node report b_mode_pdg_nodes.csv |
+| R1 | Findings of the independent review of 2026-11-17 | DONE (2026-11-17), section 5b | fixed: R1.1, R1.2, R1.5, R1.6, R1.9; R1.3 superseded; R1.4, R1.8, R1.10 noted |
+| P1 | B⁺ → ψ(3770)K⁺ and the D⁺D⁻K⁺ total | DONE (2026-11-17), option P+ (section 5d) | c from the per-channel products S041.361/362: 0.53, σ_c widened to 0.37 (measurement_conflict); total S041.360 excluded |
+| G5 | ψ(3770) and the D D̄ K totals | DONE (2026-11-17) | P+; B⁰ → D⁰D̄⁰K⁺π⁻ kept (resonance lines unmeasured, total flagged); B → Dππℓν direct lines keep the remainder (1.38 ± 1.59, 2.38 ± 1.35) until the Belle II gap-mode recommendation |
+| N2 | PDG reference attached to flagged lines | DONE (2026-11-17) | columns dec_lines, fed_nodes, node_info; node report b_mode_pdg_nodes.csv |
 
 ## 2. Method points
 
@@ -584,7 +585,7 @@ The 39 small cases (table at the end of the case file, each below 0.05 % of the 
 individual treatment proposed; the M1 rule already removed every c that came from a flagged total
 for a resonance line.
 
-## 5a. G3 and G4: the direct lines (discussion of 2026-11-18)
+## 5a. G3 and G4: the direct lines (discussion of 2026-11-17)
 
 *Your proposal.* The direct line of a PDG total is, in the decay file, a PHSP line meant as the
 non-resonant part. PDG measures the total inclusively; the non-resonant part is never measured,
@@ -667,7 +668,7 @@ of all B decays (of which semileptonic 1.0 % and 0.55 %). The notes gave such a 
 PYTHIA. In our model the PYTHIA normalizations are free (B.6), so they absorb it; if they were
 fixed, the B decays would sum to about 96.5 %. To keep in mind for piece 4.
 
-*Implemented (2026-11-18).* Decisions: option 1b (σ_c adds 20 % of the subtracted part, divided by
+*Implemented (2026-11-17).* Decisions: option 1b (σ_c adds 20 % of the subtracted part, divided by
 the BF of the direct line), all direct lines, M2 kept, B⁺ → D̄₁⁰ρ⁺ c = 0.19 ± 0.19 (new action
 `half_limit`). Forced classes (M2) are now applied before the totals are split (R1.1). Effect
 against the previous table: 24 final states change c or its source.
@@ -691,7 +692,7 @@ with expected values computed by hand from the node table; new tests for half_li
 Four reviewers were started on the rule change, the new exceptions and the numbers; two finished
 (rule logic; recomputation of the numbers), the others and the verification step stopped at a
 usage limit. Findings, all checked against the code by me, none changing a number with a visible
-share. Status 2026-11-18: R1.1, R1.2, R1.5, R1.6 (documented), R1.9 fixed; R1.3 no longer
+share. Status 2026-11-17: R1.1, R1.2, R1.5, R1.6 (documented), R1.9 fixed; R1.3 no longer
 applies (no direct line is rejected any more); R1.4, R1.8, R1.10 left as noted.
 
 | # | Finding | Effect | Proposed fix |
@@ -707,7 +708,7 @@ applies (no direct line is rejected any more); R1.4, R1.8, R1.10 left as noted.
 | R1.9 | The capping loop inside the remainder never fires on the real files and would flag a line below its limit | dead code path | remove it |
 | R1.10 | Variance of a chained remainder counts one unmeasured line twice | errors slightly conservative (one charmless mode) | none |
 
-## 5c. What the amplitude analyses say (2026-11-18)
+## 5c. What the amplitude analyses say (2026-11-17)
 
 Six papers read from arXiv: LHCb 2009.00026 (B⁺ → D⁺D⁻K⁺), LHCb 1505.01710 and Belle hep-ex/0611054
 (B⁰ → D̄⁰π⁺π⁻), LHCb 1608.01289, Belle hep-ex/0307021 and BaBar 0901.1291 (B⁺ → D⁻π⁺π⁺).
@@ -731,7 +732,7 @@ S-wave at 49 % of the normalised total, D₂\* at 31 %, and D\*_v, B\*_v, D₁\*
 c ≈ 1.0 instead of 1.16. Within the present uncertainties; no change proposed.
 
 *B⁺ → D⁺D⁻K⁺ (line 4216, share 2.4 %): the PDG entries contradict the amplitude analysis.* PDG's
-ψ(3770)K⁺ (S041.360) times B(ψ(3770) → D⁺D⁻) of the decay file is 81 % (corrected 2026-11-18; 91 % was the decay-file value before c) of PDG's D⁺D⁻K⁺ total
+ψ(3770)K⁺ (S041.360) times B(ψ(3770) → D⁺D⁻) of the decay file is 81 % (corrected 2026-11-17; 91 % was the decay-file value before c) of PDG's D⁺D⁻K⁺ total
 (S041.336, 2.2 ± 0.7 ·10⁻⁴). LHCb measures the ψ(3770) fit fraction as 14.5 ± 1.4 %; ψ(4160) is
 6.6 %, and the rest (χ_c0,2(3930) 10.9 %, ψ(4040) 5.0 %, ψ(4415) 9.2 %, X₀,₁(2900) 36.2 %, D⁻K⁺
 S-wave 24.2 %) has no own line in the decay file: about 80 % of the total after normalisation.
@@ -743,7 +744,7 @@ which would put the ψ(3770)K⁺ line at c ≈ 0.16, against its own PDG value; 
 and a wider σ on ψ(3770)K⁺. The ψ(3770)K⁺ line also feeds D⁰D̄⁰K⁺ (4210, c = 0.83) and appears in
 the isospin transfer to ψ(3770)K⁰ (I1), so (b) moves those too.
 
-## 5d. G5: ψ(3770) and the D D̄ K totals (2026-11-18)
+## 5d. G5: ψ(3770) and the D D̄ K totals (2026-11-17)
 
 *P1 option (c) implemented.* ψ(3770)K⁺ (line 4162): c = 0.89, σ_c 0.23 → 0.75 (extra_uncertainty
 80 %, new flag `measurement_conflict`), carried to the isospin image ψ(3770)K⁰ and into the
@@ -778,7 +779,7 @@ extra uncertainty (65 %) for P+. Recommendation: P+. The products are the like-f
 comparison for a line whose events are D D̄ K (M1), they agree with each other, and the remaining
 tension with LHCb is covered.
 
-*The sources of the three entries (2026-11-18; pdgapi.lbl.gov listings and the papers).*
+*The sources of the three entries (2026-11-17; pdgapi.lbl.gov listings and the papers).*
 
 | PDG entry | Measurements used in the average (pdgapi) | Listed, not used |
 |---|---|---|
@@ -802,7 +803,7 @@ All three averages are reproduced exactly from the inputs marked as used. Facts 
 - PDG's ψ(3770) branching fractions equal the decay file's (0.52, 0.41), so no c changes; for the
   weight, the decay file's values are the right ones by construction (the MC generates with them).
 
-*Decision (2026-11-18): P+, implemented.* B⁺ → ψ(3770)K⁺ 0.53 ± 0.37; D⁺D⁻K⁺ (4216) 0.43 ± 0.48;
+*Decision (2026-11-17): P+, implemented.* B⁺ → ψ(3770)K⁺ 0.53 ± 0.37; D⁺D⁻K⁺ (4216) 0.43 ± 0.48;
 D̄⁰D⁰K⁺ (4210) 0.89 ± 0.24; ψ(3770)K⁰ 0.50 ± 0.35; D⁻D⁺K⁰ (652) 0.87 ± 0.25; D̄⁰D⁰K⁰ (658) 0.54 ± 0.53.
 
 *Conclusion before the decision.* The per-channel products are the better basis for line 4162; the total carries a
@@ -813,17 +814,17 @@ remains the recommendation.
 - **B⁰ → D⁰D̄⁰K⁺π⁻ (S042.609).** PDG (3.51 ± 0.47)·10⁻⁴; the decay file gives 5.72·10⁻⁴ (4.7σ above),
   all through resonance lines without an own entry: ψ(3770)K\*⁰ (597–600, share 1.08 %),
   ψ(3770)K⁺π⁻ (602), D̄⁰K\*⁰D⁰ (674). There is no direct line, so under M1 nothing takes a c; all
-  three stay unmeasured (1 ± 1) and the total stays flagged. DECIDED (2026-11-18): keep. The
+  three stay unmeasured (1 ± 1) and the total stays flagged. DECIDED (2026-11-17): keep. The
   PDG value now travels with the flagged lines (columns fed_nodes, node_info; node report).
 - **New case B⁰ → D⁻π⁺π⁻ℓν (S042.556) and B⁺ → D̄⁰π⁺π⁻ℓν (S041.649).** Their direct lines (379,
   403 μ; 4011, 4038 μ) are non-resonant semileptonic gap modes like those of M2; under the new rule
-  they took the remainder: 1.38 ± 1.6 and 2.38 ± 1.35 (share 0.13 %). DECIDED (2026-11-18): keep the
+  they took the remainder: 1.38 ± 1.6 and 2.38 ± 1.35 (share 0.13 %). DECIDED (2026-11-17): keep the
   remainder (the decay file built these lines as "the measured rate not covered by B → D₁ℓν", and
   the D\*ππℓν lines already take measured c); to be revisited with the Belle II gap-mode
   recommendation.
 - B⁺ → D⁻D⁺K⁺ (S041.336): follows the choice above.
 
-## 5e. Reference columns and node report (2026-11-18)
+## 5e. Reference columns and node report (2026-11-17)
 
 Mode table (`b_mode_pdg_table.csv`), new columns: `dec_lines` (decay-file line numbers of the
 final state, own block), `fed_nodes` (measured PDG totals the line feeds with at least 10 % of its
@@ -832,7 +833,7 @@ flagged for the same total share its id. New file `b_mode_pdg_nodes.csv`: one ro
 by B⁰/B⁺ lines (591), with value, error, decay-file sum before and after c, closure pull, role and
 every feeding line with its decay-file lines, class and c.
 
-## 5f. G6: lines written with the wrong flavor (2026-11-18)
+## 5f. G6: lines written with the wrong flavor (2026-11-17)
 
 Two cases with a visible share; the other `flavor_twin` lines are charmless or below 0.02 % and
 their twins are only upper limits (S042.351, S042.317, ...): no action proposed.
@@ -864,6 +865,35 @@ lines (new exception action `veto`); (b) the allowed B⁻ line takes the correct
 conjugate (CP symmetry): c = 0.49 × 5.9·10⁻⁴ / 1.5·10⁻³ = 0.19 ± 0.23. For (b) the general rule for
 anti-B rows whose BF differs from the conjugate would change from "c = 1" to "transfer the corrected
 BF"; on the present table this affects only this line.
+
+*Decision (2026-11-17): both proposals, implemented.* New exception action `veto` (c = 0 ± 0, how
+`veto`); one entry, for B⁺ line 4349; the B⁻ line 5888 is its conjugate and inherits c = 0 (an
+exception can only name a B⁰ or B⁺ line; anti-B rows follow their conjugate, and the loader now
+rejects anything else). The rule for anti-B rows whose BF differs from their conjugate is now
+"transfer the corrected BF" (flag `cp_transfer`); four anti-B rows changed: 5888 (0), 5892
+(0.19 ± 0.23), and the B̄⁰ D\*K⁰π lines 2607, 2608, which follow 797/798 (0.13 ± 0.16).
+
+## 5g. Second independent review (2026-11-17)
+
+Three reviewers (logic, numbers recomputed from the files, documentation and tests) and one
+verifier per finding; 16 findings, 14 confirmed, 2 refuted. None changed a c with a visible share.
+Fixed:
+- The closure counted a line without a c that the decay file puts above its own limit with c = 1,
+  while its remainder counted it as limit/2: the closure now uses the same value (only
+  K′\*⁺π⁻, line 1659, and the charmless total S042.84 change: pull +6.1 → about +1).
+- An extra uncertainty on a line whose c comes from a total is now applied before larger totals
+  subtract that line (no such line today).
+- A forced line (M2) keeps its class and enters remainders as 1 ± 1 even when it has an own limit.
+- The isospin target carries `extra_rel` of its source; an anti-B row whose c is not carried over
+  loses `measurement_conflict` and `extra_rel` (superseded by the transfer rule of 5f).
+- The node report listed the BF = 0 K⁰ line for K⁰ final states; it now lists every line with
+  BF > 0 (e.g. ψ(3770)K⁰: lines 593, 594).
+- A total processed first because of a `direct_line` exception now flags `order_dependent` if a
+  line it subtracted as 1 ± 1 gets a c later (does not happen on the real files).
+- Wording: limit_capped, remainder_unstable, the node report (final-state entries only: 591 rows
+  for 561 entries, lepton entries once per flavor), the P+ exception reason (LHCb about 1σ away).
+Refuted: "limit lines below their limit should be flagged unmeasured" (behaviour as intended;
+part of N1) and "remainder_unstable should use the widened σ" (it describes the remainder).
 
 ## 6. Starting a new session on this
 
