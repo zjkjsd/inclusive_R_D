@@ -78,7 +78,9 @@ PDG limit (it is counted as limit/2 ± limit/2 when a total is split).
 | D3 | B⁰ → D\*± D∓ | AGREED (2026-11-16): the paper confirms the sum | both lines take c from S042.511; S042.155 is not used |
 | I1 | B⁰ → ψ(3770)K⁰ by isospin | DONE (2026-11-17) | c = 0.84 ± 0.21 from B⁺ → ψ(3770)K⁺ (section 2c) |
 | N1 | Lines with no PDG entry anywhere | NOTED (2026-11-17), to discuss with piece 3 | your suggestion: the same convention as `unmeasured` (c = 1 ± 1) instead of class `none` without an uncertainty |
-| G3–G7 | The case groups of section 5 | OPEN | |
+| G3–G4 | Direct (non-resonant PHSP) lines of a PDG total | PRINCIPLE AGREED (2026-11-18), details OPEN (section 5a) | the direct line takes c from the remainder of the total, clamped at 0, with an enlarged uncertainty; replaces "unstable → unmeasured" |
+| G5–G7 | The case groups of section 5 | OPEN | |
+| R1 | Findings of the independent review of 2026-11-17 | OPEN, fixes proposed (section 5b) | |
 
 ## 2. Method points
 
@@ -323,16 +325,15 @@ B(D_s0\* → D_sπ⁰) is below 100 %, c can only be larger, by up to 25 %.
   direct line.
 - **D⁰D̄⁰K⁰ (line 658, 0.05 %): c = 0.77 → `unmeasured`.** Same cause: the ψ(3770)K⁰ part now takes
   most of the total (0.027 ± 0.011 %), and the rest is more than 100 % uncertain.
-- ψ(3770)K⁰ keeps the flag `above_limit`: its product limits (S042.393, S042.394) are still
-  exceeded after the correction.
+- ψ(3770)K⁰ keeps the flag `above_limit`: after the correction its D⁰D̄⁰ product (2.1·10⁻⁴) is still
+  above the limit S042.393 (1.23·10⁻⁴); the D⁺D⁻ product (1.66·10⁻⁴) is now below S042.394
+  (1.88·10⁻⁴). (Corrected after review, R1.7.)
 
 *Case numbers.* The case file is regenerated after every change and its numbering follows the
 ranking, so the numbers C1–C18 of 2026-11-16 no longer apply. From here on, cases are referred to
 by their PDG entry (section 5).
 
-*Independent review.* The rule change and the new exceptions were given to four independent
-reviewers (logic of the rule, numbers recomputed from the files, exceptions and isospin physics,
-tests and documentation); findings and fixes are recorded here when the review is complete.
+*Independent review.* Findings in section 5b.
 
 ## 3. The exceptions file
 
@@ -578,6 +579,109 @@ Decisions per group, to fill in:
 The 39 small cases (table at the end of the case file, each below 0.05 % of the yield): no
 individual treatment proposed; the M1 rule already removed every c that came from a flagged total
 for a resonance line.
+
+## 5a. G3 and G4: the direct lines (discussion of 2026-11-18)
+
+*Your proposal.* The direct line of a PDG total is, in the decay file, a PHSP line meant as the
+non-resonant part. PDG measures the total inclusively; the non-resonant part is never measured,
+only a remainder. So its c should make the total match PDG: c = (total − Σ c·other lines) / BF of
+the direct line, clamped at 0 if negative, with an uncertainty larger than that of the remainder
+alone, since the total is not exactly the sum of its parts (interference). AGREED as principle.
+
+*Correction of a number I gave on 2026-11-17.* For B⁺ → D⁻π⁺π⁺ the remainder is **c = 0.29 ± 0.50**,
+not negative: 0.1073 % − 1.16 × 0.0553 % (D̄₀\*⁰π⁺) − 1.01 × 0.0340 % (D̄₂\*⁰π⁺) = 0.0087 %, against
+0.030 % in the decay file. It was flagged unstable because its error exceeds the value.
+
+*What the two Belle II notes did with the same situation* (BELLE2-NOTE-PH-2022-046, B⁰ tag modes;
+BELLE2-NOTE-PH-2022-002 v1.0.1, B⁺ tag modes, "Project B"):
+- The most common error they found is ours: a PDG inclusive total written into the decay file as
+  the non-resonant line, with the resonances added on top (in Belle II partly from an automatic
+  PDG parser). Their fix: set the non-resonant line to 0 where data show the resonances dominate
+  (D⁽\*⁾3π → all into D⁽\*⁾a₁; D⁽\*⁾ππ⁰ → all ρ), or to the remainder "to fill the inclusive
+  measurement" (marker ∪), e.g. B⁺ → D⁻π⁺π⁺ = 0.03 % "remaining after D\*\*π". Interference ignored.
+- Lines with no measurement were set explicitly to 0 so that PYTHIA does not generate them; the
+  branching fraction removed (about 4 %) was given back to PYTHIA to keep the sum at 100 %.
+- D\*\*ρ = 2 × D\*\*π, from a prediction, not a measurement; non-resonant D\*\*ππ⁰ set to 0.
+- Validation with data (B → Dπ recoil sample, sPlot), no fine-tuning; the remaining data/MC
+  differences are then dominated by the PDG uncertainties.
+- **Our decay file (rel08, MC16) already contains these changes**: lines tagged "LMH 06/2023" (B⁰)
+  and "NR 06/2023" (B⁺), e.g. lines 697–699, 710–712, 4252–4254, 4280–4282, 4301, 4314–4321. Our
+  comparison reproduces them (D⁻a₁⁺ closes after D1, D\*⁻a₁⁺ c = 1.01, D̄\*⁰a₁⁺ c = 1.04).
+- **Not fixed in rel08**: B⁰ → D̄⁰π⁺π⁻ (line 692) and D̄\*⁰π⁺π⁻ (693) are still copies of the PDG
+  totals with the D\*\*π and ρ⁰ lines on top (the B⁰ note lists D̄⁰π⁺π⁻ as its section 10, but the
+  draft has no text there). The same pattern is in D⁻K⁰π⁺ (799), D\*⁻K⁰π⁺ (797), D D̄ K (652, 658,
+  4210, 4216), J/ψωK (464, 4087), J/ψKππ (453, 4083). Your rule is the notes' "∪" treatment.
+
+*What the rule gives* (direct lines with a visible share; interference allowance as in option b
+below):
+
+| Total | Direct line (dec line) | Share % | Now | Remainder | With rule |
+|---|---|---|---|---|---|
+| B⁺ → D⁻D⁺K⁺ | 4216 | 2.4 | unmeasured 1 ± 1 | 0.10 ± 0.38 | 0.10 ± 0.42 |
+| B⁺ → D⁻π⁺π⁺ (G4) | 4301 | 0.53 | unmeasured 1 ± 1 | 0.29 ± 0.50 | 0.29 ± 0.83 |
+| B⁰ → D\*⁻K⁰π⁺ (G6) | 797 | 0.11 | unmeasured 1 ± 1 | 0.27 ± 0.29 | 0.27 ± 0.32 |
+| B⁺ → D̄\*⁰K⁺K̄\*⁰ (G6) | 4345 | 0.10 | unmeasured 1 ± 1 | 0.49 ± 0.50 | 0.49 ± 0.55 |
+| B⁰ → D̄⁰π⁺π⁻ (G4) | 692 | 0.04 | 0.28 ± 0.06 | 0.28 ± 0.06 | 0.28 ± 0.16 |
+| B⁰ → D̄\*⁰π⁺π⁻ (G3) | 693 | 0.04 | unmeasured 1 ± 1 | −0.43 ± 0.68 | 0 ± 0.68 (clamped) |
+| B⁰ → D̄⁰D⁰K⁰ | 658 | 0.05 | unmeasured 1 ± 1 | 0.22 ± 0.46 | 0.22 ± 0.47 |
+| B⁰ → J/ψK⁰π⁺π⁻ (G7) | 453 | 0.02 | unmeasured 1 ± 1 | −1.83 ± 1.08 | 0 ± 1.08 (clamped) |
+
+95 direct lines in all take a c from a total (84 PHSP, 9 B → K(\*)ℓℓ with BTOSLLBALL, D⁻a₁⁺ by
+exception, D\*∓D± as a sum); 14 of them now unstable, 7 negative.
+
+*Open choices.*
+1. **The interference allowance.** The LHCb ψ(2S)K⁺π⁺π⁻ amplitude analysis gives a scale: its 31
+   fit fractions sum to 102.7 ± 8.6 %, and single interference terms reach ±8 % of the total.
+   (a) 10 % of the PDG total, divided by the BF of the direct line: also enlarges lines that are
+   alone in their total (D⁻a₁⁺ 1.06 ± 0.11 → ± 0.15; D\*⁻D\*⁺K⁺ ± 0.15 → ± 0.18), where there is
+   nothing to interfere with in the decay file.
+   (b) 20 % of the part that is subtracted (the other lines, after c), divided by the BF of the
+   direct line: zero when the direct line is alone, large when the remainder is a small
+   difference (D⁻π⁺π⁺). **Recommended**; numbers in the table above.
+2. **Scope.** Apply to every direct line (replacing rule 4 of section 2a: "unstable → unmeasured"),
+   not only G3/G4. Recommended. Exceptions: the semileptonic non-resonant D(\*)πℓν lines (M2), see 3.
+3. **M2 and the new rule.** Read literally, the rule would give the non-resonant D(\*)πℓν lines
+   c = 1.78 ± 0.60 (B⁰ D̄⁰π⁻ℓν), 1.33 ± 0.58 (B⁺ D⁻π⁺ℓν) and 0 (both D\*πℓν, negative remainders).
+   You decided M2 as gap modes for now; recommendation: keep M2 until the gap-mode discussion.
+4. **B⁺ → D̄₁⁰ρ⁺ (line 4319, share 3.0 %).** The decay file has 0.372 % (2 × D̄₁⁰π⁺, the D\*\*ρ = 2 ×
+   D\*\*π assumption of the B⁺ note), 2.7 times PDG's upper limit 0.14 % (S041.215, CLEO). It is now
+   class limit, c = 1, flagged above_limit. Options: keep; scale to the limit (c = 0.38); or limit/2
+   ± limit/2 (c = 0.19 ± 0.19), the convention already used inside remainders. D̄₂\*⁰ρ⁺ (0.17 % vs
+   < 0.47 %) and D₂\*⁻ρ⁺ (0.085 % vs < 0.49 %) are within their limits; D₁⁻ρ⁺, D′₁ρ and D₀\*ρ have no
+   PDG entry (B⁰ and B⁺).
+
+*An idea beyond the remainder.* Where an amplitude analysis exists, its fit fractions measure the
+non-resonant (S-wave) part directly, as the LHCb paper did for E6: B⁰ → D̄⁰π⁺π⁻ (Belle 2007, LHCb
+2015), B⁺ → D⁻π⁺π⁺ (Belle 2004, BaBar 2009, LHCb 2016), B⁺ → D⁺D⁻K⁺ (LHCb 2020), B⁰ → D̄⁰K⁺π⁻
+(LHCb). The remainder absorbs every inconsistency between PDG entries; a fit fraction does not. One
+example to check: in B⁺ → D⁺D⁻K⁺ the PDG product ψ(3770)K⁺ × B(ψ(3770) → D⁺D⁻) is 91 % of the PDG
+total, while the LHCb amplitude analysis found, as far as I remember, a ψ(3770) fit fraction of
+order 10 % (to be read from the paper). arxiv.org is not reachable from this session.
+
+*Total branching fraction.* With all c applied, the exclusive lines lose 3.4 % (B⁰) and 3.7 % (B⁺)
+of all B decays (of which semileptonic 1.0 % and 0.55 %). The notes gave such a loss back to
+PYTHIA. In our model the PYTHIA normalizations are free (B.6), so they absorb it; if they were
+fixed, the B decays would sum to about 96.5 %. To keep in mind for piece 4.
+
+## 5b. Findings of the independent review (2026-11-17)
+
+Four reviewers were started on the rule change, the new exceptions and the numbers; two finished
+(rule logic; recomputation of the numbers), the others and the verification step stopped at a
+usage limit. Findings, all checked against the code by me, none changing a number with a visible
+share:
+
+| # | Finding | Effect | Proposed fix |
+|---|---|---|---|
+| R1.1 | `force_class` is applied after the totals are split: the M2 lines keep the PDG id, bf_pdg and p_node of the total, and the node table still lists the c they had | cosmetic in the table; the closure of S042.311 then reads −3.5σ | apply forced classes before the split; forced lines enter remainders with 1 ± 1 |
+| R1.2 | A limit equal to the decay-file BF is read as "above the limit" through float rounding (8.2e-7 stored as 8.199999999999999e-7) | p Λ̄π⁰ (line 5021, share 0): c = 0.77 instead of 0.68 | compare with a relative tolerance of 1e-6 |
+| R1.3 | A direct line rejected as unstable by one total could still take c from a second total of the same final state | toy only | superseded by the new rule of 5a |
+| R1.4 | The node with a `direct_line` exception is processed first; other direct lines feeding it would enter with 1 ± 1 | toy only; on the real files S042.88 subtracts only D₁⁻π⁺ (product c) | process it first only for the stand-in line, or flag it |
+| R1.5 | The isospin check treats the 20 % D2 term as independent for the B⁰ and B⁺ D_s0\* lines, although it is common | pulls of those two pairs −0.95 / −0.70 instead of −1.52 / −0.75 | use σ without the common term in the check |
+| R1.6 | bf_pdg of isospin rows is the transferred B⁰ value, not the value of the named B⁺ entry | column meaning only | document it |
+| R1.7 | ψ(3770)K⁰: after the correction only the D⁰D̄⁰ product limit (S042.393) is exceeded, not both | the text of 2c | corrected below |
+| R1.8 | D⁻a₁⁺ at c = 1.06 alone gives 3.5·10⁻³ of D⁻π⁺ρ⁰ against PDG (1.1 ± 1.0)·10⁻³ (S042.91, old), +2.4σ, unflagged | side effect of D1, below threshold | none; noted |
+| R1.9 | The capping loop inside the remainder never fires on the real files and would flag a line below its limit | dead code path | remove it |
+| R1.10 | Variance of a chained remainder counts one unmeasured line twice | errors slightly conservative (one charmless mode) | none |
 
 ## 6. Starting a new session on this
 
