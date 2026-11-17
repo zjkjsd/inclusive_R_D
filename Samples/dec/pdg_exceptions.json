@@ -229,5 +229,14 @@
    321
   ],
   "reason": "2026-11-17. B0 --> psi(3770) K0 (lines 592-594: K0 with BF 0, K_S0, K_L0) has only product upper limits in PDG (S042.393, S042.394), and the decay file is above them. The isospin partner B+ --> psi(3770) K+ is measured (S041.360). b --> c cbar s decays conserve isospin, so the B0 lines take the B+ value divided by the lifetime ratio."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -10423,
+   213
+  ],
+  "action": "half_limit",
+  "reason": "G3 (2026-11-18). PDG text: 'B+ --> Dbar_1^*(2420)0 rho+' < 1.4e-3 (S041.215, CLEO). The decay file (line 4319) has 3.72e-3, set as twice B+ --> anti-D_10 pi+ (the D**rho = 2 x D**pi assumption of BELLE2-NOTE-PH-2022-002), 2.7 times the limit. The line takes c = limit/2 +- limit/2, i.e. 0.19 +- 0.19."
  }
 ]

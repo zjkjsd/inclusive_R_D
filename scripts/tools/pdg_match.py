@@ -31,18 +31,20 @@ Rules
     2. product : c = PDG product / (BF_line x BF_sub of the decay file); several product nodes
                  are combined with inverse-variance weights (the chi2 is kept).
     3. node    : only for a DIRECT line of a measured multi-body node, i.e. a line whose final
-                 state is the node's own. The node is the inclusive rate of that final state; the
-                 direct line takes what is left of it after all other lines that feed it:
-                 lines with a c are subtracted with their c, lines without one with c = 1 and an
-                 uncertainty of 100 %, and lines that the decay file puts above their own PDG
-                 limit as limit/2 +- limit/2 (`limit_capped`). The nodes are taken from the
-                 fewest bodies up (then the smaller relative PDG error). If the remainder is
-                 <= 0 or more than 100 % uncertain, the direct line gets no c
-                 (`remainder_unstable`).
+                 state is the node's own (in the decay file the PHSP line meant as the non-resonant
+                 part). The node is the inclusive rate of that final state; the non-resonant part is
+                 never measured, only a remainder: c = (node - other lines) / BF of the direct
+                 line, clamped at 0 (`remainder_clamped`). Lines with a c are subtracted with c and
+                 sigma_c, lines without one with c = 1 +- 1, lines that the decay file puts above
+                 their own PDG limit as limit/2 +- limit/2 (`limit_capped`). The total is not exactly
+                 the sum of its parts (interference): F_INTERFERENCE (20 %) of the subtracted part,
+                 divided by the BF of the direct line, is added in quadrature to sigma_c.
+                 `remainder_unstable`: sigma_c > c. Nodes are taken from the fewest bodies up (then
+                 the smaller relative PDG error).
     A line that reaches a measured node only through a resonance never takes a c from it: the
     node measures a sum, not this line (decision M1 of docs/B0_PIECE2_REVIEW.md). Without an
     exact or product entry of its own such a line is flagged `unmeasured`: class none, c = 1,
-    sigma_c = `UNMEASURED_SIGMA` (100 %). The same holds for a direct line left without a c.
+    sigma_c = `UNMEASURED_SIGMA` (100 %).
     The product result is always stored (`c_prod`), whatever was used for c.
     Product nodes of one line that repeat one measurement are dropped before the mean: of nodes
     with the same sub-decays the most precise is kept, and a node whose sub-decay alternatives are
@@ -77,6 +79,10 @@ BF_MC(line) x (1 / TAU_RATIO for a B0 line, TAU_RATIO for a B+ line) (how = 'iso
 `direct_line` declares a line as the direct line of a multi-body node although it reaches it through
 a resonance (the decay file routes the whole final state through that resonance):
     {"pdgid": "S042.88", "action": "direct_line", "mother": 511, "key": [...], "reason": "..."}
+`half_limit` gives a line that the decay file puts above its own PDG upper limit c = limit/2 with
+sigma_c = limit/2 (how = 'half_limit', class limit):
+    {"mother": 521, "key": [...], "action": "half_limit", "reason": "..."}
+`force_class` is applied before the totals are split: a forced line takes no c from a total.
 `extra_uncertainty` adds a relative uncertainty in quadrature to the sigma_c of a line with a c:
     {"mother": 511, "key": [...], "action": "extra_uncertainty", "relative": 0.2, "reason": "..."}
 
@@ -119,6 +125,8 @@ MAX_DEPTH = 4              # nested folding levels
 NO_FOLD_DEFAULT = ('eta_c', 'eta_c(2S)', 'chi_c0')
 P_MIN = 0.10               # a line takes its c from a node only if this share of it feeds the node
 UNMEASURED_SIGMA = 1.0      # sigma_c of a line flagged `unmeasured` (c = 1)
+F_INTERFERENCE = 0.2        # direct line: extra uncertainty, this fraction of what was subtracted
+REL_TOL = 1e-6              # relative tolerance when a BF is compared with a limit
 RES_MISMATCH = 0.30        # f_res_PDG - f_res_MC above this sets `resonance_mismatch`
 C_EXTREME = 3.0            # c outside [1/3, 3] sets `c_extreme`
 PULL_REVIEW = 3.0
@@ -290,7 +298,7 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
     known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin', 'direct_line',
-             'extra_uncertainty')
+             'extra_uncertainty', 'half_limit')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -304,6 +312,9 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
                 raise ValueError(f'{path}: isospin needs mother, key, from_mother and from_key: {e}')
             if {int(e['mother']), int(e['from_mother'])} != {511, 521}:
                 raise ValueError(f'{path}: isospin relates a B0 (511) line and a B+ (521) line: {e}')
+        elif e['action'] == 'half_limit':
+            if 'mother' not in e or 'key' not in e:
+                raise ValueError(f'{path}: half_limit needs mother and key: {e}')
         elif e['action'] == 'extra_uncertainty':
             if 'mother' not in e or 'key' not in e or not float(e.get('relative', 0)) > 0:
                 raise ValueError(f'{path}: extra_uncertainty needs mother, key and relative > 0: {e}')
@@ -643,7 +654,7 @@ def _new_result():
     return dict(pdg_class='none', how='', pdgids=[], bf_pdg=np.nan, bf_pdg_err=np.nan, c=1.0,
                 sigma_c=np.nan, flags=set(), f_res_mc=np.nan, f_res_pdg=np.nan, res_node='',
                 p_node=np.nan, c_prod=np.nan, sigma_c_prod=np.nan, chi2_prod=np.nan, n_prod=0,
-                prod_pdgids=[], alt_pdgids=[], unclosed_nodes=[], twin_pdgids=[], direct_node='',
+                prod_pdgids=[], alt_pdgids=[], unclosed_nodes=[], twin_pdgids=[], direct_node='', extra_rel=0.0,
                 _diff=-np.inf)
 
 
@@ -840,7 +851,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                 if not n['is_limit'] and n['uid'] not in kept:
                     rows[n['uid']]['role'] = 'duplicate'
             for n, pred in lst:
-                if n['is_limit'] and pred > n['value']:
+                if n['is_limit'] and pred > n['value'] * (1 + REL_TOL):
                     r['flags'].add('above_limit')
             if meas:
                 cs = np.array([n['value'] / pred for n, pred in meas])
@@ -855,7 +866,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                          prod_pdgids=[n['pdgid'] for n, _ in meas])
                 if r['how'] == 'isospin':
                     raise ValueError(f'exceptions: isospin target {k} of {mother} has its own product entry')
-                if not r['how']:
+                if not r['how'] and k not in forced:
                     best = min(meas, key=lambda x: x[0]['err'] / x[0]['value'] if x[0]['value'] > 0 else np.inf)[0]
                     r.update(pdg_class='measured', how='product', pdgids=[n['pdgid'] for n, _ in meas],
                              bf_pdg=best['value'], bf_pdg_err=best['err'], c=c, sigma_c=sigma)
@@ -871,90 +882,115 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
 
     # own upper limits of a line, as a bound on its c: plain limit nodes of its final state
     # (value / BF_MC) and product limit nodes (value / (BF_line x BF_sub of the decay file))
-    cap = {}
+    cap, cap_id = {}, {}
+
+    def add_cap(k, value, node):
+        if value < cap.get(k, np.inf):
+            cap[k], cap_id[k] = value, node['pdgid']
     for n in final_state:
         if n['uid'] in feed and n['usable'] and n['is_limit'] and len(n['targets']) == 1:
             k = n['targets'][0]
             if cmode_bf.get(k, 0.0) > 0:
-                cap[k] = min(cap.get(k, np.inf), n['value'] / cmode_bf[k])
+                add_cap(k, n['value'] / cmode_bf[k], n)
     for k, lst in prod.items():
         for n, pred in lst:
             if n['is_limit']:
-                cap[k] = min(cap.get(k, np.inf), n['value'] / pred)
-    capped = set()                                  # lines kept out of the remainders by their limit
+                add_cap(k, n['value'] / pred, n)
+
+    # forced classes, before the totals are split: a forced line takes no c from a total and
+    # enters its remainder like any line without a c (1 +- 1)
+    forced = set()
+    for e in exceptions:
+        if e['action'] != 'force_class' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        if k not in results:
+            raise ValueError(f'exceptions: no final state {e["key"]} of {mother}')
+        r = results[k]
+        if r['how'] and r['how'] != 'isospin' and e['class'] != 'measured':
+            r.update(how='', c=1.0, sigma_c=np.nan, pdgids=[], bf_pdg=np.nan, bf_pdg_err=np.nan,
+                     p_node=np.nan)
+        r['pdg_class'] = e['class']
+        r['flags'].add('exception_applied')
+        forced.add(k)
+
+    # 'half_limit': a line that the decay file puts above its own PDG limit takes c = limit/2 with
+    # an uncertainty of limit/2 (the range [0, limit] as a flat-ish prior)
+    for e in exceptions:
+        if e['action'] != 'half_limit' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        if k not in results or k not in cap:
+            raise ValueError(f'exceptions: half_limit on {e["key"]} of {mother}, which has no own limit')
+        if results[k]['how']:
+            raise ValueError(f'exceptions: half_limit on {e["key"]} of {mother}, which has a c already')
+        if not cap[k] < 1.0 - REL_TOL:
+            raise ValueError(f'exceptions: half_limit on {e["key"]} of {mother}: the decay file is not above the limit')
+        r = results[k]
+        r.update(pdg_class='limit', how='half_limit', pdgids=[cap_id[k]], c=0.5 * cap[k], sigma_c=0.5 * cap[k],
+                 bf_pdg=cap[k] * cmode_bf[k], bf_pdg_err=0.0)
+        r['flags'].add('exception_applied')
 
     # final-state nodes, the most exclusive first. Only the DIRECT lines of a node (their final
-    # state is the node's own) take a c from it: the remainder after all other lines. A line that
-    # reaches the node through a resonance and has no c of its own is not measured by the node; it
-    # is subtracted with c = 1 and an uncertainty of 100 %.
+    # state is the node's own; in the decay file the PHSP line meant as the non-resonant part)
+    # take a c from it: the remainder of the total after all other lines, clamped at 0. Lines with
+    # a c are subtracted with c and sigma_c; lines without one with c = 1 +- 1; lines without one
+    # that the decay file puts above their own limit with limit/2 +- limit/2. The total is not
+    # exactly the sum of its parts (interference): F_INTERFERENCE of the subtracted part is added
+    # to the uncertainty. A line that reaches the node through a resonance takes nothing from it.
     def node_pass():
         rest_nodes = [n for n in measured if n['uid'] not in exact_uids]
         # nodes with a 'direct_line' exception first: their stand-in line is a resonance line that
         # can also feed smaller nodes, where it must enter with its c
         rest_nodes.sort(key=lambda n: (n['pdgid'] not in direct_extra, n['n_bodies'],
                                        n['err'] / n['value'] if n['value'] > 0 else np.inf, n['uid']))
+
+        def is_free(n, k, f):
+            return (not results[k]['how'] and k not in forced and f[k] / cmode_bf[k] >= P_MIN
+                    and is_direct(n, k))
         cand, used_nb = {}, {}                      # line -> {pdgid: n_bodies} of the nodes it could take
         for n in rest_nodes:
-            for k, v in feed[n['uid']].items():
-                if not results[k]['how'] and v / cmode_bf[k] >= P_MIN and is_direct(n, k):
+            f = feed[n['uid']]
+            for k in f:
+                if is_free(n, k, f):
                     cand.setdefault(k, {})[n['pdgid']] = n['n_bodies']
         for n in rest_nodes:
             f = feed[n['uid']]
-            tot = sum(f.values())
-            free = [k for k in f if not results[k]['how'] and k not in capped and f[k] / cmode_bf[k] >= P_MIN
-                    and is_direct(n, k)]
+            free = [k for k in f if is_free(n, k, f)]
+            if not free:
+                rows[n['uid']]['role'] = 'covered'
+                continue
             for k in free:
                 if k not in n['targets']:
                     results[k]['flags'].add('exception_applied')
-            out_here = []
-
-            def remainder(free):
-                num, var = n['value'], n['err'] ** 2
-                for k in f:
-                    if k in free:
-                        continue
-                    r = results[k]
-                    if k in capped or (not r['how'] and cap.get(k, np.inf) < 1.0):
-                        # bounded by its own limit, [0, cap]: a free line kept out of the sharing,
-                        # or a line without a c that the decay file puts above its limit
-                        half = 0.5 * cap[k] * f[k]
-                        num -= half
-                        var += half ** 2
-                        continue
-                    num -= r['c'] * f[k]
-                    if r['how'] and np.isfinite(r['sigma_c']):
-                        var += (r['sigma_c'] * f[k]) ** 2
-                    elif not r['how']:              # no c of its own: c = 1 +- 1
-                        var += f[k] ** 2
-                den = sum(f[k] for k in free)
-                return num / den, np.sqrt(var) / den
-            c = sigma = np.nan
-            while free:
-                c, sigma = remainder(free)
-                over = [k for k in free if c > cap.get(k, np.inf)]
-                if not over:
-                    break
-                capped.update(over)
-                out_here += over
-                free = [k for k in free if k not in over]
-            if free and (c <= 0 or sigma > c):
-                # nothing usable is left for the direct line(s): no c (they end as `unmeasured`)
-                for k in free:
-                    results[k]['flags'].add('remainder_unstable')
-                    results[k]['direct_node'] = n['pdgid']
-                rows[n['uid']]['role'] = 'unstable'
-                for k in out_here:
-                    results[k]['flags'].add('limit_capped')
-                continue
-            for k in out_here:
-                results[k]['flags'].add('limit_capped')
-            rows[n['uid']]['role'] = 'node' if free else ('capped' if out_here else 'covered')
-            if not free:
-                continue
+            num, var, sub = n['value'], n['err'] ** 2, 0.0
+            for k in f:
+                if k in free:
+                    continue
+                r = results[k]
+                if not r['how'] and cap.get(k, np.inf) < 1.0 - REL_TOL:
+                    part, s2 = 0.5 * cap[k] * f[k], (0.5 * cap[k] * f[k]) ** 2
+                elif r['how'] and np.isfinite(r['sigma_c']):
+                    part, s2 = r['c'] * f[k], (r['sigma_c'] * f[k]) ** 2
+                elif r['how']:
+                    part, s2 = r['c'] * f[k], 0.0
+                else:                               # no c of its own: c = 1 +- 1
+                    part, s2 = f[k], f[k] ** 2
+                num -= part
+                var += s2
+                sub += part
+            den = sum(f[k] for k in free)
+            c_raw = num / den
+            sigma = float(np.hypot(np.sqrt(var), F_INTERFERENCE * sub)) / den
+            c = max(c_raw, 0.0)
+            rows[n['uid']].update(role='node', c_assigned=c)
             for k in free:
                 assign(k, 'node', n, c, sigma, f[k] / cmode_bf[k])
                 used_nb[k] = n['n_bodies']
-            rows[n['uid']]['c_assigned'] = c
+                if c_raw < 0:
+                    results[k]['flags'].add('remainder_clamped')
+                if sigma > c:
+                    results[k]['flags'].add('remainder_unstable')
         # the choice between nodes of the same size rests on the order above: flag it
         for k, nb in used_nb.items():
             used = results[k]['pdgids'][0]
@@ -977,7 +1013,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         if k not in results:
             continue
         r = results[k]
-        if n['is_limit'] and cmode_bf[k] > n['value']:
+        if n['is_limit'] and cmode_bf[k] > n['value'] * (1 + REL_TOL):
             r['flags'].add('above_limit')
         if r['how'] or r['pdg_class'] == 'measured':
             continue
@@ -1058,21 +1094,6 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             if diff > RES_MISMATCH:
                 r['flags'].add('resonance_mismatch')
 
-    # forced classes
-    for e in exceptions:
-        if e['action'] != 'force_class' or int(e['mother']) != mother:
-            continue
-        k = collapse_key(e['key'])
-        if k not in results:
-            raise ValueError(f'exceptions: no final state {e["key"]} of {mother}')
-        r = results[k]
-        r['pdg_class'] = e['class']
-        if e['class'] != 'measured':
-            r.update(how='', c=1.0, sigma_c=np.nan)
-            r['flags'] -= {'remainder_unstable', 'node_ambiguous'}
-            r['alt_pdgids'] = []
-        r['flags'].add('exception_applied')
-
     # extra relative uncertainty on a c (e.g. from a sub-decay BF the decay file fixes at 100 %)
     for e in exceptions:
         if e['action'] != 'extra_uncertainty' or int(e['mother']) != mother:
@@ -1082,6 +1103,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             raise ValueError(f'exceptions: extra_uncertainty on {e["key"]} of {mother}, which has no c')
         r = results[k]
         r['sigma_c'] = float(np.hypot(r['sigma_c'], float(e['relative']) * r['c']))
+        r['extra_rel'] = float(np.hypot(r['extra_rel'], float(e['relative'])))
         r['flags'].add('exception_applied')
 
     # `unmeasured`: a line without a c (class none) that feeds a measured final-state node. The
@@ -1094,12 +1116,12 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             if r['pdg_class'] == 'none':
                 r['flags'].add('unmeasured')
                 r['sigma_c'] = UNMEASURED_SIGMA
-            elif r['pdg_class'] == 'limit' and cap.get(k, np.inf) < 1.0:
+            elif r['pdg_class'] == 'limit' and cap.get(k, np.inf) < 1.0 - REL_TOL:
                 r['flags'].add('limit_capped')      # counted as limit/2 +- limit/2 in the remainders
 
     # own limits against the corrected BF: max(1, c) x BF_MC above any limit of the line
     for k, c_max in cap.items():
-        if max(1.0, results[k]['c']) > c_max:
+        if max(1.0, results[k]['c']) > c_max * (1 + REL_TOL):
             results[k]['flags'].add('above_limit')
 
     # closure of every measured final-state node with the final c of its feeding lines
@@ -1132,7 +1154,7 @@ TABLE_COLUMNS = ['mother_pdg', 'key', 'names', 'n_daughters', 'is_sl', 'tau', 'n
                  'pdg_class', 'how', 'pdgids', 'bf_pdg', 'bf_pdg_err', 'c', 'sigma_c', 'pull',
                  'f_res_mc', 'f_res_pdg', 'flags', 'res_node', 'p_node', 'bf_mc_sum', 'c_prod',
                  'sigma_c_prod', 'chi2_prod', 'n_prod', 'prod_pdgids', 'alt_pdgids', 'unclosed_nodes',
-                 'twin_pdgids']
+                 'twin_pdgids', 'extra_rel']
 
 
 def _flag_twins(results, pdl):
@@ -1176,7 +1198,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
       tau        : a tau among the daughters.
       bf_mc      : BF of this final state in its own block.
       pdg_class  : 'measured', 'limit', 'none' or 'inclusive'.
-      how        : 'exact', 'node', 'product', 'isospin' (c of the isospin partner, by exception) or ''.
+      how        : 'exact', 'node', 'product', 'isospin' (c of the isospin partner, by exception),
+                   'half_limit' (limit/2 +- limit/2, by exception) or ''.
       pdgids     : PDG identifiers used, separated by ';'.
       bf_pdg, bf_pdg_err : value and uncertainty of the PDG node used (for several product nodes
                    the most precise one; for a limit the limit). With the factor 2 of a K_S0 node.
@@ -1192,7 +1215,9 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                    c = 1), c_extreme (c outside [1/3, 3]), limit_capped (kept out of a node
                    remainder by its own limit), node_ambiguous, node_not_closed, flavor_twin
                    (see the module docstring), unmeasured (feeds a measured node but has no c:
-                   c = 1, sigma_c = 1), isospin.
+                   c = 1, sigma_c = 1), isospin, remainder_clamped (the remainder of the total
+                   was negative; c = 0).
+      extra_rel  : relative uncertainty added by an extra_uncertainty exception.
       alt_pdgids : node_ambiguous: the other nodes of the same size the line was free in.
       unclosed_nodes : node_not_closed: the nodes fed by the line that do not close (|pull| > 3).
       twin_pdgids : flavor_twin: PDG identifiers of the twin final state.
@@ -1207,8 +1232,7 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     lepton flavor: uid, pdgid, mother, kind, description, value and err (with the K_S0 factor),
     is_limit, multi_ks, n_bodies, bf_mc (BF_MC of the node: the sum over the lines that feed it;
     for a product node BF_line x BF_sub), ratio (value / bf_mc), n_feeders, role ('exact', 'node',
-    'covered' = no direct line was left to fix, 'unstable' = the remainder for the direct
-    line was not usable, 'capped' = the free lines were all kept out
+    'covered' = no direct line was left to fix, 'capped' (unused) = the free lines were all kept out
     by their own limits, 'product', 'duplicate' = product node dropped as a repeat of another,
     'limit', 'multi_ks', 'excluded'), c_assigned, f_res_mc, f_res_pdg, bf_mc_weighted (sum of
     c x BF x P over the feeding lines), closure (bf_mc_weighted / value), closure_pull ((weighted
@@ -1310,7 +1334,7 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
             # a c formed with the BF of the other block does not apply here
             r = dict(r, how='', c=1.0, sigma_c=np.nan, p_node=np.nan, alt_pdgids=[],
                      bf_mc_sum=csum[(mother, collapse_key(key))])
-            flags -= {'remainder_unstable', 'node_ambiguous'}
+            flags -= {'remainder_unstable', 'remainder_clamped', 'node_ambiguous'}
         tau = any(abs(c) == 15 for c in key)
         if tau:
             flags.add('tau')
@@ -1320,7 +1344,7 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                    is_sl=bool(is_sl), tau=tau, n_charm=int(n_charm), bf_mc=float(bf))
         row.update({c: r[c] for c in ('pdg_class', 'how', 'bf_pdg', 'bf_pdg_err', 'c', 'sigma_c',
                                       'f_res_mc', 'f_res_pdg', 'res_node', 'p_node', 'bf_mc_sum',
-                                      'c_prod', 'sigma_c_prod', 'chi2_prod', 'n_prod')})
+                                      'c_prod', 'sigma_c_prod', 'chi2_prod', 'n_prod', 'extra_rel')})
         row['pdgids'] = ';'.join(r['pdgids'])
         for c in ('prod_pdgids', 'alt_pdgids', 'unclosed_nodes', 'twin_pdgids'):
             row[c] = ';'.join(r[c])
@@ -1612,9 +1636,15 @@ def isospin_report(table, pdl=None):
                    r_pdg=np.nan, r_pdg_err=np.nan, pull=np.nan, c_other=np.nan)
         if m0 and mp:
             bp, b0 = rp.c * rp.bf_mc_sum, r0.c * r0.bf_mc_sum * TAU_RATIO
-            sp, s0 = rp.sigma_c * rp.bf_mc_sum, r0.sigma_c * r0.bf_mc_sum * TAU_RATIO
-            ratio = bp / b0
-            rec.update(r_pdg=ratio, r_pdg_err=ratio * np.hypot(sp / bp, s0 / b0),
+            sig_p, sig_0 = rp.sigma_c, r0.sigma_c
+            common = min(getattr(rp, 'extra_rel', 0.0) or 0.0, getattr(r0, 'extra_rel', 0.0) or 0.0)
+            if common > 0:                          # an extra uncertainty common to both lines cancels
+                sig_p = np.sqrt(max(sig_p ** 2 - (common * rp.c) ** 2, 0.0))
+                sig_0 = np.sqrt(max(sig_0 ** 2 - (common * r0.c) ** 2, 0.0))
+            sp, s0 = sig_p * rp.bf_mc_sum, sig_0 * r0.bf_mc_sum * TAU_RATIO
+            ratio = bp / b0 if b0 > 0 else np.nan
+            err = ratio * np.hypot(sp / bp, s0 / b0) if bp > 0 and b0 > 0 else np.nan
+            rec.update(r_pdg=ratio, r_pdg_err=err,
                        pull=(bp - b0) / np.hypot(sp, s0) if np.hypot(sp, s0) > 0 else np.nan)
         elif m0 or mp:
             src, dst = (r0, rp) if m0 else (rp, r0)

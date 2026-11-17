@@ -385,20 +385,24 @@ def test_toy_node_and_remainder():
     assert close(n.loc['T.4', 'bf_mc'], bf_node) and n.loc['T.4', 'n_feeders'] == 3
     assert close(n.loc['T.4', 'ratio'], 0.0015 / bf_node)
     # the K_2* line reaches the node through a resonance: it takes no c from it (unmeasured,
-    # c = 1 +- 1). The direct line gets the remainder, which here is more than 100 % uncertain
-    # ((0.0015 - 1.2 x feed_kst - 0.00025) / 0.0004 = 0.725 +- 0.825): no c either
+    # c = 1 +- 1). The direct line takes the remainder: total minus K* (exact c = 1.2) minus K_2*
+    # (1 +- 1), with 20 % of the subtracted part added as interference allowance
     r = row(511, 'J/psi K_2*0', t, lk)
     assert r['how'] == '' and r['pdg_class'] == 'none' and r['c'] == 1.0 and close(r['sigma_c'], 1.0)
     assert 'unmeasured' in flags(r) and 'remainder_unstable' not in flags(r)
+    sub = 1.2 * feed_kst + 0.00025
+    c = (0.0015 - sub) / 0.0004
+    s = math.hypot(math.sqrt(0.0002 ** 2 + (0.1 * feed_kst) ** 2 + 0.00025 ** 2), pm.F_INTERFERENCE * sub) / 0.0004
     r = row(511, 'J/psi K+ pi-', t, lk)
-    assert r['how'] == '' and r['c'] == 1.0 and close(r['sigma_c'], 1.0)
-    assert {'unmeasured', 'remainder_unstable'} <= flags(r) and n.loc['T.4', 'role'] == 'unstable'
-    # with a precise total the direct line takes the remainder; the K_2* part enters with 100 %
+    assert r['how'] == 'node' and r['pdgids'] == 'T.4' and close(r['c'], c) and close(r['sigma_c'], s)
+    assert close(r['p_node'], 1.0) and 'remainder_unstable' in flags(r) and 'unmeasured' not in flags(r)
+    assert n.loc['T.4', 'role'] == 'node' and close(n.loc['T.4', 'closure'], 1.0)
+    # with a precise total the remainder is well defined
     pdg = [x if x[0] != 'T.4' else ('T.4', x[1], 0.0020, 0.0001, False) for x in TOY_PDG]
     tp, np_, lkp = toy(pdg=pdg)
     r = row(511, 'J/psi K+ pi-', tp, lkp)
-    c = (0.0020 - 1.2 * feed_kst - 0.00025) / 0.0004
-    s = math.sqrt(0.0001 ** 2 + (0.1 * feed_kst) ** 2 + 0.00025 ** 2) / 0.0004
+    c = (0.0020 - sub) / 0.0004
+    s = math.hypot(math.sqrt(0.0001 ** 2 + (0.1 * feed_kst) ** 2 + 0.00025 ** 2), pm.F_INTERFERENCE * sub) / 0.0004
     assert r['how'] == 'node' and r['pdgids'] == 'T.4' and close(r['c'], c) and close(r['sigma_c'], s)
     assert close(r['p_node'], 1.0) and not flags(r) & {'unmeasured', 'remainder_unstable', 'node_not_closed'}
     assert np_.set_index('uid').loc['T.4', 'role'] == 'node'
@@ -408,11 +412,12 @@ def test_toy_node_and_remainder():
     assert close(row(511, 'D*- a_1+', t, lk)['c'], 1.2)
     r3 = row(511, 'D*- rho0 pi+', t, lk)
     c3 = (0.009 - 1.2 * 0.006) / 0.002
-    s3 = math.sqrt(0.0002 ** 2 + (0.05 * 0.006) ** 2) / 0.002
+    s3 = math.hypot(math.sqrt(0.0002 ** 2 + (0.05 * 0.006) ** 2), pm.F_INTERFERENCE * 1.2 * 0.006) / 0.002
     assert r3['how'] == 'node' and r3['pdgids'] == 'T.6' and close(r3['c'], c3) and close(r3['sigma_c'], s3)
     r4 = row(511, 'D*- pi+ pi+ pi-', t, lk)
-    c4 = (0.016 - 1.2 * 0.010 - c3 * 0.002) / 0.001
-    s4 = math.sqrt(0.0002 ** 2 + (0.05 * 0.010) ** 2 + (s3 * 0.002) ** 2) / 0.001
+    sub4 = 1.2 * 0.010 + c3 * 0.002
+    c4 = (0.016 - sub4) / 0.001
+    s4 = math.hypot(math.sqrt(0.0002 ** 2 + (0.05 * 0.010) ** 2 + (s3 * 0.002) ** 2), pm.F_INTERFERENCE * sub4) / 0.001
     assert r4['pdgids'] == 'T.7' and close(r4['c'], c4) and close(r4['sigma_c'], s4)
     assert close(r4['pull'], (c4 - 1) / s4)
     assert close(n.loc['T.7', 'bf_mc'], 0.013) and n.loc['T.5', 'role'] == 'exact'
@@ -425,20 +430,30 @@ def test_toy_node_and_remainder():
 def test_toy_unstable_remainder():
     t, nodes, lk = toy()
     r = row(511, 'D- pi+ pi0', t, lk)
-    # remainder (0.007 - 0.95 * 0.008) < 0: the direct line gets no c
-    assert r['how'] == '' and r['pdg_class'] == 'none' and {'remainder_unstable', 'unmeasured'} <= flags(r)
-    assert r['c'] == 1.0 and close(r['sigma_c'], 1.0)
+    # remainder (0.007 - 0.95 * 0.008) < 0: the direct line is clamped at c = 0, with the
+    # uncertainty of the remainder (and the interference allowance)
+    sub = 0.95 * 0.008
+    s = math.hypot(math.sqrt(0.001 ** 2 + (r_sigma(t, lk, 'D- rho+') * 0.008) ** 2), pm.F_INTERFERENCE * sub) / 0.0007
+    assert r['how'] == 'node' and r['pdg_class'] == 'measured' and r['c'] == 0.0 and close(r['sigma_c'], s)
+    assert {'remainder_clamped', 'remainder_unstable'} <= flags(r) and 'unmeasured' not in flags(r)
     assert close(row(511, 'D- rho+', t, lk)['c'], 0.95)
-    # a remainder more than 100 % uncertain is unstable too
+    # a remainder more than 100 % uncertain keeps its value and is flagged
     pdg = [x if x[0] != 'T.9' else ('T.9', x[1], 0.0078, 0.001, False) for x in TOY_PDG]
     t2, _, lk2 = toy(pdg=pdg)
     r = row(511, 'D- pi+ pi0', t2, lk2)
-    assert 'remainder_unstable' in flags(r) and r['c'] == 1.0 and r['how'] == ''
-    # and a well-measured one is not
+    assert close(r['c'], (0.0078 - sub) / 0.0007) and 'remainder_unstable' in flags(r)
+    assert 'remainder_clamped' not in flags(r)
+    # a small remainder of a large subtraction stays uncertain even with a precise total: the
+    # interference allowance (20 % of 0.0076) dominates
     pdg = [x if x[0] != 'T.9' else ('T.9', x[1], 0.0083, 0.0001, False) for x in TOY_PDG]
     t3, _, lk3 = toy(pdg=pdg)
     r = row(511, 'D- pi+ pi0', t3, lk3)
-    assert 'remainder_unstable' not in flags(r) and close(r['c'], (0.0083 - 0.0076) / 0.0007)
+    assert close(r['c'], (0.0083 - sub) / 0.0007) and 'remainder_clamped' not in flags(r)
+    assert r['sigma_c'] > pm.F_INTERFERENCE * sub / 0.0007 and 'remainder_unstable' in flags(r)
+
+
+def r_sigma(t, lk, names):
+    return row(511, names, t, lk)['sigma_c']
 
 
 def test_toy_product():
@@ -661,7 +676,7 @@ def test_toy_limit_caps():
     assert 'limit_capped' not in flags(r) and 'above_limit' not in flags(r)
     d = row(511, 'D- pi+ pi0', t, lk)
     assert d['how'] == 'node' and d['pdgids'] == 'U.1' and close(d['c'], (0.010 - 0.001) / 0.001)
-    assert close(d['sigma_c'], math.sqrt(0.001 ** 2 + 0.001 ** 2) / 0.001)
+    assert close(d['sigma_c'], math.hypot(math.sqrt(0.001 ** 2 + 0.001 ** 2), pm.F_INTERFERENCE * 0.001) / 0.001)
     # product limit: D_0*- l nu < 2e-4 (as D_0* -> Dbar0 pi-), below the decay file: limit/2 +- limit/2
     r = row(511, 'D_0*- e+ nu_e', t, lk)
     assert r['pdg_class'] == 'limit' and r['c'] == 1.0 and r['pdgids'] == 'U.4'
@@ -669,7 +684,24 @@ def test_toy_limit_caps():
     d = row(511, 'anti-D0 pi- e+ nu_e', t, lk)
     half = 0.5 * 0.0002
     assert d['how'] == 'node' and close(d['c'], (0.003 - half) / 0.001)
-    assert close(d['sigma_c'], math.sqrt(0.0002 ** 2 + half ** 2) / 0.001)
+    assert close(d['sigma_c'], math.hypot(math.sqrt(0.0002 ** 2 + half ** 2), pm.F_INTERFERENCE * half) / 0.001)
+    # half_limit exception: the line takes c = limit/2 +- limit/2 itself
+    exc = [dict(mother=511, key=code('D_0*- e+ nu_e'), action='half_limit', reason='test')]
+    th, _, lkh = toy(exc, TOY2_PDG, TOY2_DEC)
+    r = row(511, 'D_0*- e+ nu_e', th, lkh)
+    cap = 0.0002 / (r['bf_mc'] * 1.0)
+    assert r['how'] == 'half_limit' and r['pdg_class'] == 'limit' and r['pdgids'] == 'U.4'
+    assert close(r['c'], 0.5 * pm.pdg_info(th, 511, code('D_0*- e+ nu_e'))['bf_pdg'] / r['bf_mc'])
+    assert close(r['sigma_c'], r['c']) and 'exception_applied' in flags(r)
+    assert close(row(511, 'anti-D0 pi- e+ nu_e', th, lkh)['c'], d['c'])          # same remainder
+    for bad in (dict(mother=511, key=code('D- rho+'), action='half_limit', reason='below its limit'),
+                dict(mother=511, key=code('J/psi K*0'), action='half_limit', reason='no limit')):
+        try:
+            toy([bad], TOY2_PDG, TOY2_DEC)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f'accepted: {bad}')
     # with c = 1 kept for the capped line the node does not close; both lines say so
     assert 'node_not_closed' in flags(d) and d['unclosed_nodes'] == 'U.3'
     assert n.loc['U.3[e]', 'role'] == 'node' and n.loc['U.3[e]', 'closure_pull'] > 3
@@ -745,10 +777,14 @@ def test_real_coverage():
     assert set(zip(TABLE['mother_pdg'], TABLE['key'])) == set(zip(modes['mother_pdg'], modes['key']))
     assert np.allclose(TABLE['bf_mc'], modes['bf_mc'])
     assert set(TABLE['pdg_class']) == {'measured', 'limit', 'none', 'inclusive'}
-    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', ''}
+    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', ''}
     meas = TABLE['how'] != ''
-    assert (TABLE.loc[meas, 'pdg_class'] == 'measured').all() and (TABLE.loc[meas, 'pdgids'] != '').all()
-    assert (TABLE.loc[~meas, 'c'] == 1.0).all() and TABLE['c'].notna().all() and (TABLE['c'] > 0).all()
+    hl = TABLE['how'] == 'half_limit'
+    assert (TABLE.loc[meas & ~hl, 'pdg_class'] == 'measured').all() and (TABLE.loc[meas, 'pdgids'] != '').all()
+    assert (TABLE.loc[hl, 'pdg_class'] == 'limit').all()
+    assert (TABLE.loc[~meas, 'c'] == 1.0).all() and TABLE['c'].notna().all() and (TABLE['c'] >= 0).all()
+    zero = TABLE['c'] == 0                                         # only clamped remainders
+    assert zero.any() and (pm.has_flag(TABLE, 'remainder_clamped') == zero).all()
     assert TABLE.loc[meas, 'sigma_c'].notna().all() and TABLE.loc[~meas, 'pull'].isna().all()
     incl = TABLE['pdg_class'] == 'inclusive'
     assert incl.sum() == modes['is_inclusive'].sum() and (TABLE.loc[incl, 'how'] == '').all()
@@ -756,7 +792,8 @@ def test_real_coverage():
     assert (pm.has_flag(TABLE, 'zero_bf') == (TABLE['bf_mc'] == 0)).all()
     known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit',
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
-             'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin', ''}
+             'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin',
+             'remainder_clamped', ''}
     assert set(f for fl in TABLE['flags'] for f in fl.split(';')) <= known
     # shares of all B decays (scouting, B.12: 34 / 38.5 % plain, 6-7 % product, ~10 % none)
     for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
@@ -818,19 +855,25 @@ def test_real_jpsi():
     n = NODES.set_index('uid')
     # J/psi K+ pi-: the K* lines are part of the PDG final state
     node = n.loc['S042.4']
-    assert node['description'] == 'B0 --> J/psi(1S) K+ pi-' and node['role'] == 'unstable'
+    assert node['description'] == 'B0 --> J/psi(1S) K+ pi-' and node['role'] == 'node'
     direct = row(511, 'J/psi K+ pi-')
     assert 3.5 < node['value'] / direct['bf_mc'] < 4.1           # line by line: wrong
     assert 0.82 < node['ratio'] < 0.92 and node['n_feeders'] == 3  # after folding K*, K_2*
     kst = row(511, 'J/psi K*0')
     assert kst['how'] == 'exact' and kst['pdgids'] == 'S042.22' and 0.95 < kst['c'] < 1.05
     assert close(kst['bf_mc'], 0.0002117 * 2 + 0.000847, 1e-3)    # K*0, K*S, K*L, K*0T lines
-    # J/psi K_2*0 has no entry of its own (c = 1 +- 1); what is left for the direct line is more
-    # than 100 % uncertain, so it gets no c either and the node stays open
+    # J/psi K_2*0 has no entry of its own (c = 1 +- 1); the direct line takes the remainder,
+    # computed here by hand from the node table, and the node closes
     k2 = row(511, 'J/psi K_2*0')
     assert k2['how'] == '' and 'unmeasured' in flags(k2)
-    assert direct['how'] == '' and direct['c'] == 1.0 and {'unmeasured', 'remainder_unstable'} <= flags(direct)
-    assert node['closure_pull'] > 3 and 'node_not_closed' in flags(direct)
+    fk = {k: v for k, v, _ in node['feeders']}
+    kk = lambda names: pm.collapse_key(code(names))
+    sub = kst['c'] * fk[kk('J/psi K*0')] + fk[kk('J/psi K_2*0')]
+    var = (kst['sigma_c'] * fk[kk('J/psi K*0')]) ** 2 + fk[kk('J/psi K_2*0')] ** 2 + node['err'] ** 2
+    D = fk[kk('J/psi K+ pi-')]
+    assert direct['how'] == 'node' and close(direct['c'], (node['value'] - sub) / D)
+    assert close(direct['sigma_c'], math.hypot(math.sqrt(var), pm.F_INTERFERENCE * sub) / D)
+    assert 'remainder_unstable' in flags(direct) and abs(node['closure_pull']) < 1e-6
     # the anti-B0 block writes the K*S / K*L lines with a K*0
     a, b = row(-511, 'J/psi anti-K*0'), row(-511, 'J/psi K*0')
     assert close(a['c'], kst['c']) and close(b['c'], kst['c'])
@@ -855,8 +898,8 @@ def test_real_double_counting():
     direct = row(511, 'anti-D0 pi- pi+')
     assert close(direct['bf_mc'], node['value'], 1e-3)
     assert 0.48 < node['ratio'] < 0.58 and node['n_feeders'] >= 4
-    assert direct['how'] == 'node' and direct['pdgids'] == 'S042.1' and direct['c'] < 0.6
-    assert direct['pull'] < -5
+    assert direct['how'] == 'node' and direct['pdgids'] == 'S042.1' and 0.25 < direct['c'] < 0.31
+    assert 0.14 < direct['sigma_c'] < 0.18 and direct['pull'] < -3          # G4: 0.28 +- 0.16
     # the D** pi lines are fixed by their product nodes (text corrected by the exceptions file)
     r = row(511, 'D_2*- pi+')
     assert r['how'] == 'product' and r['pdgids'] == 'S042.124' and 'exception_applied' in flags(r)
@@ -884,7 +927,8 @@ def test_real_ds0():
 def test_real_misc():
     # limits
     lim = TABLE[TABLE['pdg_class'] == 'limit']
-    assert len(lim) > 50 and (lim['c'] == 1.0).all() and lim['bf_pdg'].notna().all()
+    assert len(lim) > 50 and lim['bf_pdg'].notna().all()
+    assert (lim['c'][lim['how'] == ''] == 1.0).all() and set(lim['how']) == {'', 'half_limit'}
     above = lim[pm.has_flag(lim, 'above_limit')]
     assert ((above['bf_mc'] >= above['bf_pdg']) | (above['n_prod'] == 0)).all()
     r = row(511, 'eta_c(2S) K*0')
@@ -934,12 +978,14 @@ def test_real_review_fixes():
         assert r['how'] == 'isospin' and r['pdgids'] == 'S041.360', names
         assert close(r['c'], src['c'] * src['bf_mc'] / 0.00048 / pm.TAU_RATIO)
     # own limits are not exceeded by a remainder
-    for names, pid in (('anti-D_10 rho+', 'S041.215'), ('anti-D_2*0 rho+', 'S041.213'),
-                       ('K*+ chi_c0', 'S041.435')):
+    for names, pid in (('anti-D_2*0 rho+', 'S041.213'), ('K*+ chi_c0', 'S041.435')):
         r = row(521, names)
         assert r['pdg_class'] == 'limit' and r['c'] == 1.0 and r['pdgids'] == pid, names
         assert ('limit_capped' in flags(r)) == ('above_limit' in flags(r)), names
-    assert {'above_limit', 'limit_capped'} <= flags(row(521, 'anti-D_10 rho+'))
+    # B+ -> anti-D_10 rho+ (G3): 2.7 times its limit S041.215 (1.4e-3); half_limit exception
+    r = row(521, 'anti-D_10 rho+')
+    assert r['how'] == 'half_limit' and r['pdgids'] == 'S041.215' and close(r['c'], 0.5 * 0.0014 / 0.00372)
+    assert close(r['sigma_c'], r['c']) and {'above_limit', 'exception_applied'} <= flags(r)   # the file is above
     r = row(521, 'chi_c0 K0 pi+')
     assert r['how'] == 'node' and r['pdgids'] == 'S041.799' and 6.5 < r['c'] < 7.2
     # exceptions: D*+- D-+ is a charge sum; psi(2S) K_1(1270) S041.858 is one partial wave

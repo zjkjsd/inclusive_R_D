@@ -78,9 +78,10 @@ PDG limit (it is counted as limit/2 ± limit/2 when a total is split).
 | D3 | B⁰ → D\*± D∓ | AGREED (2026-11-16): the paper confirms the sum | both lines take c from S042.511; S042.155 is not used |
 | I1 | B⁰ → ψ(3770)K⁰ by isospin | DONE (2026-11-17) | c = 0.84 ± 0.21 from B⁺ → ψ(3770)K⁺ (section 2c) |
 | N1 | Lines with no PDG entry anywhere | NOTED (2026-11-17), to discuss with piece 3 | your suggestion: the same convention as `unmeasured` (c = 1 ± 1) instead of class `none` without an uncertainty |
-| G3–G4 | Direct (non-resonant PHSP) lines of a PDG total | PRINCIPLE AGREED (2026-11-18), details OPEN (section 5a) | the direct line takes c from the remainder of the total, clamped at 0, with an enlarged uncertainty; replaces "unstable → unmeasured" |
+| G3–G4 | Direct (non-resonant PHSP) lines of a PDG total | DONE (2026-11-18), section 5a | every direct line: c = remainder of the total, clamped at 0; σ_c adds 20 % of the subtracted part (option 1b); M2 kept; B⁺ → D̄₁⁰ρ⁺ c = 0.19 ± 0.19 (half_limit) |
 | G5–G7 | The case groups of section 5 | OPEN | |
-| R1 | Findings of the independent review of 2026-11-17 | OPEN, fixes proposed (section 5b) | |
+| R1 | Findings of the independent review of 2026-11-17 | DONE (2026-11-18), section 5b | fixed: R1.1, R1.2, R1.5, R1.6, R1.9; R1.3 superseded; R1.4, R1.8, R1.10 noted |
+| P1 | Amplitude analyses against the remainders | OPEN (section 5c) | B⁺ → D⁺D⁻K⁺ inconsistent between PDG entries |
 
 ## 2. Method points
 
@@ -663,12 +664,32 @@ of all B decays (of which semileptonic 1.0 % and 0.55 %). The notes gave such a 
 PYTHIA. In our model the PYTHIA normalizations are free (B.6), so they absorb it; if they were
 fixed, the B decays would sum to about 96.5 %. To keep in mind for piece 4.
 
+*Implemented (2026-11-18).* Decisions: option 1b (σ_c adds 20 % of the subtracted part, divided by
+the BF of the direct line), all direct lines, M2 kept, B⁺ → D̄₁⁰ρ⁺ c = 0.19 ± 0.19 (new action
+`half_limit`). Forced classes (M2) are now applied before the totals are split (R1.1). Effect
+against the previous table: 24 final states change c or its source.
+
+| Line (dec line) | Share % | Before | Now |
+|---|---|---|---|
+| B⁺ → D̄₁⁰ρ⁺ (4319) | 3.0 | limit, 1 | half_limit, 0.19 ± 0.19 |
+| B⁺ → D⁺D⁻K⁺ (4216) | 2.4 | unmeasured, 1 ± 1 | 0.10 ± 0.42 |
+| B⁺ → D⁻π⁺π⁺ (4301) | 0.53 | unmeasured, 1 ± 1 | 0.29 ± 0.83 |
+| B⁰ → D\*⁻K⁰π⁺ (797) | 0.11 | unmeasured, 1 ± 1 | 0.27 ± 0.32 |
+| B⁺ → D̄\*⁰K⁺K̄\*⁰ (4345) | 0.10 | unmeasured, 1 ± 1 | 0.49 ± 0.59 |
+| B⁰ → D̄⁰π⁺π⁻ (692) | 0.04 | 0.28 ± 0.06 | 0.28 ± 0.16 |
+| B⁰ → D̄\*⁰π⁺π⁻ (693) | 0.04 | unmeasured, 1 ± 1 | 0 ± 0.74 (clamped) |
+
+Seven direct lines are clamped at 0 (all below 0.04 %); 25 have σ_c > c. The exclusive lines now
+lose 3.5 % (B⁰) and 4.1 % (B⁺) of all B decays. Tests: 30 and 15 pass (rewritten for the rule,
+with expected values computed by hand from the node table; new tests for half_limit).
+
 ## 5b. Findings of the independent review (2026-11-17)
 
 Four reviewers were started on the rule change, the new exceptions and the numbers; two finished
 (rule logic; recomputation of the numbers), the others and the verification step stopped at a
 usage limit. Findings, all checked against the code by me, none changing a number with a visible
-share:
+share. Status 2026-11-18: R1.1, R1.2, R1.5, R1.6 (documented), R1.9 fixed; R1.3 no longer
+applies (no direct line is rejected any more); R1.4, R1.8, R1.10 left as noted.
 
 | # | Finding | Effect | Proposed fix |
 |---|---|---|---|
@@ -682,6 +703,42 @@ share:
 | R1.8 | D⁻a₁⁺ at c = 1.06 alone gives 3.5·10⁻³ of D⁻π⁺ρ⁰ against PDG (1.1 ± 1.0)·10⁻³ (S042.91, old), +2.4σ, unflagged | side effect of D1, below threshold | none; noted |
 | R1.9 | The capping loop inside the remainder never fires on the real files and would flag a line below its limit | dead code path | remove it |
 | R1.10 | Variance of a chained remainder counts one unmeasured line twice | errors slightly conservative (one charmless mode) | none |
+
+## 5c. What the amplitude analyses say (2026-11-18)
+
+Six papers read from arXiv: LHCb 2009.00026 (B⁺ → D⁺D⁻K⁺), LHCb 1505.01710 and Belle hep-ex/0611054
+(B⁰ → D̄⁰π⁺π⁻), LHCb 1608.01289, Belle hep-ex/0307021 and BaBar 0901.1291 (B⁺ → D⁻π⁺π⁺).
+
+*General.* None of the nominal models has a flat phase-space term with a quoted fraction; what is
+called non-resonant is an S-wave with a running phase or a form factor, and the virtual D\*_v / B\*_v
+tails (10 % and 3–5 %) are not phase space either. The split between a broad D₀\* and a Dπ S-wave is
+model dependent (BaBar: f(D₀\*) between 57 % and 88 % across models). Sums of fit fractions: 106.6 %
+(D⁺D⁻K⁺), 115–118 % (D̄⁰π⁺π⁻), 115–116 % (D⁻π⁺π⁺), i.e. net interference of 7–18 % of the total.
+The 20 % of the subtracted part (1b) is of the same size: for D⁻π⁺π⁺ it is 18 % of the total.
+
+*B⁰ → D̄⁰π⁺π⁻ (line 692): the remainder agrees.* The PDG products used for D₂\*⁻π⁺, D₀\*⁻π⁺ and D̄⁰ρ⁰
+are LHCb's (2.44, 0.77, 3.21 ·10⁻⁴). Everything that has no own line in the decay file (ππ S-wave
+16.4 %, f₂(1270) 10.3 %, D\*_v 9.2 %, ρ(1450), ρ(1700), ω, D₃\* 3.6 %) is 39.5 % of the fit fractions,
+33 % after dividing by their sum (117.7 %). The remainder gives the PHSP line 28 ± 16 %. Consistent.
+
+*B⁺ → D⁻π⁺π⁺ (line 4301): consistent within the large error.* With PDG's D₀\* product (6.4·10⁻⁴,
+from Belle/BaBar Breit–Wigner fits, 60 %) and D₂\* (33 %), 8 ± 23 % is left. LHCb puts the full
+S-wave at 49 % of the normalised total, D₂\* at 31 %, and D\*_v, B\*_v, D₁\*(2680), D₃\*, D₂\*(3000)
+(no own lines) at about 20 %. With LHCb's numbers the PHSP line would get c ≈ 0.7 and D̄₀\*⁰π⁺
+c ≈ 1.0 instead of 1.16. Within the present uncertainties; no change proposed.
+
+*B⁺ → D⁺D⁻K⁺ (line 4216, share 2.4 %): the PDG entries contradict the amplitude analysis.* PDG's
+ψ(3770)K⁺ (S041.360) times B(ψ(3770) → D⁺D⁻) of the decay file is 91 % of PDG's D⁺D⁻K⁺ total
+(S041.336, 2.2 ± 0.7 ·10⁻⁴). LHCb measures the ψ(3770) fit fraction as 14.5 ± 1.4 %; ψ(4160) is
+6.6 %, and the rest (χ_c0,2(3930) 10.9 %, ψ(4040) 5.0 %, ψ(4415) 9.2 %, X₀,₁(2900) 36.2 %, D⁻K⁺
+S-wave 24.2 %) has no own line in the decay file: about 80 % of the total after normalisation.
+LHCb gives no absolute branching fraction, so it cannot say whether PDG's ψ(3770)K⁺ is too high or
+the total too low. Present result: PHSP line 0.10 ± 0.42, ψ(3770)K⁺ 0.89 ± 0.23. Options:
+(a) keep (the large σ covers it); (b) use LHCb's fractions with PDG's total: PHSP line
+c ≈ 0.80 × 2.2·10⁻⁴ / 2.2·10⁻⁴ ≈ 0.8 ± 0.3, and the D⁺D⁻ part of ψ(3770)K⁺ at 14.5 % of the total,
+which would put the ψ(3770)K⁺ line at c ≈ 0.16, against its own PDG value; (c) as (a), with a flag
+and a wider σ on ψ(3770)K⁺. The ψ(3770)K⁺ line also feeds D⁰D̄⁰K⁺ (4210, c = 0.83) and appears in
+the isospin transfer to ψ(3770)K⁰ (I1), so (b) moves those too.
 
 ## 6. Starting a new session on this
 
