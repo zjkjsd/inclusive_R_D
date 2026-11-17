@@ -30,21 +30,23 @@ Rules
     1. exact   : a measured plain node equal to the final state, and fed by no other line.
     2. product : c = PDG product / (BF_line x BF_sub of the decay file); several product nodes
                  are combined with inverse-variance weights (the chi2 is kept).
-    3. node    : the final state feeds a measured node through folding. Lines already fixed (by
-                 1, 2 or an earlier node) are subtracted; the others share the remainder. The
-                 nodes are taken from the fewest bodies up (then the smaller relative PDG error).
-                 If the remainder is <= 0 or more than 100 % uncertain, the inclusive ratio
-                 BF_PDG(node)/BF_MC(node) is used instead (`remainder_unstable`). A line takes
-                 its c from a node only if at least `P_MIN` of it feeds the node. A line with
-                 its own PDG upper limit (plain node of its final state, or product node) does
-                 not take a remainder c that would put it above that limit: it is left out of
-                 the sharing (`limit_capped`, class limit, c = 1) and its part of the node is
-                 subtracted as limit/2 +- limit/2.
-  `PRODUCT_BEFORE_NODE = False` swaps 2 and 3: the products are then used only where the nodes
-  gave nothing. The product result is always stored (`c_prod`), whatever was used for c.
-  Product nodes of one line that repeat one measurement are dropped before the mean: of nodes
-  with the same sub-decays the most precise is kept, and a node whose sub-decay alternatives are
-  a part of another node's (the components of a PDG sum node) is dropped for the sum node.
+    3. node    : only for a DIRECT line of a measured multi-body node, i.e. a line whose final
+                 state is the node's own. The node is the inclusive rate of that final state; the
+                 direct line takes what is left of it after all other lines that feed it:
+                 lines with a c are subtracted with their c, lines without one with c = 1 and an
+                 uncertainty of 100 %, and lines that the decay file puts above their own PDG
+                 limit as limit/2 +- limit/2 (`limit_capped`). The nodes are taken from the
+                 fewest bodies up (then the smaller relative PDG error). If the remainder is
+                 <= 0 or more than 100 % uncertain, the direct line gets no c
+                 (`remainder_unstable`).
+    A line that reaches a measured node only through a resonance never takes a c from it: the
+    node measures a sum, not this line (decision M1 of docs/B0_PIECE2_REVIEW.md). Without an
+    exact or product entry of its own such a line is flagged `unmeasured`: class none, c = 1,
+    sigma_c = `UNMEASURED_SIGMA` (100 %). The same holds for a direct line left without a c.
+    The product result is always stored (`c_prod`), whatever was used for c.
+    Product nodes of one line that repeat one measurement are dropped before the mean: of nodes
+    with the same sub-decays the most precise is kept, and a node whose sub-decay alternatives are
+    a part of another node's (the components of a PDG sum node) is dropped for the sum node.
 * Checks: `above_limit` compares max(1, c) x BF_MC with every own limit of a line. After all c are
   set, every measured final-state node is checked for closure (sum of c x BF x P against
   BF_PDG); |pull| > 3 sets `node_not_closed` on its feeding lines (column `unclosed_nodes`).
@@ -66,8 +68,11 @@ Exceptions file (`Samples/dec/pdg_exceptions.json`): a JSON list of entries
     {"pdgid": "S042.1", "action": "no_fold", "states": ["D_2*-"], "reason": "..."}
     {"mother": 511, "key": [-411, 211], "action": "force_class", "class": "none", "reason": "..."}
     {"pdgid": "S042.124", "action": "rewrite", "description": "B0 --> ...", "reason": "..."}
+    {"mother": 511, "key": [...], "action": "isospin", "from_mother": 521, "from_key": [...], "reason": "..."}
 `states` are evt.pdl names. `rewrite` replaces the PDG text of a node before it is parsed (for
 misprints in the listing); the value is not changed. `force_class` to anything but 'measured' also resets c to 1.
+`isospin` gives a B0 (B+) line the c and sigma_c of its isospin partner in the other block, which
+must have an exact or product c (how = 'isospin', flag `isospin`).
 
 Analysis-time code needs numpy and pandas only. The `pdg` package is imported inside
 `build_pdg_table` only.
@@ -97,6 +102,7 @@ DEFAULT_EXCEPTIONS = os.path.join(_DEC_DIR, 'pdg_exceptions.json')
 CSV_DIR = os.path.join(_ROOT, 'Notebooks', 'Plotting', 'csv_output')
 DEFAULT_TABLE_CSV = os.path.join(CSV_DIR, 'b_mode_pdg_table.csv')
 DEFAULT_REVIEW_CSV = os.path.join(CSV_DIR, 'b_mode_pdg_review.csv')
+DEFAULT_ISOSPIN_CSV = os.path.join(CSV_DIR, 'b_mode_isospin_check.csv')
 
 PDG_PARENTS = {'B0': ('S042', 511), 'B+': ('S041', 521)}
 
@@ -106,11 +112,12 @@ MAX_DEPTH = 4              # nested folding levels
 # charmless PDG nodes exclude it, and its own decays are quoted as products.
 NO_FOLD_DEFAULT = ('eta_c', 'eta_c(2S)', 'chi_c0')
 P_MIN = 0.10               # a line takes its c from a node only if this share of it feeds the node
-PRODUCT_BEFORE_NODE = True  # see 'Priority' in the module docstring
+UNMEASURED_SIGMA = 1.0      # sigma_c of a line flagged `unmeasured` (c = 1)
 RES_MISMATCH = 0.30        # f_res_PDG - f_res_MC above this sets `resonance_mismatch`
 C_EXTREME = 3.0            # c outside [1/3, 3] sets `c_extreme`
 PULL_REVIEW = 3.0
 YIELD_COVER = 0.95
+TAU_RATIO = 1.076          # tau(B+) / tau(B0), PDG: 1.076 +- 0.004
 
 KSYM = 311                 # symbol of the neutral kaon after collapsing K0, anti-K0, K_S0, K_L0
 _K0_CODES = (311, -311, 310, 130)
@@ -276,7 +283,7 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
         exc = json.load(f)
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
-    known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite')
+    known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -285,6 +292,11 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
         if e['action'] == 'force_class':
             if 'mother' not in e or 'key' not in e or 'class' not in e:
                 raise ValueError(f'{path}: force_class needs mother, key and class: {e}')
+        elif e['action'] == 'isospin':
+            if any(x not in e for x in ('mother', 'key', 'from_mother', 'from_key')):
+                raise ValueError(f'{path}: isospin needs mother, key, from_mother and from_key: {e}')
+            if {int(e['mother']), int(e['from_mother'])} != {511, 521}:
+                raise ValueError(f'{path}: isospin relates a B0 (511) line and a B+ (521) line: {e}')
         elif 'pdgid' not in e:
             raise ValueError(f'{path}: {e["action"]} needs a pdgid: {e}')
         if e['action'] in ('fold', 'no_fold') and not e.get('states'):
@@ -619,7 +631,8 @@ def _new_result():
     return dict(pdg_class='none', how='', pdgids=[], bf_pdg=np.nan, bf_pdg_err=np.nan, c=1.0,
                 sigma_c=np.nan, flags=set(), f_res_mc=np.nan, f_res_pdg=np.nan, res_node='',
                 p_node=np.nan, c_prod=np.nan, sigma_c_prod=np.nan, chi2_prod=np.nan, n_prod=0,
-                prod_pdgids=[], alt_pdgids=[], unclosed_nodes=[], twin_pdgids=[], _diff=-np.inf)
+                prod_pdgids=[], alt_pdgids=[], unclosed_nodes=[], twin_pdgids=[], direct_node='',
+                _diff=-np.inf)
 
 
 def _sub_signature(node):
@@ -646,10 +659,12 @@ def _independent_products(meas):
     return [it for s, it in best.items() if not any(part_of(s, t) for t in best)]
 
 
-def _match_block(mother, lines, nodes, graph, exceptions=()):
+def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
     """Match the exclusive lines of one B block with the PDG nodes of that B.
 
     lines : rows of `parse_dec` for this mother (exclusive lines only).
+    preset : {collapsed key: (c, sigma_c, PDG identifiers)} for the lines that take the c of their
+             isospin partner in the other B block ('isospin' exceptions).
     Returns (results, node_table):
       results    : {collapsed key: result dict} for every final state of the block;
       node_table : DataFrame, one row per node.
@@ -740,6 +755,14 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
         r.update(pdg_class='measured', how=how, pdgids=[node['pdgid']], bf_pdg=node['value'],
                  bf_pdg_err=node['err'], c=c, sigma_c=sigma, p_node=p_node)
 
+    # lines fixed by an 'isospin' exception: the c of the partner line of the other B block
+    for k, (c, sigma, ids) in (preset or {}).items():
+        if cmode_bf.get(k, 0.0) <= 0:
+            raise ValueError(f'exceptions: isospin target {k} of {mother} is not a line with BF > 0')
+        results[k].update(pdg_class='measured', how='isospin', pdgids=list(ids),
+                          bf_pdg=c * cmode_bf[k], bf_pdg_err=sigma * cmode_bf[k], c=c, sigma_c=sigma)
+        results[k]['flags'].update(('isospin', 'exception_applied'))
+
     # 1. exact nodes: one target, fed by the line of that final state alone
     exact = [n for n in measured if len(n['targets']) == 1 and set(feed[n['uid']]) == {n['targets'][0]}]
     exact.sort(key=lambda n: (n['err'] / n['value'] if n['value'] > 0 else np.inf, n['uid']))
@@ -748,6 +771,8 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
         k = n['targets'][0]
         exact_uids.add(n['uid'])
         rows[n['uid']]['role'] = 'exact'
+        if results[k]['how'] == 'isospin':
+            raise ValueError(f'exceptions: isospin target {k} of {mother} has its own PDG entry {n["pdgid"]}')
         if results[k]['how']:                         # a more precise node of the same final state
             results[k]['pdgids'].append(n['pdgid'])
             continue
@@ -806,6 +831,8 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                     c, sigma, chi2 = float(cs.mean()), np.nan, np.nan
                 r.update(c_prod=c, sigma_c_prod=sigma, chi2_prod=chi2, n_prod=len(meas),
                          prod_pdgids=[n['pdgid'] for n, _ in meas])
+                if r['how'] == 'isospin':
+                    raise ValueError(f'exceptions: isospin target {k} of {mother} has its own product entry')
                 if not r['how']:
                     best = min(meas, key=lambda x: x[0]['err'] / x[0]['value'] if x[0]['value'] > 0 else np.inf)[0]
                     r.update(pdg_class='measured', how='product', pdgids=[n['pdgid'] for n, _ in meas],
@@ -834,7 +861,10 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                 cap[k] = min(cap.get(k, np.inf), n['value'] / pred)
     capped = set()                                  # lines kept out of the remainders by their limit
 
-    # final-state nodes, the most exclusive first; the lines without a c share the remainder
+    # final-state nodes, the most exclusive first. Only the DIRECT lines of a node (their final
+    # state is the node's own) take a c from it: the remainder after all other lines. A line that
+    # reaches the node through a resonance and has no c of its own is not measured by the node; it
+    # is subtracted with c = 1 and an uncertainty of 100 %.
     def node_pass():
         rest_nodes = [n for n in measured if n['uid'] not in exact_uids]
         rest_nodes.sort(key=lambda n: (n['n_bodies'], n['err'] / n['value'] if n['value'] > 0 else np.inf,
@@ -842,12 +872,13 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
         cand, used_nb = {}, {}                      # line -> {pdgid: n_bodies} of the nodes it could take
         for n in rest_nodes:
             for k, v in feed[n['uid']].items():
-                if not results[k]['how'] and v / cmode_bf[k] >= P_MIN:
+                if not results[k]['how'] and v / cmode_bf[k] >= P_MIN and k in n['targets']:
                     cand.setdefault(k, {})[n['pdgid']] = n['n_bodies']
         for n in rest_nodes:
             f = feed[n['uid']]
             tot = sum(f.values())
-            free = [k for k in f if not results[k]['how'] and k not in capped and f[k] / cmode_bf[k] >= P_MIN]
+            free = [k for k in f if not results[k]['how'] and k not in capped and f[k] / cmode_bf[k] >= P_MIN
+                    and k in n['targets']]
             out_here = []
 
             def remainder(free):
@@ -856,7 +887,9 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                     if k in free:
                         continue
                     r = results[k]
-                    if k in capped:                 # bounded by its own limit: [0, cap]
+                    if k in capped or (not r['how'] and cap.get(k, np.inf) < 1.0):
+                        # bounded by its own limit, [0, cap]: a free line kept out of the sharing,
+                        # or a line without a c that the decay file puts above its limit
                         half = 0.5 * cap[k] * f[k]
                         num -= half
                         var += half ** 2
@@ -864,6 +897,8 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                     num -= r['c'] * f[k]
                     if r['how'] and np.isfinite(r['sigma_c']):
                         var += (r['sigma_c'] * f[k]) ** 2
+                    elif not r['how']:              # no c of its own: c = 1 +- 1
+                        var += f[k] ** 2
                 den = sum(f[k] for k in free)
                 return num / den, np.sqrt(var) / den
             c = sigma = np.nan
@@ -875,14 +910,15 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                 capped.update(over)
                 out_here += over
                 free = [k for k in free if k not in over]
-            unstable = bool(free) and (c <= 0 or sigma > c)
-            if unstable:
-                c = n['value'] / tot
-                sigma = c * n['err'] / n['value'] if n['value'] > 0 else np.nan
-                over = [k for k in free if c > cap.get(k, np.inf)]
-                capped.update(over)
-                out_here += over
-                free = [k for k in free if k not in over]
+            if free and (c <= 0 or sigma > c):
+                # nothing usable is left for the direct line(s): no c (they end as `unmeasured`)
+                for k in free:
+                    results[k]['flags'].add('remainder_unstable')
+                    results[k]['direct_node'] = n['pdgid']
+                rows[n['uid']]['role'] = 'unstable'
+                for k in out_here:
+                    results[k]['flags'].add('limit_capped')
+                continue
             for k in out_here:
                 results[k]['flags'].add('limit_capped')
             rows[n['uid']]['role'] = 'node' if free else ('capped' if out_here else 'covered')
@@ -891,8 +927,6 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
             for k in free:
                 assign(k, 'node', n, c, sigma, f[k] / cmode_bf[k])
                 used_nb[k] = n['n_bodies']
-                if unstable:
-                    results[k]['flags'].add('remainder_unstable')
             rows[n['uid']]['c_assigned'] = c
         # the choice between nodes of the same size rests on the order above: flag it
         for k, nb in used_nb.items():
@@ -902,15 +936,10 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
                 results[k]['flags'].add('node_ambiguous')
                 results[k]['alt_pdgids'] = alt
 
-    # 2 and 3. A line with product nodes has a resonance-explicit measurement of its own. With
-    # PRODUCT_BEFORE_NODE it is fixed by them before the remainders of the final-state nodes are
-    # shared; otherwise the products are used only where the nodes gave nothing.
-    if PRODUCT_BEFORE_NODE:
-        assign_products()
-        node_pass()
-    else:
-        node_pass()
-        assign_products()
+    # 2 and 3. A line with product nodes has a resonance-explicit measurement of its own: it is
+    # fixed by them before the remainders of the final-state nodes are formed.
+    assign_products()
+    node_pass()
     assign_product_limits()
 
     # limits and zero-BF final states: plain nodes equal to the final state
@@ -1013,7 +1042,22 @@ def _match_block(mother, lines, nodes, graph, exceptions=()):
         r['pdg_class'] = e['class']
         if e['class'] != 'measured':
             r.update(how='', c=1.0, sigma_c=np.nan)
+            r['flags'] -= {'remainder_unstable', 'node_ambiguous'}
+            r['alt_pdgids'] = []
         r['flags'].add('exception_applied')
+
+    # `unmeasured`: a line without a c (class none) that feeds a measured final-state node. The
+    # node measures the sum, not this line: c = 1 with an uncertainty of 100 %.
+    for n in measured:
+        for k, v in feed[n['uid']].items():
+            r = results[k]
+            if r['how'] or v / cmode_bf[k] < P_MIN:
+                continue
+            if r['pdg_class'] == 'none':
+                r['flags'].add('unmeasured')
+                r['sigma_c'] = UNMEASURED_SIGMA
+            elif r['pdg_class'] == 'limit' and cap.get(k, np.inf) < 1.0:
+                r['flags'].add('limit_capped')      # counted as limit/2 +- limit/2 in the remainders
 
     # own limits against the corrected BF: max(1, c) x BF_MC above any limit of the line
     for k, c_max in cap.items():
@@ -1058,17 +1102,21 @@ def _flag_twins(results, pdl):
     of the same block once the K0 / K*0 flavor is ignored, or after charge conjugation. The twin's
     PDG identifiers go to `twin_pdgids`; c is not changed."""
     index = {}
-    for k, r in results.items():
+    def ids(r):                                     # entries of a line, or of the node it is the direct line of
         if r['pdg_class'] in ('measured', 'limit') and r['pdgids']:
+            return r['pdgids']
+        return [r['direct_node']] if r['direct_node'] else []
+    for k, r in results.items():
+        if ids(r):
             index.setdefault(_loose_key(k), []).append(k)
     for k, r in results.items():
-        if r['pdg_class'] != 'none' or r['bf_mc_sum'] <= 0:
+        if r['pdg_class'] != 'none' or r['bf_mc_sum'] <= 0 or r['direct_node']:
             continue
         twins = [t for lk in {_loose_key(k), _loose_key(conjugate_key(k, pdl))}
                  for t in index.get(lk, ()) if t != k]
         if twins:
             r['flags'].add('flavor_twin')
-            r['twin_pdgids'] = sorted({p for t in twins for p in results[t]['pdgids']})
+            r['twin_pdgids'] = sorted({p for t in twins for p in ids(results[t])})
 
 
 def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_all=None, pdl=None,
@@ -1090,7 +1138,7 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
       tau        : a tau among the daughters.
       bf_mc      : BF of this final state in its own block.
       pdg_class  : 'measured', 'limit', 'none' or 'inclusive'.
-      how        : 'exact', 'node', 'product' or ''.
+      how        : 'exact', 'node', 'product', 'isospin' (c of the isospin partner, by exception) or ''.
       pdgids     : PDG identifiers used, separated by ';'.
       bf_pdg, bf_pdg_err : value and uncertainty of the PDG node used (for several product nodes
                    the most precise one; for a limit the limit). With the factor 2 of a K_S0 node.
@@ -1105,7 +1153,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                    block_asymmetric; and more: zero_bf (the line has BF 0 in the decay file;
                    c = 1), c_extreme (c outside [1/3, 3]), limit_capped (kept out of a node
                    remainder by its own limit), node_ambiguous, node_not_closed, flavor_twin
-                   (see the module docstring).
+                   (see the module docstring), unmeasured (feeds a measured node but has no c:
+                   c = 1, sigma_c = 1), isospin.
       alt_pdgids : node_ambiguous: the other nodes of the same size the line was free in.
       unclosed_nodes : node_not_closed: the nodes fed by the line that do not close (|pull| > 3).
       twin_pdgids : flavor_twin: PDG identifiers of the twin final state.
@@ -1120,7 +1169,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     lepton flavor: uid, pdgid, mother, kind, description, value and err (with the K_S0 factor),
     is_limit, multi_ks, n_bodies, bf_mc (BF_MC of the node: the sum over the lines that feed it;
     for a product node BF_line x BF_sub), ratio (value / bf_mc), n_feeders, role ('exact', 'node',
-    'covered' = every feeding line was already fixed, 'capped' = the free lines were all kept out
+    'covered' = no direct line was left to fix, 'unstable' = the remainder for the direct
+    line was not usable, 'capped' = the free lines were all kept out
     by their own limits, 'product', 'duplicate' = product node dropped as a repeat of another,
     'limit', 'multi_ks', 'excluded'), c_assigned, f_res_mc, f_res_pdg, bf_mc_weighted (sum of
     c x BF x P over the feeding lines), closure (bf_mc_weighted / value), closure_pull ((weighted
@@ -1139,14 +1189,30 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     nodes = make_nodes(pdg_table, pdl, exceptions)
 
     dec_b = mode_table.dec
-    results, node_tables = {}, []
+    results, node_tables = {}, {}
+    block_lines = {m: dec_b[(dec_b['mother_pdg'] == m) & ~dec_b['is_pythia']] for m in (511, 521)}
     for mother in (511, 521):
-        lines = dec_b[(dec_b['mother_pdg'] == mother) & ~dec_b['is_pythia']]
-        if not len(lines):
+        if len(block_lines[mother]):
+            results[mother], node_tables[mother] = _match_block(mother, block_lines[mother], nodes, graph,
+                                                                 exceptions)
+    # 'isospin' exceptions: the line takes c and sigma_c of its partner in the other block, which
+    # must have a c of its own (exact or product); the block of the line is then matched again
+    preset = {}
+    for e in exceptions:
+        if e['action'] != 'isospin':
             continue
-        results[mother], nt = _match_block(mother, lines, nodes, graph, exceptions)
+        src = results.get(int(e['from_mother']), {}).get(collapse_key(e['from_key']))
+        if src is None or src['how'] not in ('exact', 'product'):
+            raise ValueError(f'exceptions: isospin source {e["from_key"]} of {e["from_mother"]} has no exact '
+                             f'or product c')
+        preset.setdefault(int(e['mother']), {})[collapse_key(e['key'])] = (src['c'], src['sigma_c'],
+                                                                             src['pdgids'])
+    for mother, pre in preset.items():
+        results[mother], node_tables[mother] = _match_block(mother, block_lines[mother], nodes, graph,
+                                                             exceptions, preset=pre)
+    for mother in results:
         _flag_twins(results[mother], pdl)
-        node_tables.append(nt)
+    node_tables = [node_tables[m] for m in (511, 521) if m in node_tables]
     loose = {m: {} for m in results}
     for m, res in results.items():
         for k in res:
@@ -1281,7 +1347,7 @@ def _region(tag):
     return tag
 
 
-SUMMARY_CLASSES = ['excl_sl', 'had_exact', 'had_node', 'had_product', 'had_limit', 'had_none',
+SUMMARY_CLASSES = ['excl_sl', 'had_exact', 'had_node', 'had_product', 'had_isospin', 'had_limit', 'had_none',
                    'inclusive', 'pythia_0c', 'pythia_1c', 'pythia_2c']
 
 
@@ -1404,6 +1470,118 @@ def review_report(table, sample_csvs=None, mode_table=None):
     return review, summary
 
 
+# --------------------------------------------------------------------------------------------
+# Isospin partners
+# --------------------------------------------------------------------------------------------
+def isospin_partner_code(code):
+    """PDG code of the particle with u and d exchanged, or None if the rule does not cover it
+    (baryons, unknown codes). Leptons, the photon, neutral light mesons, s-sbar, charmonium and
+    D_s states are their own partners; a charged light meson changes sign; a meson with one
+    u or d and one s, c or b quark changes that light quark (K+ <-> K0, D+ <-> D0, ...)."""
+    a = abs(int(code))
+    if a in (11, 12, 13, 14, 15, 16, 22):
+        return int(code)
+    if a < 100 or (a // 1000) % 10 != 0:               # not a meson
+        return None
+    q2, q3 = (a // 100) % 10, (a // 10) % 10
+    if q2 in (3, 4, 5) and q3 in (1, 2):
+        return int(np.sign(code)) * (a + (10 if q3 == 1 else -10))
+    if q2 in (1, 2) and q3 in (1, 2):
+        return -int(code) if q2 != q3 else int(code)
+    if q2 == q3 or (q2 in (4, 5) and q3 == 3):         # s-sbar, c-cbar, b-bbar, D_s, B_s
+        return int(code)
+    return None
+
+
+def isospin_partner_keys(key, pdl, charge3):
+    """Collapsed keys that are the u <-> d image of a collapsed final state and have the total
+    charge `charge3` (in units of e/3). The collapsed neutral kaon (K0, anti-K0, K_S0, K_L0) can
+    come from a K+ or a K-, so there may be more than one candidate."""
+    options = []
+    for c in key:
+        if c == KSYM:
+            options.append((321, -321))
+            continue
+        p = isospin_partner_code(c)
+        if p is None or p not in pdl.charge3:
+            return []
+        options.append((KSYM,) if abs(p) == 311 else (p,))
+    out = set()
+    stack = [()]
+    for opt in options:
+        stack = [s + (o,) for s in stack for o in opt]
+    for cand in stack:
+        if sum(0 if c == KSYM else pdl.charge3[c] for c in cand) == charge3:
+            out.add(tuple(sorted(cand)))
+    return sorted(out)
+
+
+def isospin_report(table, pdl=None):
+    """Pairs of B0 and B+ lines related by isospin, with their PDG comparison.
+
+    Covered are the transitions that conserve isospin, where the partner rates are equal up to
+    the lifetime ratio: semileptonic decays to charm (b -> c l nu) and b -> c cbar s decays (two
+    charm hadrons or a charmonium, with a D_s or a kaon). The partner is the final state with u
+    and d exchanged. One row per pair:
+      names_b0, names_bp, bf_mc_b0, bf_mc_bp : the two lines and their decay-file BF (summed
+                 over the neutral-kaon versions);
+      r_mc     : BF_MC(B+) / BF_MC(B0) / TAU_RATIO; 1 if the decay file respects isospin;
+      how_b0, c_b0, sigma_b0, how_bp, c_bp, sigma_bp : the PDG comparison of each line;
+      status   : 'both' (each has an exact, product or node c of its own), 'only_b0',
+                 'only_bp', 'neither';
+      r_pdg, r_pdg_err : for 'both', (c x BF_MC)(B+) / (c x BF_MC)(B0) / TAU_RATIO, i.e. the
+                 ratio of the PDG values over the isospin expectation, and its uncertainty;
+      pull     : (BF(B+) - TAU_RATIO x BF(B0)) / uncertainty of the difference, with the PDG
+                 values as c x BF_MC (the ratio is not Gaussian when one value is poorly known);
+      c_other  : for 'only_b0' / 'only_bp', the c the unmeasured line would take by isospin;
+      kind     : 'sl' or 'ccs'.
+    """
+    pdl = pdl or dt.load_pdl()
+    rows = {m: {} for m in (511, 521)}
+    for r in table.itertuples():
+        if r.mother_pdg in rows and r.bf_mc > 0 and r.pdg_class != 'inclusive':
+            rows[r.mother_pdg].setdefault(collapse_key(r.key), r)
+
+    def kind(r):
+        key = [c for c in r.key]
+        if r.is_sl:
+            return 'sl' if r.n_charm >= 1 else ''
+        charm = sum(dt.is_open_charm(c) for c in key) >= 2 or any(dt.is_charmonium(c) for c in key)
+        strange = any((abs(c) // 1000) % 10 == 0 and abs(c) > 100 and
+                      {(abs(c) // 100) % 10, (abs(c) // 10) % 10} in ({3, 1}, {3, 2}, {4, 3}) for c in key)
+        return 'ccs' if charm and strange else ''
+
+    own = ('exact', 'product', 'node')
+    out = []
+    for k0, r0 in rows[511].items():
+        kd = kind(r0)
+        if not kd:
+            continue
+        partners = [k for k in isospin_partner_keys(k0, pdl, 3) if k in rows[521]]
+        if len(partners) != 1:
+            continue
+        rp = rows[521][partners[0]]
+        m0, mp = r0.how in own, rp.how in own
+        rec = dict(kind=kd, names_b0=r0.names, names_bp=rp.names, bf_mc_b0=r0.bf_mc_sum, bf_mc_bp=rp.bf_mc_sum,
+                   r_mc=rp.bf_mc_sum / r0.bf_mc_sum / TAU_RATIO, how_b0=r0.how, c_b0=r0.c, sigma_b0=r0.sigma_c,
+                   how_bp=rp.how, c_bp=rp.c, sigma_bp=rp.sigma_c,
+                   status='both' if m0 and mp else 'only_b0' if m0 else 'only_bp' if mp else 'neither',
+                   r_pdg=np.nan, r_pdg_err=np.nan, pull=np.nan, c_other=np.nan)
+        if m0 and mp:
+            bp, b0 = rp.c * rp.bf_mc_sum, r0.c * r0.bf_mc_sum * TAU_RATIO
+            sp, s0 = rp.sigma_c * rp.bf_mc_sum, r0.sigma_c * r0.bf_mc_sum * TAU_RATIO
+            ratio = bp / b0
+            rec.update(r_pdg=ratio, r_pdg_err=ratio * np.hypot(sp / bp, s0 / b0),
+                       pull=(bp - b0) / np.hypot(sp, s0) if np.hypot(sp, s0) > 0 else np.nan)
+        elif m0 or mp:
+            src, dst = (r0, rp) if m0 else (rp, r0)
+            # c that reproduces the isospin image of the measured BF, given the decay file
+            scale = TAU_RATIO if m0 else 1.0 / TAU_RATIO
+            rec['c_other'] = src.c * src.bf_mc_sum * scale / dst.bf_mc_sum
+        out.append(rec)
+    return pd.DataFrame(out)
+
+
 def class_shares(table, mother_pdg):
     """Summed BF_MC of one B block by class and by `how` (fractions of all decays of that B)."""
     t = table[(table['mother_pdg'] == mother_pdg) & (table['bf_mc'] > 0)]
@@ -1433,6 +1611,10 @@ def main(argv=None):
           f'({int((review["n_top95"] > 0).sum())} in the top 95 % of some table)')
     with pd.option_context('display.width', 250, 'display.float_format', '{:.1f}'.format):
         print(summary.to_string(index=False))
+    iso = isospin_report(table, pdl)
+    iso.to_csv(DEFAULT_ISOSPIN_CSV, index=False, float_format='%.6g')
+    print(f'wrote {DEFAULT_ISOSPIN_CSV}: {len(iso)} isospin pairs, by status: '
+          f'{iso.groupby("status").size().to_dict()}')
     return table, review, summary
 
 

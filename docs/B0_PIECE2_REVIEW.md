@@ -8,7 +8,7 @@ agreed. Status labels as in the working document: OPEN, AGREED, DONE.
 Last updated: 2026-11-17.
 
 AGREED means decided; a point becomes DONE only once it is implemented and the tables are rerun.
-Nothing decided on 2026-11-17 is implemented yet. Line numbers ("line 697") refer to
+Implemented on 2026-11-17: M1 and M2 (section 2a gives what changed). Not yet implemented: D1, D2. Line numbers ("line 697") refer to
 `Samples/dec/DECAY_BELLE2_rel08.DEC`, B⁰ and B⁺ blocks.
 
 ## 0. Files and how to read them
@@ -21,6 +21,7 @@ Nothing decided on 2026-11-17 is implemented yet. Line numbers ("line 697") refe
 | `Notebooks/Plotting/csv_output/b_mode_pdg_table.csv` | the full result, one row per exclusive final state (5017 rows) | the code; not meant for reading |
 | `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching, each with its reason | you and Claude |
 | `Samples/dec/pdg_bf_B_2026.json` | the PDG values (2026 edition) | the code |
+| `Notebooks/Plotting/csv_output/b_mode_isospin_check.csv` | pairs of B⁰ and B⁺ lines related by isospin (154 rows), section 2b | optional |
 
 **The quickest way through the results** is the case file: 18 cases in full, ordered by how much
 yield they touch, and 33 small ones in one table. The review CSV is the same information per mode,
@@ -33,7 +34,7 @@ for when you want to look something up.
 | `mother_pdg`, `key`, `names` | the B (511, 521 and their antiparticles) and the final state, as PDG codes and as names |
 | `bf_mc` | rate of this final state in the decay file |
 | `pdg_class` | `measured` (a PDG value exists and a c was derived), `limit` (only an upper limit), `none` (no PDG entry), `inclusive` (X_u ℓν and similar) |
-| `how` | where c comes from: `exact` = a PDG entry for exactly this final state; `product` = a PDG entry of the form B(B → X Y) × B(X → …); `node` = a PDG entry for a multi-body final state that this line feeds through a resonance; empty = no c |
+| `how` | where c comes from: `exact` = a PDG entry for exactly this final state; `product` = a PDG entry of the form B(B → X Y) × B(X → …); `node` = the line is the direct line of a multi-body PDG entry and takes what is left of it after the other lines; `isospin` = the c of the isospin partner in the other B block (by exception); empty = no c |
 | `pdgids` | the PDG entries used. `S042.n` is a B⁰ entry, `S041.n` a B⁺ entry; the number is PDG's permanent identifier of the entry |
 | `bf_pdg`, `bf_pdg_err` | the PDG value and error that were used |
 | `c`, `sigma_c` | c = BF_PDG / BF_MC and its uncertainty (absolute) |
@@ -55,18 +56,22 @@ no usable value, a cruder ratio was used), `node_not_closed`, `node_ambiguous`, 
 line was kept at c = 1 because a c would push it above its own PDG limit), `above_limit` (the decay
 file is above a PDG limit), `resonance_mismatch`, `multi_ks` (several K_S: no c), `flavor_twin`,
 `block_asymmetric` (the B and anti-B blocks of the decay file differ for this mode),
-`exception_applied`, `zero_bf` (a zero-rate veto line).
+`exception_applied`, `zero_bf` (a zero-rate veto line). Since 2026-11-17: `unmeasured` (the line
+feeds a measured PDG total but has no entry of its own: c = 1, σ_c = 1, i.e. 100 %), `isospin`;
+`remainder_unstable` now means that nothing usable was left of a total for its direct line, which
+then has no c; `limit_capped` now marks a line without a c that the decay file puts above its own
+PDG limit (it is counted as limit/2 ± limit/2 when a total is split).
 
 ## 1. Decisions
 
 | # | Point | Status | Decision |
 |---|---|---|---|
-| M1 | Order of the sources: exact, then product, then node | AGREED (2026-11-17) | a resonance line is compared with its own (exact or product) entry; a multi-body entry is compared only with a line that is that inclusive final state. Scope beyond D\*\*ℓν to confirm (see M1) |
-| M2 | Non-resonant D(\*)π ℓν lines: no measured c | AGREED for now (2026-11-17) | option 1: class `none`, c = 1; B⁰ → D₀\*⁻ℓν takes the B⁺ c (isospin). To be revisited with the Belle II gap-mode treatment after the BB̄ background study |
+| M1 | Order of the sources: exact, then product, then node | DONE (2026-11-17) | a resonance line is compared with its own (exact or product) entry only; without one it is `unmeasured`, c = 1 ± 1. A multi-body entry is compared only with the line that is that final state. Applied everywhere. Two consequences to confirm (section 2a) |
+| M2 | Non-resonant D(\*)π ℓν lines: no measured c | DONE (2026-11-17), to be revisited | option 1: class `none`, c = 1; B⁰ → D₀\*⁻ℓν takes the B⁺ c (isospin). To be revisited with the Belle II gap-mode treatment after the BB̄ background study |
 | M3 | Which c may become weights (piece 4) | AGREED in principle (2026-11-16): exact and product, and node matches without a warning flag; the flagged cases are gone through first | |
 | M4 | Cache D-meson decays from PDG too | AGREED (2026-11-17) | not now; a short check of the chain BFs for Part B, a cached D table with Part C |
 | E1–E5 | Five exceptions | AGREED (2026-11-17; E4, E5 on 2026-11-16) | kept as written |
-| E6 | ψ(2S)K₁(1270)⁺ against the ψ(2S)K⁺π⁺π⁻ total | OPEN, under discussion | see E6 in section 3 |
+| E6 | ψ(2S)K₁(1270)⁺ against the ψ(2S)K⁺π⁺π⁻ total | PROPOSED: follows from M1, to confirm | line 4108 `unmeasured`, c = 1 ± 1; line 4105 c = 0.67 ± 0.35 |
 | D1 | B⁰ → D⁻ a₁⁺ | AGREED (2026-11-17) | option 1: c from the D⁻π⁺π⁺π⁻ total S042.88 |
 | D2 | B → D(\*) D_s0\*(2317) | AGREED (2026-11-17) | the four product c as weights, with their errors and the −20 % of the sub-decay as extra uncertainty |
 | D3 | B⁰ → D\*± D∓ | AGREED (2026-11-16): the paper confirms the sum | both lines take c from S042.511; S042.155 is not used |
@@ -111,6 +116,10 @@ after the measured lines). Applying your rule everywhere means: such a line gets
 G7 (J/ψ K₂\*, J/ψ K′₁) and most of the 33 small cases. The direct lines would still be compared
 with the total minus the measured resonance lines.
 
+*Confirmed and implemented (2026-11-17).* The rule applies everywhere. A resonance line without
+its own exact or product entry is flagged `unmeasured`: class `none`, c = 1, σ_c = 1 (100 %).
+Details and effects: section 2a.
+
 ### M2. Non-resonant D(\*)π ℓν lines
 
 *Facts.* The decay file has non-resonant lines B → D(\*)π ℓν (Goity–Roberts model, 0.092 % each for
@@ -151,8 +160,11 @@ modes will be discussed after the BB̄ background study, and this point is revis
 - The D̄⁰π⁻ℓν total (C4) then fails to close from the other side: the decay file gives about
   0.29 % after c against PDG's 0.364 ± 0.020 % (about −3.5σ; estimate by hand, to be confirmed by
   the rerun). The missing 0.07 % is where a larger non-resonant part would go.
-- It needs a new action in the exceptions file ("take the c of another line"); the existing
-  actions cannot express it.
+- It needed a new action in the exceptions file, `isospin` (added 2026-11-17).
+
+*Implemented (2026-11-17).* You accepted that the B⁰ value stays above the limit. Ten new entries
+in the exceptions file: eight `force_class` (the non-resonant lines, e and μ) and two `isospin`
+(D₀\*⁻ e and μ). Check of all isospin pairs: section 2b.
 
 ### M3. Which c may become weights
 
@@ -182,6 +194,98 @@ Part C (K1 needs the inclusive D → K⁰ X rates) and can be built then with th
 
 *Decision:* AGREED (2026-11-17): not now. The short check of the chain BFs is still to do.
 
+## 2a. What the implementation of M1 and M2 changed (2026-11-17)
+
+*The rule as coded.*
+1. A line with an exact or a product entry takes its c from it (unchanged).
+2. A multi-body PDG entry gives a c only to its **direct line** (the decay-file line with exactly
+   that final state): the entry minus everything else that feeds it. In that subtraction a line
+   with a c enters with its c and error; a line without a c enters with c = 1 ± 1; a line that the
+   decay file puts above its own PDG limit enters as limit/2 ± limit/2.
+3. A line that reaches a measured total only through a resonance, and has no entry of its own, is
+   `unmeasured`: class `none`, c = 1, σ_c = 1.
+4. The switch for the old order (`PRODUCT_BEFORE_NODE`) is removed.
+
+*Numbers.* 131 final states of the B⁰ and B⁺ blocks changed their c or its source:
+
+| Change | Final states |
+|---|---|
+| c from a total → `unmeasured` (c = 1 ± 1) | 85 |
+| c from a total → class `limit` (c = 1; the line has its own upper limit) | 20 |
+| direct line: c recomputed (other lines now enter with c = 1 ± 1) | 24 |
+| limit → isospin (D₀\*⁻ e, μ) | 2 |
+
+16 of the 85 `unmeasured` final states have a yield share above 0.05 %. The extreme values are
+gone: D′₁ρ⁺ (line 4321, was c = 17), D′₁⁻π⁺ (line 737, was c = 79). `c_extreme` remains on the four
+D_s0\* lines (D2), D₀\*⁻π⁺ (E2), D̄⁰π⁺π⁻ (C12) and a few lines below 0.03 %.
+
+*Two consequences that go beyond what you asked. To confirm.*
+
+1. **A direct line whose remainder is unusable gets no c.** Before, when "total minus the rest"
+   was negative or more than 100 % uncertain, all lines of the total were scaled by PDG / MC, with
+   the small PDG error. Scaling the resonance lines is now excluded, and scaling the direct line
+   alone neither closes the total nor has a meaningful error (the objection you raised for line
+   4108). Such a direct line is now `unmeasured` too, with the flag `remainder_unstable`: 20 final
+   states. The largest: D⁺D⁻K⁺ (line 4216, 2.4 %, was 0.50), D⁻π⁺π⁺ (4301, 0.5 %, was 0.90),
+   D\*⁻K⁰π⁺ (797, 0.1 %, was 0.58), D̄\*⁰K⁺K̄\*⁰ (4345, 0.1 %, was 0.83), D̄\*⁰π⁺π⁻ (693, was 0.39),
+   J/ψK⁺π⁻ (440, was 0.65), J/ψK⁰π⁺π⁻ (453, was 0.22).
+2. **Totals are no longer forced to close.** With c = 1 on the unmeasured lines the decay-file sum
+   can stay away from the PDG total; the flag `node_not_closed` records it. For the D(\*)π ℓν totals
+   after M2:
+
+| PDG total | PDG | Decay file after c | Pull |
+|---|---|---|---|
+| S042.311, B⁰ → D̄⁰π⁻ℓν | 0.364 ± 0.020 % | 0.292 % | −3.5σ |
+| S042.312, B⁰ → D̄\*⁰π⁻ℓν | 0.544 ± 0.028 % | 0.689 % | +5.2σ |
+| S041.418, B⁺ → D⁻π⁺ℓν | 0.382 ± 0.020 % | 0.349 % | −1.6σ |
+| S041.419, B⁺ → D\*⁻π⁺ℓν | 0.542 ± 0.028 % | 0.652 % | +3.9σ |
+
+   The D\*π totals are exceeded by the D\*\* products alone plus the non-resonant line; the Dπ
+   totals are undershot. This is the inconsistency between PDG entries noted under M2, now visible
+   instead of absorbed into the non-resonant line. Input for the gap-mode discussion.
+
+*Sample composition.* The class "c from a multi-body total" shrinks, "no c" grows by the same
+amount; at most 0.4 % of the yield moves (hadB, SR: 10.0 % → 9.6 % for the node class).
+
+*Tests.* `scripts/tests/test_pdg_match.py`: 30 tests pass (one new, for the isospin action and
+check; the tests of the old rule were rewritten to the new one). `test_decay_table.py`: 15 pass.
+
+## 2b. Isospin pairs (2026-11-17)
+
+*What was checked.* For transitions that conserve isospin, the B⁰ and the B⁺ decay with u and d
+exchanged have the same width, so B(B⁺) / B(B⁰) = τ(B⁺)/τ(B⁰) = 1.076. This holds for semileptonic
+decays to charm (b → cℓν) and for b → cc̄s decays (two charm hadrons or a charmonium, with a D_s or a
+kaon). It does **not** hold for b → cūd (D\*\*π, Dρ, …), where other amplitudes differ between B⁰ and
+B⁺; those are not paired. Function `isospin_report`; table `b_mode_isospin_check.csv`.
+
+| | Pairs | Of which semileptonic |
+|---|---|---|
+| both lines have their own c | 53 | 16 |
+| only the B⁺ line | 9 | 2 (D₀\*ℓν e, μ: the exception) |
+| only the B⁰ line | 6 | 0 |
+| neither | 86 | 24 |
+
+*Consistency where both are measured.* χ² = 62 for 53 pairs (the e and μ rows are the same
+measurement twice); no pair beyond 2.5σ. The largest: χ_c2K⁺π⁻ / χ_c2K⁰π⁺ (2.5σ), J/ψK⁰ / J/ψK⁺
+(2.0σ, ratio 1.06 ± 0.03), D₂\*ℓν (2.0σ, B⁺ 26 ± 16 % above B⁰), D′₁ℓν (B⁺ 36 % below B⁰, 1.4σ).
+PDG is consistent with isospin at the level of its errors, so using it for D₀\* is supported.
+
+*The decay file itself.* For 53 of the 154 pairs the decay file's own ratio is more than 10 % away
+from 1.076 (for example D\*⁻D\*⁺K⁰ / D̄\*⁰D\*⁰K⁺: 1.29; D⁻D⁺K⁰ / D̄⁰D⁰K⁺: 1.80). In most of them
+each line follows its own PDG value. Column `r_mc`.
+
+*Candidates for the same exception* (one line measured, the partner not), by yield share:
+
+| Unmeasured line (dec line) | Share % | Now | Partner | c by isospin |
+|---|---|---|---|---|
+| B⁰ → ψ(3770)K⁰ (592–594) | 0.8 | limit, c = 1, above its limit | B⁺ → ψ(3770)K⁺ (4162), exact 0.89 ± 0.23 | 0.84 |
+| B⁺ → D⁺D⁻K⁺ (4216) | 2.4 | `unmeasured` | B⁰ → D⁰D̄⁰K⁰ (658), from its total 0.77 ± 0.47 | 1.02 |
+| B⁰ → ψ(2S)K⁰π⁺π⁻ (492) | 0.01 | `unmeasured` | B⁺ → ψ(2S)K⁺π⁺π⁻ (4105), 0.67 ± 0.35 | 1.36 |
+| B⁰ → η_c(2S)K⁰, B⁺ → χ_c0K\*⁺ and seven more charmonium lines | < 0.01 | | | |
+
+Nothing is applied to these; the first is the only one with a visible share and a partner with an
+exact entry.
+
 ## 3. The exceptions file
 
 `Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching. Each entry names
@@ -194,6 +298,7 @@ an entry, the automatic rule applies. Actions:
 | `exclude_node` | the entry is not used at all |
 | `fold` / `no_fold` | for one final-state entry: add or remove resonances that are counted as part of it |
 | `force_class` | set the class of a final state by hand |
+| `isospin` | a B⁰ (B⁺) line takes c and σ_c of its isospin partner in the other block, which must have an exact or product c |
 
 *On the particle names.* Both `description` and the quoted text in `reason` use **PDG's** spelling,
 because `description` is parsed like any PDG text. The four spellings you noticed are PDG's own, in
@@ -210,6 +315,8 @@ checked entry by entry against `evt.pdl` in the review.
 | E3 | S042.100, B⁰ → D_sJ(2457)⁺ D\*(2010), D_sJ⁺ → D_s⁺γ | 793 | rewrite: D\*(2010)⁻ | PDG gives no charge for the D\*; charge conservation fixes it | adds a cross-check for D\*⁻D_s1⁺ (its c stays the exact one, 1.00) | AGREED |
 | E4 | S042.511, B⁰ → D±D\*∓ (CP-averaged) = 6.14·10⁻⁴ | 613, 614 | rewrite as the sum D\*⁺D⁻ + D\*⁻D⁺ | see D3 | both lines c = 1.01 ± 0.10 | AGREED (D3) |
 | E5 | S042.155, B⁰ → D\*(2010)⁺D⁻ = 6.12·10⁻⁴ | 614 | exclude | see D3 | avoids c = 2 for one charge state | AGREED (D3); its own sources not checked |
+| E7 | (no PDG entry) non-resonant D̄\*⁰π⁻ℓν, D̄⁰π⁻ℓν (B⁰), D\*⁻π⁺ℓν, D⁻π⁺ℓν (B⁺), e and μ: 8 entries | 374, 376, 398, 400; 4006, 4008, 4033, 4035 | force_class `none` | M2: not measured; a c from "total minus D\*\*" is not used | c = 1 ± 1, `unmeasured` | DONE |
+| E8 | B⁰ → D₀\*⁻ℓ⁺ν, e and μ: 2 entries | 369, 393 | isospin from B⁺ → D̄₀\*⁰ℓ⁺ν (4001, 4028; S041.503) | M2: only a limit in B⁰ | c = 0.35 ± 0.21 instead of 1; stays above the limit S042.418 | DONE |
 | E6 | S041.858, B⁺ → ψ(2S)K₁(1270)⁺, K₁ → K⁺π⁺π⁻ = 3.3·10⁻⁵ | 4108 (direct line: 4105) | exclude | listed next to "(P-wave)" 3.26·10⁻⁵ and "(D-wave)" 2.96·10⁻⁵ of the same decay; their sum exceeds it, so it is one component of an amplitude fit, not the total | ψ(2S)K₁⁺ gets c = 0.75 ± 0.09 from the ψ(2S)K⁺π⁺π⁻ total instead of 0.23 | OPEN, see below |
 
 ### E6. B⁺ → ψ(2S)K₁(1270)⁺ and the ψ(2S)K⁺π⁺π⁻ total (discussion of 2026-11-17)
@@ -284,11 +391,26 @@ unresolved ones the resonance line has a measurement of its own, so it is kept a
 line is reduced to "total minus resonances" (option 2 above). E6 is the only row where the
 resonance line has no entry of its own in use, and that only because exception E6 removed it.
 
-*Recommendation.* Keep what is coded (option 3): exception E6 stays, both lines get
-c = 0.75 ± 0.09, and the reason text of the exception is extended with the paper's table. It agrees
-with option 2 within the uncertainties and needs no hand-made sum of PDG entries.
+*After your reply of 2026-11-17* (c = 0 withdrawn; c = 0.75 ± 0.09 on line 4108 not supported,
+its error being that of the total, not of a measurement of the K₁ line). Agreed. The M1 rule now
+gives, with exception E6 unchanged:
 
-*Decision:* OPEN.
+| Line | Result | Where it comes from |
+|---|---|---|
+| 4108, ψ(2S)K₁⁺ | `unmeasured`, c = 1 ± 1 | no entry of its own in use (S041.858 is one of three waves) |
+| 4105, ψ(2S)K⁺π⁺π⁻ | c = 0.67 ± 0.35 | total (4.34 ± 0.54)·10⁻⁴ minus the K₁ part (1.43 ± 1.43)·10⁻⁴ |
+
+The total closes exactly. The value for line 4105 lies between your two acceptable choices (1 and
+0.75), with an error that reflects the unknown K₁ part. The paper's K₁(1270) fraction (22–24 %,
+c ≈ 0.7 for line 4108) is inside the 1 ± 1.
+
+An alternative that uses the paper: give line 4108 the sum of the three waves by hand,
+c ≈ 0.70 ± 0.15, and line 4105 then gets 0.77 ± 0.14. It needs an exception that carries a value
+not in PDG as one entry. Not recommended for a 0.02 % mode.
+
+*Recommendation.* Accept the rule's result above; nothing more to implement.
+
+*Decision:* PROPOSED, to confirm.
 
 ## 4. The three modes that need a decision
 

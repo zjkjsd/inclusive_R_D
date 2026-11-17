@@ -785,6 +785,11 @@ the PDG match).** Percent of the PID-weighted comb + hadB yield, e and μ, run1 
 Not in piece 2: whether c is applied as a weight or only sets a prior width, correlations between
 modes, and the source of the semileptonic BFs (piece 4).
 
+> Note (2026-11-17): the rules below are being revised in the piece-2 review. Already changed in
+> the code: a resonance line takes no c from a multi-body node (`unmeasured`, c = 1 ± 1), the
+> `PRODUCT_BEFORE_NODE` switch is gone, and there is an `isospin` exception. Current state:
+> `docs/B0_PIECE2_REVIEW.md`, sections 2a and 2b. This section is rewritten when the review is complete.
+
 **Piece 2 (implemented, results to discuss).** `scripts/tools/pdg_match.py`; analysis code needs
 numpy, pandas and `decay_table` only. Status of the results: DONE as code, the numbers are
 PROPOSED until the review list is checked.

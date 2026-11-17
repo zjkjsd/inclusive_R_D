@@ -23,8 +23,8 @@ Each case shows the PDG entry, the decay-file sum, and a table of the decay-file
 feed it. A line can appear in several cases, because it can feed several final states.
 
 The cases are ordered by importance: the largest share that any of their lines has in the
-exclusive yield of one of the 72 sample tables. 18 cases reach 0.05 % and are written
-in full; the other 33 are in one table at the end.
+exclusive yield of one of the 72 sample tables. 19 cases reach 0.05 % and are written
+in full; the other 38 are in one table at the end.
 
 ## How to read a case
 
@@ -64,11 +64,25 @@ Columns of the line table:
 | D- a_1+ | 697 | 0.0107 | 0.52 | measured | exact | S042.93 | 0.56 | 0.3 |  | node_not_closed | 14.97 |
 | D_1- pi+ | 736 | 0.00093 | 0.17 | measured | product | S042.331 | 0.621 | 0.14 |  | node_not_closed | 0.26 |
 
-## Case 2: S042.312, B0 --> Dbar^*()0 pi- lepton+ nu_lepton (same for the muon)
+## Case 2: S041.419, B+ --> D^*()- pi+ lepton+ nu_lepton (same for the muon)
+
+- PDG: 0.00542 ± 0.00028
+- MC sum: 0.00789 (PDG / MC = 0.686)
+- after c: 0.00652 (after c / PDG = 1.2, 3.9σ); **not closed**
+- largest yield share of its lines: 6.20 %
+
+| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| anti-D_10 e+ nu_e | 4000 | 0.00757 | 0.40 | measured | product | S041.257, S041.783 | 0.909 | 0.05 |  | node_not_closed | 6.20 |
+| anti-D'_10 e+ nu_e | 4002 | 0.00431 | 0.67 | measured | product | S041.502 | 0.595 | 0.2 |  | node_not_closed | 3.05 |
+| D*- e+ nu_e pi+ | 4006 | 0.001 | 1.00 | none |  |  | 1 | 1 | yes | exception_applied, node_not_closed, unmeasured | 0.75 |
+| anti-D_2*0 e+ nu_e | 4003 | 0.00373 | 0.27 | measured | product | S041.504, S041.258 | 1.07 | 0.064 |  | node_not_closed | 2.70 |
+
+## Case 3: S042.312, B0 --> Dbar^*()0 pi- lepton+ nu_lepton (same for the muon)
 
 - PDG: 0.00544 ± 0.00028
 - MC sum: 0.00733 (PDG / MC = 0.742)
-- after c: 0.00665 (after c / PDG = 1.22, 4.3σ); **not closed**
+- after c: 0.00689 (after c / PDG = 1.27, 5.2σ); **not closed**
 - largest yield share of its lines: 5.77 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
@@ -76,128 +90,100 @@ Columns of the line table:
 | D_1- e+ nu_e | 368 | 0.00704 | 0.40 | measured | product | S042.420, S042.623 | 0.959 | 0.074 |  | node_not_closed | 5.77 |
 | D'_1- e+ nu_e | 370 | 0.00401 | 0.67 | measured | product | S042.421 | 0.932 | 0.21 |  | node_not_closed | 2.99 |
 | D_2*- e+ nu_e | 371 | 0.00347 | 0.27 | measured | product | S042.419, S042.422 | 0.842 | 0.093 |  | node_not_closed | 2.77 |
-| anti-D*0 pi- e+ nu_e | 374 | 0.00092 | 1.00 | measured | node | S042.312 | 0.742 | 0.038 | yes | node_not_closed, remainder_unstable | 0.73 |
-
-## Case 3: S041.12, B+ --> D^*(2010)- pi+ pi+ pi0
-
-- PDG: 0.0152 ± 0.0071
-- MC sum: 0.00276 (PDG / MC = 5.48)
-- after c: 0.0162 (after c / PDG = 1.07, 0.15σ)
-- largest yield share of its lines: 3.00 %
-
-| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| anti-D_10 rho+ | 4319 | 0.00372 | 0.40 | limit |  | S041.215 | 1 | – |  | above_limit, limit_capped | 3.00 |
-| anti-D'_10 rho+ | 4321 | 0.00124 | 0.67 | measured | node | S041.12 | 17.2 | 8.6 | yes | c_extreme | 0.54 |
-| anti-D_2*0 rho+ | 4315 | 0.0017 | 0.27 | limit |  | S041.213 | 1 | – |  | limit_capped | 1.74 |
+| anti-D*0 pi- e+ nu_e | 374 | 0.00092 | 1.00 | none |  |  | 1 | 1 | yes | exception_applied, node_not_closed, unmeasured | 0.73 |
 
 ## Case 4: S042.311, B0 --> Dbar0 pi- lepton+ nu_lepton (same for the muon)
 
 - PDG: 0.00364 ± 0.0002
 - MC sum: 0.00472 (PDG / MC = 0.771)
-- after c: 0.00583 (after c / PDG = 1.6, 11σ); **not closed**
+- after c: 0.00292 (after c / PDG = 0.803, -3.5σ); **not closed**
 - largest yield share of its lines: 2.77 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| D_0*- e+ nu_e | 369 | 0.00362 | 0.67 | limit |  | S042.418 | 1 | – |  | above_limit, limit_capped, node_not_closed | 2.47 |
+| D_0*- e+ nu_e | 369 | 0.00362 | 0.67 | measured | isospin | S041.503 | 0.346 | 0.21 |  | above_limit, exception_applied, isospin, node_not_closed | 2.47 |
 | D_2*- e+ nu_e | 371 | 0.00347 | 0.40 | measured | product | S042.419, S042.422 | 0.842 | 0.093 |  | node_not_closed | 2.77 |
-| anti-D0 pi- e+ nu_e | 376 | 0.00092 | 1.00 | measured | node | S042.311 | 2.45 | 0.36 | yes | node_not_closed | 0.86 |
+| anti-D0 pi- e+ nu_e | 376 | 0.00092 | 1.00 | none |  | S042.311 | 1 | 1 | yes | exception_applied, node_not_closed, unmeasured | 0.86 |
 
 ## Case 5: S041.336, B+ --> D- D+ K+
 
 - PDG: 0.00022 ± 7.1e-05
 - MC sum: 0.00044 (PDG / MC = 0.5)
-- after c: 0.000308 (after c / PDG = 1.4, 1.2σ)
+- after c: 0.000418 (after c / PDG = 1.9, 2.8σ)
 - largest yield share of its lines: 2.38 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| D- K+ D+ | 4216 | 0.00022 | 1.00 | measured | node | S041.336 | 0.5 | 0.16 | yes | remainder_unstable, resonance_mismatch | 2.38 |
+| D- K+ D+ | 4216 | 0.00022 | 1.00 | none |  |  | 1 | 1 | yes | remainder_unstable, resonance_mismatch, unmeasured | 2.38 |
 | K+ psi(3770) | 4162 | 0.000488 | 0.41 | measured | exact | S041.360 | 0.89 | 0.23 |  | resonance_mismatch | 1.65 |
 | K+ psi(4160) | 4171 | 0.000509 | 0.04 | measured | exact | S041.619 | 0.993 | 0.53 |  |  | 0.68 |
 
-## Case 6: S041.14, B+ --> D- pi+ pi+
+## Case 6: S042.609, B0 --> D0 Dbar()0 K+ pi-
+
+- PDG: 0.000351 ± 4.7e-05
+- MC sum: 0.000572 (PDG / MC = 0.613)
+- after c: 0.000572 (after c / PDG = 1.63, 4.7σ); **not closed**
+- largest yield share of its lines: 1.08 %
+
+| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| anti-D0 K*0 D0 | 674 | 0.0005 | 0.67 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.07 |
+| K*0 psi(3770) | 597, 598, 599, 600 | 0.00048 | 0.35 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 1.08 |
+| pi- K+ psi(3770) | 602 | 0.00014 | 0.52 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.14 |
+
+## Case 7: S041.14, B+ --> D- pi+ pi+
 
 - PDG: 0.00107 ± 5.5e-05
 - MC sum: 0.00119 (PDG / MC = 0.899)
-- after c: 0.00126 (after c / PDG = 1.17, 3.4σ); **not closed**
+- after c: 0.00129 (after c / PDG = 1.2, 3.9σ); **not closed**
 - largest yield share of its lines: 0.86 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | anti-D_0*0 pi+ | 4316 | 0.00083 | 0.67 | measured | product | S041.349 | 1.16 | 0.25 |  | node_not_closed | 0.86 |
 | anti-D_2*0 pi+ | 4314 | 0.00085 | 0.40 | measured | product | S041.348, S041.351 | 1.01 | 0.062 |  | node_not_closed | 0.76 |
-| D- pi+ pi+ | 4301 | 0.0003 | 1.00 | measured | node | S041.14 | 0.899 | 0.046 | yes | node_not_closed, remainder_unstable | 0.53 |
+| D- pi+ pi+ | 4301 | 0.0003 | 1.00 | none |  |  | 1 | 1 | yes | node_not_closed, remainder_unstable, unmeasured | 0.53 |
 
-## Case 7: S042.19, B0 --> D^*(2010)- pi+ pi0
-
-- PDG: 0.0152 ± 0.0052
-- MC sum: 0.00714 (PDG / MC = 2.12)
-- after c: 0.0152 (after c / PDG = 1, -3.4e-16σ)
-- largest yield share of its lines: 0.75 %
-
-| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| D*- rho+ | 689 | 0.0068 | 1.00 | measured | exact | S042.3 | 1 | 0.13 |  |  | 0.75 |
-| D_1- pi+ | 736 | 0.00093 | 0.20 | measured | product | S042.331 | 0.621 | 0.14 |  | node_not_closed | 0.26 |
-| D'_1- pi+ | 737 | 0.00031 | 0.33 | measured | node | S042.19 | 79 | 51 | yes | c_extreme, node_ambiguous, node_not_closed | 0.04 |
-| D_2*- pi+ | 739 | 0.00043 | 0.13 | measured | product | S042.124 | 1.39 | 0.091 |  | exception_applied, node_not_closed | 0.07 |
-
-## Case 8: S041.419, B+ --> D^*()- pi+ lepton+ nu_lepton (same for the muon)
-
-- PDG: 0.00542 ± 0.00028
-- MC sum: 0.00789 (PDG / MC = 0.686)
-- after c: 0.0062 (after c / PDG = 1.15, 2.8σ)
-- largest yield share of its lines: 0.75 %
-
-| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| anti-D_10 e+ nu_e | 4000 | 0.00757 | 0.40 | measured | product | S041.257, S041.783 | 0.909 | 0.05 |  |  | 0.00 |
-| anti-D'_10 e+ nu_e | 4002 | 0.00431 | 0.67 | measured | product | S041.502 | 0.595 | 0.2 |  |  | 0.00 |
-| D*- e+ nu_e pi+ | 4006 | 0.001 | 1.00 | measured | node | S041.419 | 0.686 | 0.036 | yes | remainder_unstable | 0.75 |
-| anti-D_2*0 e+ nu_e | 4003 | 0.00373 | 0.27 | measured | product | S041.504, S041.258 | 1.07 | 0.064 |  |  | 0.00 |
-
-## Case 9: S042.239, B0 --> Dbar^*(2007)0 pi+ pi-
+## Case 8: S042.239, B0 --> Dbar^*(2007)0 pi+ pi-
 
 - PDG: 0.00062 ± 0.00022
 - MC sum: 0.0016 (PDG / MC = 0.387)
-- after c: 0.0171 (after c / PDG = 27.5, 76σ); **not closed**
+- after c: 0.00151 (after c / PDG = 2.43, 4.1σ); **not closed**
 - largest yield share of its lines: 0.26 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| anti-D*0 pi- pi+ | 693 | 0.00062 | 1.00 | measured | node | S042.239 | 0.387 | 0.13 | yes | node_not_closed, remainder_unstable | 0.04 |
+| anti-D*0 pi- pi+ | 693 | 0.00062 | 1.00 | none |  |  | 1 | 1 | yes | node_not_closed, remainder_unstable, unmeasured | 0.04 |
 | D_1- pi+ | 736 | 0.00093 | 0.40 | measured | product | S042.331 | 0.621 | 0.14 |  | node_not_closed | 0.26 |
-| anti-D*0 rho0 | 779 | 0.00029 | 1.00 | measured | node | S042.239 | 0.387 | 0.13 | yes | node_not_closed, remainder_unstable | 0.01 |
-| D'_1- pi+ | 737 | 0.00031 | 0.67 | measured | node | S042.19 | 79 | 51 |  | c_extreme, node_ambiguous, node_not_closed | 0.04 |
+| anti-D*0 rho0 | 779 | 0.00029 | 1.00 | limit |  | S042.133 | 1 | – |  | node_not_closed | 0.01 |
+| D'_1- pi+ | 737 | 0.00031 | 0.67 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.04 |
 | D_2*- pi+ | 739 | 0.00043 | 0.27 | measured | product | S042.124 | 1.39 | 0.091 |  | exception_applied, node_not_closed | 0.07 |
 
-## Case 10: S042.314, B0 --> D^*(2010)- K0 pi+
+## Case 9: S042.314, B0 --> D^*(2010)- K0 pi+
 
 - PDG: 0.0003 ± 7.6e-05
 - MC sum: 0.00052 (PDG / MC = 0.577)
-- after c: 0.000393 (after c / PDG = 1.31, 1.2σ)
+- after c: 0.00052 (after c / PDG = 1.73, 2.9σ)
 - largest yield share of its lines: 0.11 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| D*- pi+ K0 | 797 | 0.0003 | 1.00 | measured | node | S042.314 | 0.577 | 0.15 | yes | block_asymmetric, remainder_unstable, resonance_mismatch | 0.11 |
+| D*- pi+ K0 | 797 | 0.0003 | 1.00 | none |  |  | 1 | 1 | yes | block_asymmetric, remainder_unstable, resonance_mismatch, unmeasured | 0.11 |
 | D*- K*+ | 754 | 0.00033 | 0.67 | measured | exact | S042.210 | 1 | 0.19 |  | resonance_mismatch | 0.06 |
 
-## Case 11: S041.289, B+ --> Dbar^*(2007)0 K+ Kbar^*(892)0
+## Case 10: S041.289, B+ --> Dbar^*(2007)0 K+ Kbar^*(892)0
 
 - PDG: 0.00123 ± 0.00014
 - MC sum: 0.00149 (PDG / MC = 0.826)
-- after c: 0.00143 (after c / PDG = 1.16, 1.4σ)
+- after c: 0.00153 (after c / PDG = 1.24, 2.1σ)
 - largest yield share of its lines: 0.10 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | anti-D*0 a_1+ | 4280 | 0.018 | 0.05 | measured | exact | S041.221 | 1.04 | 0.29 |  |  | 1.01 |
-| anti-D*0 anti-K*0 K+ | 4345 | 0.00059 | 1.00 | measured | node | S041.289 | 0.826 | 0.093 | yes | remainder_unstable | 0.10 |
+| anti-D*0 anti-K*0 K+ | 4345 | 0.00059 | 1.00 | none |  |  | 1 | 1 | yes | remainder_unstable, unmeasured | 0.10 |
 
-## Case 12: S042.1, B0 --> Dbar0 pi+ pi-
+## Case 11: S042.1, B0 --> Dbar0 pi+ pi-
 
 - PDG: 0.00088 ± 4.6e-05
 - MC sum: 0.00165 (PDG / MC = 0.533)
@@ -211,39 +197,66 @@ Columns of the line table:
 | D_0*- pi+ | 738 | 0.00042 | 0.67 | measured | product | S042.385 | 0.271 | 0.027 |  | c_extreme, exception_applied | 0.09 |
 | D_2*- pi+ | 739 | 0.00043 | 0.40 | measured | product | S042.124 | 1.39 | 0.091 |  | exception_applied, node_not_closed | 0.07 |
 
+## Case 12: S041.612, B+ --> J/psi(1S) K0 pi+
+
+- PDG: 0.00113 ± 0.00011
+- MC sum: 0.00131 (PDG / MC = 0.865)
+- after c: 0.00131 (after c / PDG = 1.16, 1.6σ)
+- largest yield share of its lines: 0.09 %
+
+| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| K*+ J/psi | 4067 | 0.00143 | 0.67 | measured | exact | S041.142 | 1 | 0.057 |  |  | 0.09 |
+| pi+ K0 J/psi | 4070 | 0.000187 | 1.00 | none |  |  | 1 | 1 | yes | remainder_unstable, unmeasured | 0.02 |
+| K_2*+ J/psi | 4080 | 0.0005 | 0.33 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
+
 ## Case 13: S041.19, B+ --> J/psi(1S) K+ pi+ pi-
 
 - PDG: 0.000811 ± 0.00013
 - MC sum: 0.000809 (PDG / MC = 1)
-- after c: 0.000775 (after c / PDG = 0.955, -0.29σ)
+- after c: 0.000809 (after c / PDG = 0.997, -0.019σ)
 - largest yield share of its lines: 0.07 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | J/psi K_1+ | 4079 | 0.0018 | 0.36 | measured | exact | S041.271 | 1 | 0.29 |  |  | 0.07 |
-| K_2*+ J/psi | 4080 | 0.0005 | 0.14 | measured | node | S041.612 | 0.501 | 0.35 |  |  | 0.05 |
-| pi- pi+ K+ J/psi | 4083 | 5.51e-05 | 1.00 | measured | node | S041.19 | 1 | 0.16 | yes | remainder_unstable | 0.00 |
-| J/psi K'_1+ | 4078 | 0.0001 | 0.44 | measured | node | S041.19 | 1 | 0.16 | yes | remainder_unstable | 0.00 |
+| K_2*+ J/psi | 4080 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
+| pi- pi+ K+ J/psi | 4083 | 5.51e-05 | 1.00 | none |  |  | 1 | 1 | yes | remainder_unstable, unmeasured | 0.00 |
+| J/psi K'_1+ | 4078 | 0.0001 | 0.44 | limit |  | S041.272 | 1 | – |  |  | 0.00 |
 | K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | exact | S041.360 | 0.89 | 0.23 |  | resonance_mismatch | 1.65 |
 
-## Case 14: S042.211, B0 --> J/psi(1S) K0 pi+ pi-
+## Case 14: S041.528, B+ --> J/psi(1S) omega K+
+
+- PDG: 0.00032 ± 4.6e-05
+- MC sum: 0.000534 (PDG / MC = 0.6)
+- after c: 0.00032 (after c / PDG = 1, -1.2e-15σ)
+- largest yield share of its lines: 0.07 %
+
+| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| omega K+ J/psi | 4087 | 0.00032 | 1.00 | measured | node | S041.528 | 0.333 | 0.23 | yes | c_extreme | 0.02 |
+| J/psi K_1+ | 4079 | 0.0018 | 0.11 | measured | exact | S041.271 | 1 | 0.29 |  |  | 0.07 |
+| K_2*+ J/psi | 4080 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
+| J/psi K'_1+ | 4078 | 0.0001 | 0.01 | limit |  | S041.272 | 1 | – |  |  | 0.00 |
+
+## Case 15: S042.211, B0 --> J/psi(1S) K0 pi+ pi-
 
 - PDG: 0.000446 ± 4e-05
 - MC sum: 0.00206 (PDG / MC = 0.216)
-- after c: 0.00134 (after c / PDG = 3, 22σ); **not closed**
+- after c: 0.00168 (after c / PDG = 3.76, 31σ); **not closed**
 - largest yield share of its lines: 0.06 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| rho0 K0 J/psi | 468 | 0.00054 | 1.00 | measured | node | S042.212 | 0.644 | 0.58 |  | node_not_closed | 0.03 |
-| pi- K*+ J/psi | 469 | 0.00077 | 0.67 | measured | node | S042.213 | 0.693 | 0.52 |  | node_not_closed | 0.03 |
+| rho0 K0 J/psi | 468 | 0.00054 | 1.00 | measured | node | S042.212 | 0.634 | 0.58 |  | node_not_closed | 0.03 |
+| pi- K*+ J/psi | 469 | 0.00077 | 0.67 | measured | node | S042.213 | 0.631 | 0.58 |  | node_not_closed | 0.03 |
 | J/psi K_10 | 457 | 0.0013 | 0.36 | measured | exact | S042.203 | 1 | 0.36 |  | node_not_closed | 0.06 |
-| pi- pi+ K0 J/psi | 453 | 0.000435 | 1.00 | measured | node | S042.211 | 0.216 | 0.019 | yes | c_extreme, node_not_closed, remainder_unstable | 0.02 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.14 | measured | node | S042.4 | 0.652 | 0.13 |  | node_ambiguous, node_not_closed | 0.03 |
-| J/psi K'_10 | 458 | 0.0001 | 0.44 | measured | node | S042.213 | 0.693 | 0.52 |  | node_not_closed | 0.01 |
+| pi- pi+ K0 J/psi | 453 | 0.000435 | 1.00 | none |  |  | 1 | 1 | yes | node_not_closed, remainder_unstable, unmeasured | 0.02 |
+| K_2*0 J/psi | 459 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
+| J/psi K'_10 | 458 | 0.0001 | 0.44 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
 | K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | limit |  | S042.393, S042.394 | 1 | – |  | above_limit, limit_capped | 0.00 |
 
-## Case 15: S042.212, B0 --> J/psi(1S) K0 rho0
+## Case 16: S042.212, B0 --> J/psi(1S) K0 rho0
 
 - PDG: 0.00054 ± 0.0003
 - MC sum: 0.000737 (PDG / MC = 0.732)
@@ -252,86 +265,91 @@ Columns of the line table:
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| rho0 K0 J/psi | 468 | 0.00054 | 1.00 | measured | node | S042.212 | 0.644 | 0.58 | yes | node_not_closed | 0.03 |
+| rho0 K0 J/psi | 468 | 0.00054 | 1.00 | measured | node | S042.212 | 0.634 | 0.58 | yes | node_not_closed | 0.03 |
 | J/psi K_10 | 457 | 0.0013 | 0.14 | measured | exact | S042.203 | 1 | 0.36 |  | node_not_closed | 0.06 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.03 | measured | node | S042.4 | 0.652 | 0.13 |  | node_ambiguous, node_not_closed | 0.03 |
-| J/psi K'_10 | 458 | 0.0001 | 0.01 | measured | node | S042.213 | 0.693 | 0.52 |  | node_not_closed | 0.01 |
+| K_2*0 J/psi | 459 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
+| J/psi K'_10 | 458 | 0.0001 | 0.01 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
 
-## Case 16: S042.213, B0 --> J/psi(1S) K^*(892)+ pi-
+## Case 17: S042.213, B0 --> J/psi(1S) K^*(892)+ pi-
 
 - PDG: 0.00077 ± 0.00043
 - MC sum: 0.00105 (PDG / MC = 0.731)
-- after c: 0.00077 (after c / PDG = 1, 2.5e-16σ)
+- after c: 0.00077 (after c / PDG = 1, 0σ)
 - largest yield share of its lines: 0.06 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| pi- K*+ J/psi | 469 | 0.00077 | 1.00 | measured | node | S042.213 | 0.693 | 0.52 | yes | node_not_closed | 0.03 |
+| pi- K*+ J/psi | 469 | 0.00077 | 1.00 | measured | node | S042.213 | 0.631 | 0.58 | yes | node_not_closed | 0.03 |
 | J/psi K_10 | 457 | 0.0013 | 0.11 | measured | exact | S042.203 | 1 | 0.36 |  | node_not_closed | 0.06 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.16 | measured | node | S042.4 | 0.652 | 0.13 |  | node_ambiguous, node_not_closed | 0.03 |
-| J/psi K'_10 | 458 | 0.0001 | 0.63 | measured | node | S042.213 | 0.693 | 0.52 | yes | node_not_closed | 0.01 |
+| K_2*0 J/psi | 459 | 0.0005 | 0.16 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
+| J/psi K'_10 | 458 | 0.0001 | 0.63 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
 
-## Case 17: S042.440, B0 --> J/psi(1S) omega K0
+## Case 18: S042.440, B0 --> J/psi(1S) omega K0
 
 - PDG: 0.00023 ± 4.2e-05
 - MC sum: 0.000389 (PDG / MC = 0.592)
-- after c: 0.00023 (after c / PDG = 0.999, -0.0072σ)
+- after c: 0.00023 (after c / PDG = 1, 0σ)
 - largest yield share of its lines: 0.06 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| omega K0 J/psi | 464 | 0.00023 | 1.00 | measured | node | S042.440 | 0.333 | 0.29 | yes | c_extreme | 0.02 |
+| omega K0 J/psi | 464 | 0.00023 | 1.00 | measured | node | S042.440 | 0.311 | 0.3 | yes | c_extreme | 0.02 |
 | J/psi K_10 | 457 | 0.0013 | 0.11 | measured | exact | S042.203 | 1 | 0.36 |  | node_not_closed | 0.06 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.03 | measured | node | S042.4 | 0.652 | 0.13 |  | node_ambiguous, node_not_closed | 0.03 |
-| J/psi K'_10 | 458 | 0.0001 | 0.01 | measured | node | S042.213 | 0.693 | 0.52 |  | node_not_closed | 0.01 |
+| K_2*0 J/psi | 459 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
+| J/psi K'_10 | 458 | 0.0001 | 0.01 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
 
-## Case 18: S042.4, B0 --> J/psi(1S) K+ pi-
+## Case 19: S042.4, B0 --> J/psi(1S) K+ pi-
 
 - PDG: 0.00115 ± 5.1e-05
 - MC sum: 0.00132 (PDG / MC = 0.873)
-- after c: 0.00115 (after c / PDG = 1, 0σ)
+- after c: 0.00131 (after c / PDG = 1.14, 3.2σ); **not closed**
 - largest yield share of its lines: 0.05 %
 
 | Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| K*0 J/psi | 433, 434, 435, 436 | 0.00127 | 0.67 | measured | exact | S042.22 | 0.996 | 0.036 |  |  | 0.05 |
-| pi- K+ J/psi | 440 | 0.000303 | 1.00 | measured | node | S042.4 | 0.652 | 0.13 | yes |  | 0.00 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.33 | measured | node | S042.4 | 0.652 | 0.13 | yes | node_ambiguous, node_not_closed | 0.03 |
+| K*0 J/psi | 433, 434, 435, 436 | 0.00127 | 0.67 | measured | exact | S042.22 | 0.996 | 0.036 |  | node_not_closed | 0.05 |
+| pi- K+ J/psi | 440 | 0.000303 | 1.00 | none |  |  | 1 | 1 | yes | node_not_closed, remainder_unstable, unmeasured | 0.02 |
+| K_2*0 J/psi | 459 | 0.0005 | 0.33 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
 
 ## Other cases (yield share below the threshold)
 
 | PDG id | Entry | PDG | MC sum | after c / PDG | σ | lines using it [dec line] (c) | share % |
 |---|---|---|---|---|---|---|---|
-| S041.307 | B+ --> K+ pi- pi+ gamma | 2.58e-05 ± 1.5e-06 | 4.9e-05 | 1.95 | 17 | – | 0.014 |
+| S042.615 | B0 --> psi(2S) K0 pi+ pi- | 0.000281 ± 3e-05 | 0.000342 | 1.22 | 2.1 | pi- pi+ K0 psi(2S) [492] (1) | 0.025 |
+| S041.307 | B+ --> K+ pi- pi+ gamma | 2.58e-05 ± 1.5e-06 | 4.9e-05 | 1.9 | 16 | – | 0.014 |
 | S041.308 | B+ --> K^*(892)0 pi+ gamma | 2.33e-05 ± 1.2e-06 | 4.26e-05 | 1.83 | 17 | – | 0.014 |
 | S041.474 | B+ --> K0 pi+ pi0 gamma | 4.56e-05 ± 5.2e-06 | 6.16e-05 | 1.35 | 3.1 | – | 0.014 |
-| S041.799 | B+ --> chi_c0() K0 pi+ | 0.00145 ± 0.00021 | 0.000293 | 1.02 | 0.11 | pi+ K0 chi_c0 [4130] (6.9) | 0.013 |
-| S042.461 | B0 --> rho0 K+ pi- | 2.8e-06 ± 7.1e-07 | 3.44e-05 | 9.97 | 36 | pi- rho0 K+ [1140] (0.0814); a_2- K+ [1859] (0.0814); rho0 K_2*0 [1883] (0.0814) | 0.011 |
+| S042.461 | B0 --> rho0 K+ pi- | 2.8e-06 ± 7.1e-07 | 3.44e-05 | 12.3 | 45 | pi- rho0 K+ [1140] (1) | 0.011 |
 | S042.71 | B0 --> K^*(892)0 mu+ mu- | 9.44e-07 ± 5.3e-08 | 1.2e-06 | 1 | 0 | mu+ mu- K*0 [893] (0.787) | 0.007 |
-| S041.163 | B+ --> K^*(892)+ pi+ pi- | 7.53e-05 ± 1e-05 | 5.34e-05 | 1.17 | 1.3 | f_2 K*+ [5084] (3.07); pi- pi+ K*+ [4587] (3.07) | 0.004 |
+| S042.241 | B0 --> J/psi(1S) pi+ pi- | 3.99e-05 ± 1.5e-06 | 4.76e-05 | 1.19 | 5 | pi- pi+ J/psi [451] (1) | 0.005 |
+| S041.163 | B+ --> K^*(892)+ pi+ pi- | 7.53e-05 ± 1e-05 | 5.34e-05 | 0.709 | -2.2 | pi- pi+ K*+ [4587] (1) | 0.004 |
+| S041.799 | B+ --> chi_c0() K0 pi+ | 0.00145 ± 0.00021 | 0.000293 | 1 | 0 | pi+ K0 chi_c0 [4130] (6.78) | 0.004 |
 | S042.17 | B0 --> K0 mu+ mu- | 3.39e-07 ± 3.5e-08 | 5.4e-07 | 1 | 0 | mu+ mu- K0 [892] (0.627) | 0.002 |
-| S042.84 | B0 --> K^*(892)0 pi+ pi- | 5.45e-05 ± 5.2e-06 | 0.000137 | 1 | 1.3e-15 | pi- pi+ K*0 [1141] (0.356); pi- K'*+ [1659] (0.356); pi- K'_1+ [1667] (0.356); f_2 K*0 [1682] (0.356); pi- K_1+ [1666] (0.356) | 0.002 |
-| S042.85 | B0 --> K^*(892)0 K+ K- | 2.75e-05 ± 2.6e-06 | 4.12e-05 | 0.99 | -0.1 | K- K*0 K+ [1222] (0.654); K*0 f'_2 [1681] (0.654); K*0 f_0 [1178] (0.654) | 0.001 |
+| S042.84 | B0 --> K^*(892)0 pi+ pi- | 5.45e-05 ± 5.2e-06 | 0.000137 | 2.52 | 16 | pi- pi+ K*0 [1141] (1) | 0.002 |
+| S042.85 | B0 --> K^*(892)0 K+ K- | 2.75e-05 ± 2.6e-06 | 4.12e-05 | 1.5 | 5.4 | K- K*0 K+ [1222] (1) | 0.001 |
 | S041.10 | B+ --> K+ mu+ mu- | 4.53e-07 ± 3.5e-08 | 6.05e-07 | 1 | 0 | mu+ mu- K+ [4437] (0.746) | 0.000 |
 | S041.162 | B+ --> K^*(892)+ mu+ mu- | 9.58e-07 ± 1e-07 | 1.29e-06 | 1 | 0 | mu+ mu- K*+ [4438] (0.742) | 0.000 |
-| S041.282 | B+ --> K+ pi- pi+ | 5.1e-05 ± 2.9e-06 | 6.7e-05 | 1.28 | 4.8 | pi- pi+ K+ [4518] (0.76); pi+ K''*0 [5057] (0.76); K+ f'_0 [5053] (0.76); K+ rho(3S)0 [5059] (0.76); K+ rho(2S)0 [4493] (0.76) | 0.000 |
-| S041.284 | B+ --> K+ K- pi+ | 5.24e-06 ± 4.2e-07 | 2.34e-06 | 0.997 | -0.04 | K- pi+ K+ [4519] (2.54); pi+ f_0 [4496] (2.54); pi+ f'_2 [5196] (2.54); anti-K_2*0 K+ [5203] (2.54) | 0.000 |
-| S041.309 | B+ --> K+ rho0 gamma | 8.2e-06 ± 8.9e-07 | 1.41e-05 | 1.86 | 7.8 | – | 0.000 |
+| S041.24 | B+ --> p Lambdabar pi+ pi- | 1.13e-05 ± 1.3e-06 | 1.92e-05 | 1.78 | 6.7 | anti-Lambda0 pi- pi+ p+ [5022] (1) | 0.000 |
+| S041.282 | B+ --> K+ pi- pi+ | 5.1e-05 ± 2.9e-06 | 6.7e-05 | 1.38 | 6.6 | pi- pi+ K+ [4518] (1) | 0.000 |
+| S041.309 | B+ --> K+ rho0 gamma | 8.2e-06 ± 8.9e-07 | 1.41e-05 | 1.72 | 6.6 | – | 0.000 |
 | S041.345 | B+ --> K+ lepton+ lepton- | 4.71e-07 ± 4.6e-08 | 6.09e-07 | 1 | -1.1e-15 | e+ e- K+ [4430] (0.771) | 0.000 |
 | S041.346 | B+ --> K^*(892)+ lepton+ lepton- | 1.01e-06 ± 1.1e-07 | 1.31e-06 | 1 | 0 | e+ e- K*+ [4431] (0.772) | 0.000 |
-| S041.584 | B+ --> K+ pi0 pi0 | 1.62e-05 ± 1.9e-06 | 1.1e-05 | 1 | 1.8e-15 | pi0 pi0 K+ [4538] (4.58); pi0 K_2*+ [5205] (4.58) | 0.000 |
+| S041.584 | B+ --> K+ pi0 pi0 | 1.62e-05 ± 1.9e-06 | 1.1e-05 | 1 | 0 | pi0 pi0 K+ [4538] (4.46) | 0.000 |
 | S041.685 | B+ --> K_0^*(1430)0 pi+ gamma | 1.32e-06 ± 2.9e-07 | 4.5e-09 | 0.00341 | -4.6 | – | 0.000 |
-| S041.687 | B+ --> D+ K+ pi- | 5.64e-06 ± 1.1e-06 | 1.66e-07 | 0.997 | -0.015 | pi- K+ D+ [5464] (274) | 0.000 |
+| S041.687 | B+ --> D+ K+ pi- | 5.64e-06 ± 1.1e-06 | 1.66e-07 | 1 | 0 | pi- K+ D+ [5464] (275) | 0.000 |
 | S041.716 | B+ --> p Lambdabar K+ K- | 4.1e-06 ± 6.7e-07 | 4.6e-08 | 0.0202 | -6 | – | 0.000 |
-| S041.73 | B+ --> pi+ pi0 pi0 | 1.9e-05 ± 2.1e-06 | 1.41e-05 | 1 | 0 | pi0 pi0 pi+ [4532] (4.69); pi0 rho(3S)+ [5063] (4.69) | 0.000 |
-| S041.797 | B+ --> K0 K+ K- pi+ | 0.00034 ± 3.3e-05 | 6.03e-05 | 1 | 0 | K- pi+ K0 K+ [4676] (10.7); anti-K*0 K0 K+ [4671] (10.7); K- K+ K_0*+ [4682] (10.7); anti-K_0*0 K0 K+ [4684] (10.7); K+ eta(1405) [5090] (10.7) | 0.000 |
-| S041.798 | B+ --> K0 K+ K+ pi- | 0.00028 ± 3e-05 | 2.73e-05 | 1 | 1.8e-15 | K*- K+ K+ [4669] (10.5); K0 K*0 K+ [4670] (10.5); K_0*- K+ K+ [4683] (10.5); K0 K+ K_0*0 [4685] (10.5); K*0 a_0+ [4627] (10.5) | 0.000 |
-| S042.228 | B0 --> K0 K- pi+ | 6.66e-06 ± 5.2e-07 | 4.55e-06 | 1 | -1.6e-15 | K- K*+ [1053] (1.49); K- K_0*+ [1057] (1.49); K- pi+ K0 [1075] (1.49); a_0- pi+ [1037] (1.49); K- K''*+ [1061] (1.49); anti-K_2*0 K0 [1858] (1.49) | 0.000 |
-| S042.230 | B0 --> K+ K- pi0 | 2.17e-06 ± 6.5e-07 | 2.66e-06 | 1.44 | 1.5 | K- pi0 K+ [1080] (0.816); pi0 f_0 [907] (0.816); pi0 f'_2 [1844] (0.816) | 0.000 |
-| S042.231 | B0 --> K+ pi- gamma | 4.6e-06 ± 1.4e-06 | 3.24e-05 | 7.01 | 20 | gamma K''*0 [877] (0.142) | 0.000 |
-| S042.275 | B0 --> K0 lepton+ lepton- | 3.29e-07 ± 5.9e-08 | 5.45e-07 | 1 | 0 | e+ e- K0 [888] (0.601) | 0.000 |
-| S042.276 | B0 --> K^*(892)0 lepton+ lepton- | 9.87e-07 ± 1.2e-07 | 1.21e-06 | 0.998 | -0.015 | e+ e- K*0 [889] (0.811) | 0.000 |
+| S041.73 | B+ --> pi+ pi0 pi0 | 1.9e-05 ± 2.1e-06 | 1.41e-05 | 1 | 0 | pi0 pi0 pi+ [4532] (5.85) | 0.000 |
+| S041.797 | B+ --> K0 K+ K- pi+ | 0.00034 ± 3.3e-05 | 6.03e-05 | 1 | 0 | K- pi+ K0 K+ [4676] (29.5) | 0.000 |
+| S041.798 | B+ --> K0 K+ K+ pi- | 0.00028 ± 3e-05 | 2.73e-05 | 0.0974 | -8.5 | – | 0.000 |
+| S042.228 | B0 --> K0 K- pi+ | 6.66e-06 ± 5.2e-07 | 4.55e-06 | 1 | 0 | K- pi+ K0 [1075] (3.11) | 0.000 |
+| S042.229 | B0 --> K+ pi- pi0 | 3.78e-05 ± 3.2e-06 | 3.31e-05 | 1.03 | 0.33 | pi- pi0 K+ [1070] (3.04) | 0.000 |
+| S042.230 | B0 --> K+ K- pi0 | 2.17e-06 ± 6.5e-07 | 2.66e-06 | 1.23 | 0.76 | K- pi0 K+ [1080] (1) | 0.000 |
+| S042.231 | B0 --> K+ pi- gamma | 4.6e-06 ± 1.4e-06 | 3.24e-05 | 7.09 | 20 | – | 0.000 |
+| S042.275 | B0 --> K0 lepton+ lepton- | 3.29e-07 ± 5.9e-08 | 5.45e-07 | 1.01 | 0.059 | e+ e- K0 [888] (0.607) | 0.000 |
+| S042.276 | B0 --> K^*(892)0 lepton+ lepton- | 9.87e-07 ± 1.2e-07 | 1.21e-06 | 1 | 0 | e+ e- K*0 [889] (0.811) | 0.000 |
 | S042.283 | B0 --> K0 phi gamma | 2.74e-06 ± 6.8e-07 | 2.23e-08 | 0.00814 | -4 | – | 0.000 |
-| S042.310 | B0 --> K0 pi+ pi- gamma | 1.99e-05 ± 1.8e-06 | 2.09e-05 | 1 | 0 | gamma K_10 [874] (0.973); gamma K'_10 [875] (0.973) | 0.000 |
-| S042.376 | B0 --> K+ pi- pi0 gamma | 4.07e-05 ± 3.8e-06 | 2.6e-05 | 0.612 | -4.2 | – | 0.000 |
-| S042.80 | B0 --> K0 pi+ pi- | 4.97e-05 ± 1.8e-06 | 6.17e-05 | 1.25 | 6.9 | pi- pi+ K0 [1068] (0.805); K0 rho(3S)0 [1663] (0.805); K0 f'_0 [1661] (0.805); K0 rho(2S)0 [1028, 1029, 1030] (0.805) | 0.000 |
+| S042.32 | B0 --> p pbar pi+ pi- | 2.87e-06 ± 1.9e-07 | 4.5e-06 | 1.57 | 8.7 | – | 0.000 |
+| S042.376 | B0 --> K+ pi- pi0 gamma | 4.07e-05 ± 3.8e-06 | 2.6e-05 | 0.64 | -3.9 | – | 0.000 |
+| S042.570 | B0 --> phi pi+ pi- | 1.82e-07 ± 5e-08 | 4.87e-07 | 2.68 | 6.1 | pi- pi+ phi [1191] (1) | 0.000 |
+| S042.571 | B0 --> p pbar K+ pi- | 6.27e-06 ± 5.2e-07 | 2.83e-06 | 0.45 | -6.7 | – | 0.000 |
+| S042.80 | B0 --> K0 pi+ pi- | 4.97e-05 ± 1.8e-06 | 6.17e-05 | 1.37 | 10 | pi- pi+ K0 [1068] (1) | 0.000 |

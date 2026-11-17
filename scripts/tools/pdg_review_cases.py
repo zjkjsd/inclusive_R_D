@@ -62,6 +62,7 @@ def collect_cases():
         if str(n.uid).endswith('[mu]'):
             continue                                    # the muon copy of a lepton node
         lines, max_share, problem = [], 0.0, False
+        n_targets = {k for k, fed, bf in feeders if abs(fed / bf - 1.0) < 1e-9 and len(k) == n.n_bodies}
         for k, fed, bf in feeders:
             x = rows.get((n.mother, k))
             if x is None:
@@ -74,6 +75,8 @@ def collect_cases():
                 max_share = max(max_share, sh)
             if uses and any(f in flags for f in PROBLEM_FLAGS):
                 problem = True
+            if n.role == 'unstable' and k in n_targets:
+                problem = uses = True                   # the direct line: this entry gave it no c
             lines.append(dict(name=name(k), line=', '.join(str(x) for x in sorted(line_no.get((n.mother, k), []))), bf=bf, p=fed / bf, how=x.how if isinstance(x.how, str) else '',
                               ids=ids, c=x.c, sigma=x.sigma_c, flags=flags, share=sh, uses=uses,
                               cls=x.pdg_class))

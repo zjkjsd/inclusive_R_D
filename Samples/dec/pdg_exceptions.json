@@ -32,5 +32,133 @@
   "pdgid": "S041.858",
   "action": "exclude_node",
   "reason": "PDG text: 'B+ --> psi(2S) K_1(1270)+ , K_1(1270)+ --> K+ pi+ pi-' (3.30e-5) is listed next to '[ same ](P-wave)' S041.859 (3.26e-5) and '[ same ](D-wave)' S041.860 (2.96e-5), whose sum exceeds it: one component of the psi(2S) K+ pi+ pi- amplitude fit, not the total rate."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -423,
+   -211,
+   -11,
+   12
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'anti-D*0 pi- e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.312 'B0 --> Dbar^*()0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -423,
+   -211,
+   -13,
+   14
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'anti-D*0 pi- mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.312 'B0 --> Dbar^*()0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -421,
+   -211,
+   -11,
+   12
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'anti-D0 pi- e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.311 'B0 --> Dbar0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -421,
+   -211,
+   -13,
+   14
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'anti-D0 pi- mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.311 'B0 --> Dbar0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -413,
+   211,
+   -11,
+   12
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'D*- pi+ e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.419 'B+ --> D^*()- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -413,
+   211,
+   -13,
+   14
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'D*- pi+ mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.419 'B+ --> D^*()- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -411,
+   211,
+   -11,
+   12
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'D- pi+ e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.418 'B+ --> D- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -411,
+   211,
+   -13,
+   14
+  ],
+  "action": "force_class",
+  "class": "none",
+  "reason": "M2 (2026-11-17). Decay-file line 'D- pi+ mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.418 'B+ --> D- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -10411,
+   -11,
+   12
+  ],
+  "action": "isospin",
+  "from_mother": 521,
+  "from_key": [
+   -10421,
+   -11,
+   12
+  ],
+  "reason": "M2 (2026-11-17). B0 --> D_0*- e+ nu has only an upper limit in PDG (S042.418, product with D_0*- --> Dbar0 pi- < 4.4e-4). The isospin partner B+ --> Dbar_0*0 l+ nu is measured as a product (S041.503). Semileptonic b --> c decays conserve isospin, so the B0 line takes the c of the B+ line. Accepted: the corrected B0 product stays above the limit, within the B+ error."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -10411,
+   -13,
+   14
+  ],
+  "action": "isospin",
+  "from_mother": 521,
+  "from_key": [
+   -10421,
+   -13,
+   14
+  ],
+  "reason": "M2 (2026-11-17). B0 --> D_0*- mu+ nu has only an upper limit in PDG (S042.418, product with D_0*- --> Dbar0 pi- < 4.4e-4). The isospin partner B+ --> Dbar_0*0 l+ nu is measured as a product (S041.503). Semileptonic b --> c decays conserve isospin, so the B0 line takes the c of the B+ line. Accepted: the corrected B0 product stays above the limit, within the B+ error."
  }
 ]

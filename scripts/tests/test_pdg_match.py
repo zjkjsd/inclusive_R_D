@@ -383,14 +383,26 @@ def test_toy_node_and_remainder():
     feed_kst = 0.0006 * 0.6667 + 0.0004 * 1.0
     bf_node = feed_kst + 0.0004 + 0.0005 * 0.5
     assert close(n.loc['T.4', 'bf_mc'], bf_node) and n.loc['T.4', 'n_feeders'] == 3
-    assert close(n.loc['T.4', 'ratio'], 0.0015 / bf_node) and n.loc['T.4', 'role'] == 'node'
-    c = (0.0015 - 1.2 * feed_kst) / (0.0004 + 0.00025)
-    s = math.sqrt(0.0002 ** 2 + (0.1 * feed_kst) ** 2) / (0.0004 + 0.00025)
-    for names, p in (('J/psi K+ pi-', 1.0), ('J/psi K_2*0', 0.5)):
-        r = row(511, names, t, lk)
-        assert r['how'] == 'node' and r['pdgids'] == 'T.4' and close(r['c'], c), names
-        assert close(r['sigma_c'], s) and close(r['p_node'], p) and close(r['bf_pdg'], 0.0015)
-        assert 'remainder_unstable' not in flags(r)
+    assert close(n.loc['T.4', 'ratio'], 0.0015 / bf_node)
+    # the K_2* line reaches the node through a resonance: it takes no c from it (unmeasured,
+    # c = 1 +- 1). The direct line gets the remainder, which here is more than 100 % uncertain
+    # ((0.0015 - 1.2 x feed_kst - 0.00025) / 0.0004 = 0.725 +- 0.825): no c either
+    r = row(511, 'J/psi K_2*0', t, lk)
+    assert r['how'] == '' and r['pdg_class'] == 'none' and r['c'] == 1.0 and close(r['sigma_c'], 1.0)
+    assert 'unmeasured' in flags(r) and 'remainder_unstable' not in flags(r)
+    r = row(511, 'J/psi K+ pi-', t, lk)
+    assert r['how'] == '' and r['c'] == 1.0 and close(r['sigma_c'], 1.0)
+    assert {'unmeasured', 'remainder_unstable'} <= flags(r) and n.loc['T.4', 'role'] == 'unstable'
+    # with a precise total the direct line takes the remainder; the K_2* part enters with 100 %
+    pdg = [x if x[0] != 'T.4' else ('T.4', x[1], 0.0020, 0.0001, False) for x in TOY_PDG]
+    tp, np_, lkp = toy(pdg=pdg)
+    r = row(511, 'J/psi K+ pi-', tp, lkp)
+    c = (0.0020 - 1.2 * feed_kst - 0.00025) / 0.0004
+    s = math.sqrt(0.0001 ** 2 + (0.1 * feed_kst) ** 2 + 0.00025 ** 2) / 0.0004
+    assert r['how'] == 'node' and r['pdgids'] == 'T.4' and close(r['c'], c) and close(r['sigma_c'], s)
+    assert close(r['p_node'], 1.0) and not flags(r) & {'unmeasured', 'remainder_unstable', 'node_not_closed'}
+    assert np_.set_index('uid').loc['T.4', 'role'] == 'node'
+    assert 'unmeasured' in flags(row(511, 'J/psi K_2*0', tp, lkp))
     assert close(row(511, 'J/psi K*0', t, lk)['c'], 1.2)            # the exact line is untouched
     # nested nodes, from the fewest bodies up
     assert close(row(511, 'D*- a_1+', t, lk)['c'], 1.2)
@@ -413,15 +425,15 @@ def test_toy_node_and_remainder():
 def test_toy_unstable_remainder():
     t, nodes, lk = toy()
     r = row(511, 'D- pi+ pi0', t, lk)
-    # remainder (0.007 - 0.95 * 0.008) < 0: inclusive ratio of the node instead
-    assert r['how'] == 'node' and 'remainder_unstable' in flags(r)
-    assert close(r['c'], 0.007 / 0.0087) and close(r['sigma_c'], r['c'] * 0.001 / 0.007)
+    # remainder (0.007 - 0.95 * 0.008) < 0: the direct line gets no c
+    assert r['how'] == '' and r['pdg_class'] == 'none' and {'remainder_unstable', 'unmeasured'} <= flags(r)
+    assert r['c'] == 1.0 and close(r['sigma_c'], 1.0)
     assert close(row(511, 'D- rho+', t, lk)['c'], 0.95)
     # a remainder more than 100 % uncertain is unstable too
     pdg = [x if x[0] != 'T.9' else ('T.9', x[1], 0.0078, 0.001, False) for x in TOY_PDG]
     t2, _, lk2 = toy(pdg=pdg)
     r = row(511, 'D- pi+ pi0', t2, lk2)
-    assert 'remainder_unstable' in flags(r) and close(r['c'], 0.0078 / 0.0087)
+    assert 'remainder_unstable' in flags(r) and r['c'] == 1.0 and r['how'] == ''
     # and a well-measured one is not
     pdg = [x if x[0] != 'T.9' else ('T.9', x[1], 0.0083, 0.0001, False) for x in TOY_PDG]
     t3, _, lk3 = toy(pdg=pdg)
@@ -445,16 +457,6 @@ def test_toy_product():
     r = row(511, 'D_1- pi+', t, lk)
     assert r['how'] == 'product' and close(r['c'], 0.00036 / (0.0009 * 0.5))
     assert nodes.set_index('uid').loc['T.18', 'role'] == 'covered'
-    old = pm.PRODUCT_BEFORE_NODE
-    pm.PRODUCT_BEFORE_NODE = False
-    try:
-        t2, _, lk2 = toy()
-    finally:
-        pm.PRODUCT_BEFORE_NODE = old
-    r = row(511, 'D_1- pi+', t2, lk2)
-    assert r['how'] == 'node' and r['pdgids'] == 'T.18' and close(r['c'], 0.0006 / 0.00045)
-    assert close(r['c_prod'], 0.8)                                   # still stored
-    assert row(511, 'D_s0*+ D-', t2, lk2)['how'] == 'product'
 
 
 def test_toy_kaons_and_limits():
@@ -533,8 +535,8 @@ def test_toy_exceptions():
            dict(pdgid='T.11', action='exclude_node', reason='test'),
            dict(pdgid='T.30', action='fold', states=['D_s0*+'], reason='test')]
     t, _, lk = toy(exc, pdg)
-    r = row(511, 'D_s0*+ D-', t, lk)
-    assert r['how'] == 'node' and r['pdgids'] == 'T.30' and close(r['c'], 0.004 / 0.008)
+    r = row(511, 'D_s0*+ D-', t, lk)                           # feeds T.30 now, through a resonance
+    assert r['how'] == '' and {'unmeasured', 'exception_applied'} <= flags(r) and close(r['sigma_c'], 1.0)
     # force_class and rewrite
     exc = [dict(mother=511, key=code('D- rho+'), action='force_class', reason='test', **{'class': 'none'})]
     t, _, lk = toy(exc)
@@ -542,7 +544,8 @@ def test_toy_exceptions():
     assert r['pdg_class'] == 'none' and r['c'] == 1.0 and r['how'] == '' and 'exception_applied' in flags(r)
     pdg = [x if x[0] != 'T.8' else ('T.8', 'B0 --> D- rho(770)', 0.0076, 0.0005, False) for x in TOY_PDG]
     t, nodes, lk = toy(pdg=pdg)
-    assert row(511, 'D- rho+', t, lk)['how'] == 'node'              # unkeyed text: no exact node
+    r = row(511, 'D- rho+', t, lk)                                  # unkeyed text: no exact node
+    assert r['how'] == '' and 'unmeasured' in flags(r)
     exc = [dict(pdgid='T.8', action='rewrite', description='B0 --> D- rho+', reason='test')]
     t, nodes, lk = toy(exc, pdg)
     r = row(511, 'D- rho+', t, lk)
@@ -564,8 +567,9 @@ def test_toy_exceptions():
                 raise AssertionError(f'accepted: {bad}')
         assert pm.load_exceptions(os.path.join(tmp, 'missing.json')) == []
     for e in pm.load_exceptions():
-        assert e['reason'] and e['action'] in ('rewrite', 'exclude_node')
-        assert 'PDG text' in e['reason']                           # justified from the listing
+        assert e['reason'] and e['action'] in ('rewrite', 'exclude_node', 'force_class', 'isospin')
+        if 'pdgid' in e:
+            assert 'PDG text' in e['reason']                       # justified from the listing
 
 
 # a second toy for the checks added after the review (limits in remainders, repeated product
@@ -650,15 +654,15 @@ def toy2():
 def test_toy_limit_caps():
     t, nodes, lk = toy2()
     n = nodes.set_index('uid')
-    # D- pi+ pi0 = 0.010: the remainder (c = 5) would put D- rho+ above its own limit (1.5e-3)
+    # D- pi+ pi0 = 0.010: D- rho+ (BF 1e-3, own limit 1.5e-3) takes no c from the node; it is
+    # below its limit and is subtracted as it is, with 100 %
     r = row(511, 'D- rho+', t, lk)
     assert r['pdg_class'] == 'limit' and r['how'] == '' and r['c'] == 1.0 and r['pdgids'] == 'U.2'
-    assert 'limit_capped' in flags(r) and 'above_limit' not in flags(r)
+    assert 'limit_capped' not in flags(r) and 'above_limit' not in flags(r)
     d = row(511, 'D- pi+ pi0', t, lk)
-    half = 0.5 * 1.5 * 0.001                                    # D- rho+ counted as limit/2 +- limit/2
-    assert d['how'] == 'node' and d['pdgids'] == 'U.1' and close(d['c'], (0.010 - half) / 0.001)
-    assert close(d['sigma_c'], math.sqrt(0.001 ** 2 + half ** 2) / 0.001)
-    # product limit: D_0*- l nu < 2e-4 (as D_0* -> Dbar0 pi-), the remainder would give c = 1.5
+    assert d['how'] == 'node' and d['pdgids'] == 'U.1' and close(d['c'], (0.010 - 0.001) / 0.001)
+    assert close(d['sigma_c'], math.sqrt(0.001 ** 2 + 0.001 ** 2) / 0.001)
+    # product limit: D_0*- l nu < 2e-4 (as D_0* -> Dbar0 pi-), below the decay file: limit/2 +- limit/2
     r = row(511, 'D_0*- e+ nu_e', t, lk)
     assert r['pdg_class'] == 'limit' and r['c'] == 1.0 and r['pdgids'] == 'U.4'
     assert {'limit_capped', 'above_limit'} <= flags(r)
@@ -684,16 +688,16 @@ def test_toy_p_min_and_closure():
     # D- pi+ pi+ pi-: 5 % of D- a_1+ (below P_MIN) and 50 % of D- rho0 pi+ feed it
     a1, rho = row(511, 'D- a_1+', t, lk), row(511, 'D- rho0 pi+', t, lk)
     assert a1['how'] == '' and a1['c'] == 1.0 and a1['pdg_class'] == 'none'
-    assert rho['how'] == 'node' and close(rho['p_node'], 0.5) and close(rho['c'], (0.002 - 0.0005) / 0.0005)
-    assert close(rho['sigma_c'], 0.0002 / 0.0005)
-    assert close(n.loc['U.7', 'bf_mc_weighted'], 0.002) and close(n.loc['U.7', 'closure'], 1.0)
-    # one line in two 3-body nodes: the more precise node gives c; the other is flagged
+    # the 50 % line reaches the node through a resonance: unmeasured, and the node keeps its MC sum
+    assert rho['how'] == '' and rho['pdg_class'] == 'none' and 'unmeasured' in flags(rho)
+    assert rho['c'] == 1.0 and close(rho['sigma_c'], 1.0)
+    assert close(n.loc['U.7', 'bf_mc_weighted'], n.loc['U.7', 'bf_mc']) and n.loc['U.7', 'role'] == 'covered'
+    # one resonance line in two 3-body nodes: no c from either; both closures are reported
     r = row(511, 'J/psi K_2*0', t, lk)
-    assert r['how'] == 'node' and r['pdgids'] == 'U.14' and close(r['c'], 1.2)
-    assert {'node_ambiguous', 'node_not_closed'} <= flags(r) and r['alt_pdgids'] == 'U.15'
-    assert r['unclosed_nodes'] == 'U.15' and n.loc['U.15', 'role'] == 'covered'
-    assert close(n.loc['U.15', 'closure'], 3.0) and close(n.loc['U.15', 'closure_pull'], 20.0)
-    assert abs(n.loc['U.14', 'closure_pull']) < 1e-6
+    assert r['how'] == '' and r['c'] == 1.0 and 'unmeasured' in flags(r) and 'node_ambiguous' not in flags(r)
+    assert n.loc['U.14', 'role'] == n.loc['U.15', 'role'] == 'covered'
+    assert close(n.loc['U.14', 'closure'], n.loc['U.14', 'bf_mc'] / 0.0006)
+    assert 'U.15' in r['unclosed_nodes'].split(';') and n.loc['U.15', 'closure_pull'] > 3
 
 
 def test_toy_independent_products():
@@ -741,7 +745,7 @@ def test_real_coverage():
     assert set(zip(TABLE['mother_pdg'], TABLE['key'])) == set(zip(modes['mother_pdg'], modes['key']))
     assert np.allclose(TABLE['bf_mc'], modes['bf_mc'])
     assert set(TABLE['pdg_class']) == {'measured', 'limit', 'none', 'inclusive'}
-    assert set(TABLE['how']) == {'exact', 'node', 'product', ''}
+    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', ''}
     meas = TABLE['how'] != ''
     assert (TABLE.loc[meas, 'pdg_class'] == 'measured').all() and (TABLE.loc[meas, 'pdgids'] != '').all()
     assert (TABLE.loc[~meas, 'c'] == 1.0).all() and TABLE['c'].notna().all() and (TABLE['c'] > 0).all()
@@ -752,7 +756,7 @@ def test_real_coverage():
     assert (pm.has_flag(TABLE, 'zero_bf') == (TABLE['bf_mc'] == 0)).all()
     known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit',
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
-             'node_ambiguous', 'node_not_closed', 'flavor_twin', ''}
+             'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin', ''}
     assert set(f for fl in TABLE['flags'] for f in fl.split(';')) <= known
     # shares of all B decays (scouting, B.12: 34 / 38.5 % plain, 6-7 % product, ~10 % none)
     for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
@@ -789,40 +793,43 @@ def test_real_semileptonic():
     assert close(r['c'], (w1 * c1 + w2 * c2) / (w1 + w2), 1e-4)
     # the broad states in B+ are well above the PDG products
     assert row(521, 'anti-D_0*0 e+ nu_e')['c'] < 0.5 and row(521, "anti-D'_10 e+ nu_e")['c'] < 0.7
-    # B0 -> D_0*- l nu has only a product limit (S042.418 < 4.4e-4), which the Dbar0 pi- l nu
-    # remainder would exceed 4 times: the line is kept out (limit, c = 1) and the direct line
-    # takes the remainder
-    r = row(511, 'D_0*- e+ nu_e')
-    assert r['pdg_class'] == 'limit' and r['how'] == '' and r['c'] == 1.0 and r['pdgids'] == 'S042.418'
-    assert {'above_limit', 'limit_capped'} <= flags(r)
-    d = row(511, 'anti-D0 pi- e+ nu_e')
-    assert d['how'] == 'node' and d['pdgids'] == 'S042.311' and 2.2 < d['c'] < 2.7
-    assert 'remainder_unstable' not in flags(d) and 0.25 < d['sigma_c'] < 0.5
-    # with the other priority the D** lines take the D(*) pi l nu nodes
-    old = pm.PRODUCT_BEFORE_NODE
-    pm.PRODUCT_BEFORE_NODE = False
-    try:
-        t2 = pm.build_mode_pdg_table(MODES, PDG, dec_all=DEC_ALL, pdl=PDL)
-    finally:
-        pm.PRODUCT_BEFORE_NODE = old
-    r1, r2 = row(511, 'D_1- e+ nu_e'), pm.pdg_info(t2, 511, code('D_1- e+ nu_e'))
-    assert r2['how'] == 'node' and r2['pdgids'] == 'S042.312' and close(r2['c_prod'], r1['c_prod'])
-    assert r2['c'] < 0.8 < r1['c']
-    assert pm.pdg_info(t2, 511, code('D_s0*+ D-'))['how'] == 'product'
+    # B0 -> D_0*- l nu has only a product limit (S042.418 < 4.4e-4): by exception it takes the c of
+    # its isospin partner B+ -> anti-D_0*0 l nu (product S041.503); it stays above the limit
+    src = row(521, 'anti-D_0*0 e+ nu_e')
+    for names in ('D_0*- e+ nu_e', 'D_0*- mu+ nu_mu'):
+        r = row(511, names)
+        assert r['pdg_class'] == 'measured' and r['how'] == 'isospin' and r['pdgids'] == 'S041.503', names
+        assert close(r['c'], src['c']) and close(r['sigma_c'], src['sigma_c']) and 0.3 < r['c'] < 0.4
+        assert {'isospin', 'exception_applied', 'above_limit'} <= flags(r)
+        assert close(r['bf_pdg'], r['c'] * 0.00362)
+    assert close(row(-511, 'D_0*+ e- anti-nu_e')['c'], src['c'])
+    # the non-resonant D(*) pi l nu lines are not measured (exception, M2): c = 1 +- 1
+    for m, names in ((511, 'anti-D0 pi- e+ nu_e'), (511, 'anti-D*0 pi- mu+ nu_mu'),
+                     (521, 'D*- pi+ e+ nu_e'), (521, 'D- pi+ mu+ nu_mu')):
+        d = row(m, names)
+        assert d['pdg_class'] == 'none' and d['how'] == '' and d['c'] == 1.0 and close(d['sigma_c'], 1.0), names
+        assert {'unmeasured', 'exception_applied'} <= flags(d) and 'remainder_unstable' not in flags(d)
+    # the D** lines keep their product c whatever the D(*) pi l nu totals say
+    assert row(511, 'D_1- e+ nu_e')['how'] == 'product' and row(511, 'D_s0*+ D-')['how'] == 'product'
 
 
 def test_real_jpsi():
     n = NODES.set_index('uid')
     # J/psi K+ pi-: the K* lines are part of the PDG final state
     node = n.loc['S042.4']
-    assert node['description'] == 'B0 --> J/psi(1S) K+ pi-' and node['role'] == 'node'
+    assert node['description'] == 'B0 --> J/psi(1S) K+ pi-' and node['role'] == 'unstable'
     direct = row(511, 'J/psi K+ pi-')
     assert 3.5 < node['value'] / direct['bf_mc'] < 4.1           # line by line: wrong
     assert 0.82 < node['ratio'] < 0.92 and node['n_feeders'] == 3  # after folding K*, K_2*
     kst = row(511, 'J/psi K*0')
     assert kst['how'] == 'exact' and kst['pdgids'] == 'S042.22' and 0.95 < kst['c'] < 1.05
     assert close(kst['bf_mc'], 0.0002117 * 2 + 0.000847, 1e-3)    # K*0, K*S, K*L, K*0T lines
-    assert direct['how'] == 'node' and direct['pdgids'] == 'S042.4' and 0.4 < direct['c'] < 0.9
+    # J/psi K_2*0 has no entry of its own (c = 1 +- 1); what is left for the direct line is more
+    # than 100 % uncertain, so it gets no c either and the node stays open
+    k2 = row(511, 'J/psi K_2*0')
+    assert k2['how'] == '' and 'unmeasured' in flags(k2)
+    assert direct['how'] == '' and direct['c'] == 1.0 and {'unmeasured', 'remainder_unstable'} <= flags(direct)
+    assert node['closure_pull'] > 3 and 'node_not_closed' in flags(direct)
     # the anti-B0 block writes the K*S / K*L lines with a K*0
     a, b = row(-511, 'J/psi anti-K*0'), row(-511, 'J/psi K*0')
     assert close(a['c'], kst['c']) and close(b['c'], kst['c'])
@@ -907,8 +914,8 @@ def test_real_review_fixes():
                        ('K*+ chi_c0', 'S041.435')):
         r = row(521, names)
         assert r['pdg_class'] == 'limit' and r['c'] == 1.0 and r['pdgids'] == pid, names
-        assert 'limit_capped' in flags(r), names
-    assert 'above_limit' in flags(row(521, 'anti-D_10 rho+'))
+        assert ('limit_capped' in flags(r)) == ('above_limit' in flags(r)), names
+    assert {'above_limit', 'limit_capped'} <= flags(row(521, 'anti-D_10 rho+'))
     r = row(521, 'chi_c0 K0 pi+')
     assert r['how'] == 'node' and r['pdgids'] == 'S041.799' and 6.5 < r['c'] < 7.2
     # exceptions: D*+- D-+ is a charge sum; psi(2S) K_1(1270) S041.858 is one partial wave
@@ -916,8 +923,14 @@ def test_real_review_fixes():
         r = row(m, names)
         assert r['how'] == 'node' and r['pdgids'] == 'S042.511' and 0.95 < r['c'] < 1.05, names
         assert 'exception_applied' in flags(r)
+    # psi(2S) K_1+ reaches the psi(2S) K+ pi+ pi- total through the K_1: unmeasured; the direct
+    # line takes the total minus the K_1 part (1.43e-4 +- 100 %)
     r = row(521, 'psi(2S) K_1+')
-    assert r['pdgids'] == 'S041.144' and r['how'] == 'node' and 'exception_applied' in flags(r)
+    assert r['how'] == '' and r['c'] == 1.0 and close(r['sigma_c'], 1.0)
+    assert {'unmeasured', 'exception_applied'} <= flags(r)
+    r = row(521, 'psi(2S) K+ pi+ pi-')
+    assert r['how'] == 'node' and r['pdgids'] == 'S041.144' and 0.6 < r['c'] < 0.75 and 0.3 < r['sigma_c'] < 0.4
+    assert abs(NODES.set_index('uid').loc['S041.144', 'closure_pull']) < 1e-6
     # repeated product measurements are used once
     r = row(511, "D'_s1+ D*-")
     assert r['pdgids'] == 'S042.490' and r['n_prod'] == 1 and 0.55 < r['c'] < 0.65
@@ -928,13 +941,57 @@ def test_real_review_fixes():
     r = row(521, 'anti-D*0 K+ K*0')
     assert 'flavor_twin' in flags(r) and r['twin_pdgids'] == 'S041.289' and r['c'] == 1.0
     assert row(511, 'D*+ K0 pi-')['twin_pdgids'] == 'S042.314'
-    r = row(511, "D'_1- pi+")
-    assert 'node_ambiguous' in flags(r) and r['alt_pdgids'] == 'S042.239'
+    r = row(511, "D'_1- pi+")                                  # was c = 79 from a remainder
+    assert r['how'] == '' and r['c'] == 1.0 and 'unmeasured' in flags(r) and 'node_ambiguous' not in flags(r)
+    r = row(521, "anti-D'_10 rho+")                            # was c = 17
+    assert r['how'] == '' and r['c'] == 1.0 and 'unmeasured' in flags(r)
     # B- -> D*0 K- K*0 has 2.5 times the BF of the conjugate B+ line: no c carried over
     r = row(-521, 'D*0 K- K*0')
     assert 'block_asymmetric' in flags(r) and r['c'] == 1.0 and r['how'] == ''
     assert 'block_asymmetric' in flags(row(-521, 'D*0 K- anti-K*0'))
     assert 'block_asymmetric' not in flags(row(-511, 'J/psi anti-K*0'))
+
+
+def test_isospin():
+    # u <-> d partners
+    for a, b in (('D-', 'anti-D0'), ('D*-', 'anti-D*0'), ('D_0*-', 'anti-D_0*0'), ('D_2*+', 'D_2*0'),
+                 ('K+', 'K0'), ('K-', 'anti-K0'), ('K*+', 'K*0'), ('K_1+', 'K_10'), ('pi+', 'pi-'),
+                 ('rho+', 'rho-'), ('a_1+', 'a_1-')):
+        ca, cb = PDL.name_to_pdg[a], PDL.name_to_pdg[b]
+        assert pm.isospin_partner_code(ca) == cb and pm.isospin_partner_code(cb) == ca, (a, b)
+    for a in ('pi0', 'eta', 'rho0', 'omega', 'phi', 'J/psi', 'psi(2S)', 'D_s+', 'D_s0*+', 'e+', 'nu_e', 'gamma'):
+        assert pm.isospin_partner_code(PDL.name_to_pdg[a]) == PDL.name_to_pdg[a], a
+    assert pm.isospin_partner_code(PDL.name_to_pdg['p+']) is None
+    k = pm.collapse_key(code('D_0*- e+ nu_e'))
+    assert pm.isospin_partner_keys(k, PDL, 3) == [pm.collapse_key(code('anti-D_0*0 e+ nu_e'))]
+    # the collapsed K0 of a B0 line is a K+ in the B+ partner (charge decides)
+    assert pm.isospin_partner_keys(pm.collapse_key(code('J/psi K_S0')), PDL, 3) == [pm.collapse_key(code('J/psi K+'))]
+    assert pm.isospin_partner_keys(pm.collapse_key(code('J/psi K+ pi-')), PDL, 3) == \
+        [pm.collapse_key(code('J/psi K0 pi+'))]
+    # the report: pairs of the isospin-conserving transitions only
+    iso = pm.isospin_report(TABLE, PDL)
+    assert set(iso['kind']) == {'sl', 'ccs'} and set(iso['status']) == {'both', 'only_b0', 'only_bp', 'neither'}
+    r = iso[iso['names_b0'] == 'D- e+ nu_e'].iloc[0]
+    assert r['names_bp'] == 'anti-D0 e+ nu_e' and r['status'] == 'both' and abs(r['r_mc'] - 1) < 0.01
+    assert abs(r['pull']) < 2 and 0.9 < r['r_pdg'] < 1.1
+    assert not (iso['names_b0'] == 'D- pi+').any() and not (iso['names_b0'] == 'pi- e+ nu_e').any()
+    both = iso[iso['status'] == 'both']
+    assert len(both) > 40 and (both['pull'].abs() > 3).sum() == 0
+    # the lines fixed by the isospin exception are not counted as measured twice
+    r = iso[iso['names_b0'] == 'D_0*- e+ nu_e'].iloc[0]
+    assert r['status'] == 'only_bp' and r['how_b0'] == 'isospin' and close(r['c_b0'], r['c_bp'])
+    # toy: the B0 line D_1- pi+ takes the c of a B+ line; a source without an own c is refused
+    t0, _, lk0 = toy()
+    src = row(511, 'D_s0*+ D-', t0, lk0)
+    assert src['how'] == 'product'
+    for bad in (dict(mother=511, key=code('D- rho+'), action='isospin', from_mother=521,
+                     from_key=code('anti-D0 rho+'), reason='test'),):
+        try:
+            toy([bad])
+        except (ValueError, KeyError):
+            pass
+        else:
+            raise AssertionError('accepted an isospin source without an own c')
 
 
 def test_csv_round_trip():
