@@ -514,11 +514,12 @@ def test_toy_conjugate_blocks():
     a, b = row(-511, 'J/psi anti-K*0', t, lk), row(-511, 'J/psi K*0', t, lk)
     assert close(a['c'], 1.2) and close(b['c'], 1.2) and close(a['bf_mc'], 0.0006)
     assert 'block_asymmetric' not in flags(a) and 'block_asymmetric' in flags(b)
-    # J/psi K0: the anti-B0 block has K_S0 only (BF 0.002 against 0.004 in B0): the c of B0 is
-    # not carried over
-    r = row(-511, 'J/psi K_S0', t, lk)
-    assert 'block_asymmetric' in flags(r) and r['c'] == 1.0 and r['how'] == '' and r['pdg_class'] == 'measured'
-    assert close(r['bf_mc_sum'], 0.002)
+    # J/psi K0: the anti-B0 block has K_S0 only (BF 0.002 against 0.004 in B0): the corrected BF of
+    # B0 is transferred (c x 0.004 / 0.002), flag cp_transfer
+    r, src = row(-511, 'J/psi K_S0', t, lk), row(511, 'J/psi K_S0', t, lk)
+    assert {'block_asymmetric', 'cp_transfer'} <= flags(r) and r['how'] == src['how'] and r['pdg_class'] == 'measured'
+    assert close(r['bf_mc_sum'], 0.002) and close(r['c'], src['c'] * 0.004 / 0.002)
+    assert close(r['sigma_c'], src['sigma_c'] * 0.004 / 0.002)
     # a final state of one block only
     r = row(-511, 'K0 pi0', t, lk)
     assert r['pdg_class'] == 'none' and r['c'] == 1.0 and 'block_asymmetric' in flags(r)
@@ -702,9 +703,9 @@ def test_toy_limit_caps():
             pass
         else:
             raise AssertionError(f'accepted: {bad}')
-    # with c = 1 kept for the capped line the node does not close; both lines say so
-    assert 'node_not_closed' in flags(d) and d['unclosed_nodes'] == 'U.3'
-    assert n.loc['U.3[e]', 'role'] == 'node' and n.loc['U.3[e]', 'closure_pull'] > 3
+    # the closure counts the capped line with the same limit/2 as the remainder: the node closes
+    assert 'node_not_closed' not in flags(d) and d['unclosed_nodes'] == ''
+    assert n.loc['U.3[e]', 'role'] == 'node' and abs(n.loc['U.3[e]', 'closure_pull']) < 1e-6
     # above_limit is tested on max(1, c) x BF: exact c = 2, product limit 1.5e-3 on 1e-3 x 1.0
     r = row(511, 'D_s0*+ D-', t, lk)
     assert r['how'] == 'exact' and close(r['c'], 2.0) and 'above_limit' in flags(r)
@@ -757,10 +758,10 @@ def test_toy_twins_and_block_bf():
     r = row(521, 'anti-D*0 K+ K*0', t, lk)
     assert r['pdg_class'] == 'none' and 'flavor_twin' in flags(r) and r['twin_pdgids'] == 'U.20'
     assert close(row(521, 'anti-D*0 K+ anti-K*0', t, lk)['c'], 2.0)
-    # B- swaps the two BFs: the c of B+ (formed with 6e-4) is not carried to the 1.5e-3 line
+    # B- swaps the two BFs: the corrected BF of B+ (c = 2 on 6e-4) is transferred to the 1.5e-3 line
     r = row(-521, 'D*0 K- K*0', t, lk)
-    assert 'block_asymmetric' in flags(r) and r['c'] == 1.0 and r['how'] == '' and r['pdgids'] == 'U.20'
-    assert close(r['bf_mc_sum'], 0.0015)
+    assert {'block_asymmetric', 'cp_transfer'} <= flags(r) and r['pdgids'] == 'U.20'
+    assert close(r['bf_mc_sum'], 0.0015) and close(r['c'], 2.0 * 0.0006 / 0.0015)
     r = row(-521, 'D*0 K- anti-K*0', t, lk)
     assert 'block_asymmetric' in flags(r) and r['pdg_class'] == 'none'
     # the mirrored anti-B0 block carries everything over
@@ -777,13 +778,15 @@ def test_real_coverage():
     assert set(zip(TABLE['mother_pdg'], TABLE['key'])) == set(zip(modes['mother_pdg'], modes['key']))
     assert np.allclose(TABLE['bf_mc'], modes['bf_mc'])
     assert set(TABLE['pdg_class']) == {'measured', 'limit', 'none', 'inclusive'}
-    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', ''}
+    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', 'veto', ''}
     meas = TABLE['how'] != ''
-    hl = TABLE['how'] == 'half_limit'
-    assert (TABLE.loc[meas & ~hl, 'pdg_class'] == 'measured').all() and (TABLE.loc[meas, 'pdgids'] != '').all()
-    assert (TABLE.loc[hl, 'pdg_class'] == 'limit').all()
+    hl, vt = TABLE['how'] == 'half_limit', TABLE['how'] == 'veto'
+    assert (TABLE.loc[meas & ~hl & ~vt, 'pdg_class'] == 'measured').all()
+    assert (TABLE.loc[meas & ~vt, 'pdgids'] != '').all()
+    assert (TABLE.loc[hl, 'pdg_class'] == 'limit').all() and (TABLE.loc[vt, 'pdg_class'] == 'none').all()
+    assert (TABLE.loc[vt, 'c'] == 0).all() and vt.sum() == 2                  # B+ line 4349 and its B- conjugate
     assert (TABLE.loc[~meas, 'c'] == 1.0).all() and TABLE['c'].notna().all() and (TABLE['c'] >= 0).all()
-    zero = TABLE['c'] == 0                                         # only clamped remainders
+    zero = (TABLE['c'] == 0) & (TABLE['how'] != 'veto')            # only clamped remainders
     assert zero.any() and (pm.has_flag(TABLE, 'remainder_clamped') == zero).all()
     assert TABLE.loc[meas, 'sigma_c'].notna().all() and TABLE.loc[~meas, 'pull'].isna().all()
     incl = TABLE['pdg_class'] == 'inclusive'
@@ -793,7 +796,7 @@ def test_real_coverage():
     known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit',
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
              'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin',
-             'remainder_clamped', 'measurement_conflict', ''}
+             'remainder_clamped', 'measurement_conflict', 'cp_transfer', 'order_dependent', ''}
     assert set(f for fl in TABLE['flags'] for f in fl.split(';')) <= known
     # shares of all B decays (scouting, B.12: 34 / 38.5 % plain, 6-7 % product, ~10 % none)
     for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
@@ -1023,17 +1026,29 @@ def test_real_review_fixes():
     assert row(511, "D'_s1+ D-")['pdgids'] == 'S042.489'
     assert row(521, "anti-D'_10 pi+")['n_prod'] == 1
     # flags for the analyst
-    r = row(521, 'anti-D*0 K+ K*0')
-    assert 'flavor_twin' in flags(r) and r['twin_pdgids'] == 'S041.289' and r['c'] == 1.0
-    assert row(511, 'D*+ K0 pi-')['twin_pdgids'] == 'S042.314'
+    assert row(511, 'D*+ K0 pi-')['pdgids'] == 'S042.314'      # no longer a twin: part of the sum
     r = row(511, "D'_1- pi+")                                  # was c = 79 from a remainder
     assert r['how'] == '' and r['c'] == 1.0 and 'unmeasured' in flags(r) and 'node_ambiguous' not in flags(r)
     r = row(521, "anti-D'_10 rho+")                            # was c = 17
     assert r['how'] == '' and r['c'] == 1.0 and 'unmeasured' in flags(r)
-    # B- -> D*0 K- K*0 has 2.5 times the BF of the conjugate B+ line: no c carried over
-    r = row(-521, 'D*0 K- K*0')
-    assert 'block_asymmetric' in flags(r) and r['c'] == 1.0 and r['how'] == ''
-    assert 'block_asymmetric' in flags(row(-521, 'D*0 K- anti-K*0'))
+    # G6: B+ -> anti-D*0 K+ K*0 (line 4349, Delta S = 2, Belle 2002's value with the K*0 not flipped)
+    # is vetoed; its B- conjugate (5888) inherits c = 0. The allowed B- line (5892, 1.5e-3) takes the
+    # corrected BF of the allowed B+ line (4345, 5.9e-4): c x 5.9e-4 / 1.5e-3
+    v = row(521, 'anti-D*0 K+ K*0')
+    assert v['how'] == 'veto' and v['c'] == 0.0 and v['sigma_c'] == 0.0 and 'c_extreme' not in flags(v)
+    assert row(-521, 'D*0 K- anti-K*0')['c'] == 0.0
+    a, b = row(521, 'anti-D*0 K+ anti-K*0'), row(-521, 'D*0 K- K*0')
+    assert {'block_asymmetric', 'cp_transfer'} <= flags(b) and close(b['c'], a['c'] * 0.00059 / 0.0015)
+    assert close(b['sigma_c'], a['sigma_c'] * 0.00059 / 0.0015) and 0.15 < b['c'] < 0.25
+    # G6: S042.314 is the sum of both charge combinations (BaBar 2005, K_S): D*- K0 pi+ and D*+ K0 pi-
+    # share the remainder after D*- K*+ (exact)
+    n = NODES.set_index('uid').loc['S042.314']
+    x, y, kst = row(511, 'D*- K0 pi+'), row(511, 'D*+ K0 pi-'), row(511, 'D*- K*+')
+    fk = {k: v for k, v, _ in n['feeders']}
+    sub = kst['c'] * fk[pm.collapse_key(code('D*- K*+'))]
+    assert x['how'] == y['how'] == 'node' and close(x['c'], y['c'])
+    assert close(x['c'], (n['value'] - sub) / (0.0003 + 0.0003))
+    assert abs(n['closure_pull']) < 1e-6
     assert 'block_asymmetric' not in flags(row(-511, 'J/psi anti-K*0'))
 
 
@@ -1093,7 +1108,7 @@ def test_isospin():
 
 
 def test_node_columns_and_report():
-    # decay-file line numbers, fed totals and their summary text (point 2 of 2026-11-18)
+    # decay-file line numbers, fed totals and their summary text (point 2 of 2026-11-17)
     r = row(511, 'D_1- e+ nu_e')
     assert r['dec_lines'] == '368'
     r = row(511, 'K*0 psi(3770)')
@@ -1111,6 +1126,35 @@ def test_node_columns_and_report():
     assert close(x['value'], 3.50740e-4, 1e-4) and x['n_feeders'] == 3 and '597' in x['feeders']
     assert abs(x['closure_pull']) > 3 and set(rep['mother']) == {511, 521}
     assert rep['uid'].is_unique
+
+
+def test_review_fixes_nov17():
+    # node report: a K0 final state lists its K_S0 / K_L0 lines with BF > 0, not the zero-BF K0 line
+    rep = pm.node_report(NODES, TABLE, PDL).set_index('uid')
+    item = [x for x in rep.loc['S042.264', 'feeders'].split(' | ') if x.startswith('K0 psi(3770)')][0]
+    assert '[593 594]' in item.replace(',', ' ') or ('593' in item and '594' in item and '592' not in item), item
+    # the isospin target carries the extra relative uncertainty of its source
+    assert close(row(511, 'psi(3770) K_S0')['extra_rel'], 0.65) and close(row(521, 'psi(3770) K+')['extra_rel'], 0.65)
+    # a forced line keeps its class and enters the remainder with 1 +- 1, even with an own limit
+    exc = [dict(mother=511, key=code('D_0*- e+ nu_e'), action='force_class', reason='test', **{'class': 'none'})]
+    t, _, lk = toy(exc, TOY2_PDG, TOY2_DEC)
+    r = row(511, 'D_0*- e+ nu_e', t, lk)
+    assert r['pdg_class'] == 'none' and r['c'] == 1.0 and close(r['sigma_c'], 1.0) and 'limit_capped' not in flags(r)
+    d = row(511, 'anti-D0 pi- e+ nu_e', t, lk)
+    # in TOY2 the D_0*- line feeds anti-D0 pi- l nu with BF x P = 0.002 x 0.5 = 0.001 (c = 1)
+    assert d["how"] == "node" and close(d["c"], (0.003 - 0.001) / 0.001)
+    # an extra uncertainty on a line that takes its c from a node is applied before larger nodes
+    # subtract it: the 4-body direct line of the toy sees the widened sigma
+    base, nb, lkb = toy()
+    exc = [dict(mother=511, key=code('D*- rho0 pi+'), action='extra_uncertainty', relative=1.0, reason='test')]
+    te, ne, lke = toy(exc)
+    r3b, r3 = row(511, 'D*- rho0 pi+', base, lkb), row(511, 'D*- rho0 pi+', te, lke)
+    assert close(r3['sigma_c'], math.hypot(r3b['sigma_c'], 1.0 * r3b['c']))
+    r4b, r4 = row(511, 'D*- pi+ pi+ pi-', base, lkb), row(511, 'D*- pi+ pi+ pi-', te, lke)
+    sub4 = 1.2 * 0.010 + r3b['c'] * 0.002
+    s4 = math.hypot(math.sqrt(0.0002 ** 2 + (0.05 * 0.010) ** 2 + (r3['sigma_c'] * 0.002) ** 2),
+                    pm.F_INTERFERENCE * sub4) / 0.001
+    assert close(r4['c'], r4b['c']) and close(r4['sigma_c'], s4) and r4['sigma_c'] > r4b['sigma_c']
 
 
 def test_csv_round_trip():

@@ -191,18 +191,18 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,-11 12 211 -211 -411,D- pi+ pi- e+ nu_e,measured,node,S042.556,0.00021,0.00145,1.37757,1.58823,0.237732,0.852131,0.703448,,remainder_unstable,,,,0.00126042,run1_e_wc_combCR:comb:ell:511,0,flag
 511,313 423 -423,D*0 anti-D*0 K*0,none,,,0.001,,1,,,,,,,,,,0.00122448,run1_e_combCR:comb:ell:511,8,top95
 521,111 111 -421 433,D_s*+ anti-D0 pi0 pi0,none,,,0.0008,,1,,,,,,,,,,0.00117988,run2_e_combCR:comb:ell:521,8,top95
-511,211 311 -413,D*- K0 pi+,measured,node,S042.314,0.0003,0.0003,0.268032,0.323209,-2.26469,0.422621,0.731968,,block_asymmetric;c_extreme;remainder_unstable;resonance_mismatch,,,,0.00105236,run2_mu_SR:comb:D:511,0,flag
+511,211 311 -413,D*- K0 pi+,measured,node,S042.314,0.0003,0.0003,0.134016,0.161604,-5.35867,0.267926,0.731968,,block_asymmetric;c_extreme;exception_applied;remainder_unstable;resonance_mismatch,,,,0.00105236,run2_mu_SR:comb:D:511,0,pull;flag
 521,-313 321 -423,anti-D*0 K+ anti-K*0,measured,node,S041.289,0.00059,0.00122914,0.494197,0.594497,-0.850808,0.603406,0.76278,,remainder_unstable,,,,0.00103668,run1_e_combCR:comb:ell:521,1,top95;flag
 521,111 111 -421 431,D_s+ anti-D0 pi0 pi0,none,,,0.0008,,1,,,,,,,,,,0.000975532,run1_e_SR:comb:ell:521,8,top95
 521,111 211 2212 -4122,anti-Lambda_c- p+ pi+ pi0,measured,exact,S041.236,0.00181,0.00181,1,0.324147,0,,,,,,,,0.000955313,run1_e_combCR:comb:ell:521,5,top95
 511,211 -10411,D_0*- pi+,measured,product,S042.385,0.00042,7.59187e-05,0.271125,0.0269907,-27.0047,0.467313,0.720843,0.271125,c_extreme;exception_applied,,,,0.000935545,run1_e_wc_combCR:hadB:D:511,1,top95;pull;flag
 521,323 -421,K*+ anti-D0,measured,exact,S041.279,0.00053194,0.000531945,1.00001,0.0836773,0.000103822,,,,,,,,0.000929376,run2_e_SR:comb:ell:521,2,top95
 521,323 443,J/psi K*+,measured,exact,S041.142,0.00143,0.00142994,0.99996,0.0567093,-0.000705602,0.857076,0.843215,,,,,,0.000871963,run2_e_combCR:comb:ell:521,4,top95
-521,313 321 -423,anti-D*0 K+ K*0,none,,,0.0015,,1,,,,,,flavor_twin,,,S041.289,0.000866151,run2_e_SR:comb:ell:521,5,top95;flag
+521,313 321 -423,anti-D*0 K+ K*0,none,veto,,0.0015,,0,0,,,,,exception_applied;flavor_twin,,,S041.289,0.000866151,run2_e_SR:comb:ell:521,5,top95;flag
 511,313 421 -423,D0 anti-D*0 K*0,none,,,0.0005,,1,,,,,,,,,,0.000842143,run2_e_SR:comb:ell:511,3,top95
 511,111 211 -211 -421,anti-D0 pi- pi+ pi0,none,,,0.001,,1,,,,,,,,,,0.000782436,run1_e_SR:comb:ell:511,4,top95
 511,311 421 -423,D0 anti-D*0 K0,measured,node,S042.268,0.00052,0.00108,1.06931,0.476895,0.14533,0,0,,,,,,0.000777178,run2_e_combCR:comb:ell:511,6,top95
-511,-211 311 413,D*+ K0 pi-,none,,,0.0003,,1,,,,,,block_asymmetric;flavor_twin,,,S042.314,0.000776001,run1_mu_combCR:comb:D:511,0,flag
+511,-211 311 413,D*+ K0 pi-,measured,node,S042.314,0.0003,0.0003,0.134016,0.161604,-5.35867,0.267926,0.731968,,block_asymmetric;c_extreme;exception_applied;remainder_unstable;resonance_mismatch,,,,0.000776001,run1_mu_combCR:comb:D:511,0,pull;flag
 511,313 421 -421,D0 anti-D0 K*0,none,,,0.0005,,1,1,,1,0,,node_not_closed;unmeasured,,S042.609,,0.000730082,run1_e_SR:comb:ell:511,3,top95;flag
 521,323 -423,anti-D*0 K*+,measured,exact,S041.280,0.0008124,0.000812397,0.999996,0.16771,-2.33846e-05,,,,,,,,0.000727758,run2_mu_combCR:comb:ell:521,3,top95
 521,443 10323,J/psi K_1+,measured,exact,S041.271,0.0018,0.0018,1,0.287443,0,0.400187,0.61875,,,,,,0.00070469,run2_e_combCR:comb:ell:521,2,top95
@@ -211,7 +211,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,211 -415,D_2*- pi+,measured,product,S042.124,0.00043,0.000238312,1.38623,0.0910811,4.24048,0.467313,0.720843,1.38623,exception_applied,,,,0.00065152,run1_mu_wc_combCR:comb:D:511,0,pull;flag
 511,313 -421 423,D*0 anti-D0 K*0,none,,,0.0005,,1,,,,,,,,,,0.000632043,run1_e_SR:comb:ell:511,1,top95
 511,311 -421 423,D*0 anti-D0 K0,measured,node,S042.268,0.00049,0.00108,1.06931,0.476895,0.14533,0,0,,,,,,0.000627161,run1_e_combCR:comb:ell:511,3,top95
-511,323 -413,D*- K*+,measured,exact,S042.210,0.00032971,0.000329712,1.00001,0.186264,3.63149e-05,0.422621,0.731968,,resonance_mismatch,,,,0.000619935,run2_e_SR:comb:ell:511,1,top95;flag
+511,323 -413,D*- K*+,measured,exact,S042.210,0.00032971,0.000329712,1.00001,0.186264,3.63149e-05,0.267926,0.731968,,exception_applied;resonance_mismatch,,,,0.000619935,run2_e_SR:comb:ell:511,1,top95;flag
 521,-15 16 111,pi0 tau+ nu_tau,none,,,5.0804e-05,,1,,,,,,tau,,,,0.000618254,run2_e_SR:comb:ell:521,0,flag
 511,443 10313,J/psi K_10,measured,exact,S042.203,0.0013,0.0013,1,0.359157,0,0.407979,0.621739,,node_not_closed,,S042.211,,0.000553229,run2_mu_SR:comb:ell:511,4,top95;flag
 511,313 443,J/psi K*0,measured,exact,S042.22,0.00127,0.0012652,0.996219,0.0362945,-0.104177,0.769679,0.732356,,,,,,0.000517784,run2_e_SR:comb:ell:511,3,top95
@@ -280,14 +280,14 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 521,211 311 10441,chi_c0 K0 pi+,measured,node,S041.799,0.0002,0.00145,6.7838,1.13514,5.09523,0.317967,0,,c_extreme,,,,4.18246e-05,run1_e_combCR:comb:ell:521,0,pull;flag
 511,13 -13 311,K0 mu+ mu-,measured,node,S042.17,5.4e-07,3.38565e-07,0.626675,0.0651031,-5.73436,0.000408907,0.000487101,,node_ambiguous,S042.275,,,2.22472e-05,run1_mu_combCR:comb:ell:511,0,pull;flag
 511,113 443,J/psi rho0,none,,,2.545e-05,,1,1,,0.573234,0.0964583,,unmeasured,,,,2.20354e-05,run1_mu_combCR:comb:ell:511,0,flag
-511,-211 100323,K'*+ pi-,limit,,S042.369,8.6e-05,3.8e-06,1,,,0.627919,0.136202,,above_limit;limit_capped;node_not_closed,,S042.84,,1.75078e-05,run1_e_wc_combCR:comb:ell:511,0,flag
-511,225 313,f_2 K*0,none,,,1.8e-05,,1,1,,0.627919,0.136202,,node_not_closed;unmeasured,,S042.84,,1.12e-05,run1_e_combCR:comb:ell:511,0,flag
+511,-211 100323,K'*+ pi-,limit,,S042.369,8.6e-05,3.8e-06,1,,,0.627919,0.136202,,above_limit;limit_capped,,,,1.75078e-05,run1_e_wc_combCR:comb:ell:511,0,flag
+511,225 313,f_2 K*0,none,,,1.8e-05,,1,1,,0.627919,0.136202,,unmeasured,,,,1.12e-05,run1_e_combCR:comb:ell:511,0,flag
 511,313 335,f'_2 K*0,none,,,3.7e-05,,1,1,,0.454292,0.0295595,,unmeasured,,,,9.12227e-06,run1_e_wc_combCR:comb:ell:511,0,flag
 511,15 -15 313,K*0 tau+ tau-,limit,,S042.629,2e-07,0.0018,1,,,,,,tau,,,,9.02921e-06,run1_e_wc_combCR:comb:ell:511,0,flag
 511,113 10311,rho0 K_0*0,measured,exact,S042.498,2.7e-05,2.7e-05,1,0.209513,0,0.918583,9.16794,,node_not_closed,,S042.461,,8.83969e-06,run1_e_wc_combCR:comb:ell:511,0,flag
 -511,313 443,J/psi K*0,measured,exact,S042.22,0.000423334,0.0012652,0.996219,0.0362945,-0.104177,0.769679,0.732356,,block_asymmetric,,,,0,,0,flag
--511,-211 311 413,D*+ K0 pi-,measured,node,S042.314,0.0003,0.0003,0.268032,0.323209,-2.26469,0.422621,0.731968,,block_asymmetric;c_extreme;remainder_unstable;resonance_mismatch,,,,0,,0,flag
--511,211 311 -413,D*- K0 pi+,none,,,0.0003,,1,,,,,,block_asymmetric;flavor_twin,,,S042.314,0,,0,flag
+-511,-211 311 413,D*+ K0 pi-,measured,node,S042.314,0.0003,0.0003,0.134016,0.161604,-5.35867,0.267926,0.731968,,block_asymmetric;c_extreme;exception_applied;remainder_unstable;resonance_mismatch,,,,0,,0,pull;flag
+-511,211 311 -413,D*- K0 pi+,measured,node,S042.314,0.0003,0.0003,0.134016,0.161604,-5.35867,0.267926,0.731968,,block_asymmetric;c_extreme;exception_applied;remainder_unstable;resonance_mismatch,,,,0,,0,pull;flag
 -511,313 100441,K*0 eta_c(2S),limit,,S042.436,0.00022,0.00039,1,,,,,,above_limit;block_asymmetric,,,,0,,0,flag
 -511,313 441,K*0 eta_c,measured,exact,S042.240,0.00021,0.000532141,0.844668,0.173841,-0.893527,0.677419,0.452864,,block_asymmetric,,,,0,,0,flag
 -511,313 100443,psi(2S) K*0,measured,exact,S042.69,0.000196666,0.000593875,1.00657,0.0728225,0.0902178,0.67816,0.681625,,block_asymmetric,,,,0,,0,flag
@@ -296,19 +296,17 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 521,22 30323,K''*+ gamma,measured,exact,S041.56,6.67e-05,6.67e-05,1,0.232047,0,1,1.82875,,node_not_closed,,S041.307;S041.308;S041.474,,0,,0,flag
 -511,313 10441,K*0 chi_c0,measured,exact,S042.327,5.6e-05,0.00017,1.00592,0.213346,0.027735,,,,block_asymmetric,,,,0,,0,flag
 521,211 -211 321 443,J/psi K+ pi+ pi-,measured,node,S041.19,5.5137e-05,0.000811418,1.05012,5.11637,0.00979572,0.931854,0.788139,,remainder_unstable,,,,0,,0,flag
-511,211 -211 313,pi- pi+ K*0,measured,node,S042.84,5.112e-05,5.45e-05,0,0.627308,-1.59411,0.627919,0.136202,,c_extreme;node_not_closed;remainder_clamped;remainder_unstable,,S042.84,,0,,0,flag
+511,211 -211 313,pi- pi+ K*0,measured,node,S042.84,5.112e-05,5.45e-05,0,0.627308,-1.59411,0.627919,0.136202,,c_extreme;remainder_clamped;remainder_unstable,,,,0,,0,flag
 521,311 -311 321,K+ K0 anti-K0,none,,,4.6e-05,,1,,,,,,multi_ks,,,,0,,0,flag
 521,22 10323,K_1+ gamma,measured,exact,S041.53,4.38e-05,4.37972e-05,0.999935,0.153246,-0.00042417,1,1.82875,,node_not_closed,,S041.307;S041.308;S041.309;S041.474,,0,,0,flag
 511,22 10313,K_10 gamma,limit,,S042.38,4.3e-05,5.8e-05,1,,,1,0.0923435,,node_not_closed,,S042.376,,0,,0,flag
 511,22 313,K*0 gamma,measured,exact,S042.16,4.177e-05,4.20698e-05,1.00718,0.0569777,0.125983,1,6.98903,,node_not_closed,,S042.231,,0,,0,flag
 521,323 335,f'_2 K*+,none,,,3.7e-05,,1,1,,0.41278,0.0144912,,unmeasured,,,,0,,0,flag
 511,311 321 -321,K+ K- K0,measured,node,S042.81,3.3e-05,2.67886e-05,0.715689,0.0393847,-7.21882,0.0377624,0.456099,,resonance_mismatch,,,,0,,0,pull;flag
-511,-211 10323,K_1+ pi-,limit,,S042.472,2.52e-05,3e-05,1,,,0.918583,9.16794,,node_not_closed,,S042.461;S042.84,,0,,0,flag
+511,-211 10323,K_1+ pi-,limit,,S042.472,2.52e-05,3e-05,1,,,0.918583,9.16794,,node_not_closed,,S042.461,,0,,0,flag
 521,321 321 -321,K+ K- K+,measured,node,S041.160,2.38e-05,3.40076e-05,1.29092,0.067449,4.31322,0.115542,0.338102,,,,,,0,,0,pull
 511,313 321 -321,K- K+ K*0,measured,node,S042.85,2.248e-05,2.75e-05,0.390829,0.758904,-0.802698,0.454292,0.0295595,,remainder_unstable,,,,0,,0,flag
-511,-211 20323,K'_1+ pi-,limit,,S042.86,2.18e-05,2.7e-05,1,,,0.627919,0.136202,,node_not_closed,,S042.84,,0,,0,flag
 521,211 -211 321,K+ pi- pi+,measured,node,S041.282,1.63e-05,5.09716e-05,0,0.768507,-1.30123,0.756867,0.92449,,c_extreme;remainder_clamped;remainder_unstable,,,,0,,0,flag
-511,-211 30323,K''*+ pi-,measured,exact,S042.370,1.41e-05,1.41e-05,1,0.072396,0,0.774793,0.942941,,node_not_closed,,S042.84,,0,,0,flag
 511,211 -211 311,pi+ pi- K0,measured,node,S042.80,1.39e-05,4.97036e-05,0,0.870682,-1.14853,0.774793,0.942941,,c_extreme;remainder_clamped;remainder_unstable,,,,0,,0,flag
 521,22 325,K_2*+ gamma,measured,exact,S041.55,1.377e-05,1.37748e-05,1.00035,0.29055,0.00120865,1,1.82875,,node_not_closed,,S041.307;S041.308;S041.474,,0,,0,flag
 511,22 315,K_2*0 gamma,measured,exact,S042.40,1.237e-05,1.23744e-05,1.00036,0.192482,0.00186312,1,6.98903,,node_not_closed,,S042.231;S042.376,,0,,0,flag
@@ -338,16 +336,15 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,130 130 130,K_L0 K_L0 K_L0,none,,,6.2e-06,,1,,,,,,multi_ks,,,,0,,0,flag
 511,311 9010221,f_0 K0,measured,product,S042.372;S042.502,5.5e-06,8.14582e-06,2.9882,0.285891,6.9544,0.0377624,0.456099,2.9882,multi_ks;resonance_mismatch,,,,0,,0,pull;flag
 521,211 211 -211,pi+ pi- pi+,measured,node,S041.63,5.3e-06,1.52e-05,0.585313,0.610378,-0.679393,0.68599,0.720235,,remainder_unstable,,,,0,,0,flag
-511,313 9010221,K*0 f_0,none,,,5e-06,,1,1,,0.454292,0.0295595,,node_not_closed;unmeasured,,S042.84,,0,,0,flag
+511,313 9010221,K*0 f_0,none,,,5e-06,,1,1,,0.454292,0.0295595,,unmeasured,,,,0,,0,flag
 511,-211 313 9000211,K*0 a_0+ pi-,none,,,5e-06,,1,,,,,,block_asymmetric,,,,0,,0,flag
 511,-421 443,J/psi anti-D0,limit,,S042.306,5e-06,9.6e-07,1,,,,,,above_limit,,,,0,,0,flag
 -511,-211 -313 9000211,anti-K*0 a_0+ pi-,none,,,5e-06,,1,,,,,,block_asymmetric,,,,0,,0,flag
 521,313 9000211,K*0 a_0+,none,,,5e-06,,1,1,,1,0.144948,,node_not_closed;unmeasured,,S041.798,,0,,0,flag
 521,321 30113,rho(3S)0 K+,none,,,5e-06,,1,1,,0.756867,0.92449,,unmeasured,,,,0,,0,flag
 521,-15 16 9000111,a_00 tau+ nu_tau,none,,,4e-06,,1,,,,,,tau,,,,0,,0,flag
-511,113 313,rho0 K*0,measured,exact,S042.15,3.88e-06,3.87551e-06,0.998843,0.332387,-0.00348138,0.918583,9.16794,,node_not_closed,,S042.461;S042.84,,0,,0,flag
+511,113 313,rho0 K*0,measured,exact,S042.15,3.88e-06,3.87551e-06,0.998843,0.332387,-0.00348138,0.918583,9.16794,,node_not_closed,,S042.461,,0,,0,flag
 511,-211 2212 -3212,anti-Sigma0 p+ pi-,measured,exact,S042.252,3.8e-06,1.17e-06,0.307895,0.110755,-6.24897,,,,c_extreme,,,,0,,0,pull;flag
-511,-211 325,K_2*+ pi-,measured,exact,S042.72,3.65e-06,3.65e-06,1,0.0927122,0,0.774793,0.942941,,node_not_closed,,S042.84,,0,,0,flag
 511,311 9030221,f_0(1500) K0,measured,exact,S042.503;S042.586,3.4e-06,1.33e-05,3.91176,1.77423,1.64114,0.774793,0.942941,,c_extreme;node_not_closed,,S042.586,,0,,0,flag
 521,321 335,f'_2 K+,measured,exact,S041.430,3.4e-06,1.7889e-06,0.526148,0.142057,-3.33565,0.115542,0.338102,,multi_ks,,,,0,,0,pull;flag
 521,211 310 310,K_S0 K_S0 pi+,none,,,3.2e-06,,1,,,,,,multi_ks,,,,0,,0,flag

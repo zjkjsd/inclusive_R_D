@@ -39,8 +39,12 @@ Rules
                  their own PDG limit as limit/2 +- limit/2 (`limit_capped`). The total is not exactly
                  the sum of its parts (interference): F_INTERFERENCE (20 %) of the subtracted part,
                  divided by the BF of the direct line, is added in quadrature to sigma_c.
-                 `remainder_unstable`: sigma_c > c. Nodes are taken from the fewest bodies up (then
-                 the smaller relative PDG error).
+                 `remainder_unstable`: sigma of the remainder > c (before any extra_uncertainty).
+                 Nodes with a `direct_line` exception are taken first (their stand-in line is
+                 subtracted from smaller nodes with its c; flag `order_dependent` if a line it
+                 subtracted as 1 +- 1 gets a c later), then from the fewest bodies up (then the
+                 smaller relative PDG error). A line that takes its c from a node gets its
+                 extra_uncertainty at once, before larger nodes subtract it.
     A line that reaches a measured node only through a resonance never takes a c from it: the
     node measures a sum, not this line (decision M1 of docs/B0_PIECE2_REVIEW.md). Without an
     exact or product entry of its own such a line is flagged `unmeasured`: class none, c = 1,
@@ -61,8 +65,9 @@ Rules
 * The B0 and B+ blocks are matched; anti-B0 and B- final states take the result of their
   charge conjugate. Where the conjugate is not listed, the neutral-kaon and K*0 flavor is ignored
   and `block_asymmetric` is set. Where it is listed with another BF (the blocks are not mirrors),
-  `block_asymmetric` is set too, and a c from an exact, plain-node or product match is not carried
-  over (c = 1, how = '').
+  `block_asymmetric` is set too, and the corrected BF of the conjugate is transferred: c = c(conj)
+  x BF(conj) / BF(own block), same for sigma_c (flag `cp_transfer`; not for a c from a PDG sum
+  node, which applies as it is).
 
 Exceptions file (`Samples/dec/pdg_exceptions.json`): a JSON list of entries
     {"pdgid": "S042.1", "action": "exclude_node", "reason": "..."}
@@ -79,6 +84,8 @@ BF_MC(line) x (1 / TAU_RATIO for a B0 line, TAU_RATIO for a B+ line) (how = 'iso
 `direct_line` declares a line as the direct line of a multi-body node although it reaches it through
 a resonance (the decay file routes the whole final state through that resonance):
     {"pdgid": "S042.88", "action": "direct_line", "mother": 511, "key": [...], "reason": "..."}
+`veto` sets c = 0 +- 0 for a line that should not exist (how = 'veto', class none):
+    {"mother": 521, "key": [...], "action": "veto", "reason": "..."}
 `half_limit` gives a line that the decay file puts above its own PDG upper limit c = limit/2 with
 sigma_c = limit/2 (how = 'half_limit', class limit):
     {"mother": 521, "key": [...], "action": "half_limit", "reason": "..."}
@@ -300,7 +307,7 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
     known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin', 'direct_line',
-             'extra_uncertainty', 'half_limit')
+             'extra_uncertainty', 'half_limit', 'veto')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -314,6 +321,9 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
                 raise ValueError(f'{path}: isospin needs mother, key, from_mother and from_key: {e}')
             if {int(e['mother']), int(e['from_mother'])} != {511, 521}:
                 raise ValueError(f'{path}: isospin relates a B0 (511) line and a B+ (521) line: {e}')
+        elif e['action'] == 'veto':
+            if 'mother' not in e or 'key' not in e:
+                raise ValueError(f'{path}: veto needs mother and key: {e}')
         elif e['action'] == 'half_limit':
             if 'mother' not in e or 'key' not in e:
                 raise ValueError(f'{path}: half_limit needs mother and key: {e}')
@@ -324,6 +334,9 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
             raise ValueError(f'{path}: {e["action"]} needs a pdgid: {e}')
         if e['action'] == 'direct_line' and ('mother' not in e or 'key' not in e):
             raise ValueError(f'{path}: direct_line needs pdgid, mother and key: {e}')
+        if 'mother' in e and int(e['mother']) not in (511, 521):
+            raise ValueError(f'{path}: exceptions refer to the B0 (511) or B+ (521) block; anti-B rows follow '
+                             f'their conjugate: {e}')
         if e['action'] in ('fold', 'no_fold') and not e.get('states'):
             raise ValueError(f'{path}: {e["action"]} needs states: {e}')
         if e['action'] == 'rewrite' and '-->' not in str(e.get('description', '')):
@@ -689,7 +702,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
     """Match the exclusive lines of one B block with the PDG nodes of that B.
 
     lines : rows of `parse_dec` for this mother (exclusive lines only).
-    preset : {collapsed key: (c, sigma_c, PDG identifiers)} for the lines that take the c of their
+    preset : {collapsed key: (c, sigma_c, PDG identifiers, inherited flags, extra_rel)} for the lines that take the c of their
              isospin partner in the other B block ('isospin' exceptions).
     Returns (results, node_table):
       results    : {collapsed key: result dict} for every final state of the block;
@@ -792,12 +805,13 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                  bf_pdg_err=node['err'], c=c, sigma_c=sigma, p_node=p_node)
 
     # lines fixed by an 'isospin' exception: the c of the partner line of the other B block
-    for k, (c, sigma, ids, inherited) in (preset or {}).items():
+    for k, (c, sigma, ids, inherited, extra_rel) in (preset or {}).items():
         if cmode_bf.get(k, 0.0) <= 0:
             raise ValueError(f'exceptions: isospin target {k} of {mother} is not a line with BF > 0')
         results[k].update(pdg_class='measured', how='isospin', pdgids=list(ids),
                           bf_pdg=c * cmode_bf[k], bf_pdg_err=sigma * cmode_bf[k], c=c, sigma_c=sigma)
         results[k]['flags'].update(('isospin', 'exception_applied', *inherited))
+        results[k]['extra_rel'] = extra_rel
 
     # 1. exact nodes: one target, fed by the line of that final state alone
     exact = [n for n in measured if len(n['targets']) == 1 and set(feed[n['uid']]) == {n['targets'][0]}]
@@ -877,7 +891,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
     def assign_product_limits():
         for k, lst in prod.items():
             r = results[k]
-            if r['how'] or any(not n['is_limit'] for n, _ in lst):
+            if r['how'] or k in forced or any(not n['is_limit'] for n, _ in lst):
                 continue
             n, pred = min(lst, key=lambda x: x[0]['value'] / x[1])
             r.update(pdg_class='limit', pdgids=[m['pdgid'] for m, _ in lst], bf_pdg=n['value'],
@@ -917,6 +931,19 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         r['flags'].add('exception_applied')
         forced.add(k)
 
+    # 'veto': a line that should not exist (e.g. a final state written with the wrong flavor next
+    # to the correct one): c = 0 +- 0; it enters remainders with 0
+    for e in exceptions:
+        if e['action'] != 'veto' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        if k not in results or cmode_bf.get(k, 0.0) <= 0:
+            raise ValueError(f'exceptions: veto on {e["key"]} of {mother}: no line with BF > 0')
+        r = results[k]
+        r.update(pdg_class='none', how='veto', pdgids=[], c=0.0, sigma_c=0.0, bf_pdg=np.nan, bf_pdg_err=np.nan)
+        r['flags'].add('exception_applied')
+        forced.add(k)
+
     # 'half_limit': a line that the decay file puts above its own PDG limit takes c = limit/2 with
     # an uncertainty of limit/2 (the range [0, limit] as a flat-ish prior)
     for e in exceptions:
@@ -934,15 +961,25 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                  bf_pdg=cap[k] * cmode_bf[k], bf_pdg_err=0.0)
         r['flags'].add('exception_applied')
 
+    def capped_no_c(k):
+        """A line without a c (not forced) that the decay file puts above its own limit: it is
+        counted as limit/2 +- limit/2 in remainders and in the closure."""
+        return not results[k]['how'] and k not in forced and cap.get(k, np.inf) < 1.0 - REL_TOL
+
+    def c_eff(k):
+        return 0.5 * cap[k] if capped_no_c(k) else results[k]['c']
+
     # extra relative uncertainty on a c (e.g. from a sub-decay BF the decay file fixes at 100 %, or
     # two measurements in conflict); optional 'flag' is added to the line
     extra_done = set()
 
-    def apply_extra(final):
+    def apply_extra(final, only=None):
         for i, e in enumerate(exceptions):
             if e['action'] != 'extra_uncertainty' or int(e['mother']) != mother or i in extra_done:
                 continue
             k = collapse_key(e['key'])
+            if only is not None and k != only:
+                continue
             if k not in results:
                 raise ValueError(f'exceptions: extra_uncertainty on {e["key"]} of {mother}: no such line')
             r = results[k]
@@ -975,6 +1012,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             return (not results[k]['how'] and k not in forced and f[k] / cmode_bf[k] >= P_MIN
                     and is_direct(n, k))
         cand, used_nb = {}, {}                      # line -> {pdgid: n_bodies} of the nodes it could take
+        stand_in_unset = {}                         # direct_line node -> lines it subtracted as 1 +- 1
         for n in rest_nodes:
             f = feed[n['uid']]
             for k in f:
@@ -994,7 +1032,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                 if k in free:
                     continue
                 r = results[k]
-                if not r['how'] and cap.get(k, np.inf) < 1.0 - REL_TOL:
+                if capped_no_c(k):
                     part, s2 = 0.5 * cap[k] * f[k], (0.5 * cap[k] * f[k]) ** 2
                 elif r['how'] and np.isfinite(r['sigma_c']):
                     part, s2 = r['c'] * f[k], (r['sigma_c'] * f[k]) ** 2
@@ -1002,6 +1040,8 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                     part, s2 = r['c'] * f[k], 0.0
                 else:                               # no c of its own: c = 1 +- 1
                     part, s2 = f[k], f[k] ** 2
+                    if n['pdgid'] in direct_extra:
+                        stand_in_unset.setdefault(n['pdgid'], set()).add(k)
                 num -= part
                 var += s2
                 sub += part
@@ -1012,11 +1052,21 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             rows[n['uid']].update(role='node', c_assigned=c)
             for k in free:
                 assign(k, 'node', n, c, sigma, f[k] / cmode_bf[k])
+                apply_extra(final=False, only=k)    # before any later node subtracts this line
                 used_nb[k] = n['n_bodies']
                 if c_raw < 0:
                     results[k]['flags'].add('remainder_clamped')
                 if sigma > c:
                     results[k]['flags'].add('remainder_unstable')
+        # a node with a 'direct_line' exception is taken first; if one of the lines it subtracted
+        # as 1 +- 1 got a c from a smaller node afterwards, its remainder is out of date: flag it
+        for pid, ks in stand_in_unset.items():
+            if any(results[k]['how'] for k in ks):
+                for n in rest_nodes:
+                    if n['pdgid'] == pid:
+                        for k in feed[n['uid']]:
+                            if k in direct_extra.get(pid, ()) and results[k]['how'] == 'node':
+                                results[k]['flags'].add('order_dependent')
         # the choice between nodes of the same size rests on the order above: flag it
         for k, nb in used_nb.items():
             used = results[k]['pdgids'][0]
@@ -1042,7 +1092,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         r = results[k]
         if n['is_limit'] and cmode_bf[k] > n['value'] * (1 + REL_TOL):
             r['flags'].add('above_limit')
-        if r['how'] or r['pdg_class'] == 'measured':
+        if r['how'] or r['pdg_class'] == 'measured' or k in forced:
             continue
         if n['is_limit']:
             if r['pdg_class'] == 'limit' and r['bf_pdg'] <= n['value']:
@@ -1146,7 +1196,7 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
     # closure of every measured final-state node with the final c of its feeding lines
     for n in measured:
         f = feed[n['uid']]
-        w = sum(results[k]['c'] * v for k, v in f.items())
+        w = sum(c_eff(k) * v for k, v in f.items())
         pull = (w - n['value']) / n['err'] if n['err'] > 0 else np.nan
         rows[n['uid']].update(bf_mc_weighted=w, closure=w / n['value'] if n['value'] > 0 else np.nan,
                               closure_pull=pull)
@@ -1225,7 +1275,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
       bf_mc      : BF of this final state in its own block.
       pdg_class  : 'measured', 'limit', 'none' or 'inclusive'.
       how        : 'exact', 'node', 'product', 'isospin' (c of the isospin partner, by exception),
-                   'half_limit' (limit/2 +- limit/2, by exception) or ''.
+                   'half_limit' (limit/2 +- limit/2, by exception), 'veto' (c = 0, by exception)
+                   or ''.
       pdgids     : PDG identifiers used, separated by ';'.
       bf_pdg, bf_pdg_err : value and uncertainty of the PDG node used (for several product nodes
                    the most precise one; for a limit the limit). With the factor 2 of a K_S0 node.
@@ -1238,7 +1289,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
       flags      : names separated by ';': tau, resonance_mismatch, multi_ks, remainder_unstable,
                    above_limit (max(1, c) x BF_MC above an own limit), exception_applied,
                    block_asymmetric; and more: zero_bf (the line has BF 0 in the decay file;
-                   c = 1), c_extreme (c outside [1/3, 3]), limit_capped (kept out of a node
+                   c = 1), c_extreme (c outside [1/3, 3]), limit_capped (no c and the decay file above its own limit: counted as limit/2 +- limit/2 in
+                   remainders and in the closure; was: kept out of a node
                    remainder by its own limit), node_ambiguous, node_not_closed, flavor_twin
                    (see the module docstring), unmeasured (feeds a measured node but has no c:
                    c = 1, sigma_c = 1), isospin, remainder_clamped (the remainder of the total
@@ -1305,7 +1357,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         scale = (1.0 / TAU_RATIO if int(e['mother']) == 511 else TAU_RATIO) * src['bf_mc_sum'] / own['bf_mc_sum']
         preset.setdefault(int(e['mother']), {})[collapse_key(e['key'])] = (src['c'] * scale, src['sigma_c'] * scale,
                                                                              src['pdgids'],
-                                                                             src['flags'] & {'measurement_conflict'})
+                                                                             src['flags'] & {'measurement_conflict'},
+                                                                             src['extra_rel'])
     for mother, pre in preset.items():
         results[mother], node_tables[mother] = _match_block(mother, block_lines[mother], nodes, graph,
                                                              exceptions, preset=pre)
@@ -1363,10 +1416,12 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         if asym or bf_mismatch:
             flags.add('block_asymmetric')
         if bf_mismatch and r['how'] and not (r['how'] == 'node' and kind_of.get(r['pdgids'][0]) == 'sum'):
-            # a c formed with the BF of the other block does not apply here
-            r = dict(r, how='', c=1.0, sigma_c=np.nan, p_node=np.nan, alt_pdgids=[],
-                     bf_mc_sum=csum[(mother, collapse_key(key))])
-            flags -= {'remainder_unstable', 'remainder_clamped', 'node_ambiguous'}
+            # the c was formed with the BF of the other block: transfer the corrected BF instead
+            # (CP symmetry), i.e. c x BF(conjugate) / BF(own block)
+            own = csum[(mother, collapse_key(key))]
+            scale = r['bf_mc_sum'] / own if own > 0 else np.nan
+            r = dict(r, c=r['c'] * scale, sigma_c=r['sigma_c'] * scale, bf_mc_sum=own)
+            flags.add('cp_transfer')
         tau = any(abs(c) == 15 for c in key)
         if tau:
             flags.add('tau')
@@ -1383,7 +1438,7 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
             row[c] = ';'.join(r[c])
         if incl:
             row.update(pdg_class='inclusive', how='', c=1.0, sigma_c=np.nan)
-        if row['how'] and not (1.0 / C_EXTREME <= row['c'] <= C_EXTREME):
+        if row['how'] and row['how'] != 'veto' and not (1.0 / C_EXTREME <= row['c'] <= C_EXTREME):
             flags.add('c_extreme')
         s, c = row['sigma_c'], row['c']
         row['pull'] = (c - 1.0) / s if row['how'] and np.isfinite(s) and s > 0 else np.nan
@@ -1397,18 +1452,20 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
 
 
 def node_report(nodes, table, pdl=None):
-    """One row per measured or limit PDG entry of B0 / B+ that some decay-file line feeds: the
-    reference for the columns `fed_nodes`, `node_info` and `unclosed_nodes` of the mode table.
+    """One row per final-state PDG entry (kind plain or sum; lepton entries once for e and once
+    for mu) of B0 / B+ that some decay-file line feeds: the reference for the columns `fed_nodes`,
+    `node_info` and `unclosed_nodes` of the mode table. Product entries are not included; they are
+    named in the column `pdgids` / `prod_pdgids` of the line they measure.
 
     Columns: pdgid, uid (with [e] / [mu] for lepton entries), mother, description, kind, role,
     value, err, is_limit, n_bodies, bf_mc (decay-file sum), bf_mc_weighted (after c), closure,
     closure_pull, c_assigned, n_feeders, and `feeders`: one text item per feeding line,
     'names [decay-file lines] BFxP=...; class/how c=... +- ...', separated by ' | '."""
     pdl = pdl or dt.load_pdl()
-    look = {}
+    look = {}                                       # all rows of a collapsed final state (K0 / K_S0 / K_L0)
     for r in table.itertuples():
         if int(r.mother_pdg) in (511, 521):
-            look.setdefault((int(r.mother_pdg), collapse_key(r.key)), r)
+            look.setdefault((int(r.mother_pdg), collapse_key(r.key)), []).append(r)
     out = []
     for n in nodes.itertuples():
         feeders = n.feeders if isinstance(n.feeders, list) else []
@@ -1416,13 +1473,15 @@ def node_report(nodes, table, pdl=None):
             continue
         items = []
         for k, v, bf in feeders:
-            r = look.get((int(n.mother), k))
+            rs = look.get((int(n.mother), k))
             name = ' '.join('K0' if c == KSYM else pdl.name(c) for c in k)
-            if r is None:
+            if not rs:
                 items.append(f'{name} BFxP={v:.3g}')
                 continue
+            r = max(rs, key=lambda x: x.bf_mc)      # c and class: the row with the largest BF
+            lines = ' '.join(x.dec_lines for x in rs if x.bf_mc > 0) or r.dec_lines
             sig = '' if not np.isfinite(r.sigma_c) else f' +- {r.sigma_c:.2g}'
-            items.append(f'{name} [{r.dec_lines}] BFxP={v:.3g}; {r.pdg_class}/{r.how or "-"} c={r.c:.3g}{sig}')
+            items.append(f'{name} [{lines}] BFxP={v:.3g}; {r.pdg_class}/{r.how or "-"} c={r.c:.3g}{sig}')
         out.append(dict(pdgid=n.pdgid, uid=n.uid, mother=int(n.mother), description=n.description,
                         kind=n.kind, role=n.role, value=n.value, err=n.err, is_limit=n.is_limit,
                         n_bodies=n.n_bodies, bf_mc=n.bf_mc, bf_mc_weighted=n.bf_mc_weighted,

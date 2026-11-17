@@ -237,7 +237,7 @@
    213
   ],
   "action": "half_limit",
-  "reason": "G3 (2026-11-18). PDG text: 'B+ --> Dbar_1^*(2420)0 rho+' < 1.4e-3 (S041.215, CLEO). The decay file (line 4319) has 3.72e-3, set as twice B+ --> anti-D_10 pi+ (the D**rho = 2 x D**pi assumption of BELLE2-NOTE-PH-2022-002), 2.7 times the limit. The line takes c = limit/2 +- limit/2, i.e. 0.19 +- 0.19."
+  "reason": "G3 (2026-11-17). PDG text: 'B+ --> Dbar_1^*(2420)0 rho+' < 1.4e-3 (S041.215, CLEO). The decay file (line 4319) has 3.72e-3, set as twice B+ --> anti-D_10 pi+ (the D**rho = 2 x D**pi assumption of BELLE2-NOTE-PH-2022-002), 2.7 times the limit. The line takes c = limit/2 +- limit/2, i.e. 0.19 +- 0.19."
  },
  {
   "mother": 521,
@@ -248,11 +248,27 @@
   "action": "extra_uncertainty",
   "relative": 0.65,
   "flag": "measurement_conflict",
-  "reason": "P1 option P+, 2026-11-18. The weight comes from PDG's per-channel products S041.361 (x B(psi(3770) --> D0 Dbar0), 1.55e-4) and S041.362 (x B(psi --> D+ D-), 0.94e-4): c = 0.53 +- 0.13. The total S041.360 is excluded for this line (see that entry). The LHCb amplitude analysis (arXiv:2009.00026) gives a psi(3770) fit fraction of 14.5 +- 1.4 % of B+ --> D+ D- K+, i.e. c = 0.16 with the PDG D+D-K+ total; 65 % is added in quadrature to sigma_c (0.13 --> 0.37) so that it lies within 1 sigma."
+  "reason": "P1 option P+, 2026-11-17. The weight comes from PDG's per-channel products S041.361 (x B(psi(3770) --> D0 Dbar0), 1.55e-4) and S041.362 (x B(psi --> D+ D-), 0.94e-4): c = 0.53 +- 0.13. The total S041.360 is excluded for this line (see that entry). The LHCb amplitude analysis (arXiv:2009.00026) gives a psi(3770) fit fraction of 14.5 +- 1.4 % of B+ --> D+ D- K+, i.e. c = 0.16 with the PDG D+D-K+ total; 65 % is added in quadrature to sigma_c (0.13 --> 0.37) so that it lies about 1 sigma away (1.0 sigma with the widened error)."
  },
  {
   "pdgid": "S041.360",
   "action": "exclude_node",
-  "reason": "P1 option P+, 2026-11-18. PDG text: 'B+ --> psi(3770) K+' = 4.34e-4, the average of Belle 2004 (Chistov, 4.8e-4) and BaBar 2020 (Lees, recoil method, 3.2 +- 2.1 e-4) (pdgapi listing). Belle 2004's value is not a measurement of its own: it is the sum of its D0Dbar0 and D+D- products, assuming they saturate psi(3770) decays, and its D0Dbar0 product (3.4e-4) is superseded in S041.361 by Belle 2008 (2.2e-4, 4.7 times the data). The products S041.361 and S041.362 are used instead (c = 0.53); divided by PDG's psi(3770) branching fractions they imply a total of 2.6 +- 0.6 e-4, consistent with BaBar 2020 and with Belle 2018 (< 2.3e-4)."
+  "reason": "P1 option P+, 2026-11-17. PDG text: 'B+ --> psi(3770) K+' = 4.34e-4, the average of Belle 2004 (Chistov, 4.8e-4) and BaBar 2020 (Lees, recoil method, 3.2 +- 2.1 e-4) (pdgapi listing). Belle 2004's value is not a measurement of its own: it is the sum of its D0Dbar0 and D+D- products, assuming they saturate psi(3770) decays, and its D0Dbar0 product (3.4e-4) is superseded in S041.361 by Belle 2008 (2.2e-4, 4.7 times the data). The products S041.361 and S041.362 are used instead (c = 0.53); divided by PDG's psi(3770) branching fractions they imply a total of 2.6 +- 0.6 e-4, consistent with BaBar 2020 and with Belle 2018 (< 2.3e-4)."
+ },
+ {
+  "pdgid": "S042.314",
+  "action": "rewrite",
+  "description": "B0 --> D^*(2010)- K0 pi+ + D^*(2010)+ K0 pi-",
+  "reason": "G6 (2026-11-17). PDG text: 'B0 --> D^*(2010)- K0 pi+' = 3.0e-4, from one measurement, BaBar 2005 (hep-ex/0412040): B(B0 --> D*-+ K0 pi+-) = (3.0 +- 0.7 +- 0.3)e-4, with K_S0, i.e. both charge combinations together (the paper writes -+/+- throughout). The decay file has D*- K0 pi+ (line 797) and D*+ K0 pi- (line 798) with 3.0e-4 each; read as the sum, as for S042.511 (D3)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   321,
+   313
+  ],
+  "action": "veto",
+  "reason": "G6 (2026-11-17). B+ --> anti-D*0 K+ K*0 (line 4349, 1.5e-3) needs two anti-strange quarks (Delta S = 2) and is not expected. Its BF is Belle 2002's measurement of B- --> D*0 K- K*0 (hep-ex/0207041, 15.3e-4; conjugate: B+ --> anti-D*0 K+ anti-K*0), conjugated without flipping the K*0. The allowed mode is line 4345 (2021 update, total minus the anti-D*0 a_1+ part); c = 0. The B- line 5888 (D*0 K- anti-K*0) is its conjugate and inherits c = 0; the allowed B- line 5892 (D*0 K- K*0, 1.5e-3) takes the corrected BF of line 4345 (cp_transfer)."
  }
 ]
