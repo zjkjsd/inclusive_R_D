@@ -619,6 +619,13 @@ independent script. Sample: the six CSVs (run1 e, `MC_e_comb`).
 - Reason: a Belle II patch of EvtGen (`evtgen-02-00-01-avoid-double-counting.patch` in the externals)
   makes PYTHIA retry when its final state equals any listed channel of the same B, including zero-BF
   lines. That the MC16rd externals contain this patch is not confirmed, but the data behave so.
+  *Checked 2026-11-18 in the source (belle2/externals; EvtGen R02-00-01):* the patch is applied in
+  `Makefile.targets` since 2021-03-17. After each PYTHIA decay it calls `EvtDecayTable::inChannelList`,
+  which compares the first-generation daughters as a set (order ignored) with every line of the
+  parent's table except PYTHIA/JETSET lines, and redecays on a match (at most 1000 trials). So a
+  listed final state (zero-BF lines included) never comes from PYTHIA as first-generation daughters;
+  it can still come from PYTHIA through a resonance among the daughters (a different daughter list).
+  The externals version of MC16rd itself is still not traced; release-08 postdates the patch.
 - So the generator class is a lookup of (B charge, daughter set). The daughter order is a cross-check.
 
 | Table | Exclusive | PYTHIA |
