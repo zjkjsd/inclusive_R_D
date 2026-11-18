@@ -644,8 +644,8 @@ alone, since the total is not exactly the sum of its parts (interference). AGREE
 not negative: 0.1073 % − 1.16 × 0.0553 % (D̄₀\*⁰π⁺) − 1.01 × 0.0340 % (D̄₂\*⁰π⁺) = 0.0087 %, against
 0.030 % in the decay file. It was flagged unstable because its error exceeds the value.
 
-*What the two Belle II notes did with the same situation* (B⁰ tag modes: BELLE2-NOTE-PH-2022-xxx, draft
-v0.x.x of 7 October 2022, M. Liu et al.; B⁺ tag modes: BELLE2-NOTE-PH-2022-002 v1.0.1 of 16 October 2023,
+*What the two Belle II notes did with the same situation* (B⁰ tag modes: BELLE2-NOTE-PH-2022-046 (file name; the draft's title page
+reads 2022-xxx, v0.x.x of 7 October 2022), M. Liu et al.; B⁺ tag modes: BELLE2-NOTE-PH-2022-002 v1.0.1 of 16 October 2023,
 G. de Marino et al.):
 - The most common error they found is ours: a PDG inclusive total written into the decay file as
   the non-resonant line, with the resonances added on top (in Belle II partly from an automatic
