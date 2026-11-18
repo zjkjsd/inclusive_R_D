@@ -8,7 +8,7 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 
 > I'm continuing the inclusive tagged R(D+) analysis (Belle II), Part B (BBbar background model),
 > step B0: matching the EvtGen decay file with PDG. Pieces 1 and 2 are DONE except three follow-up
-> points found in the last audit (P2–P4). After them we start **piece 3: exclusive modes without a
+> points found in the last audit (P2–P4) and the new D(\*)ηπ measurement (P5). After them we start **piece 3: exclusive modes without a
 > PDG measurement**, and how they enter the background model.
 >
 > Read first:
@@ -16,7 +16,7 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 >   first-model parameters r_meas, r_SL, N₁, N₂, a) and B.13 (B0 in five pieces: the piece-2 summary,
 >   the piece-3 facts and proposal, and what the Belle II B → X_sγ note does with the same background).
 > - `docs/B0_PIECE2_REVIEW.md`, section 1 (all piece-2 decisions with current values) and section 3
->   (register of the exceptions file), and section 5i (P2–P4). The rest of that file is the dated
+>   (register of the exceptions file), and section 5i (P2–P5). The rest of that file is the dated
 >   record of the piece-2 discussion; read a section when a point refers to it.
 >
 > Code and data: `scripts/tools/decay_table.py` (decay-file parser, classification),
@@ -32,8 +32,7 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 > part of piece 3; the semileptonic gap modes (non-resonant D(\*)πℓν kept at c = 1 ± 1, D(\*)ππℓν at
 > their remainders), to be replaced by the official Belle II gap-mode recommendation that I will
 > provide; totals that stay above PDG by decision (B⁰ → J/ψK⁰π⁺π⁻, B⁰ → D⁰D̄⁰K⁺π⁻, the D(\*)πℓν
-> totals); the Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024),
-> which I may be able to provide (B.13).
+> totals); the D(\*)ηℓν lines, which the D(\*)ηπ paper argues are not the gap (B.13).
 >
 > How I want to work:
 > - One point at a time. For each point, show me the facts (with decay-file line numbers and PDG
@@ -50,7 +49,8 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 > - If a web site you need is blocked, tell me the host and I will allow it.
 >
 > Start with P2 (PDG entries for the non-resonant part of a total; it changes B⁺ → D⁺D⁻K⁺, line 4216,
-> 2.4 % of the yield in one table), then P3 and P4 (small), all in section 5i of the review file,
+> 2.4 % of the yield in one table), then P5 (the D(\*)ηπ measurement, BELLE2-PUB-PH-2025-024; I can provide the PDF again), then P3
+and P4 (small), all in section 5i of the review file,
 > and record them there. Then piece 3, point 1 of the proposal in B.13: whether the exclusive
 > double-charm lines without a measurement and the PYTHIA ≥ 2 charm decays form one class (one scale
 > factor), and what inclusive measurements can constrain it. Begin piece 3 by checking the facts of

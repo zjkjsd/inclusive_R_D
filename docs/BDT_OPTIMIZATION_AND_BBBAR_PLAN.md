@@ -930,12 +930,21 @@ with hadronic tagging, MC15rd; section 6.3, tables 18 and 19; read 2026-11-18).*
   0.6 % = 1.071 % = our line 697; D₁⁻π⁺ 9.3 × 0.01 % = 0.093 % = line 736, assuming round release-6
   values): our MC16 decay file already has these updates.
 - *New information.* B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ were measured by Belle and Belle II (their ref.
-  [22], BELLE2-PUB-PH-2025-024; not found on arXiv or INSPIRE, not yet in our PDG cache). Their
-  weights on the release-6 values are 0.08–0.16 (D(\*)ηπ, both B charges). Our decay file has these
-  lines at 2.56·10⁻⁴ (B⁰, lines 732, 733) and 4·10⁻⁴ (B⁺, 4269, 4293), commented "Limit provided to
-  invalidate eta as a candidate for SL gap (to be measured)"; they are class none (no PDG entry).
-  If release 6 had the same values, the measurement is 6–12 times lower. Small share for us (≤ 0.26 %
-  in one table), but the same comment ties them to the D(\*)ηℓν gap-mode lines (2·10⁻³ each).
+  [22], BELLE2-PUB-PH-2025-024, a JHEP draft, v12, provided by the user on 2026-11-18; not on arXiv
+  or INSPIRE, not in PDG). Their weights are 0.0899 (D\*⁻ηπ⁺), 0.15 (D̄⁰ηπ⁺) and, with 100 %
+  uncertainty, 0.0821 (D⁻ηπ⁺) and 0.161 (D̄\*⁰ηπ⁺); in their MC15 sample these final states came
+  from PYTHIA8 (note line 685–686), at an implied rate of about 3·10⁻³. Our rel08 decay file has
+  explicit phase-space lines at 2.56·10⁻⁴ (B⁰, lines 732, 733) and 4·10⁻⁴ (B⁺, 4269, 4293),
+  commented "Limit provided to invalidate eta as a candidate for SL gap (to be measured)", class
+  none. *Correction (2026-11-18):* an earlier version of this paragraph said our lines were 6–12
+  times too high; that was wrong. With the paper in hand, line 733 is 8 % low (c = 1.09 ± 0.12) and
+  line 4269 is 30 % low (c = 1.43 ± 0.13); the small weights of the X_sγ note correct their much
+  larger PYTHIA rate, not our values. Details and the open decision: P5 in
+  `docs/B0_PIECE2_REVIEW.md`, section 5i. The paper also limits the D\*\*/D′ → D(\*)η part
+  (B⁰: < 3.1·10⁻⁵ against a naive (4–8)·10⁻⁴ needed for the gap) and concludes that B → D(\*)ηℓν is
+  unlikely to fill the semileptonic gap; this bears on the D(\*)ηℓν lines (387, 388, 411, 412 at
+  2.17·10⁻³ and 4022, 4023, 4049, 4050 at 2.01·10⁻³, c = 1 now), which wait for the gap-mode
+  recommendation.
 - *For pieces 3 and 4.* Their "unmatched" class with a free normalization is our piece-3 point 1
   (one class for the unmeasured modes, normalization free), applied to everything not matched,
   single and double charm alike. Their one-nuisance-parameter-per-corrected-mode is one answer to

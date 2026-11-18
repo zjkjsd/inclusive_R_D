@@ -9,8 +9,9 @@ and the tables rerun).
 Last updated: 2026-11-18 (document audited against the code, the tables and the sources; section 5h).
 
 **State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
-audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, still OPEN; only P2
-touches a line with a visible yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
+audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, and the
+Belle/Belle II D(\*)ηπ paper a fourth, P5; all still OPEN. P2 and P5 touch lines with a visible
+yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
 
@@ -122,6 +123,7 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | P2 | PDG entries for the non-resonant part of a total (23 measured, so far unused) | OPEN (2026-11-18), section 5i | proposal there; changes B⁺ → D⁺D⁻K⁺ (4216) and Λ̄_c⁻pπ⁺π⁻ (816) |
 | P3 | PDG entries measured in a mass window, compared with the full final state | OPEN (2026-11-18), section 5i | charmless, radiative and baryonic only, ≤ 0.014 % of the yield |
 | P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | OPEN (2026-11-18), section 5i | ≤ 0.004 % of the yield |
+| P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | OPEN (2026-11-18), section 5i | proposal: lines 733 c = 1.09 ± 0.12, 4269 c = 1.43 ± 0.13 through a new exception action |
 
 ## 2. Method points
 
@@ -1058,6 +1060,37 @@ K⁰K⁺K⁺π⁻ does not close (0.1, −8.5σ). The values look ten times too 
 (K⁺K⁻K⁺, χ_c0K⁺ = 1.5·10⁻⁴), and η_c, χ_c0 are not folded, so the charmonium part lands on the
 phase-space lines. Proposal: exclude the three entries until the paper is read. At most 0.004 % of
 the yield.
+
+*P5. B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ measured (added 2026-11-18).* Source: Belle (711 fb⁻¹) + Belle II
+(365 fb⁻¹), "Studies of the decays B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ in Belle and Belle II",
+BELLE2-PUB-PH-2025-024 v12 (JHEP draft, plots marked preliminary), provided by the user; it is
+ref. [22] of the B → X_sγ note. Facts, checked by two independent readers:
+- B(B⁰ → D\*⁻ηπ⁺) = (2.78 ± 0.24 ± 0.19)·10⁻⁴, B(B⁺ → D̄⁰ηπ⁺) = (5.70 ± 0.26 ± 0.44)·10⁻⁴. The
+  D_s⁺ → ηπ⁺ contributions are not signal, and the band M(ηπ) = 1.90–2.05 GeV is vetoed: the totals
+  are the sums of nine (M, M(ηπ)) bins (tables 3, 4) without that band. Interpolating the
+  neighbouring bins, the band would add about 4–6 % (phase space alone: 6.8 % and 6.4 %).
+- Structure: B⁰ is about half B⁰ → D̄\*\*⁰η (D̄\*\*⁰ → D\*⁻π⁺: (1.46 ± 0.15)·10⁻⁴), with no D\*\*⁻/D′ →
+  D\*⁻η signal (< 3.1·10⁻⁵); B⁺ is mostly D̄⁰a₀(980)⁺ / a₂(1320)⁺ (about 60 %, not separated), plus
+  D̄\*\*⁰(→ D̄⁰η)π⁺ = (0.85 ± 0.25)·10⁻⁴ (3.2σ).
+- B⁰ → D⁻ηπ⁺ and B⁺ → D̄\*⁰ηπ⁺ are not measured.
+- Decay file: these final states have one explicit line each, phase space: 733 (D\*⁻ηπ⁺,
+  2.56·10⁻⁴) and 4269 (D̄⁰ηπ⁺, 4·10⁻⁴); 732 (D⁻ηπ⁺) and 4293 (D̄\*⁰ηπ⁺) are the unmeasured partners.
+  No B → D a₀/a₂ or B⁰ → D̄\*\*⁰η line exists and no D\*\* decay block has an η channel. All four are
+  now class none, c = 1.
+- c from the paper: line 733 c = 2.78/2.56 = 1.09 ± 0.12; line 4269 c = 5.70/4.00 = 1.43 ± 0.13
+  (stat and syst in quadrature; without the D_s-band correction).
+- Caveat: the generic PYTHIA lines (e.g. B⁰ lines 2134–2158) can also make these final states; in
+  MC15 they were the only source (X_sγ note). The c above scales only the explicit lines.
+
+Options: (a) leave the four lines at c = 1 (N1) until PDG lists the result; (b) new exception
+action `external` (mother, key, value, error, source) that sets c = value/BF_MC for a line with no
+PDG entry, flag `external`; apply it to 733 and 4269, keep 732 and 4293 at c = 1 ± 1; (c) as (b),
+and also give 732 and 4293 the measured ratios of their partners (1.09, 1.43) with 100 %
+uncertainty, as the X_sγ note does. Sub-choice for (b)/(c): use the totals as published, or add
+the D_s-band estimate (+5 %) as an extra uncertainty. Recommendation: (b), totals as published
+with the band as an extra 5 % uncertainty; the PYTHIA part goes to piece 3 (the "PYTHIA ≥ 2 charm"
+class does not cover it, so the check is a truth-level count of D\*⁻ηπ⁺ / D̄⁰ηπ⁺ from PYTHIA
+lines). Shapes stay phase space; the paper's binned maps (tables 3, 4) could correct them later.
 
 *Also checked:* B⁺ → D⁺K⁺π⁻ (line 5464) c = 275 is a real correction (the decay file's 2·10⁻⁸ against
 LHCb's 5.6·10⁻⁶), share 0.
