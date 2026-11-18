@@ -500,5 +500,152 @@
   "error": 5.852e-05,
   "source": "BELLE2-PUB-PH-2025-024 v12",
   "reason": "P5 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): Belle (711 fb-1) + Belle II (365 fb-1), \"Studies of the decays B0 -> D*- eta pi+ and B+ -> Dbar0 eta pi+ in Belle and Belle II\", BELLE2-PUB-PH-2025-024 v12 (JHEP draft; not in PDG on 2026-11-18). B(B+ -> Dbar0 eta pi+) = (5.70 +- 0.26 +- 0.44)e-4 (abstract; p. 27), D_s+ -> eta pi+ excluded and the band 1.90 < M(eta pi) < 2.05 GeV vetoed; error: stat and syst in quadrature plus 5 % for the vetoed band. Line 4269 (4.0e-4): c = 1.43."
+ },
+ {
+  "pdgid": "S042.265",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B0 --> D^*(2010)- D+ K0 + D- D^*(2010)+ K0\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S042.261",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B0 --> D- D^*(2007)0 K+\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S042.263",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B0 --> D^*(2010)- D^*(2007)0 K+\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S041.330",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B+ --> Dbar0 D^*(2010)+ K0\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S041.331",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B+ --> Dbar^*(2007)0 D^*(2010)+ K0\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S041.334",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B+ --> Dbar0 D^*(2007)0 K+\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S041.335",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B+ --> Dbar^*(2007)0 D^*(2007)0 K+\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state."
+ },
+ {
+  "pdgid": "S042.266",
+  "action": "fold",
+  "states": [
+   "D'_s1+"
+  ],
+  "reason": "PDG text: \"B0 --> D^*(2010)- D^*(2010)+ K0\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. BaBar 2011 (DEL-AMO-SANCHEZ 2011B, arXiv:1011.3929) measures the 22 D(*)D(*)K modes 'including nonresonant and resonant modes', names D_s1(2536)+ and reweights the efficiency over the Dalitz plane; no veto on m(D*K). The decay-file lines B -> D(*) D'_s1+ (D'_s1+ = D_s1(2536)+, 100 % D*K) feed this final state. Also averaged: Belle 2007 (DALSENO 2007, arXiv:0706.2045; BF from all candidates, the D_s1 region removed only as a check of the CP fit) and BaBar 2006 (AUBERT,B 2006Q, hep-ex/0608016; quotes the D_s1(2536) fraction of the total, 0.092; D_s1 vetoed only in the time-dependent analysis); both include D_s1 in the BF (checked 2026-11-18)."
+ },
+ {
+  "pdgid": "S042.161",
+  "action": "fold",
+  "states": [
+   "anti-Sigma_c0",
+   "anti-Sigma_c--"
+  ],
+  "reason": "PDG text: \"B0 --> Lambdabar_c()- p pi+ pi-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B0 -> Lambdabar_c- p pi+ pi-: BaBar 2013 (LEES 2013H, arXiv:1302.0191, Table VII) and Belle 2007 (PARK 2007, hep-ex/0608025, Table II) give the total as the sum of the Sigma_c(2455), Sigma_c(2520) modes and the non-Sigma_c part. Sigma_c(2455) (width 1.9 MeV) decays 100 % to Lambda_c pi."
+ },
+ {
+  "pdgid": "S042.214",
+  "action": "fold",
+  "states": [
+   "psi(2S)"
+  ],
+  "reason": "PDG text: \"B0 --> J/psi(1S) K^*(892)0 pi+ pi-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B0 -> J/psi K*0 pi+ pi-: the only measurement, CDF 2002 (AFFOLDER 2002B, hep-ex/0108022), sees psi(2S)K*0 inside the signal ('contributions ... are seen from psi(2S)K(*)0') and does not veto it."
+ },
+ {
+  "pdgid": "S041.160",
+  "action": "fold",
+  "states": [
+   "phi",
+   "chi_c0"
+  ],
+  "reason": "PDG text: \"B+ --> K+ K- K+\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B+ -> K+ K- K+: LEES 2012O footnote: 'all intermediate charmonium and charm resonances are removed, except chi_c0'; phi K+ is part of the Dalitz model. Other inputs (GARMASH 2005, AAIJ 2020AJ) not read."
+ },
+ {
+  "pdgid": "S042.81",
+  "action": "fold",
+  "states": [
+   "phi",
+   "chi_c0"
+  ],
+  "reason": "PDG text: \"B0 --> K0 K+ K-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B0 -> K0 K+ K-: LEES 2012O footnote as for S041.160 (charmonium removed except chi_c0; phi K0 in the Dalitz model)."
+ },
+ {
+  "pdgid": "S041.164",
+  "action": "fold",
+  "states": [
+   "phi"
+  ],
+  "reason": "PDG text: \"B+ --> K^*(892)+ K+ K-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B+ -> K*+ K+ K-: BaBar hep-ex/0607113 measures the total charmless rate including resonant charmless substructure (phi K* named); charm and charmonium removed."
+ },
+ {
+  "pdgid": "S042.85",
+  "action": "fold",
+  "states": [
+   "phi"
+  ],
+  "reason": "PDG text: \"B0 --> K^*(892)0 K+ K-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B0 -> K*0 K+ K-: BaBar arXiv:0708.2543, same definition as hep-ex/0607113."
+ },
+ {
+  "pdgid": "S042.230",
+  "action": "fold",
+  "states": [
+   "phi"
+  ],
+  "reason": "PDG text: \"B0 --> K+ K- pi0\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B0 -> K+ K- pi0: Belle 2013 (arXiv:1304.5312) vetoes only the D0 window in M(K+K-); phi pi0 is inside."
+ },
+ {
+  "pdgid": "S042.241",
+  "action": "fold",
+  "states": [
+   "omega"
+  ],
+  "reason": "PDG text: \"B0 --> J/psi(1S) pi+ pi-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B0 -> J/psi pi+ pi-: LHCb 2013M fits omega as a component of the total."
+ },
+ {
+  "pdgid": "S041.63",
+  "action": "fold",
+  "states": [
+   "omega"
+  ],
+  "reason": "PDG text: \"B+ --> pi+ pi+ pi-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B+ -> pi+ pi- pi+: no omega veto in the averaged measurements as judged in the P2 check (BaBar 2009L and LHCb 2020 not read); omega -> pi+ pi- (1.5 %)."
+ },
+ {
+  "pdgid": "S041.19",
+  "action": "fold",
+  "states": [
+   "omega"
+  ],
+  "reason": "PDG text: \"B+ --> J/psi(1S) K+ pi+ pi-\". P6 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B+ -> J/psi K+ pi+ pi-: Belle 2011 (arXiv:1009.5256) vetoes psi(2S)K but not omega (seen distorting the rho line shape); omega reaches the final state through K1 -> K omega and J/psi omega K+."
  }
 ]

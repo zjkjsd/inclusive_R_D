@@ -943,7 +943,9 @@ def test_real_misc():
     # sum node
     a, b = row(511, 'D*- D+ K0'), row(511, 'D- D*+ K0')
     assert a['how'] == b['how'] == 'node' and a['pdgids'] == b['pdgids'] == 'S042.265'
-    assert close(a['c'], b['c']) and close(a['c'], 0.00641 / (a['bf_mc'] + b['bf_mc']), 1e-2)
+    # P6: the D_s1(2536)+ line (D'_s1+ D-, half to D*+ K0) is folded into the total
+    s1 = row(511, "D'_s1+ D-")['c'] * 0.00043 * 0.5
+    assert close(a['c'], b['c']) and close(a['c'], (0.00641 - s1) / (a['bf_mc'] + b['bf_mc']), 1e-2)
     # non-resonant PHSP line where PDG sees resonances
     r = row(511, 'D*- omega pi+')
     assert 'resonance_mismatch' in flags(r) and r['f_res_mc'] == 0.0 and r['f_res_pdg'] > 0.5
@@ -1302,6 +1304,30 @@ def test_nonres_external_and_windows_nov18():
     for m, names in ((511, 'D- eta pi+'), (521, 'anti-D*0 eta pi+')):
         r = row(m, names)
         assert r['how'] == '' and r['c'] == 1.0, names
+
+
+def test_narrow_folds_p6():
+    """P6: narrow resonances folded into the totals whose measurements include them (2026-11-18)."""
+    # D_s1(2536)+ -> D* K is inside the BaBar 2011 D(*)D(*)K totals: the direct lines take the remainder
+    # c = (total - c(D_s1 line) x BF x 0.5) / BF
+    ds1 = {511: {"D'_s1+ D-": 0.00043, "D'_s1+ D*-": 0.00083}, 521: {"anti-D0 D'_s1+": 0.00045, "anti-D*0 D'_s1+": 0.00094}}
+    for m, names, total, s1 in ((511, 'D*- D*+ K0', 8.10924e-3, "D'_s1+ D*-"), (511, 'D*- D*0 K+', 0.0106, "D'_s1+ D*-"),
+                                (511, 'D- D*0 K+', 3.46e-3, "D'_s1+ D-"), (521, 'anti-D0 D*+ K0', 3.81e-3, "anti-D0 D'_s1+"),
+                                (521, 'anti-D*0 D*+ K0', 9.17e-3, "anti-D*0 D'_s1+")):
+        r, rs = row(m, names), row(m, s1)
+        assert r['how'] == 'node', names
+        expect = (total - rs['c'] * ds1[m][s1] * 0.5) / r['bf_mc']
+        assert abs(r['c'] - expect) < 2e-3 and r['c'] < 0.98, (names, r['c'], expect)
+    # the two direct lines of the sum S042.265 share one c
+    assert close(row(511, 'D*- D+ K0')['c'], row(511, 'D- D*+ K0')['c']) and row(511, 'D- D*+ K0')['c'] < 0.97
+    # Sigma_c(2455) inside Lambdabar_c p pi pi: the total (a closure check since P2) now closes
+    rep = pm.node_report(NODES, TABLE, PDL).set_index('uid')
+    assert abs(rep.loc['S042.161', 'closure_pull']) < 1.0
+    # psi(2S) inside the CDF J/psi K*0 pi pi total
+    assert abs(row(511, 'J/psi K*0 pi+ pi-')['c'] - 0.662) < 0.01
+    # fold only acts on the named entries: the D* veto of D0bar pi pi stays (no D* folded)
+    assert row(511, 'anti-D0 pi- pi+')['how'] == 'node' and abs(row(511, 'anti-D0 pi- pi+')['c'] - 0.279) < 0.01
+
 
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]

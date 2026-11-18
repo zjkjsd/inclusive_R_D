@@ -6,12 +6,12 @@ options, a recommendation and a decision. A decision is entered only after it wa
 agreed. Status labels: OPEN (not decided), AGREED (decided, not yet implemented), DONE (implemented
 and the tables rerun).
 
-Last updated: 2026-11-18 (P2–P5 decided and implemented, sections 5i and 5j; P6 opened).
+Last updated: 2026-11-18 (P2–P6 decided and implemented, sections 5i–5k).
 
 **State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
 audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, and the
-Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2–P5 are DONE
-(implemented 2026-11-18, section 5j); P6 is OPEN. P2 and P5 touch lines with a visible
+Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2–P6 are DONE
+(implemented 2026-11-18, sections 5j and 5k). P2 and P5 touch lines with a visible
 yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
@@ -34,7 +34,7 @@ blocks; anti-B lines (B̄⁰ 2000–3999, B⁻ 5500–7299) are named only where
 | `Notebooks/Plotting/csv_output/b_mode_pdg_table.csv` | the full result, one row per exclusive final state (5017 rows) | the code; read with `pdg_match.read_table` |
 | `Notebooks/Plotting/csv_output/b_mode_pdg_nodes.csv` | node report: every PDG final-state entry fed by B⁰/B⁺ lines (591 rows for 561 entries; lepton entries once for e, once for μ), with value, decay-file sum before and after c, closure pull and every feeding line with its decay-file lines (section 5e) | for looking up a total |
 | `Notebooks/Plotting/csv_output/b_mode_isospin_check.csv` | pairs of B⁰ and B⁺ lines related by isospin (154 rows), section 2b | optional |
-| `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (57 entries since 2026-11-18), each with its reason; register in section 3 | you and Claude |
+| `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (75 entries since 2026-11-18), each with its reason; register in section 3 | you and Claude |
 | `Samples/dec/pdg_bf_B_2026.json` | the PDG values (2026 edition) | the code |
 | `docs/REFERENCES.md` | register of the papers and notes behind the decisions (identifiers, version read, what was taken); no PDFs in the repository | you and Claude |
 
@@ -126,7 +126,7 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | P3 | PDG entries measured in a mass window, compared with the full final state | DONE (2026-11-18), sections 5i, 5j | option (a): `exclude_node` for the entries whose averaged measurements are all window-restricted (S042.461, S042.231, S041.307, S041.308, S041.474, S042.310, S042.376 and the p p̄ / ΛΛ̄ ones); line 1140 becomes class none, c = 1; false `node_not_closed` flags removed; ≤ 0.014 % of the yield |
 | P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | DONE (2026-11-18), sections 5i, 5j | option (a): `exclude_node` S041.797, S041.798, S041.799 (charmonium inside the totals; normalization apparently 2.89 times the paper's own ratios, unconfirmed); line 4676 class none c = 1; line 4130 without these entries; ≤ 0.013 % of the yield |
 | P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | DONE (2026-11-18), sections 5i, 5j | option (b): new exception action `external`; lines 733 c = 1.09 ± 0.13, 4269 c = 1.43 ± 0.15 (totals as published, 5 % extra for the vetoed D_s band); 732 and 4293 stay at 1 ± 1 (N1) |
-| P6 | Narrow resonances (not folded) inside PDG totals: the remainder of the direct line too large | OPEN (2026-11-18), section 5i | found in the P2 check; largest share D(\*)D̄(\*)K with D_s1(2536) (653/654, 4212, 4213) |
+| P6 | Narrow resonances (not folded by default) inside PDG totals | DONE (2026-11-18), sections 5i, 5k | option (a): `fold` per total (E22, 18 entries). D_s1(2536) in the D(\*)D̄(\*)K totals: 655 0.969 ± 0.081, 649 0.976 ± 0.087, 647 0.960 ± 0.120, 653/654 0.964 ± 0.082, 4205 0.948 ± 0.103, 4207 0.945 ± 0.135, 4212 0.964 ± 0.078, 4213 0.942 ± 0.118; Σ_c(2455) in S042.161 (closes, −0.5σ); ψ(2S) in S042.214: 472 0.662 ± 0.342; φ (χ_c0) and ω in charmless totals (share 0) |
 
 ## 2. Method points
 
@@ -386,7 +386,7 @@ by their PDG entry (section 5).
 
 ## 3. The exceptions file
 
-`Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching: 57 entries (28 until P2–P5 were implemented on 2026-11-18),
+`Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching: 75 entries (28 until P2–P6 were implemented on 2026-11-18),
 each with an `action` and a `reason` (with the PDG text where a PDG entry is concerned). It is read
 every time the table is built; without an entry, the automatic rule applies. An entry names a PDG
 entry (`pdgid`) or a decay-file final state (`mother`, `key`); a final state must be in the B⁰ or the
@@ -396,7 +396,7 @@ B⁺ block (the loader refuses anything else): the anti-B rows follow their conj
 |---|---|
 | `rewrite` | the text of the PDG entry is replaced by `description` before it is parsed. For misprints and incomplete texts in the PDG listing, and for entries that are sums of charge states |
 | `exclude_node` | the entry is not used at all |
-| `fold` / `no_fold` | for one final-state entry: add or remove resonances that are counted as part of it (not used at present) |
+| `fold` / `no_fold` | for one final-state entry: add or remove resonances that are counted as part of it (`fold` used since P6; `no_fold` not used) |
 | `force_class` | set the class of a final state by hand; applied before the totals are split, so the line takes no c from a total |
 | `isospin` | a B⁰ (B⁺) line takes the corrected BF of its isospin partner in the other block (divided or multiplied by the lifetime ratio 1.076), which must have an exact or product c |
 | `direct_line` | a line that reaches a PDG total through a resonance is treated as the direct line of that total (the decay file routes the whole final state through it) |
@@ -439,6 +439,7 @@ Register (current effect; "was" gives the value before the entry where it matter
 | E19 | 12 `exclude_node`: S042.461, S042.231, S041.307, S041.308, S041.474, S042.310, S042.376; S041.356, S041.539, S041.744, S042.32, S042.571 | 1140, 5026; flags on 871, 874–877, 1139, 1173, 1180, 1666, 1859, 1883, 4415–4420 | exclude_node | P3: every averaged measurement in a mass window (window in `reason`) | 1140 none, c = 1 (was 0); 5026 none (was exact 1 ± 0.48 from S041.539) | DONE (2026-11-18) |
 | E20 | 3 `exclude_node`: S041.797, S041.798, S041.799 | 4676, 4130 | exclude_node | P4 (section 5i) | 4676 none, c = 1 (was 29.5); 4130 none, c = 1 (was 6.8) | DONE (2026-11-18) |
 | E21 | 2 `external`: B⁰ → D\*⁻ηπ⁺, B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024 v12) | 733, 4269 | external | P5 | 1.086 ± 0.131, 1.425 ± 0.146 (was 1) | DONE (2026-11-18) |
+| E22 | 18 `fold`: D'_s1+ into S042.261, S042.263, S042.265, S042.266, S041.330, S041.331, S041.334, S041.335; Σ̄_c(2455)⁰,⁻⁻ into S042.161; ψ(2S) into S042.214; φ and χ_c0 into S041.160, S042.81; φ into S041.164, S042.85, S042.230; ω into S042.241, S041.63, S041.19 | 647, 649, 653–655, 4205, 4207, 4212, 4213, 472, 451, 1080, 1222, 4083, 4668 | fold | P6 (section 5i): the measurement includes the narrow state | values in section 1 and 5k | DONE (2026-11-18) |
 
 ### E6. B⁺ → ψ(2S)K₁(1270)⁺ and the ψ(2S)K⁺π⁺π⁻ total (discussion of 2026-11-17)
 
@@ -1229,6 +1230,18 @@ the action is generic and can later carry the gap-mode recommendation. Shapes st
 *Also checked:* B⁺ → D⁺K⁺π⁻ (line 5464) c = 275 is a real correction (the decay file's 2·10⁻⁸ against
 LHCb's 5.6·10⁻⁶), share 0.
 
+*P6, check and decision (2026-11-18).* Full list of the D_s1(2536) cases (the P2 check had found three
+of the eight totals): every B → D(\*)D_s1⁺ line (801 D⁻, 802 D\*⁻, 4346 D̄⁰, 4347 D̄\*⁰; product c 0.64, 0.60,
+0.88, 1.07) feeds two D(\*)D̄(\*)K final states through D_s1⁺ → D\*⁺K⁰ / D\*⁰K⁺ (50 % each). S042.266
+also averages Belle 2007 (DALSENO 2007, arXiv:0706.2045) and BaBar 2006 (AUBERT,B 2006Q,
+hep-ex/0608016), read on 2026-11-18: both obtain the BF from all candidates (Belle's Mbc–ΔE fit;
+BaBar quotes the D_s1(2536) fraction of the total, 0.092) and remove the D_s1 region only in their
+time-dependent CP analyses, so they include it as BaBar 2011 does.
+**Decision (2026-11-18): option (a), DONE.** A `fold` exception per total whose measurement includes
+the narrow state (E22), with the measurement and the reason in `reason`; a test for `fold`.
+Options not taken: only the D_s1 entries; folding every narrow state by default with `no_fold` where
+vetoed.
+
 ## 5j. Implementation of P2–P5 (2026-11-18)
 
 Implemented in `scripts/tools/pdg_match.py` (new actions `nonres_direct` and `external`, loader checks,
@@ -1291,6 +1304,40 @@ To note:
    charmonium, not a window): S041.357, S042.455, S042.456, S041.21, S041.313.
 5. *Review list grew by about 70 rows:* excluding an entry adds `exception_applied` to every line
    that fed it, so these charmless lines are now listed with why = flag (behavior unchanged).
+
+## 5k. Implementation of P6 (2026-11-18)
+
+18 `fold` entries (E22); exceptions file 57 → 75 entries. New test `test_narrow_folds_p6`; the
+sum-node assertion of `test_real_misc` (S042.265) now subtracts the D_s1 line. Tests: 34 and 15
+pass. Outputs and the case file rerun; the rerun reproduces itself.
+
+Every B⁰/B⁺ line whose c moved (anti-B conjugates follow):
+
+| Line | Final state | Total | how | Before | After | Max share % |
+|---|---|---|---|---|---|---|
+| 4207 | D̄\*⁰D\*⁺K⁰ | S041.331 | exact → node | 1.000 ± 0.134 | 0.945 ± 0.135 | 14.73 |
+| 4205 | D̄⁰D\*⁺K⁰ | S041.330 | exact → node | 1.000 ± 0.101 | 0.948 ± 0.103 | 9.89 |
+| 655 | D\*⁻D\*⁺K⁰ | S042.266 | exact → node | 1.000 ± 0.080 | 0.969 ± 0.081 | 8.65 |
+| 654 | D⁻D\*⁺K⁰ | S042.265 | node | 0.985 ± 0.082 | 0.964 ± 0.082 | 8.43 |
+| 649 | D\*⁻D\*⁰K⁺ | S042.263 | exact → node | 1.000 ± 0.087 | 0.976 ± 0.087 | 8.22 |
+| 653 | D\*⁻D⁺K⁰ | S042.265 | node | 0.985 ± 0.082 | 0.964 ± 0.082 | 3.26 |
+| 647 | D⁻D\*⁰K⁺ | S042.261 | exact → node | 1.000 ± 0.119 | 0.960 ± 0.120 | 2.70 |
+| 4213 | D̄\*⁰D\*⁰K⁺ | S041.335 | node | 0.987 ± 0.117 | 0.942 ± 0.118 | 1.04 |
+| 4212 | D̄⁰D\*⁰K⁺ | S041.334 | node | 0.996 ± 0.077 | 0.964 ± 0.078 | 0.58 |
+| 472 | J/ψK\*⁰π⁺π⁻ | S042.214 | node | 0.965 ± 0.334 | 0.662 ± 0.342 | 0.039 |
+| 451 | J/ψπ⁺π⁻ | S042.241 | node | 0.623 ± 1.283 | 0.607 ± 1.284 | 0.005 |
+| 1080 | K⁺K⁻π⁰ | S042.230 | node | 0.510 ± 1.178 | 0.461 ± 1.182 | 0 |
+| 1222 | K⁻K⁺K\*⁰ | S042.85 | node | 0.391 ± 0.759 | 0.172 ± 0.770 (now c_extreme) | 0 |
+| 4083 | J/ψK⁺π⁺π⁻ | S041.19 | node | 1.050 ± 5.116 | 0.962 ± 5.137 | 0 |
+| 4668 | K⁻K⁺K\*⁺ | S041.164 | node | 0.689 ± 0.674 | 0.501 ± 0.684 (now remainder_unstable) | 0 |
+
+- Closure of the totals that are closure checks only: S042.161 (Λ̄_c⁻pπ⁺π⁻) −2.7σ → −0.5σ; S041.160
+  (K⁺K⁻K⁺) −4.9σ → −1.2σ; S041.63 (π⁺π⁻π⁺) +1.6σ → +1.7σ; S042.81 (K⁰K⁺K⁻) +8.9σ → +13.5σ (with φ
+  and χ_c0 folded the decay file is further above the PDG total; share 0).
+- Yield by class: the five lines that were `exact` are now direct lines of a total (`node`), so up
+  to 5.5 points of the yield move from "had. exact" to "had. node" (SR hadB: 32.1 → 26.6 and 10.1 →
+  15.6); a change of class only.
+- BF by class: B⁰ exact 30.4 → 28.3 %, node 3.3 → 5.5 %; B⁺ exact 35.0 → 33.8 %, node 3.4 → 4.7 %.
 
 ## 6. Starting a new session
 
