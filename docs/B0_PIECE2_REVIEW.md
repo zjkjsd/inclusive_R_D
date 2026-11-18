@@ -6,12 +6,12 @@ options, a recommendation and a decision. A decision is entered only after it wa
 agreed. Status labels: OPEN (not decided), AGREED (decided, not yet implemented), DONE (implemented
 and the tables rerun).
 
-Last updated: 2026-11-18 (P2, P3, P5 decided; P6 opened; section 5i).
+Last updated: 2026-11-18 (P2–P5 decided; P6 opened; section 5i).
 
 **State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
 audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, and the
-Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2, P3 and P5 are
-AGREED (not yet implemented); P4 and P6 are OPEN. P2 and P5 touch lines with a visible
+Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2–P5 are AGREED (not
+yet implemented); P6 is OPEN. P2 and P5 touch lines with a visible
 yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
@@ -124,7 +124,7 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | R4 | Audit of the case file | DONE (2026-11-18), section 5i | generator fixed: 17 cases in full, 40 small; numbers confirmed by an independent recomputation |
 | P2 | PDG entries for the non-resonant part of a total (24 measured, so far unused) | AGREED (2026-11-18), section 5i, not yet implemented | option (c), per line: the NR entry is the source of lines 816 (0.53 ± 0.10), 1068, 1070, 1078, 1159, 4517–4520 (≈ 1.0), 5022 (0.52), 4437 (0.73); the remainder stays for 4216 (0.43 ± 0.48), 4217, 4218 (0.96) and 510; S041.579 a product cross-check of 4318 only |
 | P3 | PDG entries measured in a mass window, compared with the full final state | AGREED (2026-11-18), section 5i, not yet implemented | option (a): `exclude_node` for the entries whose averaged measurements are all window-restricted (S042.461, S042.231, S041.307, S041.308, S041.474, S042.310, S042.376 and the p p̄ / ΛΛ̄ ones); line 1140 becomes class none, c = 1; false `node_not_closed` flags removed; ≤ 0.014 % of the yield |
-| P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | OPEN (2026-11-18), section 5i | ≤ 0.004 % of the yield |
+| P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | AGREED (2026-11-18), section 5i, not yet implemented | option (a): `exclude_node` S041.797, S041.798, S041.799 (charmonium inside the totals; normalization apparently 2.89 times the paper's own ratios, unconfirmed); line 4676 class none c = 1; line 4130 without these entries; ≤ 0.013 % of the yield |
 | P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | AGREED (2026-11-18), section 5i, not yet implemented | option (b): new exception action `external`; lines 733 c = 1.09 ± 0.13, 4269 c = 1.43 ± 0.14 (totals as published, 5 % extra for the vetoed D_s band); 732 and 4293 stay at 1 ± 1 (N1) |
 | P6 | Narrow resonances (not folded) inside PDG totals: the remainder of the direct line too large | OPEN (2026-11-18), section 5i | found in the P2 check; largest share D(\*)D̄(\*)K with D_s1(2536) (653/654, 4212, 4213) |
 
@@ -1138,6 +1138,33 @@ K⁰K⁺K⁺π⁻ does not close (0.1, −8.5σ). The values look ten times too 
 (K⁺K⁻K⁺, χ_c0K⁺ = 1.5·10⁻⁴), and η_c, χ_c0 are not folded, so the charmonium part lands on the
 phase-space lines. Proposal: exclude the three entries until the paper is read. At most 0.004 % of
 the yield.
+
+*P4, check and decision (2026-11-18).* Paper read: LHCb, arXiv:2304.14891 v2, PRD 108, 032010 (2023);
+each of the three PDG entries is this measurement alone. Lines and values now: S041.797 sets the
+direct line 4676 (1·10⁻⁵) to c = 29.5 ± 3.9 (also fed by 4668, 4671, 4682, 4684, 5083); S041.798 has no
+direct line, its feeders (4669, 4670, 4683, 4685, 4627, 5090) are unmeasured and the total is −8.5σ;
+S041.799 sets line 4130 (χ_c0K⁰π⁺, 2·10⁻⁴) to c = 6.8 ± 1.1 (4129, χ_c0K\*⁺ at its PDG limit, also
+feeds it). Shares: 4129 0.013 %, 4130 0.004 %, the rest 0.
+- Content of the totals: LHCb subtracts open charm only (D⁰, D_s peaks, Table 20); charmonium stays
+  (η_c alone 24 % of K_S⁰K⁺K⁻π⁺ by Table 21; J/ψ, η_c(2S), χ_c0, χ_c1 about 12 % more). The code does
+  not fold η_c, χ_c0 (`NO_FOLD_DEFAULT`) or J/ψ, so that part lands on line 4676. With charmonium, φ
+  and ω folded, the decay file gives 1.10·10⁻⁴ (K⁰K⁺K⁻π⁺; now 6.0·10⁻⁵) and 0.63·10⁻⁴ (K⁰K⁺K⁺π⁻; now
+  2.7·10⁻⁵): still 3–4.5 times below PDG.
+- Normalization (our reading, not confirmed; no erratum on INSPIRE): with B(X) = f₂ R₂(X) × 5.71·10⁻⁶
+  (eq. 35), the charmonium modes have f₂ = 1 (η_cK⁺: 2.83 = 4.95 × 0.571; they reproduce PDG), while
+  K⁰K⁺K⁻π⁺ (34.01 = 2.89 × 20.6 × 0.571), K⁰K⁺K⁺π⁻ (28.01 = 2.89 × 17.0 × 0.571) and χ_c0K⁰π⁺
+  (1.45·10⁻³ = 2.89 × 0.53 × 5.71·10⁻⁶ × 165) have f₂ = 2.89 = 2/B(K_S → π⁺π⁻). Signal and reference
+  are both reconstructed with K_S → π⁺π⁻ and the reference BF (PDG M070.335, K_S⁰K±π∓) refers to K_S,
+  so we expect a net factor 1 (×2 for K⁰, ×½ for the one charge combination of the reference). With
+  f₂ = 1: 1.18·10⁻⁴, 0.97·10⁻⁴ (close to the folded decay file) and 5.0·10⁻⁴. Consistent with this
+  reading: LHCb's own 2.6–3.2σ tension of χ_c2K⁰π⁺ with Belle, and χ_c0K⁰π⁺ = 1.45·10⁻³ against
+  BaBar's B(χ_c0K\*⁺) < 2.1·10⁻⁴.
+**Decision (2026-11-18): option (a), AGREED, not yet implemented.** `exclude_node` for S041.797,
+S041.798, S041.799, with both points in `reason`. Line 4676: class none, c = 1; line 4130: no c from
+these entries; the `node_not_closed` flags of S041.798 go away. Reason: the totals contain
+charmonium that the matching does not fold, and their normalization is in doubt; the effect on the
+yield is at most 0.013 %. Options not taken: fold charmonium only (4676 would still get c ≈ 23);
+use the values divided by 2.89 (our own unconfirmed re-derivation).
 
 *P5. B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ measured (added 2026-11-18).* Source: Belle (711 fb⁻¹) + Belle II
 (365 fb⁻¹), "Studies of the decays B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ in Belle and Belle II",
