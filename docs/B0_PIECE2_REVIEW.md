@@ -6,12 +6,12 @@ options, a recommendation and a decision. A decision is entered only after it wa
 agreed. Status labels: OPEN (not decided), AGREED (decided, not yet implemented), DONE (implemented
 and the tables rerun).
 
-Last updated: 2026-11-18 (P2 decided; P6 opened; section 5i).
+Last updated: 2026-11-18 (P2 and P5 decided; P6 opened; section 5i).
 
 **State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
 audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, and the
-Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2 is AGREED (not yet
-implemented); P3–P6 are OPEN. P2 and P5 touch lines with a visible
+Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2 and P5 are AGREED
+(not yet implemented); P3, P4 and P6 are OPEN. P2 and P5 touch lines with a visible
 yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
@@ -36,6 +36,7 @@ blocks; anti-B lines (B̄⁰ 2000–3999, B⁻ 5500–7299) are named only where
 | `Notebooks/Plotting/csv_output/b_mode_isospin_check.csv` | pairs of B⁰ and B⁺ lines related by isospin (154 rows), section 2b | optional |
 | `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (28 entries), each with its reason; register in section 3 | you and Claude |
 | `Samples/dec/pdg_bf_B_2026.json` | the PDG values (2026 edition) | the code |
+| `docs/REFERENCES.md` | register of the papers and notes behind the decisions (identifiers, version read, what was taken); no PDFs in the repository | you and Claude |
 
 **The quickest way through the results** is the case file: 17 cases in full, ordered by how much
 yield they touch, and 40 small ones in one table. Cases are renumbered at every regeneration, so
@@ -124,7 +125,7 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | P2 | PDG entries for the non-resonant part of a total (24 measured, so far unused) | AGREED (2026-11-18), section 5i, not yet implemented | option (c), per line: the NR entry is the source of lines 816 (0.53 ± 0.10), 1068, 1070, 1078, 1159, 4517–4520 (≈ 1.0), 5022 (0.52), 4437 (0.73); the remainder stays for 4216 (0.43 ± 0.48), 4217, 4218 (0.96) and 510; S041.579 a product cross-check of 4318 only |
 | P3 | PDG entries measured in a mass window, compared with the full final state | OPEN (2026-11-18), section 5i | charmless, radiative and baryonic only, ≤ 0.014 % of the yield |
 | P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | OPEN (2026-11-18), section 5i | ≤ 0.004 % of the yield |
-| P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | OPEN (2026-11-18), section 5i | proposal: lines 733 c = 1.09 ± 0.12, 4269 c = 1.43 ± 0.13 through a new exception action |
+| P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | AGREED (2026-11-18), section 5i, not yet implemented | option (b): new exception action `external`; lines 733 c = 1.09 ± 0.13, 4269 c = 1.43 ± 0.14 (totals as published, 5 % extra for the vetoed D_s band); 732 and 4293 stay at 1 ± 1 (N1) |
 | P6 | Narrow resonances (not folded) inside PDG totals: the remainder of the direct line too large | OPEN (2026-11-18), section 5i | found in the P2 check; largest share D(\*)D̄(\*)K with D_s1(2536) (653/654, 4212, 4213) |
 
 ## 2. Method points
@@ -1157,6 +1158,19 @@ the D_s-band estimate (+5 %) as an extra uncertainty. Recommendation: (b), total
 with the band as an extra 5 % uncertainty; the PYTHIA part goes to piece 3 (the "PYTHIA ≥ 2 charm"
 class does not cover it, so the check is a truth-level count of D\*⁻ηπ⁺ / D̄⁰ηπ⁺ from PYTHIA
 lines). Shapes stay phase space; the paper's binned maps (tables 3, 4) could correct them later.
+
+*P5, check and decision (2026-11-18).* Numbers re-read in the PDF (abstract lines 16–17; the two
+results on pp. 25 and 27; D_s veto 1.90–2.05 GeV in M(ηπ), lines 367–368, 391–394). Max yield shares:
+732 and 733 0.26 %, 4269 and 4293 0.03 %. New fact: in our MC16 samples no D(\*)ηπ final state comes
+from PYTHIA (truth daughter lists of all 12 sample files: every D⁻ηπ⁺, D\*⁻ηπ⁺, D̄⁰ηπ⁺, D̄\*⁰ηπ⁺ decay
+is from the explicit lines), so the caveat above does not apply to us and the truth-level PYTHIA
+check is not needed. B → D(\*)D_s with D_s → ηπ reaches the same final state through the narrow D_s,
+which is not folded; that agrees with the paper, which excludes it (consistent with P6).
+**Decision (2026-11-18): option (b), AGREED, not yet implemented.** New exception action `external`
+(mother, key, value, error, source; flag `external`): line 733 c = 2.78/2.56 = 1.09 ± 0.13, line 4269
+c = 5.70/4.00 = 1.43 ± 0.14 (totals as published; stat and syst in quadrature plus 5 % for the vetoed
+D_s band); 732 and 4293 stay at c = 1 ± 1 (N1). Reason: the only measurement of these final states;
+the action is generic and can later carry the gap-mode recommendation. Shapes stay phase space.
 
 *Also checked:* B⁺ → D⁺K⁺π⁻ (line 5464) c = 275 is a real correction (the decay file's 2·10⁻⁸ against
 LHCb's 5.6·10⁻⁶), share 0.
