@@ -7,16 +7,17 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 ---
 
 > I'm continuing the inclusive tagged R(D+) analysis (Belle II), Part B (BBbar background model),
-> step B0: matching the EvtGen decay file with PDG. Pieces 1 and 2 are DONE. We now start **piece 3:
-> exclusive modes without a PDG measurement**, and how they enter the background model.
+> step B0: matching the EvtGen decay file with PDG. Pieces 1 and 2 are DONE except three follow-up
+> points found in the last audit (P2–P4). After them we start **piece 3: exclusive modes without a
+> PDG measurement**, and how they enter the background model.
 >
 > Read first:
 > - `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md`, sections B.6 (the reweighting model and the
->   first-model parameters r_meas, r_SL, N₁, N₂, a) and B.13 (B0 in five pieces: the piece-2 summary
->   and the piece-3 facts and proposal, written 2026-11-18).
+>   first-model parameters r_meas, r_SL, N₁, N₂, a) and B.13 (B0 in five pieces: the piece-2 summary,
+>   the piece-3 facts and proposal, and what the Belle II B → X_sγ note does with the same background).
 > - `docs/B0_PIECE2_REVIEW.md`, section 1 (all piece-2 decisions with current values) and section 3
->   (register of the exceptions file). The rest of that file is the dated record of the piece-2
->   discussion; read a section when a point refers to it.
+>   (register of the exceptions file), and section 5i (P2–P4). The rest of that file is the dated
+>   record of the piece-2 discussion; read a section when a point refers to it.
 >
 > Code and data: `scripts/tools/decay_table.py` (decay-file parser, classification),
 > `scripts/tools/pdg_match.py` (PDG comparison; run `python3 scripts/tools/pdg_match.py`),
@@ -31,7 +32,8 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 > part of piece 3; the semileptonic gap modes (non-resonant D(\*)πℓν kept at c = 1 ± 1, D(\*)ππℓν at
 > their remainders), to be replaced by the official Belle II gap-mode recommendation that I will
 > provide; totals that stay above PDG by decision (B⁰ → J/ψK⁰π⁺π⁻, B⁰ → D⁰D̄⁰K⁺π⁻, the D(\*)πℓν
-> totals).
+> totals); the Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024),
+> which I may be able to provide (B.13).
 >
 > How I want to work:
 > - One point at a time. For each point, show me the facts (with decay-file line numbers and PDG
@@ -47,7 +49,10 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 > - Dates: write the actual date of the day the work is done; check it.
 > - If a web site you need is blocked, tell me the host and I will allow it.
 >
-> Start with point 1 of the piece-3 proposal in B.13: whether the exclusive double-charm lines
-> without a measurement and the PYTHIA ≥ 2 charm decays form one class (one scale factor), and what
-> inclusive measurements can constrain it. Begin by checking the facts of the proposal (the shares,
-> the inclusive B → D D̄ K X, B → D_s X and B → D D̄ X rates against the decay file's sums).
+> Start with P2 (PDG entries for the non-resonant part of a total; it changes B⁺ → D⁺D⁻K⁺, line 4216,
+> 2.4 % of the yield in one table), then P3 and P4 (small), all in section 5i of the review file,
+> and record them there. Then piece 3, point 1 of the proposal in B.13: whether the exclusive
+> double-charm lines without a measurement and the PYTHIA ≥ 2 charm decays form one class (one scale
+> factor), and what inclusive measurements can constrain it. Begin piece 3 by checking the facts of
+> the proposal (the shares, the inclusive B → D D̄ K X, B → D_s X and B → D D̄ X rates against the
+> decay file's sums).

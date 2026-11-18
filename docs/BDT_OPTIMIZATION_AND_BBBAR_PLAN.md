@@ -913,6 +913,36 @@ Proposal, to discuss point by point:
    measured modes (e.g. D̄⁰D⁺K\*⁰ against the measured D̄⁰D⁺K⁰ and the K\*/K ratio in D(\*)D̄(\*)K),
    and the inclusive totals above against the decay file's sums (exclusive + PYTHIA).
 
+**How another Belle II analysis models the same background (BELLE2-NOTE-PH-2025-051 v0.4, B → X_sγ
+with hadronic tagging, MC15rd; section 6.3, tables 18 and 19; read 2026-11-18).**
+
+- *Method.* Signal-side B decays are corrected mode by mode: to the latest measurement, or to the
+  release-9 decay-file value ("Rel9/Rel6", with 100 % uncertainty); non-resonant D(\*)nπ modes are set
+  to 0, following the two tag-mode notes (their refs. [20, 21], the notes read for G3/G4). Everything
+  not corrected ("unmatched", too fragmented to match) is scaled by one common factor that keeps the
+  number of BB̄ events fixed (≈ 1.2) and its normalization floats in the signal fit. Every corrected
+  mode gets its own nuisance parameter (its +1σ weight as a template variation): 79 in all (35 B⁰,
+  44 B⁺). They checked that the unmatched uncertainty covers the shape difference to the old
+  (release-6) model.
+- *Comparison with our c.* Where both use a measurement the weights agree: B⁰ → D D_s0\* 0.142 (ours
+  0.143), B⁺ → D̄⁰ρ⁺ 0.698 (0.72), D\*⁻a₁⁺ 0.99 (1.01), D̄\*⁰a₁⁺ 0.96 (1.04). Their Rel9/Rel6
+  factors reproduce our rel08 values for the modes the tag-mode notes changed (e.g. D⁻a₁⁺ 1.786 ×
+  0.6 % = 1.071 % = our line 697; D₁⁻π⁺ 9.3 × 0.01 % = 0.093 % = line 736, assuming round release-6
+  values): our MC16 decay file already has these updates.
+- *New information.* B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ were measured by Belle and Belle II (their ref.
+  [22], BELLE2-PUB-PH-2025-024; not found on arXiv or INSPIRE, not yet in our PDG cache). Their
+  weights on the release-6 values are 0.08–0.16 (D(\*)ηπ, both B charges). Our decay file has these
+  lines at 2.56·10⁻⁴ (B⁰, lines 732, 733) and 4·10⁻⁴ (B⁺, 4269, 4293), commented "Limit provided to
+  invalidate eta as a candidate for SL gap (to be measured)"; they are class none (no PDG entry).
+  If release 6 had the same values, the measurement is 6–12 times lower. Small share for us (≤ 0.26 %
+  in one table), but the same comment ties them to the D(\*)ηℓν gap-mode lines (2·10⁻³ each).
+- *For pieces 3 and 4.* Their "unmatched" class with a free normalization is our piece-3 point 1
+  (one class for the unmeasured modes, normalization free), applied to everything not matched,
+  single and double charm alike. Their one-nuisance-parameter-per-corrected-mode is one answer to
+  the piece-4 question "c as weights or as prior widths": nominal weights plus a ±1σ template per
+  mode. A validation of the same kind (the unmatched uncertainty must cover the change to an older
+  decay-file model) would be a cheap check for us too, if the MC15 (release-6) decay file is at hand.
+
 ---
 
 ## Part C: global K_L check (AGREED as a separate track)

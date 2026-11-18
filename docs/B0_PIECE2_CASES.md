@@ -18,16 +18,23 @@ ways it can fail:
 1. a decay-file line took its correction c from this entry, and the result carries a
    warning: c far from 1 (`c_extreme`), a remainder less than 1σ from 0 or clamped at 0
    (`remainder_unstable`, `remainder_clamped`), another entry it could have used
-   (`node_ambiguous`), or its own limit exceeded (`limit_capped`);
+   (`node_ambiguous`);
 2. after every line is multiplied by its c, the decay-file sum still differs from the PDG
    value by more than 3σ. The case is then marked **not closed**.
 
 Each case shows the PDG entry, the decay-file sum, and a table of the decay-file lines that
 feed it. A line can appear in several cases, because it can feed several final states.
 
-The cases are ordered by importance: the largest share that any of their lines has in the
-exclusive yield of one of the 72 sample tables. 20 cases reach 0.05 % and are written
-in full; the other 39 are in one table at the end.
+The cases are ordered by importance: the largest share in the exclusive yield of one of the
+72 sample tables among the lines that feed the entry with at least 10 % of their rate
+(P >= 0.1); a line with smaller P is listed but does not count. 17 cases reach
+0.05 % and are written in full; the other 40 are in one table at the end.
+
+Not cases: upper-limit entries (a line above its own limit is flagged `above_limit` in the
+mode table) and entries that close, even if one of their lines also feeds a total that does
+not (the flag `node_not_closed` then points to that other total). A line without a c that the
+decay file puts above its own limit (`limit_capped`) enters every sum here, "MC sum" excepted,
+with limit/2, not with the c = 1 shown in its row.
 
 ## How to read a case
 
@@ -48,7 +55,7 @@ Columns of the line table:
 | BF | branching fraction of the line in the decay file |
 | P | fraction of the line that ends in the final state of this case (1 for the direct line) |
 | class | `measured`, `limit` (PDG has only an upper limit) or `none` (no PDG entry, `unmeasured`, or vetoed) |
-| how | where the c of the line comes from: `exact` = a PDG entry for exactly this line; `product` = a PDG entry B(B → X Y) × B(X → …); `node` = the line is the direct (phase-space) line of a multi-body PDG entry and takes its remainder; `isospin`, `half_limit`, `veto` = by exception (register in section 3 of the review file); empty = no c (`unmeasured` lines: c = 1 ± 1) |
+| how | where the c of the line comes from: `exact` = a PDG entry for exactly this line; `product` = a PDG entry B(B → X Y) × B(X → …); `node` = the line is the direct (phase-space) line of a multi-body PDG entry and takes its remainder; `isospin`, `half_limit`, `veto` = by exception (register in section 3 of the review file); empty = no c (c = 1; ± 1 for `unmeasured` lines, no σ for limit and `none` lines) |
 | PDG id | the PDG entry or entries used for the c |
 | c, ± | c = BF_PDG / BF_MC and its uncertainty |
 | this entry | "yes" if the c of the line comes from the entry of this case |
@@ -95,18 +102,7 @@ Columns of the line table:
 | D_1- e+ nu_e | 368 | 0.00704 | 0.17 | measured | product | S042.420, S042.623 | 0.959 | 0.074 |  | node_not_closed | 5.77 |
 | D- pi- e+ nu_e pi+ | 379 | 0.00021 | 1.00 | measured | node | S042.556 | 1.38 | 1.6 | yes | remainder_unstable | 0.13 |
 
-## Case 4: S041.215, B+ --> Dbar_1^*(2420)0 rho+
-
-- PDG: 0.0014 ± 0
-- MC sum: 0.00372 (PDG / MC = 0.376)
-- after c: – (after c / PDG = –, –σ)
-- largest yield share of its lines: 3.00 %
-
-| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| anti-D_10 rho+ | 4319 | 0.00372 | 1.00 | limit | half_limit | S041.215 | 0.188 | 0.19 | yes | above_limit, c_extreme, exception_applied | 3.00 |
-
-## Case 5: S042.311, B0 --> Dbar0 pi- lepton+ nu_lepton (same for the muon)
+## Case 4: S042.311, B0 --> Dbar0 pi- lepton+ nu_lepton (same for the muon)
 
 - PDG: 0.00364 ± 0.0002
 - MC sum: 0.00472 (PDG / MC = 0.771)
@@ -119,7 +115,7 @@ Columns of the line table:
 | D_2*- e+ nu_e | 371 | 0.00347 | 0.40 | measured | product | S042.419, S042.422 | 0.842 | 0.093 |  | node_not_closed | 2.77 |
 | anti-D0 pi- e+ nu_e | 376 | 0.00092 | 1.00 | none |  |  | 1 | 1 |  | exception_applied, node_not_closed, unmeasured | 0.86 |
 
-## Case 6: S041.336, B+ --> D- D+ K+
+## Case 5: S041.336, B+ --> D- D+ K+
 
 - PDG: 0.00022 ± 7.1e-05
 - MC sum: 0.00044 (PDG / MC = 0.5)
@@ -132,7 +128,7 @@ Columns of the line table:
 | K+ psi(3770) | 4162 | 0.000488 | 0.41 | measured | product | S041.361, S041.362 | 0.532 | 0.37 |  | exception_applied, measurement_conflict | 1.65 |
 | K+ psi(4160) | 4171 | 0.000509 | 0.04 | measured | exact | S041.619 | 0.993 | 0.53 |  |  | 0.68 |
 
-## Case 7: S042.609, B0 --> D0 Dbar()0 K+ pi-
+## Case 6: S042.609, B0 --> D0 Dbar()0 K+ pi-
 
 - PDG: 0.000351 ± 4.7e-05
 - MC sum: 0.000572 (PDG / MC = 0.613)
@@ -145,7 +141,7 @@ Columns of the line table:
 | K*0 psi(3770) | 597, 598, 599, 600 | 0.00048 | 0.35 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 1.08 |
 | pi- K+ psi(3770) | 602 | 0.00014 | 0.52 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.14 |
 
-## Case 8: S041.14, B+ --> D- pi+ pi+
+## Case 7: S041.14, B+ --> D- pi+ pi+
 
 - PDG: 0.00107 ± 5.5e-05
 - MC sum: 0.00119 (PDG / MC = 0.899)
@@ -158,7 +154,7 @@ Columns of the line table:
 | anti-D_2*0 pi+ | 4314 | 0.00085 | 0.40 | measured | product | S041.348, S041.351 | 1.01 | 0.062 |  |  | 0.76 |
 | D- pi+ pi+ | 4301 | 0.0003 | 1.00 | measured | node | S041.14 | 0.289 | 0.83 | yes | c_extreme, remainder_unstable | 0.53 |
 
-## Case 9: S042.239, B0 --> Dbar^*(2007)0 pi+ pi-
+## Case 8: S042.239, B0 --> Dbar^*(2007)0 pi+ pi-
 
 - PDG: 0.00062 ± 0.00022
 - MC sum: 0.0016 (PDG / MC = 0.387)
@@ -173,7 +169,7 @@ Columns of the line table:
 | D'_1- pi+ | 737 | 0.00031 | 0.67 | none |  |  | 1 | 1 |  | unmeasured | 0.04 |
 | D_2*- pi+ | 739 | 0.00043 | 0.27 | measured | product | S042.124 | 1.39 | 0.091 |  | exception_applied | 0.07 |
 
-## Case 10: S042.314, B0 --> D^*(2010)- K0 pi+
+## Case 9: S042.314, B0 --> D^*(2010)- K0 pi+
 
 - PDG: 0.0003 ± 7.6e-05
 - MC sum: 0.00082 (PDG / MC = 0.366)
@@ -186,7 +182,7 @@ Columns of the line table:
 | D*- pi+ K0 | 797 | 0.0003 | 1.00 | measured | node | S042.314 | 0.134 | 0.16 | yes | block_asymmetric, c_extreme, exception_applied, remainder_unstable, resonance_mismatch | 0.11 |
 | D*- K*+ | 754 | 0.00033 | 0.67 | measured | exact | S042.210 | 1 | 0.19 |  | exception_applied, resonance_mismatch | 0.06 |
 
-## Case 11: S041.289, B+ --> Dbar^*(2007)0 K+ Kbar^*(892)0
+## Case 10: S041.289, B+ --> Dbar^*(2007)0 K+ Kbar^*(892)0
 
 - PDG: 0.00123 ± 0.00014
 - MC sum: 0.00149 (PDG / MC = 0.826)
@@ -198,7 +194,7 @@ Columns of the line table:
 | anti-D*0 a_1+ | 4280 | 0.018 | 0.05 | measured | exact | S041.221 | 1.04 | 0.29 |  |  | 1.01 |
 | anti-D*0 anti-K*0 K+ | 4345 | 0.00059 | 1.00 | measured | node | S041.289 | 0.494 | 0.59 | yes | remainder_unstable | 0.10 |
 
-## Case 12: S042.1, B0 --> Dbar0 pi+ pi-
+## Case 11: S042.1, B0 --> Dbar0 pi+ pi-
 
 - PDG: 0.00088 ± 4.6e-05
 - MC sum: 0.00165 (PDG / MC = 0.533)
@@ -212,7 +208,7 @@ Columns of the line table:
 | D_0*- pi+ | 738 | 0.00042 | 0.67 | measured | product | S042.385 | 0.271 | 0.027 |  | c_extreme, exception_applied | 0.09 |
 | D_2*- pi+ | 739 | 0.00043 | 0.40 | measured | product | S042.124 | 1.39 | 0.091 |  | exception_applied | 0.07 |
 
-## Case 13: S041.612, B+ --> J/psi(1S) K0 pi+
+## Case 12: S041.612, B+ --> J/psi(1S) K0 pi+
 
 - PDG: 0.00113 ± 0.00011
 - MC sum: 0.00131 (PDG / MC = 0.865)
@@ -225,7 +221,7 @@ Columns of the line table:
 | pi+ K0 J/psi | 4070 | 0.000187 | 1.00 | measured | node | S041.612 | 0.054 | 1.6 | yes | c_extreme, remainder_unstable | 0.02 |
 | K_2*+ J/psi | 4080 | 0.0005 | 0.33 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
 
-## Case 14: S041.19, B+ --> J/psi(1S) K+ pi+ pi-
+## Case 13: S041.19, B+ --> J/psi(1S) K+ pi+ pi-
 
 - PDG: 0.000811 ± 0.00013
 - MC sum: 0.000809 (PDG / MC = 1)
@@ -240,7 +236,7 @@ Columns of the line table:
 | J/psi K'_1+ | 4078 | 0.0001 | 0.44 | limit |  | S041.272 | 1 | – |  |  | 0.00 |
 | K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | product | S041.361, S041.362 | 0.532 | 0.37 |  | exception_applied, measurement_conflict | 1.65 |
 
-## Case 15: S041.528, B+ --> J/psi(1S) omega K+
+## Case 14: S041.528, B+ --> J/psi(1S) omega K+
 
 - PDG: 0.00032 ± 4.6e-05
 - MC sum: 0.000534 (PDG / MC = 0.6)
@@ -254,7 +250,7 @@ Columns of the line table:
 | K_2*+ J/psi | 4080 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | unmeasured | 0.05 |
 | J/psi K'_1+ | 4078 | 0.0001 | 0.01 | limit |  | S041.272 | 1 | – |  |  | 0.00 |
 
-## Case 16: S042.211, B0 --> J/psi(1S) K0 pi+ pi-
+## Case 15: S042.211, B0 --> J/psi(1S) K0 pi+ pi-
 
 - PDG: 0.000446 ± 4e-05
 - MC sum: 0.00206 (PDG / MC = 0.216)
@@ -269,37 +265,9 @@ Columns of the line table:
 | pi- pi+ K0 J/psi | 453 | 0.000435 | 1.00 | measured | node | S042.211 | 0 | 1.2 | yes | c_extreme, node_not_closed, remainder_clamped, remainder_unstable | 0.02 |
 | K_2*0 J/psi | 459 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
 | J/psi K'_10 | 458 | 0.0001 | 0.44 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
-| K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | measured | isospin | S041.361, S041.362 | 0.503 | 0.35 |  | above_limit, exception_applied, isospin, measurement_conflict | 0.00 |
+| K0 psi(3770) | 592, 593, 594 | 0.00048 | 0.00 | measured | isospin | S041.361, S041.362 | 0.503 | 0.35 |  | above_limit, exception_applied, isospin, measurement_conflict | 0.83 |
 
-## Case 17: S042.212, B0 --> J/psi(1S) K0 rho0
-
-- PDG: 0.00054 ± 0.0003
-- MC sum: 0.000737 (PDG / MC = 0.732)
-- after c: 0.00054 (after c / PDG = 1, 0σ)
-- largest yield share of its lines: 0.06 %
-
-| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| rho0 K0 J/psi | 468 | 0.00054 | 1.00 | measured | node | S042.212 | 0.634 | 0.58 | yes | node_not_closed | 0.03 |
-| J/psi K_10 | 457 | 0.0013 | 0.14 | measured | exact | S042.203 | 1 | 0.36 |  | node_not_closed | 0.06 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
-| J/psi K'_10 | 458 | 0.0001 | 0.01 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
-
-## Case 18: S042.213, B0 --> J/psi(1S) K^*(892)+ pi-
-
-- PDG: 0.00077 ± 0.00043
-- MC sum: 0.00105 (PDG / MC = 0.731)
-- after c: 0.00077 (after c / PDG = 1, 0σ)
-- largest yield share of its lines: 0.06 %
-
-| Line | dec line | BF | P | class | how | PDG id | c | ± | this entry | flags | share % |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| pi- K*+ J/psi | 469 | 0.00077 | 1.00 | measured | node | S042.213 | 0.631 | 0.58 | yes | node_not_closed | 0.03 |
-| J/psi K_10 | 457 | 0.0013 | 0.11 | measured | exact | S042.203 | 1 | 0.36 |  | node_not_closed | 0.06 |
-| K_2*0 J/psi | 459 | 0.0005 | 0.16 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
-| J/psi K'_10 | 458 | 0.0001 | 0.63 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
-
-## Case 19: S042.440, B0 --> J/psi(1S) omega K0
+## Case 16: S042.440, B0 --> J/psi(1S) omega K0
 
 - PDG: 0.00023 ± 4.2e-05
 - MC sum: 0.000389 (PDG / MC = 0.592)
@@ -313,7 +281,7 @@ Columns of the line table:
 | K_2*0 J/psi | 459 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.03 |
 | J/psi K'_10 | 458 | 0.0001 | 0.01 | none |  |  | 1 | 1 |  | node_not_closed, unmeasured | 0.01 |
 
-## Case 20: S042.4, B0 --> J/psi(1S) K+ pi-
+## Case 17: S042.4, B0 --> J/psi(1S) K+ pi-
 
 - PDG: 0.00115 ± 5.1e-05
 - MC sum: 0.00132 (PDG / MC = 0.873)
@@ -368,4 +336,5 @@ Columns of the line table:
 | S042.376 | B0 --> K+ pi- pi0 gamma | 4.07e-05 ± 3.8e-06 | 2.6e-05 | 0.64 | -3.9 | – | 0.000 |
 | S042.570 | B0 --> phi pi+ pi- | 1.82e-07 ± 5e-08 | 4.87e-07 | 2.18 | 4.3 | pi- pi+ phi [1191] (0) | 0.000 |
 | S042.571 | B0 --> p pbar K+ pi- | 6.27e-06 ± 5.2e-07 | 2.83e-06 | 0.45 | -6.7 | – | 0.000 |
+| S042.586 | B0 --> K0 f_0(1500) | 1.29e-06 ± 7.5e-07 | 3.4e-06 | 10.3 | 16 | K0 f_0(1500) [1662] (3.91) | 0.000 |
 | S042.80 | B0 --> K0 pi+ pi- | 4.97e-05 ± 1.8e-06 | 6.17e-05 | 1.05 | 1.4 | pi- pi+ K0 [1068] (0) | 0.000 |

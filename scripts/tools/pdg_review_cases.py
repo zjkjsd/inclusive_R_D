@@ -20,8 +20,10 @@ import pdg_match as pm     # noqa: E402
 
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 OUT = os.path.join(ROOT, 'docs', 'B0_PIECE2_CASES.md')
-PROBLEM_FLAGS = ('remainder_unstable', 'remainder_clamped', 'node_not_closed', 'node_ambiguous', 'c_extreme',
-                 'limit_capped')
+# flags of a line that takes its c from the entry and make the entry a case. node_not_closed is not
+# one of them: it may come from another entry the line feeds; the entry's own closure is tested
+# directly (|closure_pull| > 3). limit_capped lines take no c, so they never select a case here.
+PROBLEM_FLAGS = ('remainder_unstable', 'remainder_clamped', 'node_ambiguous', 'c_extreme')
 MAIN_SHARE = 5e-4          # cases above this largest yield share are written in full
 
 
@@ -40,7 +42,10 @@ def collect_cases():
     table, nodes = pm.build_mode_pdg_table(return_nodes=True)
     pdl = dt.load_pdl()
     review = pd.read_csv(pm.DEFAULT_REVIEW_CSV)
-    share = {(r.mother_pdg, pm.collapse_key(_key(r.key))): r.max_share for r in review.itertuples()}
+    share = {}                                      # largest share over the rows of a collapsed final state
+    for r in review.itertuples():
+        k = (r.mother_pdg, pm.collapse_key(_key(r.key)))
+        share[k] = max(share.get(k, 0.0), r.max_share if pd.notna(r.max_share) else 0.0)
     # decay-file line numbers of every final state of the B0 and B+ blocks
     dec = dt.build_mode_table(pdl=pdl).dec
     line_no = {}
@@ -58,8 +63,10 @@ def collect_cases():
     cases = []
     for n in nodes[nodes['mother'].isin([511, 521])].itertuples():
         feeders = n.feeders if isinstance(n.feeders, list) else []
-        if not feeders or n.kind == 'product' or n.role in ('exact', 'limit', 'capped', 'multi_ks'):
+        if not feeders or n.kind == 'product' or bool(n.is_limit) or n.role in ('limit', 'capped', 'multi_ks'):
             continue
+        if n.role == 'exact' and not (pd.notna(n.closure_pull) and abs(n.closure_pull) > 3):
+            continue                                    # an exact entry is a case only if it does not close
         if str(n.uid).endswith('[mu]'):
             continue                                    # the muon copy of a lepton node
         lines, max_share, problem = [], 0.0, False
@@ -109,16 +116,23 @@ def write_cases(path=OUT):
            '1. a decay-file line took its correction c from this entry, and the result carries a',
            '   warning: c far from 1 (`c_extreme`), a remainder less than 1σ from 0 or clamped at 0',
            '   (`remainder_unstable`, `remainder_clamped`), another entry it could have used',
-           '   (`node_ambiguous`), or its own limit exceeded (`limit_capped`);',
+           '   (`node_ambiguous`);',
            '2. after every line is multiplied by its c, the decay-file sum still differs from the PDG',
            '   value by more than 3σ. The case is then marked **not closed**.',
            '',
            'Each case shows the PDG entry, the decay-file sum, and a table of the decay-file lines that',
            'feed it. A line can appear in several cases, because it can feed several final states.',
            '',
-           f'The cases are ordered by importance: the largest share that any of their lines has in the',
-           f'exclusive yield of one of the 72 sample tables. {len(main)} cases reach {100 * MAIN_SHARE:g} % and are written',
-           f'in full; the other {len(rest)} are in one table at the end.',
+           f'The cases are ordered by importance: the largest share in the exclusive yield of one of the',
+           f'72 sample tables among the lines that feed the entry with at least {100 * pm.P_MIN:g} % of their rate',
+           f'(P >= {pm.P_MIN:g}); a line with smaller P is listed but does not count. {len(main)} cases reach',
+           f'{100 * MAIN_SHARE:g} % and are written in full; the other {len(rest)} are in one table at the end.',
+           '',
+           'Not cases: upper-limit entries (a line above its own limit is flagged `above_limit` in the',
+           'mode table) and entries that close, even if one of their lines also feeds a total that does',
+           'not (the flag `node_not_closed` then points to that other total). A line without a c that the',
+           'decay file puts above its own limit (`limit_capped`) enters every sum here, "MC sum" excepted,',
+           'with limit/2, not with the c = 1 shown in its row.',
            '',
            '## How to read a case',
            '',
@@ -139,7 +153,7 @@ def write_cases(path=OUT):
            '| BF | branching fraction of the line in the decay file |',
            '| P | fraction of the line that ends in the final state of this case (1 for the direct line) |',
            '| class | `measured`, `limit` (PDG has only an upper limit) or `none` (no PDG entry, `unmeasured`, or vetoed) |',
-           '| how | where the c of the line comes from: `exact` = a PDG entry for exactly this line; `product` = a PDG entry B(B → X Y) × B(X → …); `node` = the line is the direct (phase-space) line of a multi-body PDG entry and takes its remainder; `isospin`, `half_limit`, `veto` = by exception (register in section 3 of the review file); empty = no c (`unmeasured` lines: c = 1 ± 1) |',
+           '| how | where the c of the line comes from: `exact` = a PDG entry for exactly this line; `product` = a PDG entry B(B → X Y) × B(X → …); `node` = the line is the direct (phase-space) line of a multi-body PDG entry and takes its remainder; `isospin`, `half_limit`, `veto` = by exception (register in section 3 of the review file); empty = no c (c = 1; ± 1 for `unmeasured` lines, no σ for limit and `none` lines) |',
            '| PDG id | the PDG entry or entries used for the c |',
            '| c, ± | c = BF_PDG / BF_MC and its uncertainty |',
            '| this entry | "yes" if the c of the line comes from the entry of this case |',

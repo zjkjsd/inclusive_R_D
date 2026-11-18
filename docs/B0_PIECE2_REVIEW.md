@@ -8,8 +8,9 @@ and the tables rerun).
 
 Last updated: 2026-11-18 (document audited against the code, the tables and the sources; section 5h).
 
-**State.** Piece 2 is complete: every point is decided and implemented (2026-11-16 and 2026-11-17).
-Still open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
+**State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
+audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, still OPEN; only P2
+touches a line with a visible yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
 
@@ -34,8 +35,8 @@ blocks; anti-B lines (B̄⁰ 2000–3999, B⁻ 5500–7299) are named only where
 | `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (28 entries), each with its reason; register in section 3 | you and Claude |
 | `Samples/dec/pdg_bf_B_2026.json` | the PDG values (2026 edition) | the code |
 
-**The quickest way through the results** is the case file: 20 cases in full, ordered by how much
-yield they touch, and 39 small ones in one table. Cases are renumbered at every regeneration, so
+**The quickest way through the results** is the case file: 17 cases in full, ordered by how much
+yield they touch, and 40 small ones in one table. Cases are renumbered at every regeneration, so
 this file refers to them by PDG entry. The review CSV is the same information per mode, for when you
 want to look something up.
 
@@ -117,6 +118,10 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | R1 | First independent review | DONE (2026-11-17), section 5b | fixed R1.1, R1.2, R1.5, R1.6, R1.9; R1.7 corrected in the text of 2c; R1.3 superseded; R1.4, R1.8, R1.10 noted |
 | R2 | Second independent review | DONE (2026-11-17), section 5g | 14 findings fixed, 2 refuted |
 | R3 | Audit of this document | DONE (2026-11-18), section 5h | stale parts rewritten; wrong facts corrected in place |
+| R4 | Audit of the case file | DONE (2026-11-18), section 5i | generator fixed: 17 cases in full, 40 small; numbers confirmed by an independent recomputation |
+| P2 | PDG entries for the non-resonant part of a total (23 measured, so far unused) | OPEN (2026-11-18), section 5i | proposal there; changes B⁺ → D⁺D⁻K⁺ (4216) and Λ̄_c⁻pπ⁺π⁻ (816) |
+| P3 | PDG entries measured in a mass window, compared with the full final state | OPEN (2026-11-18), section 5i | charmless, radiative and baryonic only, ≤ 0.014 % of the yield |
+| P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | OPEN (2026-11-18), section 5i | ≤ 0.004 % of the yield |
 
 ## 2. Method points
 
@@ -606,24 +611,24 @@ does not change, because it would then be superseded by the more precise sum.
 
 The cases are in `docs/B0_PIECE2_CASES.md`, with all numbers and the decay-file line of every mode.
 The file is regenerated after each change and the cases are renumbered, so they are identified here
-by their PDG entry. Present state (2026-11-18): 20 cases in full, 39 small ones; the case number in
-brackets is the present one.
+by their PDG entry. Present state (2026-11-18, after the case-file audit of section 5i): 17 cases in
+full, 40 small ones; the case number in brackets is the present one.
 
 | Group | PDG entry (case now) | dec lines | What is common | Status |
 |---|---|---|---|---|
 | G1 | S042.88 D⁻π⁺π⁺π⁻ (no longer a case) | 697 | D⁻a₁⁺ against the D⁻3π total | DONE (D1) |
-| G2 | S041.419 (1), S042.312 (2), S042.311 (5) D(\*)πℓν | 374, 376, 398, 400; 4006, 4008, 4033, 4035 | non-resonant D(\*)πℓν | DONE (M2); the totals stay open by decision |
-| G3 | S042.239 D̄\*⁰π⁺π⁻ (9), S041.215 D̄₁⁰ρ⁺ (4); S041.12, S042.19 no longer cases | 4319, 4321, 4315; 736, 737, 739; 693, 779 | D\*\*ρ, D\*\*π lines that took c = 17 and 79 from what was left of a total | DONE (2026-11-17), section 5a |
-| G4 | S041.14 D⁻π⁺π⁺ (8), S042.1 D̄⁰π⁺π⁻ (12) | 4301, 4316, 4314; 692, 778, 738, 739 | direct line plus resonances exceed the total | DONE (2026-11-17), section 5a |
-| G5 | S041.336 D⁻D⁺K⁺ (6), S042.609 D⁰D̄⁰K⁺π⁻ (7), S042.556 D⁻π⁺π⁻ℓν (3) | 4216, 4162, 4171; 597–600, 602, 674; 379, 403, 4011, 4038 | ψ(3770) feeding D D̄ K totals; Dππℓν direct lines | DONE (2026-11-17), section 5d |
-| G6 | S042.314 D\*⁻K⁰π⁺ (10), S041.289 D̄\*⁰K⁺K̄\*⁰ (11) | 797, 798, 754; 4345, 4349, 5888, 5892 | lines written with the wrong K\*⁰ / K⁰ flavor (`flavor_twin`) | DONE (2026-11-17), section 5f |
-| G7 | S041.612 (13), S041.19 (14), S041.528 (15), S042.211 (16), S042.212 (17), S042.213 (18), S042.440 (19), S042.4 (20) | 4067–4087; 433–436, 440, 453, 457–459, 464, 468, 469 | J/ψ Kπ, J/ψ Kππ and J/ψ ωK: PDG's sub-entries do not add up to its totals | DONE (2026-11-17), section 5h |
+| G2 | S041.419 (1), S042.312 (2), S042.311 (4) D(\*)πℓν | 374, 376, 398, 400; 4006, 4008, 4033, 4035 | non-resonant D(\*)πℓν | DONE (M2); the totals stay open by decision |
+| G3 | S042.239 D̄\*⁰π⁺π⁻ (8); S041.215 D̄₁⁰ρ⁺ (an upper limit), S041.12, S042.19 no longer cases | 4319, 4321, 4315; 736, 737, 739; 693, 779 | D\*\*ρ, D\*\*π lines that took c = 17 and 79 from what was left of a total | DONE (2026-11-17), section 5a |
+| G4 | S041.14 D⁻π⁺π⁺ (7), S042.1 D̄⁰π⁺π⁻ (11) | 4301, 4316, 4314; 692, 778, 738, 739 | direct line plus resonances exceed the total | DONE (2026-11-17), section 5a |
+| G5 | S041.336 D⁻D⁺K⁺ (5), S042.609 D⁰D̄⁰K⁺π⁻ (6), S042.556 D⁻π⁺π⁻ℓν (3) | 4216, 4162, 4171; 597–600, 602, 674; 379, 403, 4011, 4038 | ψ(3770) feeding D D̄ K totals; Dππℓν direct lines | DONE (2026-11-17), section 5d |
+| G6 | S042.314 D\*⁻K⁰π⁺ (9), S041.289 D̄\*⁰K⁺K̄\*⁰ (10) | 797, 798, 754; 4345, 4349, 5888, 5892 | lines written with the wrong K\*⁰ / K⁰ flavor (`flavor_twin`) | DONE (2026-11-17), section 5f |
+| G7 | S041.612 (12), S041.19 (13), S041.528 (14), S042.211 (15), S042.440 (16), S042.4 (17); S042.212, S042.213 close and are no longer cases | 4067–4087; 433–436, 440, 453, 457–459, 464, 468, 469 | J/ψ Kπ, J/ψ Kππ and J/ψ ωK: PDG's sub-entries do not add up to its totals | DONE (2026-11-17), section 5h |
 
 Decisions per group:
 
 | Group | Decision | Reason |
 |---|---|---|
-| G3, G4 | every direct line takes the remainder of its total, clamped at 0; σ_c adds 20 % of the subtracted part (option 1b); B⁺ → D̄₁⁰ρ⁺ at limit/2 ± limit/2 | the non-resonant part is never measured, only a remainder (your proposal); resonance lines take nothing from a total (M1) |
+| G3, G4 | every direct line takes the remainder of its total, clamped at 0; σ_c adds 20 % of the subtracted part (option 1b); B⁺ → D̄₁⁰ρ⁺ at limit/2 ± limit/2 | the non-resonant part is in general only a remainder (your proposal; exceptions: P2); resonance lines take nothing from a total (M1) |
 | G5 | P1 option P+; B⁰ → D⁰D̄⁰K⁺π⁻ kept; Dππℓν direct lines keep the remainder | the per-channel ψ(3770)K⁺ entries follow the newer analyses; D⁰D̄⁰K⁺π⁻ has no direct line; the decay file built the Dππℓν lines as this remainder |
 | G6 | D\*∓K⁰π± as a charge sum; the two ΔS = 2 lines vetoed; anti-B lines with a different BF take the conjugate's corrected BF | BaBar 2005 measured both charge combinations together; Belle 2002's value was conjugated without flipping the K\*⁰ |
 | G7 | option (a): the rules as agreed, B⁰ → J/ψK⁰π⁺π⁻ stays flagged | no option within the rules closes it (section 5h); at most 0.06 % of the yield |
@@ -636,7 +641,8 @@ line.
 
 *Your proposal.* The direct line of a PDG total is, in the decay file, a PHSP line meant as the
 non-resonant part. PDG measures the total inclusively; the non-resonant part is never measured,
-only a remainder. So its c should make the total match PDG: c = (total − Σ c·other lines) / BF of
+only a remainder. (Not true in general, found on 2026-11-18: PDG measures it for some totals; point P2,
+section 5i.) So its c should make the total match PDG: c = (total − Σ c·other lines) / BF of
 the direct line, clamped at 0 if negative, with an uncertainty larger than that of the remainder
 alone, since the total is not exactly the sum of its parts (interference). AGREED as principle.
 
@@ -994,6 +1000,67 @@ a separate verifier (17 verifications stopped at a usage limit and were checked 
   Belle II note references; the PDG D₂\*⁻π⁺ product (2.38, PDG average); the reading of BaBar 2020
   in 5d; the twins of 5f; R1.7 in the status lists.
 - Dates: entries made on 2026-11-17 had been dated 2026-11-18; corrected on 2026-11-17.
+
+## 5i. Audit of the case file (2026-11-18)
+
+Two auditors (an independent recomputation of every number; a physicist's reading of every case
+against the decisions) and one verifier per finding.
+
+*Numbers.* Every header and line of the then 20 full cases, and all 39 table rows, were recomputed
+from the decay file and the PDG cache and agree with the case file (largest difference in a pull
+4·10⁻⁵σ, from rounding). One share was wrong (the largest share of a K⁰ final state was taken from the
+last of its K⁰/K_S⁰/K_L⁰ rows instead of the largest: ψ(3770)K⁰ shows 0.83 %, not 0.00 %).
+
+*Selection, fixed in the generator* (no c changes):
+- `node_not_closed` inherited from another total no longer makes an entry a case: S042.212
+  (J/ψK⁰ρ⁰) and S042.213 (J/ψK\*⁺π⁻) close exactly and only echoed S042.211.
+- Upper-limit entries are not cases: S041.215 (B⁺ → D̄₁⁰ρ⁺, half_limit, E12) is no longer shown as a
+  total.
+- Exact entries that do not close are cases: B⁰ → K⁰f₀(1500) (S042.586, 1.29·10⁻⁶) disagrees with the
+  other PDG entry of the same final state (S042.503, 1.33·10⁻⁵), which gives line 1662 its c = 3.9;
+  now in the table (share 0).
+- The text states that only lines with P ≥ 10 % count for the ranking, and how `limit_capped` lines
+  enter the sums.
+
+*P2. PDG measures the non-resonant part of some totals.* The premise of G3/G4 (5a), "the
+non-resonant part is never measured, only a remainder", is not true in general. The cache has 23
+measured entries of kind `nonres`, which the code stores and never uses. Those that concern a line:
+
+| PDG entry | Value | Direct line (dec line) | c from the entry | c now (remainder) | Share % |
+|---|---|---|---|---|---|
+| S041.765 B⁺ → D⁻D⁺K⁺ nonresonant | (5.32 ± 1.78)·10⁻⁵ = LHCb's 24.2 % D⁻K⁺ S-wave × PDG total | 4216 | 0.24 ± 0.08 | 0.43 ± 0.48 | 2.4 |
+| S042.360 B⁰ → Λ̄_c⁻pπ⁺π⁻ (nonresonant) | (5.4 ± 1.0)·10⁻⁴ (BaBar 2013, Belle 2007) | 816 | 0.53 ± 0.10 | 0.89 ± 0.13 | 0.05 |
+| S041.723 B⁺ → pΛ̄π⁺π⁻ nonresonant | 5.9·10⁻⁶ | 5022 | 0.52 | 0.22 | 0 |
+| S042.367, S041.59, S042.282, S041.228 (K⁰π⁺π⁻, K⁺π⁻π⁺, K⁺π⁻π⁰, π⁺π⁻π⁺ NR) | 1.39·10⁻⁵, 1.63·10⁻⁵, 2.8·10⁻⁶, 5.3·10⁻⁶ | 1068, 4518, 1070, 4517 (the decay file copied these values: "PDGLive => Nonresonant BF") | 1.0 | 0, 0, 3.0, 0.59 | 0 |
+| S042.89, S041.166 (D⁻π⁺π⁺π⁻, D̄⁰π⁺π⁺π⁻ NR) | 0.39 %, 0.51 % (old CLEO) | 699, 4254: BF 0 (D1, Belle II tag-mode notes) | – | – | – |
+
+Options: (a) use a measured non-resonant entry as the exact source of its direct line (the total
+becomes a closure check only); (b) keep the remainder everywhere and write down why (the phase-space
+line stands for everything without a line of its own: for D⁺D⁻K⁺ that is LHCb's X(2900),
+χ_c0,2(3930), ψ(4040), ψ(4415) besides the S-wave, about 80 % of the total); (c) per line: (a) where
+the decay file's line is that non-resonant measurement (the charmless lines, c = 1), (b) where the
+line has to carry components without lines of their own (D⁺D⁻K⁺). Recommendation: (c). For
+Λ̄_c⁻pπ⁺π⁻ the two give 0.53 and 0.89; which components have lines of their own decides.
+
+*P3. Entries measured in a mass window.* A scan of the footnotes of all 615 PDG entries that decay-file
+lines use or feed (pdgapi listings; 5 did not parse) finds window cuts only in charmless, radiative
+and baryonic modes, at most 0.014 % of the yield: B⁰ → ρ⁰K⁺π⁻ (S042.461, only 0.75 < M(Kπ) < 1.2 GeV:
+gives line 1140 c = 0 and flags the exact lines 1173, 1180), B⁰ → K⁺π⁻γ (S042.231, only
+1.25 < M(Kπ) < 1.6 GeV: flags the exact K\*⁰γ line 871 `node_not_closed`), the B → Kππγ totals
+(S041.307, S041.308, S041.474, S042.310, S042.376; M(Kππ) < 1.8–2.4 GeV), and some p p̄ / ΛΛ̄ modes
+(M(p p̄) or M(ΛΛ̄) cuts). Proposal: exclude the entries whose averaged measurements are all
+restricted (`exclude_node`), so that no flag on an exact line comes from them. No charm mode is
+affected.
+
+*P4. LHCb 2023, B⁺ → (K_S⁰Kπ)K* (AAIJ 2023AH, normalized to B⁺ → J/ψK⁺): S041.797 K⁰K⁺K⁻π⁺ =
+3.4·10⁻⁴ gives line 4676 c = 29.5; S041.799 χ_c0K⁰π⁺ = 1.45·10⁻³ gives line 4130 c = 6.8; S041.798
+K⁰K⁺K⁺π⁻ does not close (0.1, −8.5σ). The values look ten times too large next to related modes
+(K⁺K⁻K⁺, χ_c0K⁺ = 1.5·10⁻⁴), and η_c, χ_c0 are not folded, so the charmonium part lands on the
+phase-space lines. Proposal: exclude the three entries until the paper is read. At most 0.004 % of
+the yield.
+
+*Also checked:* B⁺ → D⁺K⁺π⁻ (line 5464) c = 275 is a real correction (the decay file's 2·10⁻⁸ against
+LHCb's 5.6·10⁻⁶), share 0.
 
 ## 6. Starting a new session
 
