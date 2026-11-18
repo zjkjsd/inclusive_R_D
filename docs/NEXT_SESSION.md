@@ -16,13 +16,13 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 >   first-model parameters r_meas, r_SL, N₁, N₂, a) and B.13 (B0 in five pieces: the piece-2 summary,
 >   the piece-3 facts and proposal, and what the Belle II B → X_sγ note does with the same background).
 > - `docs/B0_PIECE2_REVIEW.md`, section 1 (all piece-2 decisions with current values) and section 3
->   (register of the exceptions file), and section 5i (P2–P5). The rest of that file is the dated
->   record of the piece-2 discussion; read a section when a point refers to it.
+>   (register of the exceptions file); and `docs/B0_PIECE2_RECORD.md`, section 5i (P2–P5). The
+>   record file is the dated piece-2 discussion; read a section when a point refers to it.
 >
 > Code and data: `scripts/tools/decay_table.py` (decay-file parser, classification),
 > `scripts/tools/pdg_match.py` (PDG comparison; run `python3 scripts/tools/pdg_match.py`),
 > `scripts/tools/pdg_review_cases.py` (writes `docs/B0_PIECE2_CASES.md`),
-> `Samples/dec/pdg_exceptions.json` (28 hand corrections, each with its reason),
+> `Samples/dec/pdg_exceptions.json` (75 hand corrections, each with its reason),
 > `Samples/dec/pdg_bf_B_2026.json` (cached PDG values), outputs in `Notebooks/Plotting/csv_output/`
 > (`b_mode_pdg_table.csv`, `b_mode_pdg_review.csv`, `b_mode_pdg_nodes.csv`,
 > `b_mode_isospin_check.csv`, and the sample tables `bbbar_modes_*.csv`). Tests:

@@ -1,7 +1,7 @@
 # References
 
 Register of the documents that decided something in Part B (step B0) of
-`docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md` and in the review files (`docs/B0_PIECE2_REVIEW.md`; piece
+`docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md` and in the review files (`docs/B0_PIECE2_REVIEW.md` and its dated record `docs/B0_PIECE2_RECORD.md`; piece
 3 later). **Only critical references:** a document enters when a decision or a correction value
 rests on what it says beyond the PDG average (a number, a definition, a correction of the listing).
 Papers that only appear as inputs of a PDG average, or that were read as background, are not listed;
