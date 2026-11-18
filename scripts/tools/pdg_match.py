@@ -8,7 +8,7 @@ What it does
      plain   : a set of daughters, as signed PDG codes of evt.pdl;
      product : B -> X Y with one or more sub-decays X -> ... (a product of branching fractions);
      sum     : A + B;
-     nonres  : explicitly non-resonant (stored, not used);
+     nonres  : explicitly non-resonant (used only through a `nonres_direct` exception);
      unkeyed : generic, inclusive, charge-summed or unknown names. Nothing is guessed.
 3. `DecayGraph` follows the decay file's own sub-decay tables: BF_MC(node) is the sum over the
    exclusive B lines of BF_line x P(line -> final state of the node).
@@ -89,6 +89,19 @@ a resonance (the decay file routes the whole final state through that resonance)
 `half_limit` gives a line that the decay file puts above its own PDG upper limit c = limit/2 with
 sigma_c = limit/2 (how = 'half_limit', class limit):
     {"mother": 521, "key": [...], "action": "half_limit", "reason": "..."}
+`nonres_direct` makes a measured PDG entry of kind nonres (the non-resonant part of a total) the
+source of the direct line of that total: c = value / BF_MC, sigma_c = error / BF_MC (class measured,
+how = 'nonres', flags `nonres_source`, `exception_applied`). The line then takes no remainder from the
+total, which only enters the closure check. For a direct line whose other components (those the PDG
+total contains) all have lines of their own; otherwise the remainder is the better estimate
+(decision P2 of docs/B0_PIECE2_REVIEW.md):
+    {"pdgid": "S042.360", "action": "nonres_direct", "mother": 511, "key": [...], "reason": "..."}
+`external` gives a final state without a PDG entry the c of a measurement outside PDG: c = value /
+BF_MC, sigma_c = error / BF_MC (class measured, how = 'external', flags `external`,
+`exception_applied`; pdgids = 'external:<source>'). If PDG gets an entry for that final state the
+table refuses to build, so that the exception is revisited (decision P5):
+    {"mother": 511, "key": [...], "action": "external", "value": 2.78e-4, "error": 0.33e-4,
+     "source": "BELLE2-PUB-PH-2025-024 v12", "reason": "..."}
 `force_class` is applied before the totals are split: a forced line takes no c from a total.
 `extra_uncertainty` adds a relative uncertainty in quadrature to the sigma_c of a line with a c:
     {"mother": 511, "key": [...], "action": "extra_uncertainty", "relative": 0.2, "reason": "..."}
@@ -307,7 +320,7 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
     known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin', 'direct_line',
-             'extra_uncertainty', 'half_limit', 'veto')
+             'extra_uncertainty', 'half_limit', 'veto', 'nonres_direct', 'external')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -327,13 +340,18 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
         elif e['action'] == 'half_limit':
             if 'mother' not in e or 'key' not in e:
                 raise ValueError(f'{path}: half_limit needs mother and key: {e}')
+        elif e['action'] == 'external':
+            if 'mother' not in e or 'key' not in e or not e.get('source'):
+                raise ValueError(f'{path}: external needs mother, key and source: {e}')
+            if not float(e.get('value', 0)) > 0 or not float(e.get('error', -1)) >= 0:
+                raise ValueError(f'{path}: external needs value > 0 and error >= 0: {e}')
         elif e['action'] == 'extra_uncertainty':
             if 'mother' not in e or 'key' not in e or not float(e.get('relative', 0)) > 0:
                 raise ValueError(f'{path}: extra_uncertainty needs mother, key and relative > 0: {e}')
         elif 'pdgid' not in e:
             raise ValueError(f'{path}: {e["action"]} needs a pdgid: {e}')
-        if e['action'] == 'direct_line' and ('mother' not in e or 'key' not in e):
-            raise ValueError(f'{path}: direct_line needs pdgid, mother and key: {e}')
+        if e['action'] in ('direct_line', 'nonres_direct') and ('mother' not in e or 'key' not in e):
+            raise ValueError(f'{path}: {e["action"]} needs pdgid, mother and key: {e}')
         if 'mother' in e and int(e['mother']) not in (511, 521):
             raise ValueError(f'{path}: exceptions refer to the B0 (511) or B+ (521) block; anti-B rows follow '
                              f'their conjugate: {e}')
@@ -469,6 +487,20 @@ def parse_description(desc, pdl=None):
     out['lepton'] = any(n in _LEPTON_Q3 for a in out['main'] for n in a)
     out['kind'] = 'product' if subs else ('sum' if len(main) > 1 else 'plain')
     return out
+
+
+def nonres_final_state(desc, pdl=None):
+    """Final state (collapsed key) of a PDG entry of kind nonres written as a plain final state
+    ('B+ --> K+ pi- pi+ nonresonant', 'B0 --> (K+ pi- pi0) nonresonant', '... (NR)'), or None."""
+    lhs, rhs = desc.split('-->', 1)
+    rhs = re.sub(r'\(nonresonant\)|nonresonant|\(NR\)', ' ', rhs).strip()
+    if rhs.startswith('(') and rhs.endswith(')') and rhs.count('(') == 1:
+        rhs = rhs[1:-1]
+    p = parse_description(f'{lhs.strip()} --> {rhs}', pdl)
+    if p['kind'] != 'plain' or p['lepton'] or len(p['main']) != 1:
+        return None
+    pdl = pdl or dt.load_pdl()
+    return collapse_key(pdl.name_to_pdg[n] for n in p['main'][0])
 
 
 def node_variants(parsed):
@@ -813,6 +845,45 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         results[k]['flags'].update(('isospin', 'exception_applied', *inherited))
         results[k]['extra_rel'] = extra_rel
 
+    # 'nonres_direct': a measured non-resonant PDG entry sets the direct line of its total (P2);
+    # the total then only enters the closure check
+    by_pdgid = {}
+    for n in mine:
+        by_pdgid.setdefault(n['pdgid'], n)
+    for e in exceptions:
+        if e['action'] != 'nonres_direct' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        n = by_pdgid.get(e['pdgid'])
+        if n is None or n['kind'] != 'nonres':
+            raise ValueError(f'exceptions: nonres_direct {e["pdgid"]} is not a non-resonant entry of {mother}')
+        if n['is_limit'] or not np.isfinite(n['value']) or n['value'] <= 0:
+            raise ValueError(f'exceptions: nonres_direct {e["pdgid"]} has no measured value')
+        if nonres_final_state(n['description'], pdl) != k:
+            raise ValueError(f'exceptions: nonres_direct {e["pdgid"]} ({n["description"]}) is not the final state {e["key"]}')
+        if cmode_bf.get(k, 0.0) <= 0:
+            raise ValueError(f'exceptions: nonres_direct {e["pdgid"]}: no line {e["key"]} of {mother} with BF > 0')
+        if results[k]['how']:
+            raise ValueError(f'exceptions: nonres_direct {e["pdgid"]}: {e["key"]} of {mother} has a c already')
+        c = n['value'] / cmode_bf[k]
+        assign(k, 'nonres', n, c, n['err'] / cmode_bf[k], 1.0)
+        results[k]['flags'].update(('nonres_source', 'exception_applied'))
+        rows[n['uid']].update(role='nonres_direct', c_assigned=c, bf_mc=cmode_bf[k], n_feeders=1, ratio=c)
+
+    # 'external': a measurement outside PDG for a final state without a PDG entry (P5)
+    for e in exceptions:
+        if e['action'] != 'external' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        if cmode_bf.get(k, 0.0) <= 0:
+            raise ValueError(f'exceptions: external on {e["key"]} of {mother}: no line with BF > 0')
+        if results[k]['how']:
+            raise ValueError(f'exceptions: external on {e["key"]} of {mother}, which has a c already')
+        v, err = float(e['value']), float(e['error'])
+        results[k].update(pdg_class='measured', how='external', pdgids=[f'external:{e["source"]}'],
+                          bf_pdg=v, bf_pdg_err=err, c=v / cmode_bf[k], sigma_c=err / cmode_bf[k], p_node=1.0)
+        results[k]['flags'].update(('external', 'exception_applied'))
+
     # 1. exact nodes: one target, fed by the line of that final state alone
     exact = [n for n in measured if len(n['targets']) == 1 and set(feed[n['uid']]) == {n['targets'][0]}]
     exact.sort(key=lambda n: (n['err'] / n['value'] if n['value'] > 0 else np.inf, n['uid']))
@@ -821,8 +892,12 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         k = n['targets'][0]
         exact_uids.add(n['uid'])
         rows[n['uid']]['role'] = 'exact'
-        if results[k]['how'] == 'isospin':
-            raise ValueError(f'exceptions: isospin target {k} of {mother} has its own PDG entry {n["pdgid"]}')
+        if results[k]['how'] in ('isospin', 'external'):
+            raise ValueError(f'exceptions: {results[k]["how"]} target {k} of {mother} has its own PDG entry '
+                             f'{n["pdgid"]}: revisit the exception')
+        if results[k]['how'] == 'nonres':             # the total of a nonres_direct line: closure only
+            rows[n['uid']]['role'] = 'covered'
+            continue
         if results[k]['how']:                         # a more precise node of the same final state
             results[k]['pdgids'].append(n['pdgid'])
             continue
@@ -881,8 +956,8 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
                     c, sigma, chi2 = float(cs.mean()), np.nan, np.nan
                 r.update(c_prod=c, sigma_c_prod=sigma, chi2_prod=chi2, n_prod=len(meas),
                          prod_pdgids=[n['pdgid'] for n, _ in meas])
-                if r['how'] == 'isospin':
-                    raise ValueError(f'exceptions: isospin target {k} of {mother} has its own product entry')
+                if r['how'] in ('isospin', 'external'):
+                    raise ValueError(f'exceptions: {r["how"]} target {k} of {mother} has its own product entry')
                 if not r['how'] and k not in forced:
                     best = min(meas, key=lambda x: x[0]['err'] / x[0]['value'] if x[0]['value'] > 0 else np.inf)[0]
                     r.update(pdg_class='measured', how='product', pdgids=[n['pdgid'] for n, _ in meas],
@@ -1275,8 +1350,9 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
       bf_mc      : BF of this final state in its own block.
       pdg_class  : 'measured', 'limit', 'none' or 'inclusive'.
       how        : 'exact', 'node', 'product', 'isospin' (c of the isospin partner, by exception),
-                   'half_limit' (limit/2 +- limit/2, by exception), 'veto' (c = 0, by exception)
-                   or ''.
+                   'half_limit' (limit/2 +- limit/2, by exception), 'veto' (c = 0, by exception),
+                   'nonres' (a measured non-resonant PDG entry, by exception), 'external' (a
+                   measurement outside PDG, by exception) or ''.
       pdgids     : PDG identifiers used, separated by ';'.
       bf_pdg, bf_pdg_err : value and uncertainty of the PDG node used (for several product nodes
                    the most precise one; for a limit the limit). With the factor 2 of a K_S0 node.
@@ -1294,7 +1370,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
                    remainder by its own limit), node_ambiguous, node_not_closed, flavor_twin
                    (see the module docstring), unmeasured (feeds a measured node but has no c:
                    c = 1, sigma_c = 1), isospin, remainder_clamped (the remainder of the total
-                   was negative; c = 0).
+                   was negative; c = 0), nonres_source (c from a non-resonant PDG entry),
+                   external (c from a measurement outside PDG).
       extra_rel  : relative uncertainty added by an extra_uncertainty exception.
       dec_lines  : line numbers of the final state in the decay file (its own block).
       fed_nodes  : measured PDG final-state entries that this line feeds (at least P_MIN of it).
@@ -1317,7 +1394,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     for a product node BF_line x BF_sub), ratio (value / bf_mc), n_feeders, role ('exact', 'node',
     'covered' = no direct line was left to fix, 'capped' (unused) = the free lines were all kept out
     by their own limits, 'product', 'duplicate' = product node dropped as a repeat of another,
-    'limit', 'multi_ks', 'excluded'), c_assigned, f_res_mc, f_res_pdg, bf_mc_weighted (sum of
+    'limit', 'multi_ks', 'excluded', 'nonres_direct' = a non-resonant entry that sets its
+    direct line), c_assigned, f_res_mc, f_res_pdg, bf_mc_weighted (sum of
     c x BF x P over the feeding lines), closure (bf_mc_weighted / value), closure_pull ((weighted
     - value) / PDG error), reason (why a node is unkeyed).
     """
@@ -1541,6 +1619,9 @@ def _region(tag):
     return tag
 
 
+# how -> summary class where they differ: a c from a non-resonant PDG entry or from a measurement
+# outside PDG measures the line's own final state, like an exact entry
+_SUMMARY_HOW = {'nonres': 'exact', 'external': 'exact'}
 SUMMARY_CLASSES = ['excl_sl', 'had_exact', 'had_node', 'had_product', 'had_isospin', 'had_limit', 'had_none',
                    'inclusive', 'pythia_0c', 'pythia_1c', 'pythia_2c']
 
@@ -1600,7 +1681,8 @@ def review_report(table, sample_csvs=None, mode_table=None):
                     c = 'excl_sl'
                 else:
                     # 'measured' without a c (BF 0, or BF differs from the conjugate block): no c
-                    c = {'measured': 'had_' + (how[j] or 'none'), 'limit': 'had_limit', 'none': 'had_none'}[cls[j]]
+                    c = {'measured': 'had_' + _SUMMARY_HOW.get(how[j], how[j] or 'none'), 'limit': 'had_limit',
+                         'none': 'had_none'}[cls[j]]
                 acc[c] += w[i]
                 # merge the conjugate into the B0 / B+ row
                 m = int(table['mother_pdg'].iat[j])

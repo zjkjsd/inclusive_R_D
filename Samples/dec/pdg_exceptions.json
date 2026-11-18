@@ -270,5 +270,235 @@
   ],
   "action": "veto",
   "reason": "G6 (2026-11-17). B+ --> anti-D*0 K+ K*0 (line 4349, 1.5e-3) needs two anti-strange quarks (Delta S = 2) and is not expected. Its BF is Belle 2002's measurement of B- --> D*0 K- K*0 (hep-ex/0207041, 15.3e-4; conjugate: B+ --> anti-D*0 K+ anti-K*0), conjugated without flipping the K*0. The allowed mode is line 4345 (2021 update, total minus the anti-D*0 a_1+ part); c = 0. The B- line 5888 (D*0 K- anti-K*0) is its conjugate and inherits c = 0; the allowed B- line 5892 (D*0 K- K*0, 1.5e-3) takes the corrected BF of line 4345 (cp_transfer)."
+ },
+ {
+  "pdgid": "S042.360",
+  "action": "nonres_direct",
+  "mother": 511,
+  "key": [
+   211,
+   -211,
+   2212,
+   -4122
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B0 --> Lambdabar_c()- p pi+ pi- (nonresonant)' (BaBar 2013 arXiv:1302.0191, Belle 2007 hep-ex/0608025): 'non-resonant' means not through Sigma_c(2455) or Sigma_c(2520); both totals include the Sigma_c modes, and every measured Sigma_c component has a line of its own (817, 818, 819). Like-for-like source of line 816; the total S042.161 only enters the closure check."
+ },
+ {
+  "pdgid": "S042.367",
+  "action": "nonres_direct",
+  "mother": 511,
+  "key": [
+   211,
+   -211,
+   311
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B0 --> K0 pi+ pi- nonresonant'. The decay file copied this value into line 1068 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S042.282",
+  "action": "nonres_direct",
+  "mother": 511,
+  "key": [
+   111,
+   -211,
+   321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B0 --> (K+ pi- pi0) nonresonant'. The decay file copied this value into line 1070 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S042.506",
+  "action": "nonres_direct",
+  "mother": 511,
+  "key": [
+   311,
+   321,
+   -321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B0 --> K0 K+ K- nonresonant'. The decay file copied this value into line 1078 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S042.446",
+  "action": "nonres_direct",
+  "mother": 511,
+  "key": [
+   -211,
+   223,
+   321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B0 --> omega K+ pi- nonresonant'. Line 1159 carries this value (5.1e-6); the final state has no other PDG entry."
+ },
+ {
+  "pdgid": "S041.228",
+  "action": "nonres_direct",
+  "mother": 521,
+  "key": [
+   211,
+   211,
+   -211
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> pi+ pi- pi+ nonresonant'. The decay file copied this value into line 4517 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S041.59",
+  "action": "nonres_direct",
+  "mother": 521,
+  "key": [
+   211,
+   -211,
+   321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> K+ pi- pi+ nonresonant'. The decay file copied this value into line 4518 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S041.230",
+  "action": "nonres_direct",
+  "mother": 521,
+  "key": [
+   211,
+   321,
+   -321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> K+ K- pi+ nonresonant'. The decay file copied this value into line 4519 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S041.231",
+  "action": "nonres_direct",
+  "mother": 521,
+  "key": [
+   321,
+   321,
+   -321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> K+ K- K+ nonresonant'. The decay file copied this value into line 4520 ('PDGLive => Nonresonant BF')."
+ },
+ {
+  "pdgid": "S041.723",
+  "action": "nonres_direct",
+  "mother": 521,
+  "key": [
+   211,
+   -211,
+   2212,
+   -3122
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> p Lambdabar pi+ pi- nonresonant'. Measured non-resonant part used as the source of the phase-space line 5022 (share 0)."
+ },
+ {
+  "pdgid": "S041.704",
+  "action": "nonres_direct",
+  "mother": 521,
+  "key": [
+   13,
+   -13,
+   321
+  ],
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> K+ mu+ mu- nonresonant' (outside the charmonium regions): the short-distance rate that line 4437 (BTOSLLBALL) models."
+ },
+ {
+  "pdgid": "S041.579",
+  "action": "rewrite",
+  "description": "B+ --> Dbar_1(2420)0 pi+ x B(Dbar_1()0 --> Dbar0 pi+ pi-)",
+  "reason": "P2 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): PDG text: 'B+ --> Dbar_1(2420)0 pi+ x B(Dbar_1()0 --> Dbar0 pi+ pi- (nonresonant))' (LHCb 2011, excludes D_1 -> D*(2010)- pi+). Written as a plain product so that it is read as a product entry of line 4318 (anti-D_1^0 pi+) x the decay file's D_1 -> D0 pi+ pi- PHSP line (0.172, which also excludes the D* path): a cross-check (c_prod) only; line 4318 keeps its exact c from S041.214. Same sub-decay as S041.443, which includes the D*(2010)- pi+ path in its LHCb input (10.3 % of D0 3pi against 4.0 % here): the more precise of the two is kept for c_prod, they are not averaged."
+ },
+ {
+  "pdgid": "S042.461",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B0 --> rho0 K+ pi-'. Window: 0.75 < M(K+ pi-) < 1.20 GeV (Kyeong 2009) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S042.231",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B0 --> K+ pi- gamma'. Window: 1.25 < M(K pi) < 1.6 GeV (Nishida 2002) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.307",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B+ --> K+ pi- pi+ gamma'. Window: M(K pi pi) < 1.8 GeV (BaBar 2016, 2007), < 2.0 GeV (Belle 2005) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.308",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B+ --> K^*(892)0 pi+ gamma'. Window: M(K pi pi) < 1.8 GeV (BaBar 2016), < 2.4 GeV (Belle 2002) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.474",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B+ --> K0 pi+ pi0 gamma'. Window: M(K pi pi) < 1.8 GeV (BaBar 2007) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S042.310",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B0 --> K0 pi+ pi- gamma'. Window: M(K pi pi) < 1.8 GeV (BaBar 2016, 2007), < 2.0 GeV (Belle 2005) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S042.376",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B0 --> K+ pi- pi0 gamma'. Window: M(K pi pi) < 1.8 GeV (BaBar 2007) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.356",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B+ --> Lambda Lambdabar pi+'. Window: M(Lambda Lambdabar) < 2.85 GeV (Chang 2009; upper limit) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.539",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B+ --> Lambda Lambdabar K^*()+'. Window: M(Lambda Lambdabar) < 2.85 GeV (Chang 2009) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.744",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B+ --> p pbar pi+ pi0'. Window: M(pi+ pi0) < 1.3 GeV (Chu 2020) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S042.32",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B0 --> p pbar pi+ pi-'. Window: M(p pbar) < 2.85 GeV (LHCb 2017BD) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S042.571",
+  "action": "exclude_node",
+  "reason": "P3 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): every measurement used in the average is restricted to a mass window, so the entry cannot be compared with the full final state. PDG text: 'B0 --> p pbar K+ pi-'. Window: M(p pbar) < 2.85 GeV (LHCb 2017BD) (pdgapi listing footnotes, read 2026-11-18)."
+ },
+ {
+  "pdgid": "S041.797",
+  "action": "exclude_node",
+  "reason": "P4 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): LHCb 2023, arXiv:2304.14891 (AAIJ 2023AH), the only measurement. PDG text: 'B+ --> K0 K+ K- pi+'. (1) The totals keep charmonium (eta_c alone 24 % of K_S K+ K- pi+, Tables 20-21), which the matching does not fold (eta_c, chi_c0 in NO_FOLD_DEFAULT; J/psi narrow), so it lands on the phase-space lines (line 4676: c = 29.5). (2) Their normalization appears to be 2.89 = 2/B(K_S -> pi+ pi-) times the paper's own ratios x reference (eq. 35, Tables 21-24), while the charmonium modes have factor 1 (our reading, unconfirmed). Excluded."
+ },
+ {
+  "pdgid": "S041.798",
+  "action": "exclude_node",
+  "reason": "P4 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): LHCb 2023, arXiv:2304.14891 (AAIJ 2023AH), the only measurement. PDG text: 'B+ --> K0 K+ K+ pi-'. (1) The totals keep charmonium (eta_c alone 24 % of K_S K+ K- pi+, Tables 20-21), which the matching does not fold (eta_c, chi_c0 in NO_FOLD_DEFAULT; J/psi narrow), so it lands on the phase-space lines (line 4676: c = 29.5). (2) Their normalization appears to be 2.89 = 2/B(K_S -> pi+ pi-) times the paper's own ratios x reference (eq. 35, Tables 21-24), while the charmonium modes have factor 1 (our reading, unconfirmed). Excluded."
+ },
+ {
+  "pdgid": "S041.799",
+  "action": "exclude_node",
+  "reason": "P4 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): LHCb 2023, arXiv:2304.14891 (AAIJ 2023AH), the only measurement. PDG text: 'B+ --> chi_c0() K0 pi+'. (1) The totals keep charmonium (eta_c alone 24 % of K_S K+ K- pi+, Tables 20-21), which the matching does not fold (eta_c, chi_c0 in NO_FOLD_DEFAULT; J/psi narrow), so it lands on the phase-space lines (line 4676: c = 29.5). (2) Their normalization appears to be 2.89 = 2/B(K_S -> pi+ pi-) times the paper's own ratios x reference (eq. 35, Tables 21-24), while the charmonium modes have factor 1 (our reading, unconfirmed). Excluded."
+ },
+ {
+  "mother": 511,
+  "key": [
+   211,
+   221,
+   -413
+  ],
+  "action": "external",
+  "value": 0.000278,
+  "error": 3.362e-05,
+  "source": "BELLE2-PUB-PH-2025-024 v12",
+  "reason": "P5 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): Belle (711 fb-1) + Belle II (365 fb-1), \"Studies of the decays B0 -> D*- eta pi+ and B+ -> Dbar0 eta pi+ in Belle and Belle II\", BELLE2-PUB-PH-2025-024 v12 (JHEP draft; not in PDG on 2026-11-18). B(B0 -> D*- eta pi+) = (2.78 +- 0.24 +- 0.19)e-4 (abstract; p. 25), D_s+ -> eta pi+ excluded and the band 1.90 < M(eta pi) < 2.05 GeV vetoed; error: stat and syst in quadrature plus 5 % for the vetoed band. Line 733 (2.56e-4): c = 1.09."
+ },
+ {
+  "mother": 521,
+  "key": [
+   211,
+   221,
+   -421
+  ],
+  "action": "external",
+  "value": 0.00057,
+  "error": 5.852e-05,
+  "source": "BELLE2-PUB-PH-2025-024 v12",
+  "reason": "P5 (docs/B0_PIECE2_REVIEW.md, section 5i, decided 2026-11-18): Belle (711 fb-1) + Belle II (365 fb-1), \"Studies of the decays B0 -> D*- eta pi+ and B+ -> Dbar0 eta pi+ in Belle and Belle II\", BELLE2-PUB-PH-2025-024 v12 (JHEP draft; not in PDG on 2026-11-18). B(B+ -> Dbar0 eta pi+) = (5.70 +- 0.26 +- 0.44)e-4 (abstract; p. 27), D_s+ -> eta pi+ excluded and the band 1.90 < M(eta pi) < 2.05 GeV vetoed; error: stat and syst in quadrature plus 5 % for the vetoed band. Line 4269 (4.0e-4): c = 1.43."
  }
 ]

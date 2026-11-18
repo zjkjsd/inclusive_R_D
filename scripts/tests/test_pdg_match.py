@@ -6,6 +6,7 @@ The tests need only files of the repository: the decay file, evt.pdl, the cached
 (Samples/dec/pdg_bf_B_2026.json), the exceptions file and the decay-mode tables in
 Notebooks/Plotting/csv_output. They do not import the `pdg` package and need no network.
 """
+import json
 import math
 import os
 import sys
@@ -778,7 +779,7 @@ def test_real_coverage():
     assert set(zip(TABLE['mother_pdg'], TABLE['key'])) == set(zip(modes['mother_pdg'], modes['key']))
     assert np.allclose(TABLE['bf_mc'], modes['bf_mc'])
     assert set(TABLE['pdg_class']) == {'measured', 'limit', 'none', 'inclusive'}
-    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', 'veto', ''}
+    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', 'veto', 'nonres', 'external', ''}
     meas = TABLE['how'] != ''
     hl, vt = TABLE['how'] == 'half_limit', TABLE['how'] == 'veto'
     assert (TABLE.loc[meas & ~hl & ~vt, 'pdg_class'] == 'measured').all()
@@ -796,7 +797,8 @@ def test_real_coverage():
     known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit',
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
              'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin',
-             'remainder_clamped', 'measurement_conflict', 'cp_transfer', 'order_dependent', ''}
+             'remainder_clamped', 'measurement_conflict', 'cp_transfer', 'order_dependent',
+             'nonres_source', 'external', ''}
     assert set(f for fl in TABLE['flags'] for f in fl.split(';')) <= known
     # shares of all B decays (scouting, B.12: 34 / 38.5 % plain, 6-7 % product, ~10 % none)
     for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
@@ -1004,8 +1006,9 @@ def test_real_review_fixes():
     r = row(521, 'anti-D_10 rho+')
     assert r['how'] == 'half_limit' and r['pdgids'] == 'S041.215' and close(r['c'], 0.5 * 0.0014 / 0.00372)
     assert close(r['sigma_c'], r['c']) and {'above_limit', 'exception_applied'} <= flags(r)   # the file is above
+    # P4: S041.799 (LHCb 2023) excluded; the line has no other entry (was c = 6.8)
     r = row(521, 'chi_c0 K0 pi+')
-    assert r['how'] == 'node' and r['pdgids'] == 'S041.799' and 6.5 < r['c'] < 7.2
+    assert r['how'] == '' and r['pdg_class'] == 'none' and r['c'] == 1.0 and 'exception_applied' in flags(r)
     # exceptions: D*+- D-+ is a charge sum; psi(2S) K_1(1270) S041.858 is one partial wave
     for m, names in ((511, 'D*+ D-'), (511, 'D*- D+'), (-511, 'D*- D+'), (-511, 'D*+ D-')):
         r = row(m, names)
@@ -1212,6 +1215,93 @@ def test_review_report():
     rev1, sum1 = pm.review_report(TABLE, [os.path.join(pm.CSV_DIR, 'bbbar_modes_run1_e_combCR.csv')], MODES)
     assert set(sum1['region']) == {'combCR'} and len(sum1) == 3
 
+
+
+def test_nonres_external_and_windows_nov18():
+    """P2 (nonres_direct), P3 and P4 (exclusions), P5 (external); review of 2026-11-18."""
+    # toy: a measured non-resonant entry sets the direct line; the total only closes
+    pdg = TOY_PDG + [('T.40', 'B0 --> J/psi(1S) K+ pi- nonresonant', 0.0002, 0.00005, False)]
+    base, _, lkb = toy(pdg=pdg)
+    assert row(511, 'J/psi K+ pi-', base, lkb)['how'] == 'node'          # without the exception
+    exc = [dict(pdgid='T.40', action='nonres_direct', mother=511, key=code('J/psi K+ pi-'), reason='test')]
+    t, nodes, lk = toy(exc, pdg)
+    r = row(511, 'J/psi K+ pi-', t, lk)
+    assert r['how'] == 'nonres' and r['pdg_class'] == 'measured' and r['pdgids'] == 'T.40'
+    assert close(r['c'], 0.5) and close(r['sigma_c'], 0.125) and {'nonres_source', 'exception_applied'} <= flags(r)
+    roles = nodes.set_index('uid')['role']
+    assert roles['T.40'] == 'nonres_direct' and roles['T.4'] == 'covered'
+    tot = nodes.set_index('uid').loc['T.4']
+    assert np.isfinite(tot['closure_pull'])                               # the total is still checked
+    assert pm.nonres_final_state('B0 --> (K+ pi- pi0) nonresonant', PDL) == pm.collapse_key([321, -211, 111])
+    assert pm.nonres_final_state('B0 --> Lambdabar_c()- p pi+ pi- (nonresonant)', PDL) == \
+        pm.collapse_key([-4122, 2212, 211, -211])
+    try:                                                                  # wrong final state
+        toy([dict(pdgid='T.40', action='nonres_direct', mother=511, key=code('J/psi K_2*0'), reason='test')], pdg)
+        raise AssertionError('nonres_direct on the wrong final state was accepted')
+    except ValueError:
+        pass
+    # toy: external value for a line without an entry of its own
+    exc = [dict(mother=511, key=code('J/psi K_2*0'), action='external', value=0.0004, error=0.0001,
+                source='test note', reason='test')]
+    t, _, lk = toy(exc)
+    r = row(511, 'J/psi K_2*0', t, lk)
+    assert r['how'] == 'external' and r['pdg_class'] == 'measured' and r['pdgids'] == 'external:test note'
+    assert close(r['c'], 0.8) and close(r['sigma_c'], 0.2) and {'external', 'exception_applied'} <= flags(r)
+    try:                                                                  # a PDG entry exists: refused
+        toy([dict(mother=511, key=code('D- rho+'), action='external', value=0.008, error=0.001,
+                  source='test', reason='test')])
+        raise AssertionError('external on a final state with a PDG entry was accepted')
+    except ValueError:
+        pass
+    with tempfile.TemporaryDirectory() as tmp:                            # loader checks
+        for bad in (dict(mother=511, key=[1], action='external', value=1e-4, error=1e-5, reason='x'),
+                    dict(pdgid='S1', action='nonres_direct', reason='x')):
+            path = os.path.join(tmp, 'e.json')
+            with open(path, 'w') as f:
+                json.dump([bad], f)
+            try:
+                pm.load_exceptions(path)
+                raise AssertionError(f'loader accepted {bad}')
+            except ValueError:
+                pass
+
+    # real table, P2: the non-resonant entries that set their direct line
+    for m, names, pid, c in ((511, 'anti-Lambda_c- p+ pi+ pi-', 'S042.360', 0.530),
+                             (511, 'omega K+ pi-', 'S042.446', 1.0), (511, 'K+ K- K0', 'S042.506', 1.0),
+                             (521, 'K+ K- K+', 'S041.231', 0.998), (521, 'K+ mu+ mu-', 'S041.704', 0.728)):
+        r = row(m, names)
+        assert r['how'] == 'nonres' and r['pdgids'] == pid and abs(r['c'] - c) < 0.005, names
+        assert 'nonres_source' in flags(r), names
+    r = row(511, 'anti-Lambda_c- p+ pi+ pi-')
+    assert abs(r['sigma_c'] - 0.096) < 0.002
+    # P2: the lines that stand for components without lines of their own keep their remainder
+    for m, names in ((521, 'D+ D- K+'), (521, 'D*+ D- K+'), (521, 'D+ D*- K+'), (511, 'eta_c K+ pi-')):
+        assert row(m, names)['how'] == 'node', names
+    # P2: S041.579 is a product cross-check of B+ -> anti-D_10 pi+ only; S041.443 (same sub-decay,
+    # includes D_1 -> D*- pi+ in its LHCb input) is not averaged with it
+    r = row(521, 'anti-D_10 pi+')
+    assert r['how'] == 'exact' and r['pdgids'] == 'S041.214' and 0.75 < r['c'] < 0.81
+    assert 'S041.579' in r['prod_pdgids'].split(';') and 'S041.443' not in r['prod_pdgids'].split(';')
+    roles = NODES.set_index('uid')['role']
+    assert roles['S041.443'] == 'duplicate'
+    # P3 and P4: window-restricted and LHCb 2023 entries excluded
+    for pid in ('S042.461', 'S042.231', 'S041.307', 'S041.308', 'S041.474', 'S042.310', 'S042.376',
+                'S041.356', 'S041.539', 'S041.744', 'S042.32', 'S042.571', 'S041.797', 'S041.798', 'S041.799'):
+        assert roles[pid] == 'excluded', pid
+    r = row(511, 'rho0 K+ pi-')
+    assert r['how'] == '' and r['pdg_class'] == 'none' and r['c'] == 1.0
+    r = row(521, 'K+ K- K0 pi+')
+    assert r['how'] == '' and r['c'] == 1.0 and 'c_extreme' not in flags(r)
+    assert 'node_not_closed' not in flags(row(511, 'K*0 gamma'))
+    # P5: Belle + Belle II D(*) eta pi measurement, outside PDG; conjugates follow
+    for m, names, c, s in ((511, 'D*- eta pi+', 2.78 / 2.56, 0.336 / 2.56), (-511, 'D*+ eta pi-', 2.78 / 2.56, 0.336 / 2.56),
+                           (521, 'anti-D0 eta pi+', 5.70 / 4.00, 0.585 / 4.00), (-521, 'D0 eta pi-', 5.70 / 4.00, 0.585 / 4.00)):
+        r = row(m, names)
+        assert r['how'] == 'external' and abs(r['c'] - c) < 1e-3 and abs(r['sigma_c'] - s) < 1e-3, names
+        assert r['pdgids'] == 'external:BELLE2-PUB-PH-2025-024 v12', names
+    for m, names in ((511, 'D- eta pi+'), (521, 'anti-D*0 eta pi+')):
+        r = row(m, names)
+        assert r['how'] == '' and r['c'] == 1.0, names
 
 def main():
     tests = [v for k, v in sorted(globals().items()) if k.startswith('test_') and callable(v)]

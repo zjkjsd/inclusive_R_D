@@ -6,12 +6,12 @@ options, a recommendation and a decision. A decision is entered only after it wa
 agreed. Status labels: OPEN (not decided), AGREED (decided, not yet implemented), DONE (implemented
 and the tables rerun).
 
-Last updated: 2026-11-18 (P2–P5 decided; P6 opened; section 5i).
+Last updated: 2026-11-18 (P2–P5 decided and implemented, sections 5i and 5j; P6 opened).
 
 **State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
 audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, and the
-Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2–P5 are AGREED (not
-yet implemented); P6 is OPEN. P2 and P5 touch lines with a visible
+Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2–P5 are DONE
+(implemented 2026-11-18, section 5j); P6 is OPEN. P2 and P5 touch lines with a visible
 yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
@@ -34,7 +34,7 @@ blocks; anti-B lines (B̄⁰ 2000–3999, B⁻ 5500–7299) are named only where
 | `Notebooks/Plotting/csv_output/b_mode_pdg_table.csv` | the full result, one row per exclusive final state (5017 rows) | the code; read with `pdg_match.read_table` |
 | `Notebooks/Plotting/csv_output/b_mode_pdg_nodes.csv` | node report: every PDG final-state entry fed by B⁰/B⁺ lines (591 rows for 561 entries; lepton entries once for e, once for μ), with value, decay-file sum before and after c, closure pull and every feeding line with its decay-file lines (section 5e) | for looking up a total |
 | `Notebooks/Plotting/csv_output/b_mode_isospin_check.csv` | pairs of B⁰ and B⁺ lines related by isospin (154 rows), section 2b | optional |
-| `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (28 entries), each with its reason; register in section 3 | you and Claude |
+| `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (57 entries since 2026-11-18), each with its reason; register in section 3 | you and Claude |
 | `Samples/dec/pdg_bf_B_2026.json` | the PDG values (2026 edition) | the code |
 | `docs/REFERENCES.md` | register of the papers and notes behind the decisions (identifiers, version read, what was taken); no PDFs in the repository | you and Claude |
 
@@ -122,10 +122,10 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | R2 | Second independent review | DONE (2026-11-17), section 5g | 14 findings fixed, 2 refuted |
 | R3 | Audit of this document | DONE (2026-11-18), section 5h | stale parts rewritten; wrong facts corrected in place |
 | R4 | Audit of the case file | DONE (2026-11-18), section 5i | generator fixed: 17 cases in full, 40 small; numbers confirmed by an independent recomputation |
-| P2 | PDG entries for the non-resonant part of a total (24 measured, so far unused) | AGREED (2026-11-18), section 5i, not yet implemented | option (c), per line: the NR entry is the source of lines 816 (0.53 ± 0.10), 1068, 1070, 1078, 1159, 4517–4520 (≈ 1.0), 5022 (0.52), 4437 (0.73); the remainder stays for 4216 (0.43 ± 0.48), 4217, 4218 (0.96) and 510; S041.579 a product cross-check of 4318 only |
-| P3 | PDG entries measured in a mass window, compared with the full final state | AGREED (2026-11-18), section 5i, not yet implemented | option (a): `exclude_node` for the entries whose averaged measurements are all window-restricted (S042.461, S042.231, S041.307, S041.308, S041.474, S042.310, S042.376 and the p p̄ / ΛΛ̄ ones); line 1140 becomes class none, c = 1; false `node_not_closed` flags removed; ≤ 0.014 % of the yield |
-| P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | AGREED (2026-11-18), section 5i, not yet implemented | option (a): `exclude_node` S041.797, S041.798, S041.799 (charmonium inside the totals; normalization apparently 2.89 times the paper's own ratios, unconfirmed); line 4676 class none c = 1; line 4130 without these entries; ≤ 0.013 % of the yield |
-| P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | AGREED (2026-11-18), section 5i, not yet implemented | option (b): new exception action `external`; lines 733 c = 1.09 ± 0.13, 4269 c = 1.43 ± 0.14 (totals as published, 5 % extra for the vetoed D_s band); 732 and 4293 stay at 1 ± 1 (N1) |
+| P2 | PDG entries for the non-resonant part of a total (24 measured, so far unused) | DONE (2026-11-18), sections 5i, 5j | option (c), per line: the NR entry is the source of lines 816 (0.53 ± 0.10), 1068, 1070, 1078, 1159, 4517–4520 (≈ 1.0), 5022 (0.52), 4437 (0.73); the remainder stays for 4216 (0.43 ± 0.48), 4217, 4218 (0.96) and 510; S041.579 a product cross-check of 4318 only |
+| P3 | PDG entries measured in a mass window, compared with the full final state | DONE (2026-11-18), sections 5i, 5j | option (a): `exclude_node` for the entries whose averaged measurements are all window-restricted (S042.461, S042.231, S041.307, S041.308, S041.474, S042.310, S042.376 and the p p̄ / ΛΛ̄ ones); line 1140 becomes class none, c = 1; false `node_not_closed` flags removed; ≤ 0.014 % of the yield |
+| P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | DONE (2026-11-18), sections 5i, 5j | option (a): `exclude_node` S041.797, S041.798, S041.799 (charmonium inside the totals; normalization apparently 2.89 times the paper's own ratios, unconfirmed); line 4676 class none c = 1; line 4130 without these entries; ≤ 0.013 % of the yield |
+| P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | DONE (2026-11-18), sections 5i, 5j | option (b): new exception action `external`; lines 733 c = 1.09 ± 0.13, 4269 c = 1.43 ± 0.15 (totals as published, 5 % extra for the vetoed D_s band); 732 and 4293 stay at 1 ± 1 (N1) |
 | P6 | Narrow resonances (not folded) inside PDG totals: the remainder of the direct line too large | OPEN (2026-11-18), section 5i | found in the P2 check; largest share D(\*)D̄(\*)K with D_s1(2536) (653/654, 4212, 4213) |
 
 ## 2. Method points
@@ -386,7 +386,7 @@ by their PDG entry (section 5).
 
 ## 3. The exceptions file
 
-`Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching: 28 entries,
+`Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching: 57 entries (28 until P2–P5 were implemented on 2026-11-18),
 each with an `action` and a `reason` (with the PDG text where a PDG entry is concerned). It is read
 every time the table is built; without an entry, the automatic rule applies. An entry names a PDG
 entry (`pdgid`) or a decay-file final state (`mother`, `key`); a final state must be in the B⁰ or the
@@ -403,6 +403,8 @@ B⁺ block (the loader refuses anything else): the anti-B rows follow their conj
 | `extra_uncertainty` | a relative uncertainty added in quadrature to σ_c; an optional `flag` is added to the line (`measurement_conflict` in P1) |
 | `half_limit` | a line that the decay file puts above its own PDG upper limit takes c = limit/2 ± limit/2 (class limit) |
 | `veto` | a line that should not exist (wrong flavor) takes c = 0 ± 0 (class none); its anti-B conjugate inherits it |
+| `nonres_direct` | (P2) a measured PDG non-resonant entry is the source of the direct line of its total: c = value/BF, how `nonres`, flag `nonres_source`; the total only enters the closure check. The entry names `pdgid`, `mother`, `key`; it is refused if the entry's final state is not the line's |
+| `external` | (P5) a measurement not in PDG: c = value/BF_MC, σ_c = error/BF_MC, how `external`, flag `external`, `pdgids` = `external:<source>`. Refused once PDG has an exact or product entry for the final state |
 
 *On the particle names.* Both `description` and the quoted text in `reason` use **PDG's** spelling,
 because `description` is parsed like any PDG text. The four spellings you noticed are PDG's own, in
@@ -432,6 +434,11 @@ Register (current effect; "was" gives the value before the entry where it matter
 | E14 | S041.360, B⁺ → ψ(3770)K⁺ (total) | 4162 | exclude | P1: its average still carries Belle 2004's value, superseded in the per-channel entries (section 5d) | c from S041.361/362: 0.53 (was 0.89) | DONE (2026-11-17) |
 | E15 | S042.314, B⁰ → D\*⁻K⁰π⁺ = 3.0·10⁻⁴ | 797, 798 | rewrite as the sum D\*⁻K⁰π⁺ + D\*⁺K⁰π⁻ | G6: BaBar 2005 measured both charge combinations together (K_S) | both lines c = 0.13 ± 0.16 (was 797 0.27 ± 0.32, 798 no c) | DONE (2026-11-17) |
 | E16 | B⁺ → D̄\*⁰K⁺K\*⁰ | 4349 (conjugate 5888) | veto | G6: ΔS = 2; Belle 2002's value conjugated without flipping the K\*⁰ | c = 0 (was 1); 5888 inherits it | DONE (2026-11-17) |
+| E17 | 11 `nonres_direct`: S042.360, S042.367, S042.282, S042.506, S042.446, S041.228, S041.59, S041.230, S041.231, S041.723, S041.704 | 816, 1068, 1070, 1078, 1159, 4517, 4518, 4519, 4520, 5022, 4437 | nonres_direct | P2 (section 5i) | 816 0.530 ± 0.096 (was 0.886 ± 0.135); the charmless lines ≈ 1.0; 5022 0.525 ± 0.098; 4437 0.728 ± 0.046 | DONE (2026-11-18) |
+| E18 | S041.579, B⁺ → D̄₁⁰π⁺ × B(D̄₁⁰ → D̄⁰π⁺π⁻ NR) | 4318 | rewrite to the plain product text | P2: a product cross-check of line 4318 only | c_prod 0.985 → 0.946; S041.443 (same sub-decay, includes D₁ → D\*⁻π⁺) now marked duplicate, not averaged; c stays 0.783 ± 0.328 | DONE (2026-11-18) |
+| E19 | 12 `exclude_node`: S042.461, S042.231, S041.307, S041.308, S041.474, S042.310, S042.376; S041.356, S041.539, S041.744, S042.32, S042.571 | 1140, 5026; flags on 871, 874–877, 1139, 1173, 1180, 1666, 1859, 1883, 4415–4420 | exclude_node | P3: every averaged measurement in a mass window (window in `reason`) | 1140 none, c = 1 (was 0); 5026 none (was exact 1 ± 0.48 from S041.539) | DONE (2026-11-18) |
+| E20 | 3 `exclude_node`: S041.797, S041.798, S041.799 | 4676, 4130 | exclude_node | P4 (section 5i) | 4676 none, c = 1 (was 29.5); 4130 none, c = 1 (was 6.8) | DONE (2026-11-18) |
+| E21 | 2 `external`: B⁰ → D\*⁻ηπ⁺, B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024 v12) | 733, 4269 | external | P5 | 1.086 ± 0.131, 1.425 ± 0.146 (was 1) | DONE (2026-11-18) |
 
 ### E6. B⁺ → ψ(2S)K₁(1270)⁺ and the ψ(2S)K⁺π⁺π⁻ total (discussion of 2026-11-17)
 
@@ -1221,6 +1228,69 @@ the action is generic and can later carry the gap-mode recommendation. Shapes st
 
 *Also checked:* B⁺ → D⁺K⁺π⁻ (line 5464) c = 275 is a real correction (the decay file's 2·10⁻⁸ against
 LHCb's 5.6·10⁻⁶), share 0.
+
+## 5j. Implementation of P2–P5 (2026-11-18)
+
+Implemented in `scripts/tools/pdg_match.py` (new actions `nonres_direct` and `external`, loader checks,
+docstring), `Samples/dec/pdg_exceptions.json` (28 → 57 entries: E17–E21 in section 3) and
+`scripts/tests/test_pdg_match.py` (new test `test_nonres_external_and_windows_nov18`; the old
+assertion c ≈ 6.8 for χ_c0K⁰π⁺ replaced). Tests: 33 (pdg_match) and 15 (decay_table) pass. Outputs
+rerun: `b_mode_pdg_table.csv`, `b_mode_pdg_review.csv` (462 → 531 rows), `b_mode_pdg_nodes.csv`
+(591 → 576), `b_mode_isospin_check.csv` (χ_c0Kπ pair only_bp → neither), `docs/B0_PIECE2_CASES.md`
+(17 cases in full, 28 small; was 40). A rerun reproduces the outputs exactly.
+
+Every B⁰/B⁺ line whose c or σ_c moved (anti-B conjugates follow):
+
+| Line | Final state | Before | After | Max share % |
+|---|---|---|---|---|
+| 733 | D\*⁻ηπ⁺ | 1 (none) | 1.086 ± 0.131 (external) | 0.26 |
+| 4269 | D̄⁰ηπ⁺ | 1 (none) | 1.425 ± 0.146 (external) | 0.03 |
+| 816 | Λ̄_c⁻pπ⁺π⁻ | 0.886 ± 0.135 | 0.530 ± 0.096 (nonres) | 0.048 |
+| 4130 | χ_c0K⁰π⁺ | 6.78 ± 1.14 | 1 (none; P4) | 0.004 |
+| 1068 | π⁺π⁻K⁰ | 0 ± 0.87 | 0.997 ± 0.16 | 0 |
+| 1070 | K⁺π⁻π⁰ | 3.04 ± 2.63 | 1.00 ± 0.23 | 0 |
+| 1078 | K⁺K⁻K⁰ | 0.716 ± 0.039 | 1.00 ± 0.31 | 0 |
+| 1159 | ωK⁺π⁻ | 1 (none) | 1.00 ± 0.19 | 0 |
+| 4517 | π⁺π⁻π⁺ | 0.585 ± 0.61 | 1.00 ± 0.24 | 0 |
+| 4518 | K⁺π⁻π⁺ | 0 ± 0.77 | 0.998 ± 0.11 | 0 |
+| 4519 | K⁺K⁻π⁺ | 2.73 ± 0.29 | 1.00 ± 0.16 | 0 |
+| 4520 | K⁺K⁻K⁺ | 1.29 ± 0.067 | 0.998 ± 0.16 | 0 |
+| 5022 | pΛ̄π⁺π⁻ | 0.217 ± 0.28 | 0.525 ± 0.098 | 0 |
+| 4437 | K⁺μ⁺μ⁻ | 0.746 ± 0.059 | 0.728 ± 0.046 | 0 |
+| 1140 | ρ⁰K⁺π⁻ | 0 ± 2.9 | 1 (none; P3) | 0 |
+| 4676 | K⁺K⁻K⁰π⁺ | 29.5 ± 3.9 | 1 (none; P4) | 0 |
+| 5026 | ΛΛ̄K\*⁺ | 1 ± 0.48 (exact, S041.539) | 1 (none; P3) | 0 |
+
+- 16 lines that fed only excluded totals lose `unmeasured` (1 ± 1 → class none, c = 1 without σ;
+  N1 will settle these): 1859, 1903, 1977, 1978, 2011, 4627, 4669–4671, 4682–4685, 5090, 5312, 5355;
+  share 0.
+- Unchanged as decided: 4216 (0.427 ± 0.481), 4217 (0.959), 4218 (0.957), 510 (2.14); 732 and 4293
+  (c = 1); 4318 (0.783 ± 0.328, c_prod 0.985 → 0.946).
+- BF by class: B⁰ node 3.42 → 3.31 %, none 10.61 → 10.58 %, new nonres 0.11 %, external 0.03 %; B⁺
+  node 3.38 → 3.35 %, none 10.45 → 10.43 %, nonres 0.006 %, external 0.04 %. Yield by class: at most
+  0.06 points move from had_none to had_exact (WC hadB), ≤ 0.03 elsewhere (`nonres` and `external`
+  count as had_exact).
+
+To note:
+1. *The σ of line 4269 is 0.146*, from the agreed formula (√(0.26² + 0.44² + 0.285²)/4.00); the
+   decision record had rounded it to 0.14. Corrected in section 1 (0.15).
+2. *Charmless totals no longer close, as expected under option (c):* with the non-resonant entry
+   as the source of the direct line, the totals become closure checks, and the decay file's
+   resonance lines do not add up to them: S042.80 (K⁰π⁺π⁻) +9.1σ, S042.81 (K⁰K⁺K⁻) +8.9σ, S041.282
+   (K⁺π⁻π⁺) +6.6σ, S041.284 (K⁺K⁻π⁺) −6.8σ, S041.160 (K⁺K⁻K⁺) −4.9σ, S041.24 (pΛ̄π⁺π⁻) +2.6σ, S042.161
+   (Λ̄_c⁻pπ⁺π⁻) −2.7σ. About 40 charmless exact lines get `node_not_closed`, all at share 0. The
+   Λ̄_c⁻pπ⁺π⁻ and KKK totals are the unfolded Σ_c(2455) and φ of P6 (folded, Λ̄_c⁻pπ⁺π⁻ closes at
+   about −0.5σ).
+3. *S041.443 against S041.579:* same sub-decay signature; S041.443's LHCb input includes D₁ → D\*⁻π⁺,
+   so the two are different quantities. The existing de-duplication keeps the more precise S041.579
+   and marks S041.443 duplicate: they are not averaged, and the cross-check of line 4318 is now
+   like for like with the decay file's D₁ → D⁰π⁺π⁻ (non-D\*) line.
+4. *P3, baryonic windows found by the footnote scan* (49 baryonic entries used by the table):
+   S041.356 (ΛΛ̄π⁺, a limit) and S041.539 (ΛΛ̄K\*⁺): M(ΛΛ̄) < 2.85 GeV; S041.744 (pp̄π⁺π⁰):
+   M(π⁺π⁰) < 1.3 GeV; S042.32 (pp̄π⁺π⁻), S042.571 (pp̄K⁺π⁻): M(pp̄) < 2.85 GeV. Not excluded (they veto
+   charmonium, not a window): S041.357, S042.455, S042.456, S041.21, S041.313.
+5. *Review list grew by about 70 rows:* excluding an entry adds `exception_applied` to every line
+   that fed it, so these charmless lines are now listed with why = flag (behavior unchanged).
 
 ## 6. Starting a new session
 

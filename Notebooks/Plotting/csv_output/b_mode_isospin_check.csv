@@ -76,7 +76,7 @@ ccs,eta_c(2S) K0 pi0 pi0,eta_c(2S) K+ pi0 pi0,5e-05,5e-05,0.929368,,1,,,1,,neith
 ccs,eta_c(2S) K+ pi- pi0,eta_c(2S) K0 pi+ pi0,5e-05,5e-05,0.929368,,1,,,1,,neither,,,,
 ccs,chi_c0 K_S0,chi_c0 K+,0.000147,0.00015004,0.948588,exact,1.32653,0.275713,exact,0.990605,0.0967142,both,0.708371,0.162666,-1.33134,
 ccs,chi_c0 K*0,K*+ chi_c0,0.000169,0.00014,0.769891,exact,1.00592,0.213346,,1,,only_b0,,,,1.30657
-ccs,chi_c0 K+ pi-,chi_c0 K0 pi+,0.0002,0.0002,0.929368,,1,,node,6.7838,1.13514,only_bp,,,,6.30464
+ccs,chi_c0 K+ pi-,chi_c0 K0 pi+,0.0002,0.0002,0.929368,,1,,,1,,neither,,,,
 ccs,chi_c0 K0 pi0,chi_c0 K+ pi0,0.0001,0.0001,0.929368,,1,,,1,,neither,,,,
 ccs,chi_c0 K0 pi- pi+,chi_c0 K+ pi+ pi-,0.0002,0.0002,0.929368,,1,,,1,,neither,,,,
 ccs,chi_c0 K0 pi0 pi0,chi_c0 K+ pi0 pi0,0.0001,0.0001,0.929368,,1,,,1,,neither,,,,
