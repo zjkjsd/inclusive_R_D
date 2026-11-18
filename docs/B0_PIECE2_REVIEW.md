@@ -6,11 +6,12 @@ options, a recommendation and a decision. A decision is entered only after it wa
 agreed. Status labels: OPEN (not decided), AGREED (decided, not yet implemented), DONE (implemented
 and the tables rerun).
 
-Last updated: 2026-11-18 (document audited against the code, the tables and the sources; section 5h).
+Last updated: 2026-11-18 (P2 decided; P6 opened; section 5i).
 
 **State.** Every point of the review is decided and implemented (2026-11-16 and 2026-11-17). The
 audit of the case file (2026-11-18, section 5i) raised three new points, P2–P4, and the
-Belle/Belle II D(\*)ηπ paper a fourth, P5; all still OPEN. P2 and P5 touch lines with a visible
+Belle/Belle II D(\*)ηπ paper a fourth, P5; the check of P2 a fifth, P6. P2 is AGREED (not yet
+implemented); P3–P6 are OPEN. P2 and P5 touch lines with a visible
 yield share. Also open, for later steps: N1 (uncertainty of lines with no PDG entry, with piece 3) and the
 semileptonic gap modes (M2 and the D(\*)ππℓν lines of G5, to be replaced by the Belle II
 recommendation).
@@ -120,10 +121,11 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | R2 | Second independent review | DONE (2026-11-17), section 5g | 14 findings fixed, 2 refuted |
 | R3 | Audit of this document | DONE (2026-11-18), section 5h | stale parts rewritten; wrong facts corrected in place |
 | R4 | Audit of the case file | DONE (2026-11-18), section 5i | generator fixed: 17 cases in full, 40 small; numbers confirmed by an independent recomputation |
-| P2 | PDG entries for the non-resonant part of a total (23 measured, so far unused) | OPEN (2026-11-18), section 5i | proposal there; changes B⁺ → D⁺D⁻K⁺ (4216) and Λ̄_c⁻pπ⁺π⁻ (816) |
+| P2 | PDG entries for the non-resonant part of a total (24 measured, so far unused) | AGREED (2026-11-18), section 5i, not yet implemented | option (c), per line: the NR entry is the source of lines 816 (0.53 ± 0.10), 1068, 1070, 1078, 1159, 4517–4520 (≈ 1.0), 5022 (0.52), 4437 (0.73); the remainder stays for 4216 (0.43 ± 0.48), 4217, 4218 (0.96) and 510; S041.579 a product cross-check of 4318 only |
 | P3 | PDG entries measured in a mass window, compared with the full final state | OPEN (2026-11-18), section 5i | charmless, radiative and baryonic only, ≤ 0.014 % of the yield |
 | P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | OPEN (2026-11-18), section 5i | ≤ 0.004 % of the yield |
 | P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | OPEN (2026-11-18), section 5i | proposal: lines 733 c = 1.09 ± 0.12, 4269 c = 1.43 ± 0.13 through a new exception action |
+| P6 | Narrow resonances (not folded) inside PDG totals: the remainder of the direct line too large | OPEN (2026-11-18), section 5i | found in the P2 check; largest share D(\*)D̄(\*)K with D_s1(2536) (653/654, 4212, 4213) |
 
 ## 2. Method points
 
@@ -1043,6 +1045,70 @@ line stands for everything without a line of its own: for D⁺D⁻K⁺ that is L
 the decay file's line is that non-resonant measurement (the charmless lines, c = 1), (b) where the
 line has to carry components without lines of their own (D⁺D⁻K⁺). Recommendation: (c). For
 Λ̄_c⁻pπ⁺π⁻ the two give 0.53 and 0.89; which components have lines of their own decides.
+
+*P2, check and decision (2026-11-18).* An independent check (recomputation from the decay file and
+the PDG cache; pdgapi listings; LHCb arXiv:2009.00026 and arXiv:2406.03156, BaBar arXiv:1302.0191 and
+arXiv:1011.3929, Belle hep-ex/0608025) confirmed the numbers above and found the table above
+incomplete. Corrections and additions:
+- The cache has 37 non-resonant entries: 24 measured (not 23; S042.90, D\*⁻3π NR = 0 ± 0.25 %, was
+  left out; its line 712 has BF 0) and 13 limits.
+- **B⁺ → D⁻D⁺K⁺ (4216).** LHCb Table 4 fit fractions: ψ(3770) 14.5, χ_c0(3930) 3.7, χ_c2(3930) 7.2,
+  ψ(4040) 5.0, ψ(4160) 6.6, ψ(4415) 9.2, X₀(2900) 5.6, X₁(2900) 30.6, non-resonant (D⁻K⁺ S-wave)
+  24.2 % (sum 106.6 %). PDG's total S041.336 rests on BaBar 2011 alone. Only ψ(3770)K⁺ (4162) and
+  ψ(4160)K⁺ (4171) have lines; the components without a line are 85.5 % of the total and can come
+  only from 4216. After P1, ψ(3770)K⁺ supplies 1.07·10⁻⁴ (48 % of the total, LHCb 14.5 %); the
+  remainder absorbs that excess. A fit-fraction rule (c = 0.86 ± 0.29) would leave the total 1.3σ
+  high and contradict P1.
+- **B⁺ → D\*∓D±K⁺ (4217, 4218; shares 2.84 %, 2.88 %), missing above.** S041.830–833 are LHCb 2024's
+  four NR waves NR(1⁻⁻), NR(0⁻⁻), NR(1⁺⁺), NR(0⁻⁺), summed over both charge combinations: 7.54·10⁻⁴,
+  61 % of S041.337 + S041.338 = 12.3·10⁻⁴ (LHCb normalized to about 6.8·10⁻⁴ per combination, not
+  PDG's 6.3). The rest is η_c(3945), h_c(4000), χ_c1(4010), h_c(4300), χ_c2(3930), ψ(4040),
+  T_cs̄0(2870), T_cs̄1(2900), none with a line. The NR entries would cut both lines by 40 %, wrongly.
+- **B⁰ → Λ̄_c⁻pπ⁺π⁻ (816).** "Non-resonant" in both papers means "not through Σ_c(2455) or
+  Σ_c(2520)" (it contains Σ_c(2800), N\*, ρ, ...); both totals include the Σ_c modes. Every measured
+  Σ_c component has a line (817, 818, 819), so the NR entry is the like-for-like value. The present
+  0.886 is too large because the narrow Σ_c(2455) lines are not folded into the total (P6); folded,
+  the remainder is 0.59 ± 0.15, consistent with 0.53 ± 0.10.
+- Missing above, share 0 or unchanged c: S042.579 η_cK⁺π⁻ (NR) gives 0.40 against the remainder
+  2.14 ± 0.70 for line 510 (the decay file has only η_cK\*⁰ besides it; the LHCb paper not read);
+  S042.446 ωK⁺π⁻ NR = line 1159 (copied, now class none); S042.506, S041.230, S041.231 (lines 1078,
+  4519, 4520, copied); S041.704 K⁺μ⁺μ⁻ (line 4437, 0.73 against 0.746 now); S041.579 B⁺ → D̄₁⁰π⁺ ×
+  B(D̄₁⁰ → D̄⁰π⁺π⁻ NR) = 2.2·10⁻⁴, the like-for-like product of line 4318 × the D₁ → D⁰π⁺π⁻ PHSP
+  line (0.172): c_prod 0.69 (line 4318 keeps its exact c 0.78 ± 0.33); S041.310 (K⁺π⁻)NR π⁺γ (its
+  line 4424 is commented out).
+- Line 818 (B⁰ → Σ̄_c(2455)⁰pπ⁻) is set to 1·10⁻⁵ with the comment "Gamma_506 UL<0.31e-4", the limit of
+  the Σ_c(2520)⁰ mode; PDG measures the Σ_c(2455)⁰ mode at 1.08·10⁻⁴ (S042.223), so it already takes
+  c = 10.8. Noted, no action (share 0.005 %).
+
+**Decision (2026-11-18): option (c), AGREED, not yet implemented.** Per line, in the exceptions file
+(new action naming the NR entry; the total becomes a closure check only):
+- NR entry as the source: 816 (0.53 ± 0.10), 1068, 1070, 1078, 4517, 4518, 4519, 4520, 1159 (≈ 1.0),
+  5022 (0.52), 4437 (0.73).
+- Remainder kept: 4216 (0.43 ± 0.48), 4217 and 4218 (0.96), 510 (2.14 ± 0.70), because their lines
+  stand for components that have no line of their own.
+- S041.579: a product cross-check of line 4318 only (c_prod), c unchanged.
+Reason: a measured non-resonant part is the right source only where the decay file has a line for
+every other measured component; otherwise the phase-space line carries those components too.
+Visible effect: only line 816 (0.048 %).
+
+*P6. Narrow resonances inside PDG totals (opened 2026-11-18, from the P2 check).* A line feeds a total
+only through broad resonances (width ≥ 10 MeV); narrow ones are never folded. That is right where the
+measurement vetoes them (checked: D\* in Dππ, D̄⁰K⁺π⁻, Dππℓν; charmonium in K(\*)ℓℓ, J/ψ4π, J/ψηK,
+J/ψKππ) and wrong where it includes them, so the direct line's remainder is too large. Found (judged
+from the papers or footnotes):
+
+| Total | Narrow state inside | Direct line(s) | Share % | c now → folded |
+|---|---|---|---|---|
+| B⁰ → D\*⁻D⁺K⁰ + D⁻D\*⁺K⁰ (S042.265, BaBar 2011 "including nonresonant and resonant modes") | D_s1(2536)⁺ → D\*⁺K⁰ (line 801) | 653 + 654 | 3.3 + 8.4 | 0.985 → 0.964 |
+| B⁺ → D̄\*⁰D\*⁰K⁺ (S041.335) | D_s1(2536)⁺ (4347) | 4213 | 1.0 | 0.987 → 0.942 |
+| B⁺ → D̄⁰D\*⁰K⁺ (S041.334) | D_s1(2536)⁺ (4346) | 4212 | 0.58 | 0.996 → 0.964 |
+| B⁰ → Λ̄_c⁻pπ⁺π⁻ (S042.161) | Σ_c(2455) (818, 819) | 816 | 0.048 | 0.886 → 0.594 (P2 then uses the NR entry) |
+| B⁰ → J/ψK\*⁰π⁺π⁻ (S042.214, CDF 2002 counts ψ(2S) candidates) | ψ(2S) → J/ψππ (481–483) | 472 | 0.039 | 0.965 → 0.66 |
+| B⁰ → J/ψπ⁺π⁻, B⁺ → π⁺π⁻π⁺, B⁺ → J/ψK⁺π⁺π⁻ | ω → π⁺π⁻ | 451, 4517, 4083 | ≤ 0.005 | −0.02 … −0.09 |
+| K K K, K\*K K, K⁺K⁻π⁰ totals (LEES 2012O keeps φ and χ_c0) | φ (and χ_c0) | 4520, 1078, 4668, 1222, 1080 | 0 | −0.05 … −0.22 |
+
+D_s1(2536) decays 100 % to D\*K in the decay file (half D\*⁺K⁰, half D\*⁰K⁺). Numbers from the check,
+estimated by hand (σ approximate), not yet from a rerun. Still OPEN: options and decision.
 
 *P3. Entries measured in a mass window.* A scan of the footnotes of all 615 PDG entries that decay-file
 lines use or feed (pdgapi listings; 5 did not parse) finds window cuts only in charmless, radiative
