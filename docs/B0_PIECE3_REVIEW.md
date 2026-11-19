@@ -7,7 +7,7 @@ has the facts, the options, a recommendation and a decision; a decision is enter
 discussed and agreed. Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables
 rerun).
 
-Last updated: 2026-11-19 (3.1 and P7 decided; facts in section 2; record in section 3).
+Last updated: 2026-11-19 (3.1 and P7 decided, P7 implemented; 3.2 opened, waiting for MC truth).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC` (B⁰ block 360–2160, PYTHIA lines 2134–2158;
 B⁺ block 3992–5525, PYTHIA lines 5503–5523). "Unmeasured" means class none or limit in
@@ -19,7 +19,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
 | 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
-| 3.2 | Inclusive constraints on the class(es): which measurements, and the priors they give | OPEN | facts in section 2; may need generator truth of the PYTHIA decays (section 2.5) |
+| 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | OPEN (2026-11-19), section 3.3 | the priors depend on the fraction of PYTHIA's upper-vertex charm that becomes a D_s (f_s); waiting for the generator truth of official MC16rd generic mdst (`scripts/mc_truth/b_decay_truth_basf2.py`) |
 | 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
@@ -212,3 +212,42 @@ S042.457 to the anti-charm form) and two `veto` (B⁰ lines 806, 1002). Changed 
 B⁰ BF by class: exact 28.31 → 28.04 %, none 10.58 → 10.86 %. Yield by class: only WC comb ℓ side, had.
 exact 4.0 → 3.9 %. New test `test_wrong_flavor_p7`; the veto count of `test_real_coverage` is now 6.
 Tests: 35 and 15 pass.
+
+### 3.3 Priors from the inclusive measurements (opened 2026-11-19)
+
+*Parameterization (from 3.1).* Unmeasured b → cc̄s decays (exclusive class none/limit with two open
+charm hadrons, and PYTHIA ≥ 2-charm decays) are weighted by N₂; those with a D_s(\*) among the B
+daughters by N₂·r_s (r_s = scale of the D_s class relative to the rest). Measured lines keep their c.
+
+*Equations,* per B flavor, for the upper-vertex rates measured by BaBar 2007 (hep-ex/0606026):
+
+- D_s⁺ X = M_s + N₂ r_s (U_s + f_s P)
+- D⁰ + D⁺ X (wrong sign) = M_d + N₂ (U_d + f_d P)
+- Λ_c⁺ X = N₂ f_Λ P, with f_s + f_d + f_Λ + f_ψ = 1
+
+M = measured lines after the piece-2 c, U = unmeasured exclusive lines, P = PYTHIA lines with an
+upper-vertex c quark (B⁰ 8.16 %, B⁺ 7.43 %), and f the fractions of those c quarks that end in a D_s,
+a non-strange D, a Λ_c, or charmonium. Inputs (% of B decays): B⁰ M_s 5.68, U_s 3.97, M_d 3.83 (line 806
+removed), U_d 2.89; B⁺ M_s 5.78, U_s 3.96, M_d 4.28, U_d 2.91. f_ψ taken as 0.04–0.12 (the J/ψ X
+deficit of the exclusive lines), f_Λ from Λ_c⁺ X (B⁺ 2.1 +0.9 −0.6 %; B⁰ 1.6 ± 0.9 %, paper value).
+
+*Result of a scan in f_s* (median and 68 % interval from the measurement errors;
+`scripts/mc_truth/p32_prior_scan.py`):
+
+| f_s | B⁰: N₂ | B⁰: r_s | B⁺: N₂ | B⁺: r_s |
+|---|---|---|---|---|
+| 0.0 | 0.79 [0.59, 0.99] | 1.50 [0.86, 2.38] | 0.92 [0.81, 1.05] | 0.58 [0.22, 0.98] |
+| 0.1 | 0.85 [0.64, 1.07] | 1.15 [0.66, 1.82] | 1.00 [0.87, 1.14] | 0.45 [0.17, 0.76] |
+| 0.2 | 0.93 [0.70, 1.17] | 0.89 [0.52, 1.42] | 1.09 [0.95, 1.24] | 0.36 [0.14, 0.60] |
+| 0.3 | 1.03 [0.77, 1.29] | 0.71 [0.41, 1.13] | 1.20 [1.04, 1.36] | 0.29 [0.11, 0.48] |
+| 0.4 | 1.15 [0.86, 1.44] | 0.56 [0.32, 0.89] | 1.33 [1.16, 1.51] | 0.23 [0.09, 0.39] |
+
+- N₂ is known to about ±15 % (B⁺) for a given f_s, but moves by 40 % over the plausible f_s range.
+- r_s depends on f_s even more; B⁰ and B⁺ disagree, because BaBar's D_s⁺ X is 10.3 % (B⁰) against
+  7.9 % (B⁺) while the decay file gives nearly the same for both. For B⁺, r_s < 1 for any f_s (the D_s
+  class too high).
+- So the priors need the PYTHIA fractions f_s, f_d, f_Λ, f_ψ (and the lower-vertex D_s⁻ from ss̄
+  popping, for the B → D_s X average of Belle 2023). They can be read from the generator truth of a
+  few official MC16rd generic mdst files: `scripts/mc_truth/b_decay_truth_basf2.py` (written
+  2026-11-19, not tested here: no basf2 in this environment), about 10⁵ events each of mixed and
+  charged MC.
