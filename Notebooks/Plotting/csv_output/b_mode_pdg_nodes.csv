@@ -86,7 +86,6 @@ S042.613,S042.613,511,B0 --> Dbar^*(2007)0 K+ pi-,plain,covered,5.1832e-05,1.866
 S042.244,S042.244,511,B0 --> Dbar^*(2007)0 K0,plain,exact,3.6e-05,1.23693e-05,False,2,7.2e-05,3.6e-05,1,0,0.5,1,anti-D*0 K0 [757 805] BFxP=7.2e-05; measured/exact c=0.5 +- 0.17
 S042.245,S042.245,511,B0 --> Dbar^*(2007)0 K^*(892)0,plain,limit,6.9e-05,0,True,2,4e-05,,,,,1,anti-D*0 K*0 [766] BFxP=4e-05; limit/- c=1
 S042.247,S042.247,511,B0 --> D^*(2007)0 K^*(892)0,plain,limit,4e-05,0,True,2,1e-05,,,,,1,K*0 D*0 [767] BFxP=1e-05; limit/- c=1
-S042.195,S042.195,511,B0 --> D^*(2007)0 pi+ pi+ pi- pi-,plain,exact,0.0027185,0.000501802,False,5,0.0027185,0.0027185,1,0,0.999999,1,pi- pi- pi+ pi+ D*0 [806] BFxP=0.00272; measured/exact c=1 +- 0.18
 S042.154,S042.154,511,B0 --> D^*(2010)+ D^*(2010)-,plain,exact,0.000795527,6.14365e-05,False,2,0.00079553,0.000795527,1,0,0.999996,1,D*- D*+ [615] BFxP=0.000796; measured/exact c=1 +- 0.077
 S042.136,S042.136,511,B0 --> Dbar^*(2007)0 omega,plain,exact,0.000364176,0.000110803,False,2,0.00036418,0.000364176,1,0,0.999988,1,anti-D*0 omega [788] BFxP=0.000364; measured/exact c=1 +- 0.3
 S042.185,S042.185,511,B0 --> D^*(2007)0 Dbar^*(2007)0,plain,limit,9e-05,0,True,2,3e-05,,,,,1,anti-D*0 D*0 [2115] BFxP=3e-05; limit/- c=1
@@ -263,7 +262,6 @@ S042.252,S042.252,511,B0 --> p Sigmabar0 pi-,plain,exact,1.17e-06,4.2087e-07,Fal
 S042.186,S042.186,511,B0 --> Lambdabar Lambda,plain,limit,3.2e-07,0,True,2,3.2e-07,,,,,1,anti-Lambda0 Lambda0 [2065] BFxP=3.2e-07; limit/- c=1
 S042.455,S042.455,511,B0 --> Lambdabar Lambda K0,plain,exact,4.76e-06,9.75817e-07,False,3,4.76e-06,4.76e-06,1,0,1,1,anti-Lambda0 K0 Lambda0 [1000] BFxP=4.76e-06; measured/exact c=1 +- 0.21
 S042.456,S042.456,511,B0 --> Lambdabar Lambda K^*()0,plain,exact,2.46e-06,8.65159e-07,False,3,2.46e-06,2.46e-06,1,0,1,1,anti-Lambda0 K*0 Lambda0 [1001] BFxP=2.46e-06; measured/exact c=1 +- 0.35
-S042.457,S042.457,511,B0 --> Lambdabar Lambda D0,plain,exact,1.00101e-05,2.81322e-06,False,3,1.001e-05,1.00101e-05,1,0,1.00001,1,anti-Lambda0 D0 Lambda0 [1002] BFxP=1e-05; measured/exact c=1 +- 0.28
 S042.226,S042.226,511,B0 --> Dbar0 p pbar,plain,exact,0.000103561,6.85032e-06,False,3,0.00010356,0.000103561,1,1.97838e-15,1.00001,1,anti-p- anti-D0 p+ [809] BFxP=0.000104; measured/exact c=1 +- 0.066
 S042.389,S042.389,511,B0 --> D_s()- Lambdabar p,plain,exact,2.84066e-05,8.82091e-06,False,3,2.841e-05,2.84066e-05,1,0,0.999879,1,anti-Lambda0 D_s- p+ [810] BFxP=2.84e-05; measured/exact c=1 +- 0.31
 S042.227,S042.227,511,B0 --> Dbar^*(2007)0 p pbar,plain,exact,9.90487e-05,1.09052e-05,False,3,9.905e-05,9.90487e-05,1,0,0.999987,1,anti-p- anti-D*0 p+ [811] BFxP=9.9e-05; measured/exact c=1 +- 0.11

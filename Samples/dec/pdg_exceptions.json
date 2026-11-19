@@ -647,5 +647,39 @@
    "omega"
   ],
   "reason": "PDG text: \"B+ --> J/psi(1S) K+ pi+ pi-\". P6 (docs/B0_PIECE2_RECORD.md, section 5i, decided 2026-11-18): narrow resonance not folded by default but inside this measurement. B+ -> J/psi K+ pi+ pi-: Belle 2011 (arXiv:1009.5256) vetoes psi(2S)K but not omega (seen distorting the rho line shape); omega reaches the final state through K1 -> K omega and J/psi omega K+."
+ },
+ {
+  "pdgid": "S042.195",
+  "action": "rewrite",
+  "description": "B0 --> Dbar^*(2007)0 pi+ pi+ pi- pi-",
+  "reason": "PDG text: 'B0 --> D^*(2007)0 pi+ pi+ pi- pi-'. P7 (docs/B0_PIECE3_REVIEW.md, section 3.2, decided 2026-11-19): a B0 (b-bar) gives anti-charm; the sources are titled 'First Observation of Bbar0 --> D*0 pi+ pi+ pi- pi-' (CLEO, EDWARDS 2002) and BELLE MAJUMDER 2004; the listing lacks the bar. Rewritten to the anti-charm form, which no decay-file line feeds (the right-flavor line is missing from the B0 block)."
+ },
+ {
+  "pdgid": "S042.457",
+  "action": "rewrite",
+  "description": "B0 --> Lambdabar Lambda Dbar0",
+  "reason": "PDG text: 'B0 --> Lambdabar Lambda D0'. P7 (docs/B0_PIECE3_REVIEW.md, section 3.2, decided 2026-11-19): the measurement is BaBar 2014 (LEES 2014B, arXiv:1401.5990), 'Evidence for the baryonic decay Bbar0 --> D0 Lambda Lambdabar', i.e. B0 --> Dbar0 Lambda Lambdabar; the listing lacks the bar. Rewritten to the anti-charm form (no decay-file line feeds it)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   423,
+   211,
+   211,
+   -211,
+   -211
+  ],
+  "action": "veto",
+  "reason": "P7 (docs/B0_PIECE3_REVIEW.md, section 3.2, decided 2026-11-19): line 806 'D*0 pi+ pi+ pi- pi-' (2.7185e-3) has the wrong charm flavor for a B0 (should be anti-D*0); copied from the PDG text S042.195, which lacks the bar. c = 0; the anti-B0 conjugate 2616 inherits it. 0.27 % of B0 decays; reported to Belle II (docs/DECAY_FILE_ISSUES_FOR_BELLE2.md, item 1.1)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -3122,
+   3122,
+   421
+  ],
+  "action": "veto",
+  "reason": "P7 (docs/B0_PIECE3_REVIEW.md, section 3.2, decided 2026-11-19): line 1002 'anti-Lambda0 Lambda0 D0' (1.0e-5) has the wrong charm flavor for a B0 (should be anti-D0); copied from S042.457, which lacks the bar. c = 0; the conjugate 2812 inherits it. Reported to Belle II (item 1.2)."
  }
 ]

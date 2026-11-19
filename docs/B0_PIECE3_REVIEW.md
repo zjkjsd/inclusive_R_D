@@ -22,7 +22,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.2 | Inclusive constraints on the class(es): which measurements, and the priors they give | OPEN | facts in section 2; may need generator truth of the PYTHIA decays (section 2.5) |
 | 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
-| P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | AGREED (2026-11-19), section 3.2, not yet implemented | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
+| P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
 ## 2. Facts (2026-11-19)
 
@@ -205,3 +205,10 @@ maintainers.
 composition piece 3 is about; the veto keeps it out of the RS/WC comparison; the cost is negligible.
 The report to Belle II, `docs/DECAY_FILE_ISSUES_FOR_BELLE2.md` (created 2026-11-19), collects every
 decay-file problem found in pieces 2 and 3.
+
+*Implemented (2026-11-19).* Exceptions 75 → 79 (E23 in the piece-2 register): two `rewrite` (S042.195,
+S042.457 to the anti-charm form) and two `veto` (B⁰ lines 806, 1002). Changed lines: 806 and 1002
+(B⁰), 2616 and 2812 (B̄⁰): exact c = 1.00 ± 0.18 / 1.00 ± 0.28 → veto, c = 0; no other line moved.
+B⁰ BF by class: exact 28.31 → 28.04 %, none 10.58 → 10.86 %. Yield by class: only WC comb ℓ side, had.
+exact 4.0 → 3.9 %. New test `test_wrong_flavor_p7`; the veto count of `test_real_coverage` is now 6.
+Tests: 35 and 15 pass.

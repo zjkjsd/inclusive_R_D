@@ -785,7 +785,7 @@ def test_real_coverage():
     assert (TABLE.loc[meas & ~hl & ~vt, 'pdg_class'] == 'measured').all()
     assert (TABLE.loc[meas & ~vt, 'pdgids'] != '').all()
     assert (TABLE.loc[hl, 'pdg_class'] == 'limit').all() and (TABLE.loc[vt, 'pdg_class'] == 'none').all()
-    assert (TABLE.loc[vt, 'c'] == 0).all() and vt.sum() == 2                  # B+ line 4349 and its B- conjugate
+    assert (TABLE.loc[vt, 'c'] == 0).all() and vt.sum() == 6                  # B+ 4349, B0 806, 1002 (P7) and their conjugates
     assert (TABLE.loc[~meas, 'c'] == 1.0).all() and TABLE['c'].notna().all() and (TABLE['c'] >= 0).all()
     zero = (TABLE['c'] == 0) & (TABLE['how'] != 'veto')            # only clamped remainders
     assert zero.any() and (pm.has_flag(TABLE, 'remainder_clamped') == zero).all()
@@ -1327,6 +1327,16 @@ def test_narrow_folds_p6():
     assert abs(row(511, 'J/psi K*0 pi+ pi-')['c'] - 0.662) < 0.01
     # fold only acts on the named entries: the D* veto of D0bar pi pi stays (no D* folded)
     assert row(511, 'anti-D0 pi- pi+')['how'] == 'node' and abs(row(511, 'anti-D0 pi- pi+')['c'] - 0.279) < 0.01
+
+
+def test_wrong_flavor_p7():
+    """P7: B0 lines written with the wrong charm flavor are vetoed; the PDG texts get their bar (2026-11-19)."""
+    for m, names in ((511, 'D*0 pi+ pi+ pi- pi-'), (-511, 'anti-D*0 pi- pi- pi+ pi+'),
+                     (511, 'anti-Lambda0 Lambda0 D0'), (-511, 'Lambda0 anti-Lambda0 anti-D0')):
+        r = row(m, names)
+        assert r['how'] == 'veto' and r['c'] == 0.0 and r['pdg_class'] == 'none', names
+    nodes = {n['pdgid']: n for n in pm.make_nodes(PDG, PDL, pm.load_exceptions()) if n['pdgid'] in ('S042.195', 'S042.457')}
+    assert 'anti-D*0' in nodes['S042.195']['names'][0] and 'anti-D0' in nodes['S042.457']['names'][0]
 
 
 def main():

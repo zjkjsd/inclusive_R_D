@@ -206,7 +206,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,313 421 -421,D0 anti-D0 K*0,none,,,0.0005,,1,1,,1,0,,node_not_closed;unmeasured,,S042.609,,0.000730082,run1_e_SR:comb:ell:511,3,top95;flag
 521,323 -423,anti-D*0 K*+,measured,exact,S041.280,0.0008124,0.000812397,0.999996,0.16771,-2.33846e-05,,,,,,,,0.000727758,run2_mu_combCR:comb:ell:521,3,top95
 521,443 10323,J/psi K_1+,measured,exact,S041.271,0.0018,0.0018,1,0.287443,0,0.400187,0.61875,,exception_applied,,,,0.00070469,run2_e_combCR:comb:ell:521,2,top95;flag
-511,211 211 -211 -211 423,D*0 pi+ pi+ pi- pi-,measured,exact,S042.195,0.0027185,0.0027185,0.999999,0.184588,-7.09482e-06,,,,,,,,0.000667025,run2_e_wc_combCR:comb:ell:511,5,top95
+511,211 211 -211 -211 423,D*0 pi+ pi+ pi- pi-,none,veto,,0.0027185,,0,0,,,,,exception_applied,,,,0.000667025,run2_e_wc_combCR:comb:ell:511,5,top95;flag
 511,111 211 -211 -423,anti-D*0 pi- pi+ pi0,none,,,0.001,,1,,,,,,,,,,0.000659287,run2_e_combCR:comb:ell:511,1,top95
 511,211 -415,D_2*- pi+,measured,product,S042.124,0.00043,0.000238312,1.38623,0.0910811,4.24048,0.467313,0.720843,1.38623,exception_applied,,,,0.00065152,run1_mu_wc_combCR:comb:D:511,0,pull;flag
 511,313 -421 423,D*0 anti-D0 K*0,none,,,0.0005,,1,,,,,,,,,,0.000632043,run1_e_SR:comb:ell:511,1,top95
@@ -298,6 +298,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,313 335,f'_2 K*0,none,,,3.7e-05,,1,1,,0.512447,0.208319,,exception_applied;unmeasured,,,,9.12227e-06,run1_e_wc_combCR:comb:ell:511,0,flag
 511,15 -15 313,K*0 tau+ tau-,limit,,S042.629,2e-07,0.0018,1,,,,,,tau,,,,9.02921e-06,run1_e_wc_combCR:comb:ell:511,0,flag
 511,113 10311,rho0 K_0*0,measured,exact,S042.498,2.7e-05,2.7e-05,1,0.209513,0,,,,exception_applied,,,,8.83969e-06,run1_e_wc_combCR:comb:ell:511,0,flag
+511,421 3122 -3122,anti-Lambda0 Lambda0 D0,none,veto,,1.001e-05,,0,0,,,,,exception_applied,,,,8.42836e-06,run1_e_wc_combCR:comb:ell:511,0,flag
 -511,313 443,J/psi K*0,measured,exact,S042.22,0.000423334,0.0012652,0.996219,0.0362945,-0.104177,0.769679,0.732356,,block_asymmetric,,,,0,,0,flag
 -511,-211 311 413,D*+ K0 pi-,measured,node,S042.314,0.0003,0.0003,0.134016,0.161604,-5.35867,0.267926,0.731968,,block_asymmetric;c_extreme;exception_applied;remainder_unstable;resonance_mismatch,,,,0,,0,pull;flag
 -511,211 311 -413,D*- K0 pi+,measured,node,S042.314,0.0003,0.0003,0.134016,0.161604,-5.35867,0.267926,0.731968,,block_asymmetric;c_extreme;exception_applied;remainder_unstable;resonance_mismatch,,,,0,,0,pull;flag

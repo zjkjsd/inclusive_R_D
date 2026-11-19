@@ -31,7 +31,7 @@ blocks; anti-B lines (B̄⁰ 2000–3999, B⁻ 5500–7299) are named only where
 | `Notebooks/Plotting/csv_output/b_mode_pdg_table.csv` | the full result, one row per exclusive final state (5017 rows) | the code; read with `pdg_match.read_table` |
 | `Notebooks/Plotting/csv_output/b_mode_pdg_nodes.csv` | node report: every PDG final-state entry fed by B⁰/B⁺ lines (591 rows for 561 entries; lepton entries once for e, once for μ), with value, decay-file sum before and after c, closure pull and every feeding line with its decay-file lines (record, section 5e) | for looking up a total |
 | `Notebooks/Plotting/csv_output/b_mode_isospin_check.csv` | pairs of B⁰ and B⁺ lines related by isospin (154 rows), record, section 2b | optional |
-| `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (75 entries since 2026-11-18), each with its reason; register in section 3 | you and Claude |
+| `Samples/dec/pdg_exceptions.json` | corrections to the automatic matching (79 entries since 2026-11-19), each with its reason; register in section 3 | you and Claude |
 | `Samples/dec/pdg_bf_B_2026.json` | the PDG values (2026 edition) | the code |
 | `docs/REFERENCES.md` | register of the papers and notes behind the decisions (identifiers, version read, what was taken); no PDFs in the repository | you and Claude |
 
@@ -124,7 +124,7 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | P4 | LHCb 2023 B⁺ → (K_S⁰Kπ)K entries (S041.797–799) giving c = 29.5 and 6.8 | DONE (2026-11-18), record, sections 5i, 5j | option (a): `exclude_node` S041.797, S041.798, S041.799 (charmonium inside the totals; normalization apparently 2.89 times the paper's own ratios, unconfirmed); line 4676 class none c = 1; line 4130 without these entries; ≤ 0.013 % of the yield |
 | P5 | Belle/Belle II measurement of B⁰ → D\*⁻ηπ⁺ and B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024, not in PDG) | DONE (2026-11-18), record, sections 5i, 5j | option (b): new exception action `external`; lines 733 c = 1.09 ± 0.13, 4269 c = 1.43 ± 0.15 (totals as published, 5 % extra for the vetoed D_s band); 732 and 4293 stay at 1 ± 1 (N1) |
 | P6 | Narrow resonances (not folded by default) inside PDG totals | DONE (2026-11-18), record, sections 5i, 5k | option (a): `fold` per total (E22, 18 entries). D_s1(2536) in the D(\*)D̄(\*)K totals: 655 0.969 ± 0.081, 649 0.976 ± 0.087, 647 0.960 ± 0.120, 653/654 0.964 ± 0.082, 4205 0.948 ± 0.103, 4207 0.945 ± 0.135, 4212 0.964 ± 0.078, 4213 0.942 ± 0.118; Σ_c(2455) in S042.161 (closes, −0.5σ); ψ(2S) in S042.214: 472 0.662 ± 0.342; φ (χ_c0) and ω in charmless totals (share 0) |
-| P7 | B⁰ lines 806 (D\*⁰π⁺π⁺π⁻π⁻) and 1002 (Λ̄ΛD⁰), and their B̄⁰ conjugates 2616, 2812, written with the wrong charm flavor; matched exact to S042.195, S042.457, whose texts lack the bar | AGREED (2026-11-19), docs/B0_PIECE3_REVIEW.md section 3.2, not yet implemented | veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`); 0.27 % of B⁰ decays, max share 0.07 % |
+| P7 | B⁰ lines 806 (D\*⁰π⁺π⁺π⁻π⁻) and 1002 (Λ̄ΛD⁰), and their B̄⁰ conjugates 2616, 2812, written with the wrong charm flavor; matched exact to S042.195, S042.457, whose texts lack the bar | DONE (2026-11-19), docs/B0_PIECE3_REVIEW.md section 3.2 | veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`); 0.27 % of B⁰ decays, max share 0.07 % |
 
 ## 2. Rules as implemented
 
@@ -168,7 +168,7 @@ decisions; the reasons are in the record (sections named in brackets) and in sec
 
 ## 3. The exceptions file
 
-`Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching: 75 entries (28 until P2–P6 were implemented on 2026-11-18),
+`Samples/dec/pdg_exceptions.json` holds the corrections to the automatic matching: 79 entries (28 until P2–P7 were implemented on 2026-11-18),
 each with an `action` and a `reason` (with the PDG text where a PDG entry is concerned). It is read
 every time the table is built; without an entry, the automatic rule applies. An entry names a PDG
 entry (`pdgid`) or a decay-file final state (`mother`, `key`); a final state must be in the B⁰ or the
@@ -222,6 +222,7 @@ Register (current effect; "was" gives the value before the entry where it matter
 | E20 | 3 `exclude_node`: S041.797, S041.798, S041.799 | 4676, 4130 | exclude_node | P4 (record, section 5i) | 4676 none, c = 1 (was 29.5); 4130 none, c = 1 (was 6.8) | DONE (2026-11-18) |
 | E21 | 2 `external`: B⁰ → D\*⁻ηπ⁺, B⁺ → D̄⁰ηπ⁺ (BELLE2-PUB-PH-2025-024 v12) | 733, 4269 | external | P5 | 1.086 ± 0.131, 1.425 ± 0.146 (was 1) | DONE (2026-11-18) |
 | E22 | 18 `fold`: D'_s1+ into S042.261, S042.263, S042.265, S042.266, S041.330, S041.331, S041.334, S041.335; Σ̄_c(2455)⁰,⁻⁻ into S042.161; ψ(2S) into S042.214; φ and χ_c0 into S041.160, S042.81; φ into S041.164, S042.85, S042.230; ω into S042.241, S041.63, S041.19 | 647, 649, 653–655, 4205, 4207, 4212, 4213, 472, 451, 1080, 1222, 4083, 4668 | fold | P6 (record, section 5i): the measurement includes the narrow state | values in section 1 and record, section 5k | DONE (2026-11-18) |
+| E23 | S042.195, S042.457 (rewrite to the anti-charm form); B⁰ lines 806 (D\*⁰π⁺π⁺π⁻π⁻) and 1002 (Λ̄ΛD⁰) (veto) | 806, 1002 (conjugates 2616, 2812) | rewrite, veto | P7 (docs/B0_PIECE3_REVIEW.md, section 3.2): wrong charm flavor, copied from PDG texts without the bar | 806, 1002 c = 0 (were exact, 1.00 ± 0.18 and 1.00 ± 0.28); the conjugates follow | DONE (2026-11-19) |
 
 ## 4. Open items
 
