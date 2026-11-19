@@ -18,6 +18,27 @@ that flavor.
 release-08-03-00; the master decay file of the MC16rd generic production). Line numbers refer to this
 file. B⁰ block: lines 360–2160; B̄⁰: 2170–3970; B⁺: 3992–5525; B⁻: 5535–7068.
 
+**Still present in the current release?** Checked on 2026-11-19 against `decfiles/dec/DECAY_BELLE2.DEC`
+of basf2 light-2609-luna: every item below is still present, with the same text and BF, except item
+2.1, which was corrected in 2025 ("BF update – VG 2025": the four D_s0\*(2317) lines now carry the PDG
+products). The PYTHIA lines were renormalized (e.g. b̄ → c̄cs̄ 7.19 → 7.52 % in B⁰). Line numbers in
+light-2609-luna are shifted:
+
+| release-08 line | light-2609-luna line | release-08 line | light-2609-luna line |
+|---|---|---|---|
+| 453 | 461 | 1002 | 1010 |
+| 464 | 472 | 2616 | 2624 |
+| 652 | 660 | 2812 | 2820 |
+| 658 | 666 | 4087 | 4095 |
+| 692 | 700 | 4162 | 4170 |
+| 693 | 701 | 4210 | 4218 |
+| 733 | 741 | 4216 | 4224 |
+| 797, 798, 799 | 805, 806, 807 | 4269 | 4277 |
+| 801, 802 | 809, 810 | 4319 | 4329 |
+| 806 | 814 | 4337, 4338 | 4347, 4348 |
+| 818 | 826 | 4346, 4347 | 4356, 4357 |
+| | | 4349, 5888 | 4359, 5900 |
+
 **Method.** All B⁰/B⁺ branching fractions of PDG 2026 (1273 entries, all levels) were read through the
 PDG API. For every PDG final state, the decay-file rate was computed by following the decay file's own
 sub-decays of the resonances, and the two were compared entry by entry; papers were read where a
@@ -38,7 +59,7 @@ problem unless stated otherwise.
 
 | # | Lines | Decay file | PDG | Problem | Suggested fix |
 |---|---|---|---|---|---|
-| 2.1 | 790, 791 (B⁰ → D⁻D_s0\*(2317)⁺, D\*⁻D_s0\*⁺); 4339, 4340 (B⁺ → D̄⁰D_s0\*⁺, D̄\*⁰D_s0\*⁺) | 0.738 %, 1.769 %, 0.762 %, 1.706 % | (0.105 ± 0.016) %, (0.150 ± 0.060) %, (0.079 ± 0.014) %, (0.090 ± 0.070) % (products with D_s0\* → D_sπ⁰, S042.253, S042.97, S041.321, S041.26) | The four values equal, to all digits, the PDG values of the **D_s\*⁺** modes (D⁻D_s\*⁺ etc.): copied onto the D_s0\* lines. The decay file is 7–19 times above PDG; together 2.5 % of B⁰ and 2.5 % of B⁺ decays, much of it D_s production | Use the PDG products (with B(D_s0\* → D_sπ⁰) = 100 +0 −20 %); return the difference to the budget of the b → cc̄s modes |
+| 2.1 (**already fixed in light-2609-luna**, lines 798, 799, 4349, 4350) | 790, 791 (B⁰ → D⁻D_s0\*(2317)⁺, D\*⁻D_s0\*⁺); 4339, 4340 (B⁺ → D̄⁰D_s0\*⁺, D̄\*⁰D_s0\*⁺) | 0.738 %, 1.769 %, 0.762 %, 1.706 % | (0.105 ± 0.016) %, (0.150 ± 0.060) %, (0.079 ± 0.014) %, (0.090 ± 0.070) % (products with D_s0\* → D_sπ⁰, S042.253, S042.97, S041.321, S041.26) | The four values equal, to all digits, the PDG values of the **D_s\*⁺** modes (D⁻D_s\*⁺ etc.): copied onto the D_s0\* lines. The decay file is 7–19 times above PDG; together 2.5 % of B⁰ and 2.5 % of B⁺ decays, much of it D_s production | Use the PDG products (with B(D_s0\* → D_sπ⁰) = 100 +0 −20 %); return the difference to the budget of the b → cc̄s modes |
 | 2.2 | 818 (B⁰ → Σ̄_c(2455)⁰pπ⁻) | `1e-5`, comment "Gamma_506 PDGLive ⇒ UL<0.31e-4. Set BF e-5" | (1.08 ± 0.09)·10⁻⁴ (S042.223) | The comment cites the upper limit of the **Σ_c(2520)⁰** mode; the Σ_c(2455)⁰ mode is measured, 11 times higher | 1.08·10⁻⁴ |
 
 ## 3. Inclusive totals written as a non-resonant line, with resonance lines on top
@@ -83,12 +104,13 @@ lines, or to 0 where the resonances saturate the total.
   D(\*)D̄(\*)K\* (2.75 %; lines 664–677, 4221–4234), D_s(\*)D(\*)π(π) (2.58 %; 629–638, 4189–4198),
   D\*\*D_s(\*) (1.36 %; 623–628, 4182–4187). None has a comment giving its source; most sit at round
   values (2.5·10⁻³, 5·10⁻³, 5·10⁻⁴). The PYTHIA b̄ → c̄cs̄ lines (2147, 5512) add about 7 %.
-- Against the inclusive measurements, the decay file has too much D_s and too little upper-vertex
-  non-strange D: the exclusive lines alone give B → D_s X = 12.1 % (average of B⁰ and B⁺), against
-  (10.6 ± 0.6) % (PDG; Belle 2023, arXiv:2305.10098: 11.28 ± 0.43 %), before any D_s from PYTHIA;
-  B⁺ → D_s⁺X 12.1 % against 7.9 +1.4 −1.3 %; while the upper-vertex D⁰ + D⁺ from exclusive lines is
-  7.4 % (B⁺) against (11.1 ± 0.9) % (BaBar 2007, hep-ex/0606026). Items 2.1 (D_s0\* lines) explain part
-  of the D_s excess.
+- Against the inclusive measurements: in release 08 the exclusive lines alone give B → D_s X = 12.1 %
+  (average of B⁰ and B⁺), against (10.6 ± 0.6) % (PDG; Belle 2023, arXiv:2305.10098: 11.28 ± 0.43 %),
+  before any D_s from PYTHIA. Most of this excess is the D_s0\* lines of item 2.1 (fixed in
+  light-2609-luna); with all measured exclusive lines at their PDG values the exclusive D_s X is about
+  9.8 %. The upper-vertex (wrong-sign) non-strange D remains low: D⁰ + D⁺ from the exclusive lines is
+  7.4 % (B⁺) against (11.1 ± 0.9) % (BaBar 2007, hep-ex/0606026), so it must come from PYTHIA or from
+  the unmeasured D(\*)D̄(\*)K\* lines. These numbers should be redone for the current file.
 - Inclusive charmonium from the exclusive lines is low: J/ψ X 0.88 % (with feed-down) against
   1.094 ± 0.032 %; whether PYTHIA's cc̄s lines make up the difference was not checked.
 - Stale comments: the PYTHIA section headers say "Lam_c X / Sigma_c X 4.0 %" and "Xi_c X 2.5 %" above
