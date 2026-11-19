@@ -7,7 +7,7 @@ has the facts, the options, a recommendation and a decision; a decision is enter
 discussed and agreed. Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables
 rerun).
 
-Last updated: 2026-11-19 (point 3.1 opened; facts in section 2).
+Last updated: 2026-11-19 (3.1 and P7 decided; facts in section 2; record in section 3).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC` (B⁰ block 360–2160, PYTHIA lines 2134–2158;
 B⁺ block 3992–5525, PYTHIA lines 5503–5523). "Unmeasured" means class none or limit in
@@ -18,11 +18,11 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
-| 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | OPEN (2026-11-19), section 3 | – |
+| 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
 | 3.2 | Inclusive constraints on the class(es): which measurements, and the priors they give | OPEN | facts in section 2; may need generator truth of the PYTHIA decays (section 2.5) |
 | 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
-| P7 | Line 806 / 2616 written with the wrong charm flavor (piece-2 follow-up) | OPEN (2026-11-19), section 2.6 | recorded also in the piece-2 review file |
+| P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | AGREED (2026-11-19), section 3.2, not yet implemented | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
 ## 2. Facts (2026-11-19)
 
@@ -140,6 +140,68 @@ priors of 3.2.
 
 ## 3. Discussion record
 
-### 3.1 Class structure (opened 2026-11-19)
+### 3.1 Class structure (2026-11-19)
 
-Facts: section 2. Options and recommendation: to be entered after the discussion.
+*Options presented.* (a) one class, one free N₂, composition from MC (its error in the transfer term
+of B.3); (b) two content classes across generators, "unmeasured b → cc̄s with a D_s(\*) among the B
+daughters" and "with D D̄, no D_s", each with a free normalization; (c) keep the generator split
+(unmeasured exclusive lines at c = 1 ± 1, N₂ for PYTHIA only); (d) as (b) with D(\*)D̄(\*)K\* split off.
+
+*Question (user): do we have separation power for the two content classes, or control samples for
+them?* Facts from the sample tables (raw MC, no c weights; all 12 files, e and μ summed; D_s class =
+unmeasured exclusive lines and PYTHIA ≥ 2-charm decays with a D_s(\*) among the B daughters):
+
+| Region | Table | D_s class | D D̄ class | D_s / D D̄ |
+|---|---|---|---|---|
+| comb CR | comb, D side | 6.6 % | 20.9 % | 0.32 |
+| SR | comb, D side | 5.5 % | 25.3 % | 0.22 |
+| WC | comb, D side | 10.0 % | 13.6 % | 0.73 |
+| comb CR / SR / WC | comb, ℓ side | 4.7 / 4.3 / 2.9 % | 6.1 / 6.3 / 4.0 % | 0.76 / 0.68 / 0.73 |
+| comb CR / SR | hadB | 18.2 / 15.9 % | 36.6 / 28.4 % | 0.50 / 0.56 |
+
+- PYTHIA ≥ 2-charm decays seldom have a D_s among the B daughters (1–2 % of the yield, against 3–23 %
+  without).
+- The D side, ℓ side and hadB tables are not separate data samples (a comb event carries both B's;
+  hadB and comb look alike in data). Separate data samples are the RS comb CR and WC: on the D side
+  the ratio is 0.32 and 0.73. Reason: the D D̄ class gives upper-vertex D⁺ that pair with the primary
+  lepton of the other B into RS; in the D_s class the upper-vertex charm is the D_s, so its D⁺ is a
+  lower-vertex one, like single charm. This leverage exists only in a joint RS + WC fit.
+- Kinematic separation in the fit variables (p\*_D, p\*_ℓ, ROE) is unknown (no kinematics in the
+  mode tables); piece 5 (Fisher matrix) answers it. The B.4 tuning shows that free class weights
+  without separation trade off and end at their limits.
+- Cost of not separating: if the truth were D_s class × 0.8 and D D̄ class × 1.2 (roughly what the
+  inclusive data suggest) and one factor were fitted in the CR, the SR prediction would miss by about
+  −0.8 % of the comb D-side yield and +0.5 % of the hadB yield (the D_s / D D̄ ratio differs between CR
+  and SR). Small, not zero: the transfer term of B.3.
+
+*Revised options.* (a) and (b) as above (no longer recommended: (b) needs separation power not shown);
+(e) one free N₂ for all unmeasured b → cc̄s plus a constrained composition parameter, the D_s-class
+fraction, with a prior from the inclusive data. Without power in the fit it stays at its prior and its
+effect is an explicit uncertainty; with power, the data narrow it; piece 5 tells which.
+
+**Decision (2026-11-19): option (e), AGREED.** Reason: it keeps B.13's point (exclusive and PYTHIA
+b → cc̄s are equally unmeasured and share one normalization), makes the known composition problem
+(too much D_s, too little upper-vertex D in the decay file, section 2.4) an explicit, priced
+uncertainty, and leaves the sensitivity question to piece 5 instead of assuming it. The prior of the
+composition parameter is point 3.2.
+
+### 3.2 P7: lines with the wrong charm flavor (2026-11-19)
+
+*Facts.* A scan of every B line for net charm of the wrong sign finds, besides the CKM-suppressed
+b̄ → ū W⁺(→ cs̄) lines (all ≤ 10⁻⁴) and cases already handled (798, G6; 4337/4338, flagged), two lines:
+806 (2616), B⁰ → D\*⁰π⁺π⁺π⁻π⁻, 2.72·10⁻³, matched exact to S042.195 (c = 1.00 ± 0.18), whose source is
+titled "First observation of B̄⁰ → D\*⁰π⁺π⁺π⁻π⁻" (CLEO, EDWARDS 2002); and 1002 (2812), B⁰ → Λ̄ΛD⁰,
+1.0·10⁻⁵, matched exact to S042.457, whose source is BaBar 2014, "Evidence for the baryonic decay
+B̄⁰ → D⁰ΛΛ̄" (arXiv:1401.5990). PDG's texts lack the bar (like E1, E2), and the decay file copied them.
+The right-flavor final states are not in the B⁰ block. For us: the D\*⁰ → D⁰ is not our D⁺; the effect
+is the charge of cascade leptons from the D⁰ (RS/WC on the ℓ side); 0.27 % of B⁰ decays, max share
+0.07 %.
+
+*Options.* (a) veto 806 and 1002 (c = 0; conjugates inherit), rewrite S042.195 and S042.457 to the
+anti-charm form; (b) keep c = 1, flag and record; (c) as (a) and report to the Belle II decay-file
+maintainers.
+
+**Decision (2026-11-19): option (c), AGREED, not yet implemented.** Reason: wrong-sign charm is the
+composition piece 3 is about; the veto keeps it out of the RS/WC comparison; the cost is negligible.
+The report to Belle II, `docs/DECAY_FILE_ISSUES_FOR_BELLE2.md` (created 2026-11-19), collects every
+decay-file problem found in pieces 2 and 3.
