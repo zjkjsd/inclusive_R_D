@@ -7,7 +7,7 @@ has the facts, the options, a recommendation and a decision; a decision is enter
 discussed and agreed. Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables
 rerun).
 
-Last updated: 2026-11-19 (3.1 and P7 decided, P7 implemented; 3.2 opened, waiting for MC truth).
+Last updated: 2026-11-20 (3.2: generator truth analysed, priors proposed; new points 3.5, 3.6).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC` (B⁰ block 360–2160, PYTHIA lines 2134–2158;
 B⁺ block 3992–5525, PYTHIA lines 5503–5523). "Unmeasured" means class none or limit in
@@ -19,9 +19,11 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
 | 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
-| 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | OPEN (2026-11-19), section 3.3 | the priors depend on the fraction of PYTHIA's upper-vertex charm that becomes a D_s (f_s); waiting for the generator truth of official MC16rd generic mdst (`scripts/mc_truth/b_decay_truth_basf2.py`) |
+| 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | OPEN (2026-11-20), section 3.4 | from the generator truth of MC16rd (464k B pairs): combined fit N₂ = 0.94 [0.82, 1.06], r_s = 0.83 [0.71, 0.98], correlation −0.82; options in 3.4 |
 | 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
+| 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | OPEN (2026-11-20), section 3.4 | found in the truth analysis; matters for R(D⁺) |
+| 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
 ## 2. Facts (2026-11-19)
@@ -85,7 +87,7 @@ Like for like (b → cc̄s, charmonium included): unmeasured exclusive 7.24 % ag
 | 22 D(\*)D̄(\*)K modes (S042.270 / S041.340) | B⁰ 3.68 ± 0.26 %; B⁺ 4.05 ± 0.30 % | BaBar 2011 (arXiv:1011.3929): "roughly one third" of wrong-sign D | exclusive three-body sum, resonances included |
 | B → D(\*)D̄(\*)K⁰ + D(\*)D̄(\*)K± (S049.51) | 7.1 +2.7 −1.7 % | ALEPH 1998, at the Z (paper not read) | b-hadron mix; X allowed or not: unchecked |
 | b → cc̄s′ (S049.31) | 22 ± 4 % | CLEO 1998 (hep-ex/9710028), derived | b → (c or u) c̄ s′, s′ = s or d |
-| J/ψ X (S049.106), ψ(2S) X, χ_c1 X | 1.094 ± 0.032 %, 0.307 ± 0.021 %, 0.309 ± 0.019 % | PDG averages | with feed-down (J/ψ) |
+| J/ψ X (S049.106), ψ(2S) X (S049.124), χ_c1 X (S049.170), χ_c1 direct (S049.24), χ_c2 X | 1.094 ± 0.032 %, 0.307 ± 0.021 %, 0.355 ± 0.027 %, 0.309 ± 0.019 %, 0.100 ± 0.017 % | PDG averages | with feed-down unless 'direct' (corrected 2026-11-20: the χ_c1 value given here before was the direct one) |
 | Λ̄_c X / Λ_c⁺ X | B⁰ 5.0 +2.1 −1.5 %; B⁺ 2.8 +1.1 −0.9 % / 2.1 +0.9 −0.6 % | BaBar 2007 | multiplicity, Σ_c included |
 
 ### 2.4 The decay file against them
@@ -251,3 +253,70 @@ deficit of the exclusive lines), f_Λ from Λ_c⁺ X (B⁺ 2.1 +0.9 −0.6 %; B�
   few official MC16rd generic mdst files: `scripts/mc_truth/b_decay_truth_basf2.py` (written
   2026-11-19, not tested here: no basf2 in this environment), about 10⁵ events each of mixed and
   charged MC.
+
+### 3.4 Generator truth of the MC (2026-11-20)
+
+*Input.* One official MC16rd file each of mixed and charged generic MC (experiment 18; 259,945 and
+204,379 events; 519,890 B⁰ and 408,758 B⁺ decays), run by the user through
+`scripts/mc_truth/b_decay_truth_basf2.py` (light-2609-luna); files in `Samples/mc_truth/`. Analysis:
+`scripts/mc_truth/truth_analysis.py`; summary table `Notebooks/Plotting/csv_output/truth_b_decays_summary.csv`.
+Independent check (2026-11-20): a reimplementation reproduced every number; a code review found one
+bug (exclusive lines of class none/limit were given weight 1, undoing the P7 vetoes and the
+half_limit of 4319), fixed; numbers below are after the fix.
+
+*Classification.* Exclusive = daughter set (PHOTOS photons removed by their generator flag) listed
+for the B's own flavor; exact because of the Belle II EvtGen double-counting patch. Exclusive
+fraction 51.65 % (decay file 51.68 %) for B⁰, 56.59 % (56.66 %) for B⁺; every mode at its BF (χ² = 910
+for 789 modes; the largest pulls are the K\*S/K\*L CP lines 2316, 2334, whose K\* flavor is
+conjugated with the B: about 70 decays, 0.013 % of B⁰, classified PYTHIA, no open charm); no decay on
+a zero-BF line; every exclusive decay in a decay-file order. The same-flavor fraction of B⁰ pairs
+is 0.190 (χ_d ≈ 0.186): the stored B is the flavor at decay.
+
+*Classes* (% of B decays, B⁰ / B⁺): measured exclusive 40.23 / 45.24; unmeasured exclusive ≥ 2 charm
+6.69 / 6.63; PYTHIA ≥ 2 charm 5.80 / 5.11; D_s class 5.45 / 5.32 (unmeasured 3.94 / 3.93, PYTHIA
+1.51 / 1.39).
+
+*PYTHIA's upper-vertex charm* (6.97 % / 6.26 % of B decays have one; the decay file's quark level is
+8.16 % / 7.43 %): fractions per upper-vertex c quark, B⁰ / B⁺: D_s 0.201 / 0.203, D⁰ + D⁺ 0.685 / 0.672,
+Λ_c 0.012 / 0.011, Ξ_c + Ω_c 0.001, charmonium 0.101 / 0.114.
+
+*Inclusive rates of the MC* (multiplicity per B decay, %, with the piece-2 c; raw in brackets), against
+the measurements (σ from the independent check, MC statistics included):
+
+| Rate | MC B⁰ | MC B⁺ | Measured | Pull |
+|---|---|---|---|---|
+| D_s⁺ X, upper vertex | 11.08 (13.23) | 11.04 (13.38) | 10.3 +2.1 −1.8; 7.9 +1.4 −1.3 | +0.4; +2.2 |
+| D_s± X, average of B⁰, B⁺ | 12.4 (14.7) | | Belle 2023: 11.28 ± 0.43 | +2.6 |
+| D_s⁻ X, lower vertex | 1.41 | 1.32 | (1.5 ± 0.8); 1.10 +0.40 −0.32 | ok |
+| D⁰ + D⁺ X, upper vertex | 11.48 | 11.37 | 10.4 ± 1.9; 11.1 ± 0.9 | +0.6; +0.3 |
+| D⁺ X, upper vertex | 3.27 | 3.49 | (2.3 ± 1.1); 2.5 ± 0.5 | +0.9; +2.0 |
+| D⁻ X, lower vertex (B⁰) | 45.7 (47.2) | | 36.9 ± 3.3 | +2.7 |
+| D̄⁰ X, lower vertex (B⁰) | 39.9 | | 47.4 ± 2.8 | −2.7 |
+| D± X, average | 29.8 (30.8) | | 23.3 ± 1.2 (CLEO 1997); BaBar 2007 sum about 25.4 ± 1.8 | +5.4; +2.4 |
+| D⁰ X, average | 67.5 | | Belle 2023: 66.63 ± 1.77 | +0.5 |
+| Λ_c⁺ X, upper vertex | 0.086 | 0.069 | (1.6 ± 0.9); 2.1 +0.9 −0.6 | −1.7; −3.4 |
+| J/ψ X (with feed-down) | 1.08 | 1.08 | 1.094 ± 0.032 | −0.4 |
+| ψ(2S) X / χ_c1 X / χ_c2 X | 0.24 / 0.23 / 0.06 (average) | | 0.307 / 0.355 / 0.100 | −3.2 / −4.6 / −2.5 |
+| n_c (charmonium = 2) | 1.18 | 1.18 | 1.19 ± 0.06; 1.20 ± 0.06 | ok |
+
+(Values in brackets in the "Measured" column are BaBar 2007 paper values where PDG gives a limit.)
+
+*Priors* (section 5 of the script): N₂ and r_s common to B⁰ and B⁺, fitted to five measurements
+(BaBar 2007 upper-vertex D_s⁺ X and D⁰ + D⁺ X for B⁰ and B⁺; Belle 2023 D_s X), with piece-2 c on the
+exclusive lines and the other classes fixed: N₂ = 0.94 [0.82, 1.06], r_s = 0.83 [0.71, 0.98],
+correlation −0.82, χ² = 2.3 for 3 degrees of freedom. Leave one out: N₂ 0.85–0.96, r_s 0.61–0.91
+(without Belle: r_s 0.61). Robustness (independent check): N₂ moves by ≤ 0.08 under the variations
+tried (Υ(4S) weights, N₁ = 0.8–1.2, D⁰ and D⁺ fitted separately, correlations); r_s is less robust: 0.79
+with BaBar's correlated D_s normalization error (B(D_s → φπ), common to B⁰ and B⁺), 0.72 with modern
+D_s normalization or with the PDG average instead of Belle, 0.61 with BaBar alone. A prior covering
+this: r_s ≈ 0.80 ± 0.15.
+
+*Definition note.* The D_s class tests for a D_s-family meson among the B daughters regardless of
+its vertex; 0.16 % of B decays (PYTHIA, D_s⁻ from ss̄ popping) are in it without an upper-vertex D_s.
+Small effect; an "upper-vertex D_s" definition is the alternative.
+
+*New findings (points 3.5, 3.6).* (1) D± is over-produced: B⁰ → D⁻X (lower vertex) +2.7σ with D̄⁰X −2.7σ
+(the sum is right: 85.7 against 84.3), B⁺ upper-vertex D⁺ +2.0σ, the average D± X +2.4σ against BaBar
+(+5.4σ against CLEO 1997); D⁰ X agrees with Belle 2023. The D⁺/D⁰ split is outside N₂ and r_s. (2)
+Upper-vertex Λ_c⁺ (baryonic b → cc̄s, Ξ_c Λ̄_c X type) is almost absent (B⁺: 0.07 % against 2.1 %);
+ψ(2S) and χ_c are too low, direct J/ψ somewhat high.

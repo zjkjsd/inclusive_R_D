@@ -16,10 +16,11 @@ Definitions
   equal a listed set, so a listed set cannot come from PYTHIA. Everything else is PYTHIA.
 * Upper / lower vertex: for a B with a b-bar quark (B0, B+; PDG > 0) the upper-vertex charm is a
   c quark (D0, D+, D_s+, Lambda_c+, Xi_c, Omega_c), the lower-vertex one a c-bar; reversed for B0bar, B-.
-  Charmonium counts as one c and one c-bar.
+  Charmonium states are counted separately (every generated state, so a J/psi from psi(2S) or
+  chi_c is counted again); N_up / N_lo count open-charm hadrons only.
 * Rates are multiplicities per B decay (as the measurements), in %.
-* Classes of piece 3 (docs/B0_PIECE3_REVIEW.md, 3.1): 'meas' = exclusive line of class measured
-  (weight c of piece 2); 'unm2c' = exclusive line of class none/limit with >= 2 open-charm hadrons
+* Classes of piece 3 (docs/B0_PIECE3_REVIEW.md, 3.1): 'meas' = exclusive line of class measured;
+  every exclusive decay has the weight c of the piece-2 table (vetoes 0, half_limit lines < 1); 'unm2c' = exclusive line of class none/limit with >= 2 open-charm hadrons
   among the B daughters; 'py2c' = PYTHIA decay with >= 2 open-charm hadrons among the B daughters;
   'other' = the rest (single charm, charmonium, charmless, semileptonic, PYTHIA 1 charm).
   D_s class: 'unm2c' or 'py2c' with a D_s-family meson among the B daughters.
@@ -103,8 +104,8 @@ def classify(b, mt, tab_lookup, tab):
                           exc & b['pclass'].isin(['none', 'limit']) & two_c & ~b['is_sl'],
                           ~exc & two_c],
                          ['meas', 'unm2c', 'py2c'], 'other')
-    b.loc[b['cls'] == 'other', 'c'] = np.where(b.loc[b['cls'] == 'other', 'pclass'] == 'measured',
-                                               b.loc[b['cls'] == 'other', 'c'], 1.0)
+    # every exclusive decay keeps the c of the piece-2 table (vetoes c = 0, half_limit, ...);
+    # PYTHIA decays have weight 1 (fixed at 2026-11-20 after the independent check)
     b['ds_class'] = b['cls'].isin(['unm2c', 'py2c']) & b['has_ds']
     return b
 
@@ -129,9 +130,6 @@ def chain_counts(b, c):
     open_up = sum(b[f'{n}_up'] for n in SPECIES)
     open_lo = sum(b[f'{n}_lo'] for n in SPECIES)
     ccbar = sum(b[n] for n in ('Jpsi', 'psi2S', 'chic0', 'chic1', 'chic2', 'etac'))
-    # charmonium directly from the B (not from psi(2S) or chi_c): approximate by counting each
-    # charmonium species once; for N(c) use the charmonium states that are primary products: we
-    # count ccbar pairs as (psi2S + Jpsi_not_from_psi2S...) is not available, so use n_c below
     b['N_up'] = open_up
     b['N_lo'] = open_lo
     b['n_ccbar'] = ccbar
@@ -200,7 +198,7 @@ def main():
     print(f'  decays on zero-BF lines: {chk[(chk.bf == 0) & (chk.obs > 0)].obs.sum()}')
 
     # ---- 2. class shares and PYTHIA content
-    print('\n=== 2. Classes (% of B decays) and the upper-vertex charm of the PYTHIA >= 2-charm decays')
+    print('\n=== 2. Classes (% of B decays) and the upper-vertex charm of all PYTHIA decays (fractions per upper-vertex c quark)')
     for grp, sub in b.groupby(b['b_pdg'].abs()):
         cls = 100 * sub['cls'].value_counts(normalize=True)
         print(f'  |B| = {grp}: ' + ', '.join(f'{k} {v:.2f}' for k, v in cls.items()) +
