@@ -25,8 +25,8 @@ file name is the -o argument (default b_decay_truth.root).
 
 About 1e5 events each of mixed and charged MC16rd generic MC are enough.
 Written 2026-11-19 against the light-2609-luna sources (modularAnalysis.fillParticleListFromMC,
-variables mcDaughter, nMCDaughters, mcPhotos, genParticleID, ancestorBIndex); not run here (no basf2
-in this environment): test on a few events first.
+variables mcDaughter, nMCDaughters, mcPhotos, genParticleID, ancestorBIndex); tested on 100 events of
+MC16rd charged MC by the user on 2026-11-20 (checks in check_truth_file.py passed).
 """
 import argparse
 
@@ -76,4 +76,3 @@ if __name__ == '__main__':
     ma.variablesToNtuple('B+:gen', b_vars, treename='Bplus', filename=args.output, path=main_path)
 
     b2.process(path=main_path, max_event=args.max_events)
-    print(b2.statistics)

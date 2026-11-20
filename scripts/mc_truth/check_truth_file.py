@@ -26,7 +26,8 @@ EVT = ['__experiment__', '__run__', '__event__']
 def check(path):
     print(f'\n===== {path}')
     f = uproot.open(path)
-    trees = {k.split(';')[0]: f[k] for k in f.keys() if f[k].classname.startswith('TTree')}
+    trees = {k.split(';')[0]: f[k] for k in f.keys()
+             if f[k].classname.startswith('TTree') and k.split(';')[0] != 'persistent'}   # skip basf2 metadata
     for name, t in trees.items():
         print(f'  tree {name:18s} {t.num_entries:9d} entries')
     bs = []
