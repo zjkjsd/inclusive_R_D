@@ -151,6 +151,17 @@ yet in the PDG listings (2026 edition).
   effect. Worth a look by the generator experts; for analyses with a D⁺ (or D⁰) in the final state the
   D⁺/D⁰ composition of generic B decays is affected.
 
+## 6c. PYTHIA b → cc̄s: almost no upper-vertex Λ_c⁺; charmonium composition
+
+- In the generator truth of MC16rd generic MC, B⁺ → Λ_c⁺X (upper vertex) is 0.07 % against BaBar's
+  2.1 +0.9 −0.6 % (hep-ex/0606026); B⁰ 0.09 % against 1.6 ± 0.9 % (PDG < 3.1 %). Less than 1 % of PYTHIA's
+  upper-vertex charm becomes a Λ_c. (CLEO 1997's upper-vertex fraction is lower than BaBar's; the
+  measurements are not fully consistent, and the measured exclusive modes, e.g. B⁺ → Λ_c⁺Ξ̄_c⁰, add up to
+  about 0.2 %.)
+- The J/ψ X total is right (1.08 % against 1.094 ± 0.032 %), but ψ(2S) X (0.24 % against 0.307 ± 0.021 %),
+  χ_c1 X (0.23 % against 0.355 ± 0.027 %) and χ_c2 X (0.06 % against 0.100 ± 0.017 %) are low, and direct J/ψ
+  is high.
+
 ## 7. Related PDG listing issues (for information)
 
 These affect anyone who copies PDG values into a decay file:

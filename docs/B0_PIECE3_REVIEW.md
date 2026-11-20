@@ -7,7 +7,7 @@ has the facts, the options, a recommendation and a decision; a decision is enter
 discussed and agreed. Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables
 rerun).
 
-Last updated: 2026-11-20 (3.2, 3.3, 3.5 decided; 3.3 implemented).
+Last updated: 2026-11-20 (piece 3 complete: 3.1–3.6 and P7 decided and implemented where needed; 3.7 passed to piece 4).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC` (B⁰ block 360–2160, PYTHIA lines 2134–2158;
 B⁺ block 3992–5525, PYTHIA lines 5503–5523). "Unmeasured" means class none or limit in
@@ -23,7 +23,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.3 | N1: lines kept individually; final class definitions | DONE (2026-11-20), section 3.6 | option (b) with classes by quark process. **N₂** = unmeasured exclusive and PYTHIA decays with a cc̄ pair (two open-charm hadrons, or charmonium of any mass, among the B daughters): b → cc̄s(d); its D_s class (r_s) as in 3.1. **N₁** = unmeasured exclusive and PYTHIA decays with a single charm quark (b → c + light quarks); the 3.5 isospin parameter acts within its PYTHIA part. Measured exclusive lines keep their c. Charmless unmeasured lines: c = 1 ± 1 per line; PYTHIA charmless: weight 1. In the piece-2 table: every hadronic line without a c has c = 1 ± 1; a limit line above its own limit c = limit/2 ± limit/2 (`limit_auto`) |
 | 3.4 | Checks of the large unmeasured double-charm lines (symmetry, measurements) | DONE (2026-11-20), section 3.7 | option (a): the 12 D\*\*D_s(\*) and 8 three-body D_s(\*)Dπ lines leave N₂ and take LHCb-based c (`external`, 20 entries; B⁰ by isospin; extra 40 % on the D₁(2420) lines, 30 % on the three-body lines); D(\*)D̄(\*)K\* stays in N₂ with a composition nuisance (piece 4) and S042.609 as a closure check including PYTHIA; D_s Dππ stays in N₂·r_s; 3.2 prior to be re-derived (proposal in 3.7) |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
-| 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
+| 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | AGREED (2026-11-20), section 3.8 | option (a): no new parameter; known MC deficiencies, their effect on the D rates is inside N₂ (prior from the D and D_s rates) and the transfer term; reported to Belle II. Yields: charmonium among the B daughters ≤ 0.24 % (ℓ side only), charmed baryons ≤ 1.3 % (ℓ side, mostly lower-vertex Λ̄_c) |
 | 3.7 | The decay file's D₁(2420) decay table: D₁ → Dππ too high relative to D\*π (affects D₁ℓν, D₁π, D₁D_s) | OPEN for piece 4 (2026-11-20), section 3.7 | measured Dππ/D\*π = 0.83 ± 0.11 of the decay file's; B(D₁ → D\*⁺π⁻) = 0.429 ± 0.019 against 0.399; used for the D₁D_s externals; the D⁺ composition of D₁ℓν (D⁺ directly from D₁) to be handled by an event weight on `D_genMotherPDG` in piece 4; reported to Belle II |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
@@ -589,3 +589,47 @@ class and carry little upper-vertex D_s change (about 0.02 % of B decays), so th
 point 3.7 (piece 4): the D₁ table in B → D₁ℓν (lines 368/392, 4000/4027; 0.70 / 0.76 % of B decays) gives
 about 20 % too many D⁺ directly from D₁ (D₁ → D⁺π⁻π⁰); a line weight cannot correct a sub-decay, an event
 weight on the D's mother (`D_genMotherPDG` = D₁) can.
+
+### 3.8 Point 3.6: upper-vertex Λ_c⁺ and the charmonium composition (2026-11-20)
+
+*Facts* (generator truth, section 3.4; yield shares from the 72 sample tables): MC upper-vertex Λ_c⁺ X
+0.09 % (B⁰) / 0.07 % (B⁺) against BaBar 2007 1.6 ± 0.9 % (paper; PDG < 3.1 %) / 2.1 +0.9 −0.6 % (−3.4σ);
+lower-vertex Λ̄_c⁻ X agrees. The measurements are not fully consistent: CLEO 1997's upper-vertex fraction
+of Λ_c (0.19 ± 0.14; limit Λ_c⁺ X < 1.3 % for the B average) against BaBar 2007's 0.43 ± 0.07. The measured
+exclusive modes with an upper-vertex Λ_c⁺ (PDG 2026: B⁺ → Λ_c⁺Ξ̄_c⁰ 9.5·10⁻⁴ (S041.721), Λ_c⁺Ξ̄_c(2790)⁰
+1.1·10⁻³ (S041.734), Ξ_c(2930)Λ_c⁺ 1.7·10⁻⁴ (S041.715)) add up to about 0.2 %, far below BaBar's
+inclusive 2.1 %. Charmonium: J/ψ X right (1.08 % against 1.094 ± 0.032), ψ(2S) −3.2σ, χ_c1 −4.6σ, χ_c2 −2.5σ,
+direct J/ψ +1.9σ. B decays with charmonium among the daughters: 0.20–0.24 % of the ℓ-side yield, 0 on the
+D side; with a charmed baryon: 1.2 % of the RS ℓ side (mostly lower-vertex Λ̄_c from PYTHIA), ≤ 0.07 % on
+the D side.
+
+*Correction (2026-11-20).* In the presentation of 3.6 I wrote that "the data suggest about 25 %" of
+PYTHIA's upper-vertex charm should become a Λ_c. That number is not a branching fraction and not a
+measured fraction: it is BaBar's B⁺ → Λ_c⁺X (2.1 %) divided by the PYTHIA lines with an upper-vertex c
+quark (7.4 %), i.e. the share PYTHIA would need if all upper-vertex Λ_c⁺ had to come from PYTHIA (the
+only source in the MC). Relative to all upper-vertex charm (23.4 % of B⁺ decays, BaBar 2007), 2.1 % is
+about 9 %; in the MC it is 0.3 %.
+
+*Options presented.* (a) no new parameter, record, report to Belle II; (b) reweight the charmonium
+composition by event weights on the B daughters; (c) a dedicated class for the missing Λ_c⁺ (impossible
+by reweighting: events that do not exist cannot be weighted up).
+
+**Decision (2026-11-20): option (a), AGREED.** Reason: charmonium is at most 0.24 % of the ℓ-side yield;
+the Λ_c⁺ deficit cannot be reweighted, and its effect on the D and D_s rates is already inside the N₂
+prior, which is fitted to them. Reported to Belle II (item 6c).
+
+## 4. Piece 3: summary and what passes to piece 4 (2026-11-20)
+
+Model classes (B.6 updated): measured exclusive lines keep their piece-2 c (now including 20 LHCb-based
+`external` lines, 3.4); **N₂** = unmeasured b → cc̄s(d) (exclusive class none/limit and PYTHIA, with a cc̄
+pair: two open-charm hadrons or charmonium of any mass), prior N₂ = 0.93 ± 0.13 with its D_s class
+scaled by r_s = 1.00 ± 0.25, correlation −0.6 (3.1, 3.2, 3.3); **N₁** = unmeasured b → c + light quarks
+(single charm quark, exclusive and PYTHIA), with an isospin parameter for its PYTHIA part (3.5);
+charmless: no parameter (3.3); hadronic lines without a c: c = 1 ± 1, limit lines above their limit
+limit/2 ± limit/2 (3.3).
+
+For piece 4: c as weights or only as prior widths; correlations (e.g. the BaBar 2011 D D̄ K modes share
+systematics); the isospin parameter of 3.5 (definition, prior from BaBar 2007, wide); a composition
+nuisance R for the D(\*)D̄(\*)K\* lines (3.4) and B⁰ → D⁰D̄⁰K⁺π⁻ (S042.609) as a closure check including
+PYTHIA; the D₁(2420) decay table (3.7: event weight on `D_genMotherPDG`); r_SL and its split; τ modes;
+the semileptonic gap modes (with the Belle II recommendation).
