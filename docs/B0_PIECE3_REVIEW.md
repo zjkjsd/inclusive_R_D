@@ -19,7 +19,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
 | 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
-| 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | OPEN (2026-11-20), section 3.4 | from the generator truth of MC16rd (464k B pairs): combined fit N₂ = 0.94 [0.82, 1.06], r_s = 0.83 [0.71, 0.98], correlation −0.82; options in 3.4 |
+| 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | AGREED (2026-11-20), section 3.4 | option (a): correlated Gaussian prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15, correlation −0.8 (from the generator-truth fit to BaBar 2007 D_s⁺ X and wrong-sign D X, B⁰ and B⁺, and Belle 2023 D_s X; r_s widened to cover the input variations). D_s class as defined in 3.1 (a D_s-family meson among the B daughters). Whether the central values also become starting weights: piece 4 |
 | 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | OPEN (2026-11-20), section 3.4 | found in the truth analysis; matters for R(D⁺) |
@@ -320,3 +320,10 @@ Small effect; an "upper-vertex D_s" definition is the alternative.
 (+5.4σ against CLEO 1997); D⁰ X agrees with Belle 2023. The D⁺/D⁰ split is outside N₂ and r_s. (2)
 Upper-vertex Λ_c⁺ (baryonic b → cc̄s, Ξ_c Λ̄_c X type) is almost absent (B⁺: 0.07 % against 2.1 %);
 ψ(2S) and χ_c are too low, direct J/ψ somewhat high.
+
+*3.2 options presented (2026-11-20).* (a) correlated Gaussian prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15,
+correlation −0.8; (b) the same, uncorrelated; (c) centered at the MC (N₂ = 1 ± 0.15, r_s = 1 ± 0.25).
+**Decision (2026-11-20): option (a), AGREED.** Reason: the correlation is physical (the D_s rates fix
+N₂·r_s, the D rate N₂) and well determined; the widened r_s covers the spread from the D_s
+normalization and from Belle against BaBar. The D_s-class definition of 3.1 is kept (the 0.16 % of
+decays with only a lower-vertex D_s is a small effect, and the ntuple truth classifies it the same way).
