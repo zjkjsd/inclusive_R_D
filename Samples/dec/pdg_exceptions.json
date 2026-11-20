@@ -681,5 +681,253 @@
   ],
   "action": "veto",
   "reason": "P7 (docs/B0_PIECE3_REVIEW.md, section 3.2, decided 2026-11-19): line 1002 'anti-Lambda0 Lambda0 D0' (1.0e-5) has the wrong charm flavor for a B0 (should be anti-D0); copied from S042.457, which lacks the bar. c = 0; the conjugate 2812 inherits it. Reported to Belle II (item 1.2)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -20423,
+   431
+  ],
+  "action": "external",
+  "value": 0.00031,
+  "error": 0.00015,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. D1(2430) S+D fit fraction 14.7 % of B(B+ -> D*- Ds+ pi+) = (1.41 +- 0.17)e-3, divided by B(D'_10 -> D*- pi+) of the decay file; broad state, model dependent"
+ },
+ {
+  "mother": 521,
+  "key": [
+   -20423,
+   433
+  ],
+  "action": "external",
+  "value": 0.00041,
+  "error": 0.00022,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4182, times R* = B(D*- Ds*+ pi+)/B(D*- Ds+ pi+) = 1.32 +- 0.16; D** composition of the Ds*+ mode assumed equal (+-30 % included)"
+ },
+ {
+  "mother": 521,
+  "key": [
+   -10423,
+   431
+  ],
+  "action": "external",
+  "value": 0.00265,
+  "error": 0.0011439,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. D1(2420) S+D fit fraction 74.8 % -> product 1.06e-3, divided by B(D_10 -> D*- pi+) = 0.40 of the decay file; extra 40 % because the decay file's D1 -> D pi pi (40 %) is not measured (c would be 1.3 with D1 -> D* pi = 100 %) Error 0.00043 combined with 40 % of the value: 0.00114."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -10423,
+   433
+  ],
+  "action": "external",
+  "value": 0.0035,
+  "error": 0.0019105,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4184, times R*; composition assumption (+-30 % included); extra 40 % as 4184 Error 0.0013 combined with 40 % of the value: 0.00191."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -425,
+   431
+  ],
+  "action": "external",
+  "value": 0.00062,
+  "error": 0.00012,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. D2*(2460) fit fraction 11.7 % -> product 1.65e-4, divided by B(D_2*0 -> D*- pi+) of the decay file; factorization from B0 -> D2*- pi+ agrees"
+ },
+ {
+  "mother": 521,
+  "key": [
+   -425,
+   433
+  ],
+  "action": "external",
+  "value": 0.00082,
+  "error": 0.00031,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4186, times R*; composition assumption (+-30 % included)"
+ },
+ {
+  "mother": 521,
+  "key": [
+   431,
+   -411,
+   211
+  ],
+  "action": "external",
+  "value": 0.0008,
+  "error": 0.0003061,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. B(B+ -> D- Ds+ pi+) = (1.11 +- 0.24)e-3 from the D2* fit fraction of 2212.02717 bridged to 2405.00098, non-D2* part (the phase-space line) 0.72; extra 30 % for the bridge Error 0.00019 combined with 30 % of the value: 0.000306."
+ },
+ {
+  "mother": 521,
+  "key": [
+   431,
+   -421,
+   111
+  ],
+  "action": "external",
+  "value": 0.0004,
+  "error": 0.00015,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4189, times 1/2 (isospin of the lower-vertex D pi); extra 30 % for the bridge Error 9e-05 combined with 30 % of the value: 0.00015."
+ },
+ {
+  "mother": 521,
+  "key": [
+   433,
+   -411,
+   211
+  ],
+  "action": "external",
+  "value": 0.00072,
+  "error": 0.0004198,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4189, times D_s*/D_s = 0.9 +- 0.4 (assumed); extra 30 % for the bridge Error 0.00036 combined with 30 % of the value: 0.00042."
+ },
+ {
+  "mother": 521,
+  "key": [
+   433,
+   -421,
+   111
+  ],
+  "action": "external",
+  "value": 0.00036,
+  "error": 0.0002099,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4191, times 1/2; extra 30 % for the bridge Error 0.00018 combined with 30 % of the value: 0.00021."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -20413,
+   431
+  ],
+  "action": "external",
+  "value": 0.00029,
+  "error": 0.00014,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4182 (divided by tau+/tau0 = 1.076)"
+ },
+ {
+  "mother": 511,
+  "key": [
+   -20413,
+   433
+  ],
+  "action": "external",
+  "value": 0.00038,
+  "error": 0.0002,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4183"
+ },
+ {
+  "mother": 511,
+  "key": [
+   -10413,
+   431
+  ],
+  "action": "external",
+  "value": 0.00246,
+  "error": 0.0010699,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4184; extra 40 % as there Error 0.00042 combined with 40 % of the value: 0.00107."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -10413,
+   433
+  ],
+  "action": "external",
+  "value": 0.0033,
+  "error": 0.0017839,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4185; extra 40 % as there Error 0.0012 combined with 40 % of the value: 0.00178."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -415,
+   431
+  ],
+  "action": "external",
+  "value": 0.00057,
+  "error": 0.00012,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4186 (LHCb's D2* fit fraction is the same in B0 and B+)"
+ },
+ {
+  "mother": 511,
+  "key": [
+   -415,
+   433
+  ],
+  "action": "external",
+  "value": 0.00076,
+  "error": 0.00029,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4187"
+ },
+ {
+  "mother": 511,
+  "key": [
+   431,
+   -421,
+   -211
+  ],
+  "action": "external",
+  "value": 0.00074,
+  "error": 0.0002796,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4189 (B0 -> anti-D0 Ds+ pi- analysed by LHCb in 2212.02717); extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.00028."
+ },
+ {
+  "mother": 511,
+  "key": [
+   431,
+   -411,
+   111
+  ],
+  "action": "external",
+  "value": 0.00037,
+  "error": 0.0001429,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 630 times 1/2; extra 30 % for the bridge Error 9e-05 combined with 30 % of the value: 0.000143."
+ },
+ {
+  "mother": 511,
+  "key": [
+   433,
+   -421,
+   -211
+  ],
+  "action": "external",
+  "value": 0.00067,
+  "error": 0.000395,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4191; extra 30 % for the bridge Error 0.00034 combined with 30 % of the value: 0.000395."
+ },
+ {
+  "mother": 511,
+  "key": [
+   433,
+   -411,
+   111
+  ],
+  "action": "external",
+  "value": 0.00033,
+  "error": 0.0001967,
+  "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 632 times 1/2; extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.000197."
  }
 ]

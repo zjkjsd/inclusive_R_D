@@ -806,7 +806,8 @@ def test_real_coverage():
     for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
         sh = pm.class_shares(TABLE, m)
         assert lo < sh['measured_exact'] + sh['measured_node'] < hi, sh
-        assert 0.05 < sh['measured_product'] < 0.08 and 0.09 < sh['none'] < 0.11 and sh['limit'] < 0.01
+            # none: about 8 % since 3.4 (2026-11-20) moved 2.5 % to measured (LHCb external c)
+        assert 0.05 < sh['measured_product'] < 0.08 and 0.07 < sh['none'] < 0.11 and sh['limit'] < 0.01
         assert close(sum(sh.values()), MODES.exclusive_bf[m], 1e-9)
     # the conjugate blocks give the same shares
     for m in (511, 521):
@@ -1355,6 +1356,21 @@ def test_n1_convention_33():
     # unchanged: vetoes, the half_limit by exception, measured lines
     assert row(521, 'anti-D*0 K+ K*0')['c'] == 0.0
     assert 'limit_auto' not in flags(row(521, 'anti-D_10 rho+'))
+
+
+def test_lhcb_ds_lines_34():
+    """Point 3.4 (2026-11-20): the D** D_s(*) and three-body D_s(*) D pi lines take LHCb-based external c."""
+    exp = {(521, 'anti-D_2*0 D_s+'): 0.148, (521, 'D_s+ D- pi+'): 0.222, (521, 'anti-D_10 D_s+'): 2.21,
+           (511, 'D_2*- D_s+'): 0.136, (511, 'D_s*+ D- pi0'): 0.183, (-521, 'D_2*0 D_s-'): 0.148}
+    for (m, names), c in exp.items():
+        r = row(m, names)
+        assert r['how'] == 'external' and r['pdg_class'] == 'measured' and abs(r['c'] - c) < 0.01, names
+        assert r['pdgids'].startswith('external:LHCb'), names
+    # the D pi pi lines stay unmeasured (N2 class)
+    r = row(521, 'D_s+ D- pi+ pi0')
+    assert r['pdg_class'] == 'none' and r['c'] == 1.0
+    n = sum(1 for e in pm.load_exceptions() if e['action'] == 'external' and 'LHCb' in e.get('source', ''))
+    assert n == 20
 
 
 def main():

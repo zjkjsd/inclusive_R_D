@@ -21,7 +21,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
 | 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | AGREED (2026-11-20), section 3.4 | option (a): correlated Gaussian prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15, correlation −0.8 (from the generator-truth fit to BaBar 2007 D_s⁺ X and wrong-sign D X, B⁰ and B⁺, and Belle 2023 D_s X; r_s widened to cover the input variations). D_s class as defined in 3.1 (a D_s-family meson among the B daughters). Whether the central values also become starting weights: piece 4 |
 | 3.3 | N1: lines kept individually; final class definitions | DONE (2026-11-20), section 3.6 | option (b) with classes by quark process. **N₂** = unmeasured exclusive and PYTHIA decays with a cc̄ pair (two open-charm hadrons, or charmonium of any mass, among the B daughters): b → cc̄s(d); its D_s class (r_s) as in 3.1. **N₁** = unmeasured exclusive and PYTHIA decays with a single charm quark (b → c + light quarks); the 3.5 isospin parameter acts within its PYTHIA part. Measured exclusive lines keep their c. Charmless unmeasured lines: c = 1 ± 1 per line; PYTHIA charmless: weight 1. In the piece-2 table: every hadronic line without a c has c = 1 ± 1; a limit line above its own limit c = limit/2 ± limit/2 (`limit_auto`) |
-| 3.4 | Checks of the large unmeasured double-charm lines (symmetry, measurements) | OPEN (2026-11-20), section 3.7 | D\*\*D_s and three-body D_s D π lines are measured by LHCb (not in PDG 2026): c ≈ 0.15–2.2 per line; D(\*)D̄(\*)K\* compatible in total by symmetry; D_s D ππ unconstrained |
+| 3.4 | Checks of the large unmeasured double-charm lines (symmetry, measurements) | DONE (2026-11-20), section 3.7 | option (a): the 12 D\*\*D_s(\*) and 8 three-body D_s(\*)Dπ lines leave N₂ and take LHCb-based c (`external`, 20 entries; B⁰ by isospin; extra 40 % on the D₁(2420) lines, 30 % on the three-body lines); D(\*)D̄(\*)K\* stays in N₂ with a composition nuisance (piece 4) and S042.609 as a closure check including PYTHIA; D_s Dππ stays in N₂·r_s; 3.2 prior to be re-derived (proposal in 3.7) |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
 | 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
@@ -509,3 +509,44 @@ D_s X drops from about 12.4 % to about 11.0 %, consistent with Belle 2023 (11.28
 D_s class (D_s Dππ lines and PYTHIA) would need a scale of about 1.1 ± 0.2 (Belle) or about 0.85 (PDG
 average). The prior r_s = 0.80 ± 0.15 of 3.2 assumed all unmeasured D_s lines scale together and would
 have to be re-derived.
+
+**Decision (2026-11-20): option (a), DONE.** Options presented: (a) use the LHCb measurements for the
+D\*\*D_s and three-body D_s Dπ lines (out of N₂, `external` c), keep D(\*)D̄(\*)K\* and D_s Dππ in N₂,
+refit the 3.2 prior; (b) keep all four families in N₂; (c) as (a) and rescale D(\*)D̄(\*)K\* to the
+symmetry estimates. Reason: these are measurements, the lines carry up to 19 % of the yield, and they
+explain most of the D_s excess.
+
+*Implemented (2026-11-20).* 20 `external` entries (exceptions 79 → 99), source LHCb arXiv:2405.00098
+and arXiv:2212.02717, each with its derivation in `reason`; errors include 40 % of the value on the four
+D₁(2420) lines (the unmeasured D₁ → Dππ of the decay file) and 30 % on the eight three-body lines (the
+bridge between the two analyses). c, B⁰ / B⁺ lines (anti-B conjugates follow):
+
+| B⁰ line | B⁺ line | Mode | c B⁰ | c B⁺ | max share B⁰ / B⁺ |
+|---|---|---|---|---|---|
+| 623 | 4182 | D₁′D_s⁺ | 0.48 ± 0.23 | 0.52 ± 0.25 | 0.26 / 0.73 % |
+| 624 | 4183 | D₁′D_s\*⁺ | 0.32 ± 0.17 | 0.34 ± 0.18 | 0.33 / 1.38 % |
+| 625 | 4184 | D₁D_s⁺ | 2.05 ± 0.89 | 2.21 ± 0.95 | 0.52 / 1.53 % |
+| 626 | 4185 | D₁D_s\*⁺ | 1.38 ± 0.74 | 1.46 ± 0.80 | 0.79 / 2.12 % |
+| 627 | 4186 | D₂\*D_s⁺ | 0.136 ± 0.029 | 0.148 ± 0.029 | 1.07 / 9.57 % |
+| 628 | 4187 | D₂\*D_s\*⁺ | 0.19 ± 0.07 | 0.21 ± 0.08 | 3.14 / 6.61 % |
+| 630 / 629 | 4189 / 4190 | D_s⁺Dπ | 0.20 ± 0.08 / 0.21 ± 0.08 | 0.22 ± 0.09 / 0.22 ± 0.08 | 0.37, 3.05 / 18.9, 0.20 % |
+| 632 / 631 | 4191 / 4192 | D_s\*⁺Dπ | 0.18 ± 0.11 / 0.18 ± 0.11 | 0.20 ± 0.11 / 0.20 ± 0.12 | 0.36, 6.69 / 11.1, 0.23 % |
+
+All were class none with c = 1 ± 1. BF by class: measured_external 0.03 → 2.49 % (B⁰ and B⁺), none
+10.86 → 8.40 % (B⁰), 10.43 → 7.98 % (B⁺). Yield by class: "had. none" falls by 1.9–8.8 points per table
+(SR hadB 25.5 → 16.8 %), "had. exact" rises accordingly. New test `test_lhcb_ds_lines_34`; the coverage
+test's bound on class none lowered to 7 %; 37 and 15 tests pass.
+
+*Refit of the 3.2 prior* (generator truth, `truth_analysis.py` section 5, with these lines now measured):
+the MC with N₂ = r_s = 1 now gives D_s X 11.00 % (average), D_s⁺ X 9.62 / 9.65 %, wrong-sign D 11.48 / 11.37 %.
+The D_s class (now D_s Dππ lines and PYTHIA D_s) is 3.00 % / 2.85 % of B decays.
+
+| D_s X input | N₂ | r_s | correlation | χ² (dof) |
+|---|---|---|---|---|
+| Belle 2023 11.28 ± 0.43 % (as in 3.2) | 0.93 ± 0.13 | 1.13 ± 0.21 | −0.75 | 2.1 (3) |
+| PDG average 10.6 ± 0.6 % | 0.94 ± 0.13 | 0.90 ± 0.22 | −0.58 | 1.5 (3) |
+| PDG average with its scale factor (± 1.0 %) | 0.94 ± 0.13 | 0.87 ± 0.29 | −0.44 | 1.4 (3) |
+| BaBar 2007 only | 0.94 ± 0.13 | 0.75 ± 0.45 | −0.30 | 1.3 (2) |
+
+N₂ is stable; r_s moved up from 0.83 and now depends on the D_s X input between 0.75 and 1.13.
+Proposal for a revised 3.2 prior (to decide): N₂ = 0.93 ± 0.13, r_s = 1.00 ± 0.25, correlation −0.6.

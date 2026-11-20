@@ -117,6 +117,21 @@ lines, or to 0 where the resonances saturate the total.
   lines that now sum to 3.2 % (B⁰) / 3.0 % (B⁺) and 0.87 % / 0.82 %; the inline `Gamma_N` numbers no
   longer match the PDG listing numbers (0 of 42 checked).
 
+## 5b. b → cc̄s lines without a source, now measured or constrained
+
+| # | Lines (release 08) | Decay file | Measurement | Ratio |
+|---|---|---|---|---|
+| 5b.1 | 4186, 4187; 627, 628: B → D₂\*(2460)D_s(\*) | 4.2, 4.0 (·10⁻³) | LHCb arXiv:2405.00098 (D\*⁻D_s⁺π⁺ amplitude analysis, D₂\* fit fraction 11.7 %): about 0.6, 0.8 (·10⁻³) | 5–7 times too high |
+| 5b.2 | 4184, 4185; 625, 626: B → D₁(2420)D_s(\*) | 1.2, 2.4 (·10⁻³) | same paper, D₁(2420) fit fraction 75 %: about 2.6, 3.5 (·10⁻³) with the file's D₁ → D\*π = 40 %; 1.6, 2.1 with 100 % | 1.3–2.2 times too low |
+| 5b.3 | 4182, 4183; 623, 624: B → D₁(2430)D_s(\*) | 0.6, 1.2 (·10⁻³) | same paper, 14.7 %: about 0.3, 0.4 (·10⁻³) | 2–3 times too high |
+| 5b.4 | 4189–4192; 629–632: B → D_s(\*)Dπ (phase space) | 3.6, 1.8, 3.7, 1.8 (·10⁻³) | LHCb arXiv:2212.02717 (fit fractions; D₂\* bridge to arXiv:2405.00098): B(B⁺ → D⁻D_s⁺π⁺) ≈ (1.1 ± 0.3)·10⁻³ in total | about 4–5 times too high; in data the Dπ S-wave and a virtual D\* dominate, not phase space |
+| 5b.5 | 633–638; 4193–4198: B → D_s(\*)Dππ | B⁰ and B⁺ totals equal, charge split not isospin-symmetric (e.g. B⁰ D_s⁺D⁻π⁰π⁰ 2.2·10⁻³ against B⁺ D_s⁺D̄⁰π⁰π⁰ 0.8·10⁻³) | no measurement | – |
+| 5b.6 | 664–677; 4221–4234: B → D(\*)D̄(\*)K\* | round values, DD : D\*D : DD\* : D\*D\* = 1:1:1:2 | no measurement (an LHCb thesis, Syracuse 2022, measured 11 of them in the K\*⁰ window, unpublished); the measured D(\*)D̄(\*)K modes have a different D\* pattern (two-pseudoscalar lines about 3 times too high by symmetry) | family total compatible |
+| 5b.7 | 674 and ψ(3770)K\*⁰ (597–600), plus PYTHIA | B⁰ → D⁰D̄⁰K⁺π⁻ about 10·10⁻⁴ in generic MC | LHCb arXiv:2007.04280: 3.51 ± 0.47·10⁻⁴ | about 3 times too high (PYTHIA alone 5.2·10⁻⁴) |
+
+None of the lines in 5b.1–5b.6 carries a comment giving its source; the LHCb results of 5b.1–5b.4 are not
+yet in the PDG listings (2026 edition).
+
 ## 6b. PYTHIA configuration: no orbitally excited charm mesons in generic B decays
 
 - The decay file's PYTHIA settings for L = 1 mesons are commented out ("Control of L=1 mesons ...
