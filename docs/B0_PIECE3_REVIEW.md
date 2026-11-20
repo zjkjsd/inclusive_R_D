@@ -24,6 +24,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.4 | Checks of the large unmeasured double-charm lines (symmetry, measurements) | DONE (2026-11-20), section 3.7 | option (a): the 12 D\*\*D_s(\*) and 8 three-body D_s(\*)Dπ lines leave N₂ and take LHCb-based c (`external`, 20 entries; B⁰ by isospin; extra 40 % on the D₁(2420) lines, 30 % on the three-body lines); D(\*)D̄(\*)K\* stays in N₂ with a composition nuisance (piece 4) and S042.609 as a closure check including PYTHIA; D_s Dππ stays in N₂·r_s; 3.2 prior to be re-derived (proposal in 3.7) |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
 | 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
+| 3.7 | The decay file's D₁(2420) decay table: D₁ → Dππ too high relative to D\*π (affects D₁ℓν, D₁π, D₁D_s) | OPEN for piece 4 (2026-11-20), section 3.7 | measured Dππ/D\*π = 0.83 ± 0.11 of the decay file's; B(D₁ → D\*⁺π⁻) = 0.429 ± 0.019 against 0.399; used for the D₁D_s externals; the D⁺ composition of D₁ℓν (D⁺ directly from D₁) to be handled by an event weight on `D_genMotherPDG` in piece 4; reported to Belle II |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
 ## 2. Facts (2026-11-19)
@@ -554,3 +555,37 @@ Proposal for a revised 3.2 prior (to decide): N₂ = 0.93 ± 0.13, r_s = 1.00 ±
 **Decision (2026-11-20): the 3.2 prior is replaced** by N₂ = 0.93 ± 0.13, r_s = 1.00 ± 0.25, correlation −0.6.
 Reason: with the D\*\*D_s and three-body D_s Dπ lines measured, r_s scales only the D_s Dππ lines and
 PYTHIA's D_s; its value then depends on the D_s X input (0.75–1.13), which the width covers.
+
+*The two caveats of 3.4 (user's question, 2026-11-20).* (1) LHCb measures B → D₁(2420)D_s only through
+D₁ → D\*π; the line's c divides by the decay file's B(D₁ → D\*⁺π⁻) = 0.399 (the file gives D₁ → D\*π
+60 %, D₁ → Dππ 40 %; PDG has no absolute D₁ branching fractions). (2) The three-body D_s Dπ lines rest on
+fit fractions only (arXiv:2212.02717), bridged to the absolute D\*⁻D_s⁺π⁺ rate through the D₂\* component
+with B(D₂\* → Dπ)/B(D₂\* → D\*π) = 1.50 of the decay file; PDG confirms the ratio (BaBar 2010: 1.47 ± 0.16;
+M254R3). The remaining uncertainty is the model dependence of the fit fractions (D₂\* fraction stable,
+22.1 / 22.2 / 22.4 %); the 30 % extra is kept until an absolute B⁺ → D⁻D_s⁺π⁺ measurement exists; the MC
+D_s X after the change (11.0 %) agrees with Belle's 11.28 ± 0.43 %.
+
+*D₁ → Dππ / D\*π, measured.* Same-paper ratios (so that common systematics cancel), relative to the
+decay file's D⁰π⁺π⁻/D\*⁺π⁻ = 0.430:
+
+| Source | Dππ / D\*π | Ratio to the decay file |
+|---|---|---|
+| Belle 2023 (arXiv:2211.09833, PRD 107 092003), B⁺ → D̄₁⁰ℓν: 1.05 / 2.49 (·10⁻³) | 0.42 ± 0.07 | 0.98 ± 0.17 |
+| Belle 2023, B⁰ → D₁⁻ℓν: 1.02 / 3.06 (·10⁻³) | 0.33 ± 0.08 | 0.77 ± 0.19 |
+| LHCb 2011 (arXiv:1109.6831, PRD 84 092001), B⁺ → D̄₁⁰π⁺: 4.0 % / (9.3 %/0.677) | 0.29 ± 0.09 | 0.68 ± 0.20 |
+| mean | | 0.83 ± 0.11 (χ² = 1.5 for 2 dof) |
+
+The PDG averages of the products give the same picture (c from the Dππ product / c from the D\*π product:
+0.83, 0.86, 0.61 for lines 368, 4000, 4318). With the decay file's isospin pattern of D₁ → Dππ:
+B(D₁ → D\*⁺π⁻) = 0.429 ± 0.019 (decay file 0.399); the c of a line measured through D₁ → D\*π scales by
+0.932 ± 0.042.
+
+**Decision (2026-11-20): option (a), DONE.** The four D₁(2420)D_s externals are divided by 0.429 instead
+of 0.399, with an extra 10 % (that fraction and the unmeasured isospin pattern of D₁ → Dππ) in place of
+40 %: 625 2.05 ± 0.89 → 1.91 ± 0.38; 626 1.38 ± 0.74 → 1.28 ± 0.48; 4184 2.21 ± 0.95 → 2.06 ± 0.39; 4185
+1.46 ± 0.80 → 1.36 ± 0.52 (anti-B conjugates follow). The bridge uncertainty (30 %) is kept. Tests: the
+expected c of 4184 updated; 37 and 15 pass. Effect on the 3.2 fit: these lines are outside the fitted
+class and carry little upper-vertex D_s change (about 0.02 % of B decays), so the prior stands. New
+point 3.7 (piece 4): the D₁ table in B → D₁ℓν (lines 368/392, 4000/4027; 0.70 / 0.76 % of B decays) gives
+about 20 % too many D⁺ directly from D₁ (D₁ → D⁺π⁻π⁰); a line weight cannot correct a sub-decay, an event
+weight on the D's mother (`D_genMotherPDG` = D₁) can.

@@ -129,6 +129,8 @@ lines, or to 0 where the resonances saturate the total.
 | 5b.6 | 664–677; 4221–4234: B → D(\*)D̄(\*)K\* | round values, DD : D\*D : DD\* : D\*D\* = 1:1:1:2 | no measurement (an LHCb thesis, Syracuse 2022, measured 11 of them in the K\*⁰ window, unpublished); the measured D(\*)D̄(\*)K modes have a different D\* pattern (two-pseudoscalar lines about 3 times too high by symmetry) | family total compatible |
 | 5b.7 | 674 and ψ(3770)K\*⁰ (597–600), plus PYTHIA | B⁰ → D⁰D̄⁰K⁺π⁻ about 10·10⁻⁴ in generic MC | LHCb arXiv:2007.04280: 3.51 ± 0.47·10⁻⁴ | about 3 times too high (PYTHIA alone 5.2·10⁻⁴) |
 
+| 5b.8 | D₁(2420) decay table (`Decay D_10`, lines 9632–9637, and its charged partner) | D\*π 60 %, Dππ 40 % (D⁰π⁺π⁻ 17.2 %, D⁰π⁰π⁰ 11.5 %, D⁺π⁻π⁰ 11.5 %) | same-paper ratios Dππ/D\*π: Belle 2023 (arXiv:2211.09833) B → D₁ℓν, B⁺ 0.42 ± 0.07, B⁰ 0.33 ± 0.08; LHCb 2011 (arXiv:1109.6831) B⁺ → D₁π⁺ 0.29 ± 0.09; decay file 0.43 | Dππ about 20 % too high relative to D\*π (B(D₁ → D\*⁺π⁻) 0.43 ± 0.02 instead of 0.40); affects the D⁺/D⁰ content of B → D₁ℓν |
+
 None of the lines in 5b.1–5b.6 carries a comment giving its source; the LHCb results of 5b.1–5b.4 are not
 yet in the PDG listings (2026 edition).
 

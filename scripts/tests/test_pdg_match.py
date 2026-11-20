@@ -1360,7 +1360,7 @@ def test_n1_convention_33():
 
 def test_lhcb_ds_lines_34():
     """Point 3.4 (2026-11-20): the D** D_s(*) and three-body D_s(*) D pi lines take LHCb-based external c."""
-    exp = {(521, 'anti-D_2*0 D_s+'): 0.148, (521, 'D_s+ D- pi+'): 0.222, (521, 'anti-D_10 D_s+'): 2.21,
+    exp = {(521, 'anti-D_2*0 D_s+'): 0.148, (521, 'D_s+ D- pi+'): 0.222, (521, 'anti-D_10 D_s+'): 2.058,
            (511, 'D_2*- D_s+'): 0.136, (511, 'D_s*+ D- pi0'): 0.183, (-521, 'D_2*0 D_s-'): 0.148}
     for (m, names), c in exp.items():
         r = row(m, names)

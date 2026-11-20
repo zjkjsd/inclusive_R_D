@@ -713,10 +713,10 @@
    431
   ],
   "action": "external",
-  "value": 0.00265,
-  "error": 0.0011439,
+  "value": 0.0024698,
+  "error": 0.0004708,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. D1(2420) S+D fit fraction 74.8 % -> product 1.06e-3, divided by B(D_10 -> D*- pi+) = 0.40 of the decay file; extra 40 % because the decay file's D1 -> D pi pi (40 %) is not measured (c would be 1.3 with D1 -> D* pi = 100 %) Error 0.00043 combined with 40 % of the value: 0.00114."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. D1(2420) S+D fit fraction 74.8 % -> product 1.06e-3, divided by B(D_10 -> D*- pi+) = 0.40 of the decay file D1 sub-decay (2026-11-20): divided by B(D1 -> D*+ pi-) = 0.429 +- 0.019 instead of the decay file's 0.399, from the measured D pi pi / D* pi ratio of D1(2420) (0.83 +- 0.11 of the decay file's; same-paper ratios of Belle 2023, arXiv:2211.09833, B+ and B0 -> D1 l nu, and LHCb 2011, arXiv:1109.6831, B+ -> D1 pi+); extra 10 % for that fraction and the unmeasured isospin pattern of D1 -> D pi pi (replaces the earlier 40 %). Value 0.00247, error 0.0004 combined with 10 %: 0.000471."
  },
  {
   "mother": 521,
@@ -725,10 +725,10 @@
    433
   ],
   "action": "external",
-  "value": 0.0035,
-  "error": 0.0019105,
+  "value": 0.003262,
+  "error": 0.0012547,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4184, times R*; composition assumption (+-30 % included); extra 40 % as 4184 Error 0.0013 combined with 40 % of the value: 0.00191."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4184, times R*; composition assumption (+-30 % included) D1 sub-decay (2026-11-20): divided by B(D1 -> D*+ pi-) = 0.429 +- 0.019 instead of the decay file's 0.399, from the measured D pi pi / D* pi ratio of D1(2420) (0.83 +- 0.11 of the decay file's; same-paper ratios of Belle 2023, arXiv:2211.09833, B+ and B0 -> D1 l nu, and LHCb 2011, arXiv:1109.6831, B+ -> D1 pi+); extra 10 % for that fraction and the unmeasured isospin pattern of D1 -> D pi pi (replaces the earlier 40 %). Value 0.00326, error 0.0012 combined with 10 %: 0.00125."
  },
  {
   "mother": 521,
@@ -837,10 +837,10 @@
    431
   ],
   "action": "external",
-  "value": 0.00246,
-  "error": 0.0010699,
+  "value": 0.0022927,
+  "error": 0.0004536,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4184; extra 40 % as there Error 0.00042 combined with 40 % of the value: 0.00107."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4184 D1 sub-decay (2026-11-20): divided by B(D1 -> D*+ pi-) = 0.429 +- 0.019 instead of the decay file's 0.399, from the measured D pi pi / D* pi ratio of D1(2420) (0.83 +- 0.11 of the decay file's; same-paper ratios of Belle 2023, arXiv:2211.09833, B+ and B0 -> D1 l nu, and LHCb 2011, arXiv:1109.6831, B+ -> D1 pi+); extra 10 % for that fraction and the unmeasured isospin pattern of D1 -> D pi pi (replaces the earlier 40 %). Value 0.00229, error 0.00039 combined with 10 %: 0.000454."
  },
  {
   "mother": 511,
@@ -849,10 +849,10 @@
    433
   ],
   "action": "external",
-  "value": 0.0033,
-  "error": 0.0017839,
+  "value": 0.0030756,
+  "error": 0.0011599,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4185; extra 40 % as there Error 0.0012 combined with 40 % of the value: 0.00178."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4185 D1 sub-decay (2026-11-20): divided by B(D1 -> D*+ pi-) = 0.429 +- 0.019 instead of the decay file's 0.399, from the measured D pi pi / D* pi ratio of D1(2420) (0.83 +- 0.11 of the decay file's; same-paper ratios of Belle 2023, arXiv:2211.09833, B+ and B0 -> D1 l nu, and LHCb 2011, arXiv:1109.6831, B+ -> D1 pi+); extra 10 % for that fraction and the unmeasured isospin pattern of D1 -> D pi pi (replaces the earlier 40 %). Value 0.00308, error 0.0011 combined with 10 %: 0.00116."
  },
  {
   "mother": 511,
