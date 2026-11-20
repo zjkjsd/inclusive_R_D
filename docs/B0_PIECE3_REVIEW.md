@@ -351,5 +351,5 @@ decays with only a lower-vertex D_s is a small effect, and the ntuple truth clas
   (RS) and 41 % of the WC hadB table.
 - With a simple charge-exchange fraction ε of PYTHIA single-charm decays (moving D⁽\*⁾ of the
   spectator's isospin to the other one, as D\*\* would), BaBar's B⁰ split needs ε = 0.38 ± 0.14 and
-  the B⁺ split ε = 0.07 ± 0.05; not one common value (2σ apart), so the mechanism explains the
+  the B⁺ split ε = 0.08 ± 0.06; not one common value (about 2σ apart), so the mechanism explains the
   direction, not the full size, of the B⁰ excess.
