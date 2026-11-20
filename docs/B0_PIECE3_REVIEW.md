@@ -327,3 +327,29 @@ correlation −0.8; (b) the same, uncorrelated; (c) centered at the MC (N₂ = 1
 N₂·r_s, the D rate N₂) and well determined; the widened r_s covers the spread from the D_s
 normalization and from Belle against BaBar. The D_s-class definition of 3.1 is kept (the 0.16 % of
 decays with only a lower-vertex D_s is a small effect, and the ntuple truth classifies it the same way).
+
+### 3.5 D⁺/D⁰ composition (opened 2026-11-20)
+
+*Facts* (generator truth, piece-2 c; scratch scripts p35.py, p35b.py of the session, logic as in
+`truth_analysis.py`):
+- The excess is in the lower vertex of B⁰: B⁰ → D⁻X 45.7 % against 36.9 ± 3.3 (BaBar 2007), B⁰ → D̄⁰X
+  39.9 % against 47.4 ± 2.8, sum right. In B⁺ the lower-vertex D⁻ is slightly low (8.2 % against
+  9.9 ± 1.2) and D̄⁰ right (77.2 against 79 ± 4).
+- Source of the lower-vertex D⁻ in B⁰ (% of B⁰ decays): PYTHIA 23.2 (first-generation D⁻ 18.3, D\*⁻
+  4.9), measured exclusive lines 18.1 (D⁻ 10.6, D\*⁻ 6.7, D\*\*⁻ 0.8), unmeasured exclusive lines 4.3.
+- PYTHIA's single-charm decays (about 35 % / 31 % of B⁰ / B⁺ decays) produce **no orbitally excited
+  charm mesons (D\*\*) at all**, and their lower-vertex charm is D or D\* with V/(P+V) = 0.455 / 0.458.
+  The decay file switches L = 1 meson production off: its "Control of L=1 mesons" JetSetPar lines
+  (PARJ(14)–PARJ(17) = 0.05) are commented out ("commented out by NB/WP", rel08 lines 291–295; also
+  in light-2609-luna), so PYTHIA's default (no L = 1 mesons) applies. Without D\*\*, the charm of a
+  B⁰'s lower vertex keeps the spectator's isospin (D⁻, D\*⁻); a charged D\*\*⁻ would go to D̄⁽\*⁾⁰π⁻ in
+  2/3 of its decays. This moves D⁻ to D̄⁰ in B⁰ and D̄⁰ to D⁻ in B⁺, the direction of both deviations.
+- Inclusive D\* (average of B⁰ and B⁺, MC against PDG S049.111 / S049.35, old CLEO/ARGUS): D\*± X 25.7 %
+  against 22.5 ± 1.5; D\*⁰ X 27.3 % against 26.0 ± 2.7.
+- Effect in our samples: PYTHIA single-charm decays with a first-generation D± are 30–40 % of the comb
+  D-side yield (SR 30.2 %, comb CR 33.5 %, WC 39.6 %), 14–15 % of the comb ℓ side (RS), 1.7–4.1 % of hadB
+  (RS) and 41 % of the WC hadB table.
+- With a simple charge-exchange fraction ε of PYTHIA single-charm decays (moving D⁽\*⁾ of the
+  spectator's isospin to the other one, as D\*\* would), BaBar's B⁰ split needs ε = 0.38 ± 0.14 and
+  the B⁺ split ε = 0.07 ± 0.05; not one common value (2σ apart), so the mechanism explains the
+  direction, not the full size, of the B⁰ excess.
