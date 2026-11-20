@@ -381,3 +381,26 @@ D-side yield and the parameter acts directly on the D⁺ yield. Given the litera
 must be wide (one per-flavor measurement, partly in tension with Belle 2023's D⁰ X); its definition
 and width are set in piece 4. Possible improvement: the unpublished Belle Υ(4S) B⁺/B⁰ → D X numbers
 of arXiv:2411.14032.
+
+### 3.6 Point 3.3 (N1): the lines kept individually (opened 2026-11-20)
+
+*Facts* (current table, after piece 2 and P7; BF in % of B⁰ / B⁺ decays; yield shares from the 72
+sample tables, summed per region and table):
+
+| Hadronic unmeasured lines outside the N₂ class | B⁰ BF | B⁺ BF | lines | largest yield share |
+|---|---|---|---|---|
+| single charm (D\*\*ρ, D⁽\*⁾ηπ, D(\*)X …) | 0.81 | 0.90 | 45 / 75 | 0.80 % (WC comb D side) |
+| charmonium | 0.57 | 0.62 | 44 / 38 | 1.56 % (comb CR hadB) |
+| – of which ψ(3770) K(\*)(π) lines (597–607; 4163–4169) | 0.13 | 0.17 | 7 / 7 | most of the charmonium yield |
+| charmless (mesons and baryons) | 0.29 | 0.25 | 902 / 743 | 0.01 % |
+
+- Current conventions are mixed: most lines are class none with c = 1 and no σ; lines feeding a
+  measured total are `unmeasured`, c = 1 ± 1; limit lines c = 1 (or limit/2 ± limit/2 by exception,
+  E12); 16 lines lost their 1 ± 1 when P3/P4 excluded their totals.
+- The ψ(3770) lines are double open charm in practice: ψ(3770) → DD̄ in 93 % of its decays in the
+  decay file (D⁰D̄⁰ 0.52, D⁺D⁻ 0.41). They are the largest individually kept lines in the samples (up to
+  0.31 % each, comb CR hadB) and are unmeasured b → cc̄s, like the N₂ class, which counts open-charm
+  hadrons among the B daughters only.
+- Largest single-charm lines: B⁺ → D̄₀\*⁰ρ⁺ (4317, 1.66·10⁻³, 0.19 %), D̄₁⁰ρ⁺ (4319, half_limit c = 0.19, 0.17 %),
+  D̄₂\*⁰ρ⁺ (4315, limit, 0.15 %), B⁰ → D₁⁻ρ⁺ (740, 0.12 %); the D\*\*ρ lines are the "2 × D\*\*π" prediction
+  of the tag-mode notes.
