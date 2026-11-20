@@ -36,6 +36,8 @@ in a private place. The version is the one printed in the document, not the one 
 
 | Reference | arXiv | Journal | INSPIRE | PDG id | Read | Decisions | What we took |
 |---|---|---|---|---|---|---|---|
+| BaBar, Study of inclusive B⁻ and B̄⁰ decays to flavor-tagged D, D_s and Λ_c | hep-ex/0606026 | PRD 75, 072002 (2007) | 719111 | AUBERT 2007N | 2026-11-19 (via the piece-3 check) | piece 3: 3.2, 3.5 | per-flavor upper- and lower-vertex D⁰, D⁺, D_s, Λ_c multiplicities (Table IV): the inputs of the N₂, r_s prior and of the D⁺/D⁰ check; still the only per-flavor measurement (2026-11-20) |
+| Belle, e⁺e⁻ → B_s⁰B̄_s⁰X cross section from 10.63 to 11.02 GeV | 2305.10098 | JHEP 08 (2023) 131 | 2660525 | ZHUKOVA 2023 | 2026-11-19 | piece 3: 3.2, 3.5 | B → D_s± X = 11.28 ± 0.43 %, B → D⁰/D̄⁰ X = 66.63 ± 1.77 % (Υ(4S), multiplicities, average of B⁺ and B⁰) |
 | LHCb, Amplitude analysis of B⁺ → D⁺D⁻K⁺ | 2009.00026 | PRD 102, 112003 (2020) | 1814324 | AAIJ 2020AI | 2026-11-17, 2026-11-18 | P1, P2 | Table 4 fit fractions (ψ(3770) 14.5 %, non-resonant 24.2 %, components without a decay-file line 85.5 %): the D⁺D⁻K⁺ direct line 4216 keeps its remainder; the tension with the ψ(3770)K⁺ products (P1 widening) |
 | LHCb, Observation of new charmonium(-like) states in B⁺ → D\*±D∓K⁺ | 2406.03156 | PRL 133, 131902 (2024) | 2794793 | AAIJ 2024AB | 2026-11-18 | P2 | NR waves ≈ 61 % of the PDG sum; the rest in resonances without a line: lines 4217, 4218 keep their remainder |
 | LHCb, Amplitude analysis of B⁺ → ψ(2S)K⁺π⁺π⁻ | 2407.12475 | JHEP 01 (2025) 054 | 2808551 | AAIJ 2025Q | 2026-11-17 | E6; interference allowance of G3/G4 | S041.858 is one of three K₁(1270) waves (excluded); 25 fit fractions summing to 102.7 ± 8.6 % |

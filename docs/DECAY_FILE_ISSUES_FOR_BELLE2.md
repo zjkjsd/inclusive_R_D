@@ -117,6 +117,23 @@ lines, or to 0 where the resonances saturate the total.
   lines that now sum to 3.2 % (B⁰) / 3.0 % (B⁺) and 0.87 % / 0.82 %; the inline `Gamma_N` numbers no
   longer match the PDG listing numbers (0 of 42 checked).
 
+## 6b. PYTHIA configuration: no orbitally excited charm mesons in generic B decays
+
+- The decay file's PYTHIA settings for L = 1 mesons are commented out ("Control of L=1 mesons ...
+  commented out by NB/WP"; `#JetSetPar PARJ(14)=0.05` … `PARJ(17)=0.05`, release-08 lines 291–295, also
+  in light-2609-luna), so PYTHIA's default (no L = 1 mesons) applies.
+- In the generator truth of MC16rd generic MC (one mixed and one charged file, experiment 18), the
+  PYTHIA single-charm B decays (about 35 % of B⁰ and 31 % of B⁺ decays) contain no D\*\* at all; their
+  lower-vertex charm is D or D\* with V/(P+V) = 0.46. Without D\*\* (whose charged states go to
+  D̄⁽\*⁾⁰π⁻ in 2/3 of their decays), the lower-vertex charm keeps the spectator's isospin.
+- Against BaBar's flavor-tagged inclusive rates (hep-ex/0606026), the MC gives B⁰ → D⁻X = 45.7 %
+  (36.9 ± 3.3 %) and B⁰ → D̄⁰X = 39.9 % (47.4 ± 2.8 %), with the right sum; the B-averaged D± X is 29.7 %
+  against about 25 % (BaBar sum; CLEO 1997: 23.2 ± 1.2 %). The B-averaged D⁰ X agrees with Belle 2023.
+- If the L = 1 setting was switched off deliberately (the D\*\* modes are exclusive lines of the
+  file), the isospin mixing that D\*\* would bring into the other PYTHIA decays is missing as a side
+  effect. Worth a look by the generator experts; for analyses with a D⁺ (or D⁰) in the final state the
+  D⁺/D⁰ composition of generic B decays is affected.
+
 ## 7. Related PDG listing issues (for information)
 
 These affect anyone who copies PDG values into a decay file:

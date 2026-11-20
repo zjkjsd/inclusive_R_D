@@ -22,7 +22,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | AGREED (2026-11-20), section 3.4 | option (a): correlated Gaussian prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15, correlation −0.8 (from the generator-truth fit to BaBar 2007 D_s⁺ X and wrong-sign D X, B⁰ and B⁺, and Belle 2023 D_s X; r_s widened to cover the input variations). D_s class as defined in 3.1 (a D_s-family meson among the B daughters). Whether the central values also become starting weights: piece 4 |
 | 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
-| 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | OPEN (2026-11-20), section 3.4 | found in the truth analysis; matters for R(D⁺) |
+| 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
 | 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
@@ -353,3 +353,31 @@ decays with only a lower-vertex D_s is a small effect, and the ntuple truth clas
   spectator's isospin to the other one, as D\*\* would), BaBar's B⁰ split needs ε = 0.38 ± 0.14 and
   the B⁺ split ε = 0.08 ± 0.06; not one common value (about 2σ apart), so the mechanism explains the
   direction, not the full size, of the B⁰ excess.
+
+*Literature check (2026-11-20, user's question: are there newer results than BaBar 2007?).* PDG 2026
+listings and an INSPIRE search:
+- Per B flavor (B⁰ and B⁺ separately, upper and lower vertex): BaBar 2007 (PRD 75 072002,
+  hep-ex/0606026, 231·10⁶ BB̄, hadronic tag) is still the only measurement; it supersedes BaBar 2004
+  (hep-ex/0408113). PDG does not rescale it to current D branching fractions.
+- B⁺/B⁰ average: B → D⁰/D̄⁰ X has Belle 2023 (arXiv:2305.10098, 66.63 ± 1.77 %, Υ(4S) data, by-product of
+  a B_s cross-section scan) besides CLEO 1997 and older; B → D± X has only CLEO 1997 (23.2 ± 1.2 %) and
+  older (CLEO 1992, ARGUS 1991); B → D\*± X and D\*⁰ X only CLEO 1997 / ARGUS.
+- Belle 2024 (arXiv:2411.14032, B_s → D X with hadronic tagging) measured B⁺ and B⁰ → D_s, D⁰, D⁺ X on
+  571 fb⁻¹ of Υ(4S) data with the same method, as a systematic check, and reports only "good agreement
+  with the previous Belle measurement"; the numbers are not published (they might be obtainable from
+  the authors or a Belle internal note).
+- No Belle II measurement found.
+- Consistency of the inputs: BaBar 2007's D⁰ + D̄⁰ multiplicities, averaged over B⁰ and B⁺ (about 71.6 ±
+  2.6 %), are about 1.6σ above Belle 2023's 66.63 ± 1.77 %, while the MC (67.2 %) agrees with Belle. So
+  part of BaBar's high B⁰ → D̄⁰ X (and of the apparent MC deficit there) may be BaBar's; the D± side
+  (MC 29.7 % against BaBar's sum about 25.4 ± 1.8 and CLEO 1997 23.2 ± 1.2) points the same way in two
+  independent experiments.
+
+*3.5 options presented (2026-11-20).* (a) a constrained isospin parameter for PYTHIA single-charm
+decays, prior from BaBar 2007 per flavor; (b) no new parameter (N₁, slope a, transfer term); (c) (a) and
+a report to Belle II that PYTHIA's generic B decays contain no D\*\* (L = 1 settings commented out).
+**Decision (2026-11-20): option (c), AGREED.** Reason: the affected decays are 30–40 % of the comb
+D-side yield and the parameter acts directly on the D⁺ yield. Given the literature check, the prior
+must be wide (one per-flavor measurement, partly in tension with Belle 2023's D⁰ X); its definition
+and width are set in piece 4. Possible improvement: the unpublished Belle Υ(4S) B⁺/B⁰ → D X numbers
+of arXiv:2411.14032.
