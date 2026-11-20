@@ -21,7 +21,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
 | 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | AGREED (2026-11-20), section 3.4 | option (a): correlated Gaussian prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15, correlation −0.8 (from the generator-truth fit to BaBar 2007 D_s⁺ X and wrong-sign D X, B⁰ and B⁺, and Belle 2023 D_s X; r_s widened to cover the input variations). D_s class as defined in 3.1 (a D_s-family meson among the B daughters). Whether the central values also become starting weights: piece 4 |
 | 3.3 | N1: lines kept individually; final class definitions | DONE (2026-11-20), section 3.6 | option (b) with classes by quark process. **N₂** = unmeasured exclusive and PYTHIA decays with a cc̄ pair (two open-charm hadrons, or charmonium of any mass, among the B daughters): b → cc̄s(d); its D_s class (r_s) as in 3.1. **N₁** = unmeasured exclusive and PYTHIA decays with a single charm quark (b → c + light quarks); the 3.5 isospin parameter acts within its PYTHIA part. Measured exclusive lines keep their c. Charmless unmeasured lines: c = 1 ± 1 per line; PYTHIA charmless: weight 1. In the piece-2 table: every hadronic line without a c has c = 1 ± 1; a limit line above its own limit c = limit/2 ± limit/2 (`limit_auto`) |
-| 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
+| 3.4 | Checks of the large unmeasured double-charm lines (symmetry, measurements) | OPEN (2026-11-20), section 3.7 | D\*\*D_s and three-body D_s D π lines are measured by LHCb (not in PDG 2026): c ≈ 0.15–2.2 per line; D(\*)D̄(\*)K\* compatible in total by symmetry; D_s D ππ unconstrained |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
 | 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
@@ -451,3 +451,61 @@ e and μ, run1 and run2): measured charmless exclusive ≤ 0.003 %, unmeasured �
 so a charmless B enters only as the other B. Treatment: no parameter of their own; measured lines
 keep c, unmeasured lines c = 1 ± 1 per line, PYTHIA charmless weight 1 under the common slope a; if
 piece 5 shows they matter, one loose normalization (e.g. ±50 %) on the charmless class.
+
+### 3.7 Point 3.4: symmetry and measurement checks of the large unmeasured double-charm lines (2026-11-20)
+
+One checker per family and an adversarial cross-check that recomputed the key numbers (decay-file BFs,
+PDG values, yield shares, LHCb ratios and fit fractions, the arithmetic of every estimate) and
+checked the cited measurements in the papers. Line numbers refer to the release-08 decay file; c is the
+implied correction of the line.
+
+**Family D\*\*D_s(\*)** (B⁰ 623–628, B⁺ 4182–4187; 1.36 % per flavor). No PDG 2026 entry except CLEO 2000
+(S041.264, B⁺ → D_s(\*)⁺D̄\*\*⁰ = 2.73 ± 1.15 %, old B(D_s → φπ), assumed D\*\* composition). Measured by
+LHCb, JHEP 08 (2024) 165, arXiv:2405.00098 (not in PDG 2026): B(B⁺ → D\*⁻D_s⁺π⁺)/B(B⁰ → D\*⁻D_s⁺) =
+0.173 ± 0.012, B(D\*⁻D_s\*⁺π⁺)/B(D\*⁻D_s⁺π⁺) = 1.32 ± 0.16, fit fractions D₁(2420) 74.8 %, D₁(2430) 14.7 %,
+D₂\*(2460) 11.7 %; with PDG B⁰ → D\*⁻D_s⁺ = (8.17 ± 0.80)·10⁻³: B(B⁺ → D\*⁻D_s⁺π⁺) = (1.41 ± 0.17)·10⁻³.
+Product c per line (decay-file sub-BFs D\*\* → D\*⁻π⁺; B⁰ by isospin, ÷ 1.076):
+
+| Lines (B⁺; B⁰) | Mode | BF | Max share | c |
+|---|---|---|---|---|
+| 4186; 627 | D̄₂\*⁰D_s⁺ | 4.2·10⁻³ | 9.6 % | 0.15 ± 0.03 |
+| 4187; 628 | D̄₂\*⁰D_s\*⁺ | 4.0·10⁻³ | 6.6 % | 0.20 ± 0.08 |
+| 4184; 625 | D̄₁⁰D_s⁺ | 1.2·10⁻³ | 1.5 % | 2.2 ± 0.4 (1.3 if D₁ → D\*π were 100 %; the decay file gives D₁ → Dππ 40 %) |
+| 4185; 626 | D̄₁⁰D_s\*⁺ | 2.4·10⁻³ | 2.1 % | 1.5 ± 0.5 |
+| 4182; 623 | D̄₁′⁰D_s⁺ | 0.6·10⁻³ | 0.7 % | 0.52 ± 0.25 (broad state, model dependent) |
+| 4183; 624 | D̄₁′⁰D_s\*⁺ | 1.2·10⁻³ | 1.4 % | 0.34 ± 0.18 |
+
+Family total c ≈ 0.6 ± 0.1; the hierarchy is inverted (the file's D₁′:D₁:D₂\* ≈ 1:2:7 resembles CLEO's
+assumption; LHCb finds D₁(2420) dominant). D₂\* → D⁻π⁺ is the family's main direct D⁺ source. The D_s\*
+lines assume the D\*\* composition of D\*⁻D_s\*⁺π⁺ equals that of D\*⁻D_s⁺π⁺ (±30 %).
+
+**Family three-body D_s(\*)Dπ** (B⁰ 629–632, B⁺ 4189–4192; 1.10 % per flavor). No PDG entry. LHCb
+amplitude analyses of B⁰ → D̄⁰D_s⁺π⁻ and B⁺ → D⁻D_s⁺π⁺ (arXiv:2212.02717, PRD 108 012017; 2212.02716)
+give fit fractions only (D₂\* 22 %, virtual D\* 15 %, Dπ S-wave 40–53 %); bridged to the D\*⁻D_s⁺π⁺
+measurement through D₂\* (with B(D₂\* → Dπ)/B(D\*π) = 1.50 of the decay file): B(B⁺ → D⁻D_s⁺π⁺) =
+(1.11 ± 0.24)·10⁻³ in total, (0.80 ± 0.19)·10⁻³ without D₂\*. The decay file has 3.6·10⁻³ on line 4189
+alone (5.3·10⁻³ with D₂\*). c ≈ 0.20–0.22 ± 0.05 (4189, 4190, 629, 630) and 0.18–0.20 ± 0.10 for the D_s\*
+lines (D_s\*/D_s = 0.9 ± 0.4 assumed). Max shares: 4189 18.9 %, 4191 11.1 %, 631 6.7 %. The phase-space shape
+is also wrong (S-wave and virtual D\* dominate in data).
+
+**Family D_s(\*)Dππ** (B⁰ 633–638, B⁺ 4193–4198; 1.48 % per flavor; max shares 4196 11.3 %, 4193 10.7 %).
+No measurement (LHCb arXiv:2411.03399 observed the final states only in the D_s1(2460) window). The B⁰/B⁺
+isospin mirror is broken in the file (B⁰ D_s⁺D⁻π⁰π⁰ 2.2·10⁻³ against B⁺ D_s⁺D̄⁰π⁰π⁰ 0.8·10⁻³; B⁰ D_s⁺D̄⁰π⁻π⁰
+2.2·10⁻³ against B⁺ D_s⁺D⁻π⁺π⁰ 3.3·10⁻³), which moves yield to the B⁺ lines with a charged D.
+
+**Family D(\*)D̄(\*)K\*** (B⁰ 664–677, B⁺ 4221–4234; 2.75 % per flavor). No PDG value or limit. An
+unpublished LHCb thesis (H. Bernstein, Syracuse 2022, INSPIRE 2649734) measured 11 D(\*)D̄(\*)K⁺π⁻
+branching fractions in the K\*⁰ window; not readable here. Symmetry estimate: B(K\* line) = R × B(the
+measured K mode with the same charges, isospin-averaged) × phase-space factor, with a common
+R = B(DDK\*)/B(DDK) = 0.8 ± 0.4 (a judgement): family total 2.1 ± 1.1 % (B⁰), 2.3 ± 1.2 % (B⁺), c ≈ 0.8 ± 0.4,
+compatible with the file. The file's round 1:1:1:2 pattern (DD:D\*D:DD\*:D\*D\*) is not supported: the DD
+lines come out at c ≈ 0.3–0.4 (669 D⁻D⁺K\*⁰ 0.28, 4221 D̄⁰D⁺K\*⁰ 0.40), D\*D lines 0.5–1.6. Colour-suppressed
+line 674 (D⁰D̄⁰K\*⁰, 5·10⁻⁴) sits at the bound from LHCb's B⁰ → D⁰D̄⁰K⁺π⁻ (S042.609, arXiv:2007.04280,
+3.51 ± 0.47·10⁻⁴); the MC total of that final state, PYTHIA included, is about 10·10⁻⁴, about 3 times the
+measurement (PYTHIA alone 5.2·10⁻⁴). Inclusive wrong-sign D does not separate D(\*)D̄(\*)K\* from PYTHIA.
+
+**Consequence for 3.2.** With the LHCb-based c on the D\*\*D_s and three-body D_s Dπ lines, the MC's
+D_s X drops from about 12.4 % to about 11.0 %, consistent with Belle 2023 (11.28 ± 0.43 %); the remaining
+D_s class (D_s Dππ lines and PYTHIA) would need a scale of about 1.1 ± 0.2 (Belle) or about 0.85 (PDG
+average). The prior r_s = 0.80 ± 0.15 of 3.2 assumed all unmeasured D_s lines scale together and would
+have to be re-derived.
