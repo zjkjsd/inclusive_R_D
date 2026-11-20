@@ -444,3 +444,10 @@ No node closure moved; the yield-by-class summary is unchanged. Tests: new
 `test_n1_convention_33`; the toy test of a limit line above its limit now expects limit/2 ± limit/2;
 36 and 15 pass. The model-level class membership (N₁, N₂, r_s, isospin parameter) is applied when the
 model is built (pieces 4, 6).
+
+*Charmless decays in the model (question of the user, 2026-11-20).* Yield shares (all 12 sample files,
+e and μ, run1 and run2): measured charmless exclusive ≤ 0.003 %, unmeasured ≤ 0.013 %, PYTHIA charmless
+0.09–0.16 % (comb, both sides) and ≤ 0.02 % (hadB); at most 0.17 % in any table. Our events need a D⁺,
+so a charmless B enters only as the other B. Treatment: no parameter of their own; measured lines
+keep c, unmeasured lines c = 1 ± 1 per line, PYTHIA charmless weight 1 under the common slope a; if
+piece 5 shows they matter, one loose normalization (e.g. ±50 %) on the charmless class.

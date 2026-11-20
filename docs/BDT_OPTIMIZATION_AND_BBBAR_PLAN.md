@@ -460,6 +460,7 @@ charm); the same gap would bias the CR → SR transfer.
 | N₁ | unmeasured b → c + light quarks: PYTHIA and unmeasured exclusive decays with a single charm quark (piece 3, 3.3); with an isospin parameter for its PYTHIA part (3.5) | free; isospin parameter with a prior (piece 4) |
 | N₂ | unmeasured b → cc̄s(d): PYTHIA and unmeasured exclusive decays with a cc̄ pair (two open-charm hadrons or charmonium) (3.1, 3.3); D_s class scaled by N₂·r_s | prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15, correlation −0.8 (3.2) |
 | a | all PYTHIA decays, by exp(a · (n − n̄)) | free |
+| (none) | charmless decays: measured lines c, unmeasured c = 1 ± 1 per line, PYTHIA weight 1 (≤ 0.17 % of the yield; piece 3, 2026-11-20) | fixed |
 | later, if needed: p\*_D slope | PYTHIA decays | free |
 
 The truth information needed is already read: the daughter lists, `D_mcPDG`, `D_genMotherPDG` /
