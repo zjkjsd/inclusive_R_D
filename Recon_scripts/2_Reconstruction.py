@@ -62,7 +62,8 @@ if __name__ == "__main__":
     ma.fillParticleList("e+:uncorrected",cut=goodTrack + ' and [electronIDNN>0.9] and [p>0.3]', path=main_path)
     ma.fillParticleList("mu+:goodmu",cut=goodTrack + " and [muonIDNN>0.9] and inKLMAcceptance and [p>0.6]", path=main_path)
 
-    stdPhotons.stdPhotons(listtype="cdc", beamBackgroundMVAWeight="MC16rd", fakePhotonMVAWeight="MC16rd", path=main_path)
+    # if using light-2604-jellyfish or later:
+    stdPhotons.stdPhotons(listtype="base", beamBackgroundMVAWeight="MC16rd", fakePhotonMVAWeight="MC16rd", path=my_path)
     gamma_cut = '[E > 0.020] and [E < 1.500] and [clusterNHits >= 1.5] and [abs(clusterTiming) < 200] and [abs(clusterTimeNorm90) < 3]'
     ma.fillParticleList('gamma:brems', gamma_cut, path=main_path)
 
@@ -266,7 +267,7 @@ if __name__ == "__main__":
                     [0.25<pt<0.5 and formula(dr**2/49+dz**2/16)<1] or \
                     [0.5<pt<1 and formula(dr**2/25+dz**2/36)<1] or \
                     [pt>1 and formula(dr**2+dz**2)<1]]'
-    tight_gamma = 'clusterE>0.05 and abs(clusterTiming)<formula(2*clusterErrorTiming) and abs(clusterTiming)<200 and \
+    tight_gamma = 'clusterE>0.05 and [abs(clusterTiming) < 200] and [abs(clusterTimeNorm90) < 3] and \
                     beamBackgroundSuppression>0.5 and fakePhotonSuppression>0.1'
     roe_mask1 = ('my_mask',  loose_track, loose_gamma)
     ma.appendROEMasks('B0:De', [roe_mask1], path=main_path)
