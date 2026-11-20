@@ -26,6 +26,8 @@
 !MC16_sys_tables/*/*.csv
 !Samples/
 !Samples/dec/
+!Samples/mc_truth/
+!Samples/mc_truth/*.root
 Toy_pipeline/pyhf_toys_wrapper/*
 Toy_pipeline/n_toys_per_point=50/*
 Toy_pipeline/Toy_results_MM2/*
