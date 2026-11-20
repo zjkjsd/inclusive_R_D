@@ -113,7 +113,7 @@ Current values (2026-11-18, from `b_mode_pdg_table.csv`).
 | G6 | Lines with the wrong flavor | DONE (2026-11-17), record, section 5f | S042.314 read as the sum of both charge combinations: 797, 798 0.13 ± 0.16; B⁺ line 4349 vetoed (c = 0), its B⁻ conjugate 5888 inherits it; B⁻ line 5892 takes the corrected BF of 4345 (0.49 ± 0.59): 0.19 ± 0.23 (`cp_transfer`) |
 | G7 | J/ψ Kπ, J/ψ Kππ and J/ψ ωK totals | DONE (2026-11-17), record, section 5h | option (a): rules as agreed; B⁰ → J/ψK⁰π⁺π⁻ stays 2.8 times PDG (flagged), its direct line 453 at 0 ± 1.23 |
 | P1 | B⁺ → ψ(3770)K⁺ and the D⁺D⁻K⁺ total | DONE (2026-11-17), option P+ (record, section 5d) | c from the per-channel products S041.361/362, total S041.360 excluded: 0.53 ± 0.37 (4162, `measurement_conflict`) |
-| N1 | Lines with no PDG entry anywhere | OPEN, with piece 3 | proposed: the `unmeasured` convention (c = 1 ± 1) instead of class `none` without an uncertainty |
+| N1 | Lines with no PDG entry anywhere | DONE (2026-11-20), docs/B0_PIECE3_REVIEW.md 3.3 | every hadronic line without a c: c = 1 ± 1; limit lines above their own limit: limit/2 ± limit/2 (`limit_auto`); model classes N₁/N₂ in piece 3 |
 | N2 | PDG reference attached to flagged lines | DONE (2026-11-17), record, section 5e | columns `dec_lines`, `fed_nodes`, `node_info`; node report |
 | R1 | First independent review | DONE (2026-11-17), record, section 5b | fixed R1.1, R1.2, R1.5, R1.6, R1.9; R1.7 corrected in the text of 2c; R1.3 superseded; R1.4, R1.8, R1.10 noted |
 | R2 | Second independent review | DONE (2026-11-17), record, section 5g | 14 findings fixed, 2 refuted |

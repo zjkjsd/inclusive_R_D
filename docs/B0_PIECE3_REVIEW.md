@@ -7,7 +7,7 @@ has the facts, the options, a recommendation and a decision; a decision is enter
 discussed and agreed. Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables
 rerun).
 
-Last updated: 2026-11-20 (3.2: generator truth analysed, priors proposed; new points 3.5, 3.6).
+Last updated: 2026-11-20 (3.2, 3.3, 3.5 decided; 3.3 implemented).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC` (B⁰ block 360–2160, PYTHIA lines 2134–2158;
 B⁺ block 3992–5525, PYTHIA lines 5503–5523). "Unmeasured" means class none or limit in
@@ -20,7 +20,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 |---|---|---|---|
 | 3.1 | Class structure: do the unmeasured exclusive b → cc̄s lines and the PYTHIA ≥ 2-charm decays form one class with one scale factor? | AGREED (2026-11-19), section 3.1 | option (e): one free normalization N₂ for all unmeasured b → cc̄s (exclusive class none/limit and PYTHIA ≥ 2 charm), plus one constrained composition parameter (the fraction of the D_s class, i.e. decays with a D_s(\*) among the B daughters), prior from the inclusive data (3.2); whether the data constrain it is decided by the Fisher matrix of piece 5 |
 | 3.2 | Inclusive constraints and priors for N₂ and the D_s-class scale | AGREED (2026-11-20), section 3.4 | option (a): correlated Gaussian prior N₂ = 0.94 ± 0.12, r_s = 0.80 ± 0.15, correlation −0.8 (from the generator-truth fit to BaBar 2007 D_s⁺ X and wrong-sign D X, B⁰ and B⁺, and Belle 2023 D_s X; r_s widened to cover the input variations). D_s class as defined in 3.1 (a D_s-family meson among the B daughters). Whether the central values also become starting weights: piece 4 |
-| 3.3 | N1: uncertainty of the lines kept individually (single charm, charmonium, charmless; and the 16 lines left without σ by P3/P4) | OPEN | proposal of B.13: c = 1 ± 1 unless a symmetry gives better |
+| 3.3 | N1: lines kept individually; final class definitions | DONE (2026-11-20), section 3.6 | option (b) with classes by quark process. **N₂** = unmeasured exclusive and PYTHIA decays with a cc̄ pair (two open-charm hadrons, or charmonium of any mass, among the B daughters): b → cc̄s(d); its D_s class (r_s) as in 3.1. **N₁** = unmeasured exclusive and PYTHIA decays with a single charm quark (b → c + light quarks); the 3.5 isospin parameter acts within its PYTHIA part. Measured exclusive lines keep their c. Charmless unmeasured lines: c = 1 ± 1 per line; PYTHIA charmless: weight 1. In the piece-2 table: every hadronic line without a c has c = 1 ± 1; a limit line above its own limit c = limit/2 ± limit/2 (`limit_auto`) |
 | 3.4 | Checks: isospin/SU(3) relations of the large unmeasured lines to measured modes | OPEN | – |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
 | 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | OPEN (2026-11-20), section 3.4 | found in the truth analysis; small for the D⁺ yield |
@@ -404,3 +404,43 @@ sample tables, summed per region and table):
 - Largest single-charm lines: B⁺ → D̄₀\*⁰ρ⁺ (4317, 1.66·10⁻³, 0.19 %), D̄₁⁰ρ⁺ (4319, half_limit c = 0.19, 0.17 %),
   D̄₂\*⁰ρ⁺ (4315, limit, 0.15 %), B⁰ → D₁⁻ρ⁺ (740, 0.12 %); the D\*\*ρ lines are the "2 × D\*\*π" prediction
   of the tag-mode notes.
+
+*3.3 options presented (2026-11-20).* (a) per line c = 1 ± 1, uncorrelated, symmetry where available,
+limit lines above their limit limit/2 ± limit/2; (b) by physics as in 3.1: ψ(3770) lines to N₂,
+unmeasured single-charm exclusive lines to N₁, the rest 1 ± 1 per line; (c) one common nuisance for
+all individually kept lines.
+
+*User's definition (2026-11-20).* N₂: two open-charm hadrons, or charmonium above the open-charm
+threshold (ψ(3770) and heavier); N₁: whatever else has charm; PYTHIA and unmeasured decays alike. It
+agrees with (b) except for charmonium below threshold (η_c, J/ψ, χ_c, h_c, η_c(2S), ψ(2S): N₁ by the
+mass rule). In the decay file only ψ(3770) (3.774 GeV; 18 lines) and ψ(4160) (one measured B⁺ line)
+are above the D D̄ threshold (3.730 GeV). Classifying instead by quark process puts below-threshold
+charmonium in N₂ (b → cc̄s, the same PYTHIA lines that make N₂'s open charm; about 10 % of their
+upper-vertex charm ends in charmonium); the numerical difference is negligible (about 0.45 % of B
+decays, with no open charm).
+
+**Decision (2026-11-20): option (b), classes by quark process, DONE.** N₂ = unmeasured exclusive and
+PYTHIA decays with a cc̄ pair (two open-charm hadrons or charmonium of any mass among the B
+daughters); N₁ = those with a single charm quark; measured lines keep c; charmless unmeasured lines
+1 ± 1 per line, PYTHIA charmless weight 1. Reason: same physics and same lack of a measurement, same
+parameter; N₂ = unmeasured b → cc̄s and N₁ = unmeasured b → c + light quarks are what the inclusive
+priors of 3.2 constrain.
+
+*Implemented (2026-11-20)* in `scripts/tools/pdg_match.py` (end of the node pass; anti-B rows without
+a conjugate get the same): every hadronic (not semileptonic) line without a c now has c = 1 ± 1
+(σ added on 3659 rows, 1829 of them B⁰/B⁺; no c changed); a limit line above its own limit gets
+c = limit/2 ± limit/2 (how `half_limit`, new flag `limit_auto`). c changed on 17 rows (B⁰/B⁺ and
+conjugates):
+
+| Line (conjugates) | Mode | c before → after | Max share |
+|---|---|---|---|
+| 523–526 (2333–2336) | B⁰ → η_c(2S)K\*⁰ | 1 → 0.295 ± 0.295 | 0.015 % |
+| 4337 (5880) | B⁺ → D⁺K̄⁰ (wrong strangeness, report item 1.4) | 1 → 0.091 ± 0.091 | 0.006 % (5880: 0.034 %) |
+| 1659 (3469) | B⁰ → K′\*⁺π⁻ | 1 → 0.473 ± 0.473 | 0.002 % |
+| 2090 (3900) | B⁰ → J/ψD̄⁰ | 1 → 0.096 ± 0.096 | 0 |
+| 1181 (2991), 1811 (3620), 915 (2725), 4573 (6116) | b₁K⁰, ρ⁺b₁⁻, ηf₀, b₁⁺π⁰ | 1 → 0.39, 0.23, 0.40, 0.17 | 0 |
+
+No node closure moved; the yield-by-class summary is unchanged. Tests: new
+`test_n1_convention_33`; the toy test of a limit line above its limit now expects limit/2 ± limit/2;
+36 and 15 pass. The model-level class membership (N₁, N₂, r_s, isospin parameter) is applied when the
+model is built (pieces 4, 6).

@@ -489,7 +489,9 @@ def test_toy_kaons_and_limits():
     assert r['pdg_class'] == 'limit' and r['c'] == 1.0 and close(r['bf_pdg'], 0.0005)
     assert 'above_limit' not in flags(r) and math.isnan(r['pull']) and r['pdgids'] == 'T.14'
     r = row(511, 'K+ K-', t, lk)
-    assert r['pdg_class'] == 'limit' and r['c'] == 1.0 and 'above_limit' in flags(r)
+    # above its own limit: c = limit/2 +- limit/2 since the N1 convention of point 3.3 (2026-11-20)
+    assert r['pdg_class'] == 'limit' and r['how'] == 'half_limit' and 'limit_auto' in flags(r)
+    assert r['c'] < 1.0 and close(r['c'], r['sigma_c']) and 'above_limit' in flags(r)
 
 
 def test_toy_resonance_mismatch():
@@ -794,7 +796,7 @@ def test_real_coverage():
     assert incl.sum() == modes['is_inclusive'].sum() and (TABLE.loc[incl, 'how'] == '').all()
     assert (pm.has_flag(TABLE, 'tau') == TABLE['tau']).all() and TABLE['tau'].sum() == 92
     assert (pm.has_flag(TABLE, 'zero_bf') == (TABLE['bf_mc'] == 0)).all()
-    known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit',
+    known = {'tau', 'resonance_mismatch', 'multi_ks', 'remainder_unstable', 'above_limit', 'limit_auto',
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
              'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin',
              'remainder_clamped', 'measurement_conflict', 'cp_transfer', 'order_dependent',
@@ -1337,6 +1339,22 @@ def test_wrong_flavor_p7():
         assert r['how'] == 'veto' and r['c'] == 0.0 and r['pdg_class'] == 'none', names
     nodes = {n['pdgid']: n for n in pm.make_nodes(PDG, PDL, pm.load_exceptions()) if n['pdgid'] in ('S042.195', 'S042.457')}
     assert 'anti-D*0' in nodes['S042.195']['names'][0] and 'anti-D0' in nodes['S042.457']['names'][0]
+
+
+def test_n1_convention_33():
+    """Point 3.3 (N1, 2026-11-20): every hadronic line without a c gets c = 1 +- 1; a limit line above its
+    own limit gets c = limit/2 +- limit/2 (how half_limit, flag limit_auto)."""
+    x = TABLE[TABLE['mother_pdg'].isin([511, 521, -511, -521]) & (TABLE['bf_mc'] > 0)]
+    noc = x[x['pdg_class'].isin(['none', 'limit']) & (x['how'] == '') & ~x['is_sl']]
+    assert len(noc) > 1000 and (noc['c'] == 1.0).all() and (noc['sigma_c'] == 1.0).all()
+    auto = x[x['flags'].str.contains('limit_auto')]
+    assert len(auto) >= 8 and (auto['how'] == 'half_limit').all()
+    assert np.allclose(auto['c'], auto['sigma_c']) and (auto['c'] < 0.5).all()
+    r = row(511, 'eta_c(2S) K*0')
+    assert r['how'] == 'half_limit' and 'limit_auto' in flags(r) and abs(r['c'] - 0.295) < 0.01
+    # unchanged: vetoes, the half_limit by exception, measured lines
+    assert row(521, 'anti-D*0 K+ K*0')['c'] == 0.0
+    assert 'limit_auto' not in flags(row(521, 'anti-D_10 rho+'))
 
 
 def main():

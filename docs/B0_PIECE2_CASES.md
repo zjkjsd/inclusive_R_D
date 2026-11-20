@@ -165,7 +165,7 @@ Columns of the line table:
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | anti-D*0 pi- pi+ | 693 | 0.00062 | 1.00 | measured | node | S042.239 | 0 | 0.74 | yes | c_extreme, remainder_clamped, remainder_unstable | 0.04 |
 | D_1- pi+ | 736 | 0.00093 | 0.40 | measured | product | S042.331 | 0.621 | 0.14 |  |  | 0.26 |
-| anti-D*0 rho0 | 779 | 0.00029 | 1.00 | limit |  | S042.133 | 1 | – |  |  | 0.00 |
+| anti-D*0 rho0 | 779 | 0.00029 | 1.00 | limit |  | S042.133 | 1 | 1 |  |  | 0.00 |
 | D'_1- pi+ | 737 | 0.00031 | 0.67 | none |  |  | 1 | 1 |  | unmeasured | 0.04 |
 | D_2*- pi+ | 739 | 0.00043 | 0.27 | measured | product | S042.124 | 1.39 | 0.091 |  | exception_applied | 0.07 |
 
@@ -233,7 +233,7 @@ Columns of the line table:
 | J/psi K_1+ | 4079 | 0.0018 | 0.36 | measured | exact | S041.271 | 1 | 0.29 |  | exception_applied | 0.07 |
 | K_2*+ J/psi | 4080 | 0.0005 | 0.14 | none |  |  | 1 | 1 |  | exception_applied, unmeasured | 0.05 |
 | pi- pi+ K+ J/psi | 4083 | 5.51e-05 | 1.00 | measured | node | S041.19 | 0.962 | 5.1 | yes | exception_applied, remainder_unstable | 0.00 |
-| J/psi K'_1+ | 4078 | 0.0001 | 0.44 | limit |  | S041.272 | 1 | – |  | exception_applied | 0.00 |
+| J/psi K'_1+ | 4078 | 0.0001 | 0.44 | limit |  | S041.272 | 1 | 1 |  | exception_applied | 0.00 |
 | omega K+ J/psi | 4087 | 0.00032 | 0.02 | measured | node | S041.528 | 0.333 | 0.27 |  | c_extreme, exception_applied | 0.02 |
 | K+ psi(3770) | 4162 | 0.000488 | 0.00 | measured | product | S041.361, S041.362 | 0.532 | 0.37 |  | exception_applied, measurement_conflict | 1.65 |
 
@@ -249,7 +249,7 @@ Columns of the line table:
 | omega K+ J/psi | 4087 | 0.00032 | 1.00 | measured | node | S041.528 | 0.333 | 0.27 | yes | c_extreme, exception_applied | 0.02 |
 | J/psi K_1+ | 4079 | 0.0018 | 0.11 | measured | exact | S041.271 | 1 | 0.29 |  | exception_applied | 0.07 |
 | K_2*+ J/psi | 4080 | 0.0005 | 0.03 | none |  |  | 1 | 1 |  | exception_applied, unmeasured | 0.05 |
-| J/psi K'_1+ | 4078 | 0.0001 | 0.01 | limit |  | S041.272 | 1 | – |  | exception_applied | 0.00 |
+| J/psi K'_1+ | 4078 | 0.0001 | 0.01 | limit |  | S041.272 | 1 | 1 |  | exception_applied | 0.00 |
 
 ## Case 15: S042.211, B0 --> J/psi(1S) K0 pi+ pi-
 

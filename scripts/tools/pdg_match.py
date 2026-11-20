@@ -1263,6 +1263,22 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
             elif r['pdg_class'] == 'limit' and cap.get(k, np.inf) < 1.0 - REL_TOL:
                 r['flags'].add('limit_capped')      # counted as limit/2 +- limit/2 in the remainders
 
+    # N1 convention (piece 3, point 3.3, decided 2026-11-20): every hadronic (not semileptonic) line
+    # still without a c
+    # gets c = 1 +- 1; a limit line that the decay file puts above its own limit gets
+    # c = limit/2 +- limit/2 (as `half_limit`, flag `limit_auto`)
+    for k, r in results.items():
+        if r['how'] or r['pdg_class'] not in ('none', 'limit') or np.isfinite(r['sigma_c']):
+            continue
+        is_sl_k = any(abs(int(c)) in (11, 13, 15) for c in k) and any(abs(int(c)) in (12, 14, 16) for c in k)
+        if cmode_bf.get(k, 0.0) <= 0 or is_sl_k:
+            continue                                    # semileptonic lines: gap modes, not N1
+        if r['pdg_class'] == 'limit' and cap.get(k, np.inf) < 1.0 - REL_TOL:
+            r.update(how='half_limit', c=0.5 * cap[k], sigma_c=0.5 * cap[k], pdgids=r['pdgids'] or [cap_id[k]])
+            r['flags'].add('limit_auto')
+        else:
+            r['sigma_c'] = UNMEASURED_SIGMA
+
     # own limits against the corrected BF: max(1, c) x BF_MC above any limit of the line
     for k, c_max in cap.items():
         if max(1.0, results[k]['c']) > c_max * (1 + REL_TOL):
@@ -1490,6 +1506,8 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
         if r is None:
             r = dict(_new_result(), bf_mc_sum=np.nan)
             r.pop('_diff')
+            if bf > 0 and not is_sl:
+                r['sigma_c'] = UNMEASURED_SIGMA        # N1 convention (point 3.3): c = 1 +- 1
         flags = set(r['flags'])
         if asym or bf_mismatch:
             flags.add('block_asymmetric')
