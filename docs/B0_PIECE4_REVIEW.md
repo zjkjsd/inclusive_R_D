@@ -7,7 +7,7 @@ semileptonic parameters) enter the BBbar background model (step B0, piece 4 of
 decision is entered only after it was discussed and agreed. Status labels: OPEN, AGREED (decided, not
 implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-24 (file opened; order of the points agreed on 2026-11-22; 4.1 opened).
+Last updated: 2026-11-24 (file opened; order of the points agreed on 2026-11-22; 4.1 decided).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -16,7 +16,7 @@ in % of the decays of that B flavor.
 
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
-| 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | OPEN (2026-11-24), section 3.1 | – |
+| 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | AGREED (2026-11-24), section 3.1 | (a1) every c is applied as a nominal event weight in all samples (CR, WC, SR); (b3) the σ_c are not free in the tuning: toys of all c (with the 4.2 correlations) are propagated through the linearized tuning into the SR prediction, and the resulting covariance enters the SR prior as a few eigen-NPs (to be shared with the SR physics templates at B9); a Fisher run with the leading ~20–50 BFs as constrained NPs is a diagnostic in step B3; (c1) no unitarity rescaling: N₁, N₂ are absolute rate scales, N₁ free; the fitted N₁ is compared with k = 1.11 (B⁰) / 1.14 (B⁺); (D) starting values = prior centres: N₂ = 0.93, r_s = 1.00, N₁ = 1, a = 0 |
 | 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | OPEN | – |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | OPEN | – |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN | – |
@@ -119,4 +119,36 @@ Transfer (the ratio of two samples, once a common normalization is free):
 
 ### 3.1 How the corrections enter (opened 2026-11-24)
 
-Facts: section 2.2. Options and the decision: to be entered after the discussion.
+Facts: section 2.2.
+
+*Questions and options (presented 2026-11-24).*
+- (A) Nominal values: (a1) apply c as event weights in every sample; (a2) keep c = 1 and only widen
+  the priors.
+- (B) The σ_c: (b1) not propagated, left to the data-calibrated transfer term u; (b2) the ~20–50
+  leading BFs as Gaussian-constrained NPs in the tuning, the rest lumped; (b3) c fixed in the tuning,
+  toys of all c propagated through the linearized tuning (the Fisher gradients of B.3) into the SR
+  prediction, covariance added to the SR prior as eigen-NPs.
+- (C) Unitarity (the exclusive lines lose 5.5 / 6.0 % of B decays when all c are applied): (c1) no
+  rescaling, N₁ free absorbs the rate; (c2) rescale PYTHIA by k = 1.114 / 1.138 before the fit (as
+  the B → X_sγ note), N₂ prior re-expressed as 0.93/k; (c3, raised in the discussion) Σ BF = 1 per B
+  flavor as a constraint that fixes N₁ from the other parameters.
+- (D) Starting values: N₂, r_s at their prior centres.
+
+*Questions answered in the discussion (2026-11-24).* (1) Unitarity: the generic MC is a fixed number
+of BB̄ pairs, so lowering measured lines without raising anything describes a world where 5.5 % of
+the B⁰ decay into nothing; the rate must go to unmeasured decays (unmeasured exclusive + PYTHIA),
+since measured ones are pinned. (2) The N₂ prior is absolute: it constrains the sum of the unmeasured
+b → cc̄s decays through inclusive upper-vertex rates (BaBar 2007 D_s⁺X and wrong-sign D X per flavor,
+Belle 2023 D_s X) = measured lines after c + N₂ × (unmeasured exclusive + PYTHIA share from generator
+truth); it does not constrain the split among the unmeasured modes (4.4). (3) c covers the exclusive
+lines (exact, product, node, isospin, external, and the 1 ± 1 / limit conventions), semileptonic lines
+included; not the N₁/N₂ lines, PYTHIA, X_u ℓν, D decays or resonance sub-decays.
+
+**Decision (2026-11-24): a1, b3, c1 and D, AGREED.** Reasons: the nominal c move the yield by about
+10 % and the CR → SR / CR → WC composition by about 1 %, so they must be applied (all four Belle II
+notes do); their σ add only 0.4–0.8 % to a transfer, and keeping them out of the tuning stops measured
+BFs from acting as shape knobs (B.6) while toys carry the correlations of 4.2 and give eigen-NPs that
+can be shared with the SR physics templates; the N₂ prior was derived without a unitarity rescaling,
+so c1 keeps it valid, and the fitted N₁ against k is a physics check; starting at the prior centres
+costs nothing. Nothing to implement now: (a1) is already how the c are meant to be used; (b3) belongs
+to the tuning code (B4) and the hand-over (B9); the Fisher diagnostic to step B3.

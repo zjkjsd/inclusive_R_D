@@ -681,7 +681,7 @@ independent script. Sample: the six CSVs (run1 e, `MC_e_comb`).
 | 1 | Generator classification: parser + lookup of the final state | AGREED and DONE |
 | 2 | PDG comparison: the unit (PDG final state, not decay-file line), the definition of "measured", product-of-BF modes, K⁰ vs K_S, upper limits | DONE (2026-11-17): all review points decided and implemented; record in `docs/B0_PIECE2_REVIEW.md`, cases in `docs/B0_PIECE2_CASES.md` |
 | 3 | Exclusive modes without a measurement: how they enter the model. | DONE (2026-11-20): classes N₁/N₂ by quark process with priors, LHCb-based c for the D\*\*D_s and D_s Dπ lines, c = 1 ± 1 for the rest, isospin parameter for PYTHIA single charm; record in `docs/B0_PIECE3_REVIEW.md` (section 4 is the summary) |
-| 4 | Priors: c_k applied as weights or only setting widths; correlations between modes; one r_SL or a split (D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a theory R(D\*), so a PDG correction would be circular) | OPEN; inputs from piece 3 listed in `docs/B0_PIECE3_REVIEW.md` section 4 |
+| 4 | Priors: c_k applied as weights or only setting widths; correlations between modes; one r_SL or a split (D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a theory R(D\*), so a PDG correction would be circular) | OPEN; record in `docs/B0_PIECE4_REVIEW.md` (points 4.1–4.8; 4.1 AGREED 2026-11-24: c as nominal weights, σ_c by toys into the SR prior, no unitarity rescaling, N₂/r_s start at the prior centres) |
 | 5 | Code layout and committed inputs | AGREED: develop and test in separate modules; merge into `utilities.py` at the end if it fits. `evt_rel08.pdl` is committed next to the decay file. Cached PDG table: with piece 2 |
 
 **Piece 1 (DONE): `scripts/tools/decay_table.py`.** Needs numpy and pandas only.
@@ -854,7 +854,9 @@ Headline numbers (exclusive lines, share of all B decays):
 - Final states with a c: 242 (B⁰) and 221 (B⁺); |pull| < 1 for 170 and 172, |pull| > 3 for 22 and 17.
 - All c applied, the exclusive lines lose 3.6 % (B⁰) and 4.3 % (B⁺) of all B decays (semileptonic
   about 1.0 % and 0.6 %). Belle II's tag-mode study gave such a loss back to PYTHIA; here the free
-  PYTHIA normalizations of the model absorb it (piece 4).
+  PYTHIA normalizations of the model absorb it (piece 4). *Update 2026-11-24:* with the piece-3
+  externals the loss is 5.5 % (B⁰) and 6.0 % (B⁺); piece 4 (4.1) keeps no rescaling, N₁ free
+  (`docs/B0_PIECE4_REVIEW.md`).
 - Largest corrections with a visible share: D(\*)D_s0\*(2317) 0.05–0.14 (D2); D⁺D⁻K⁺ 0.43 ± 0.48 and
   ψ(3770)K⁺ 0.53 ± 0.37 (P1); D̄₁⁰ρ⁺ 0.19 ± 0.19; B⁺ D̄₀\*⁰ℓν 0.35 ± 0.21 and B⁰ D₀\*⁻ℓν by isospin.
 
