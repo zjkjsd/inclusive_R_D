@@ -17,7 +17,7 @@ in % of the decays of that B flavor.
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
 | 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | AGREED (2026-11-24), section 3.1 | (a1) every c is applied as a nominal event weight in all samples (CR, WC, SR); (b3) the σ_c are not free in the tuning: toys of all c (with the 4.2 correlations) are propagated through the linearized tuning into the SR prediction, and the resulting covariance enters the SR prior as a few eigen-NPs (to be shared with the SR physics templates at B9); a Fisher run with the leading ~20–50 BFs as constrained NPs is a diagnostic in step B3; (c1) no unitarity rescaling: N₁, N₂ are absolute rate scales, N₁ free; the fitted N₁ is compared with k = 1.11 (B⁰) / 1.14 (B⁺); (D) starting values = prior centres: N₂ = 0.93, r_s = 1.00, N₁ = 1, a = 0 |
-| 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | OPEN | – |
+| 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | OPEN (2026-11-24), section 2.3 | – |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | OPEN | – |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN | – |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN | – |
@@ -91,7 +91,7 @@ Script in the session scratchpad (`p41_facts.py`, `p41_group.py`).
 | yield change when all c are applied | −10.3 % | −9.6 % | −11.5 % |
 | of which hadronic measured / external / semileptonic | −5.2 / −3.3 / −1.7 % | −5.2 / −3.3 / −1.0 % | −3.9 / −3.7 / −3.7 % |
 | yield uncertainty from all σ_c (physical BFs independent; e/μ and conjugates merged) | 1.3 % | 1.3 % | 1.7 % |
-| same, LHCb externals fully correlated instead of independent (external part) | 0.72 % instead of 0.17 % | 0.74 % instead of 0.17 % | 0.78 % instead of 0.17 % |
+| same, LHCb externals fully correlated instead of independent (external part; 0.17 % is with B and anti-B rows independent, 0.23–0.25 % with conjugates merged; corrected 2026-11-24, section 2.3) | 0.72 % instead of 0.17 % | 0.74 % instead of 0.17 % | 0.78 % instead of 0.17 % |
 
 Transfer (the ratio of two samples, once a common normalization is free):
 
@@ -114,6 +114,56 @@ Transfer (the ratio of two samples, once a common normalization is free):
   (the B → X_sγ note: ≈ 1.2).
 - The N₂, r_s prior of 3.2 is absolute: it was derived with the measured lines after c and PYTHIA at
   weight 1, so it assumes no unitarity rescaling.
+
+### 2.3 Facts for 4.2 (2026-11-24)
+
+Collected by four independent readers, each checked by a second one: (i) an inventory of the sources
+shared by construction in our c table, (ii) BaBar 2011 D(\*)D̄(\*)K (arXiv:1011.3929), (iii) PDG-level
+correlations and common sub-decay normalizations (PDG 2026 printed listings, pdg 2026.0 SQLite),
+(iv) the 20 LHCb externals of 3.4. Scripts and outputs in the session scratchpad (`p42/`). Numbers are
+first order, from the 4.1 leverages; "transfer" = the CR → SR and CR → WC ratios with a common
+normalization free; baseline = e/μ and conjugates merged, every physical BF independent:
+**CR → SR 0.38 %, CR → WC 0.81 %, yield 1.26 / 1.34 / 1.66 % (CR / SR / WC).**
+
+| Source | Members | Kind | Transfer CR → SR / CR → WC | Yield σ CR / SR / WC |
+|---|---|---|---|---|
+| e and μ of one PDG lepton entry | 118 rows (B⁰ 366/390 … 383/407, 830/831, 835/836; B⁺ 3998/4025 … 4377/4378) | full (same entry) | 0.36 / 0.63 if independent → 0.38 / 0.81 | 36 / 33 / 71 % of the yield |
+| charge conjugates | all anti-B rows (cp_transfer: 5888, 5892) | full | 0.27 / 0.57 if independent → 0.38 / 0.81 | 0.89 / 0.95 / 1.17 → 1.26 / 1.34 / 1.66 |
+| isospin copies (B⁰ D₀\*ℓν 369/393 from 4001/4028; ψ(3770)K⁰ 592–594 from 4162) | 2 groups | full | CR → WC +0.013 | small |
+| one PDG entry for several final states (K⁰/K_S/K_L splits, flavor twins: 46 shared entries) | e.g. 428–430 S042.23 | full | < 0.001 | < 0.01 |
+| node remainders (direct line = total − fed lines) | 89 nodes, 58 with fed lines in the toys; ρ e.g. −0.37 (652), −0.61 (658), −0.70 (4216), −0.27 (4210) | anti-correlated with the fed lines; positive between remainders sharing a feeder | −0.003 / −0.005 | small |
+| D_s0\*(2317) products, common 20 % (B(D_s0\* → D_sπ⁰) = 100 +0 −20 %) | 790, 791, 4339, 4340 | full on the 20 % | +0.0 / +0.005 | 0.12 → 0.15 % (group) |
+| LHCb externals (20 lines + conjugates) | 623–632, 4182–4192 | components: S042.49 9.8 % (shared with line 620, D\*⁻D_s⁺), R_LHCb 6.7 %, fit fractions per D\*\* state, D₁ fraction 10 %, R\* 12 %, bridge 30 % (8 three-body lines), D_s\*/D_s | ±0.015 | group 0.23 (indep.) → 0.44 (components) → 0.72 (ρ = 1) |
+| **all construction correlations together** | | | **0.38 / 0.82** | **1.34 / 1.41 / 1.74** |
+| BaBar 2011 D(\*)D̄(\*)K, 22 entries (646–661, 4204–4219; 20 equal to BaBar alone) | 12.6 / 14.1 / 7.7 % of the yield | common component = Table III columns (i) detection/PID and (j) D(\*), K_S BFs + B counting: 4.5–8.4 % per mode (≈ 6 %), rest independent; reproduces BaBar's summed systematic (24.9 / 28.7 vs 24 / 28 ·10⁻⁴) | 0.38 / 0.85 | group 0.44 → 0.81 % |
+| PDG constrained-fit correlation matrices (printed listings only; B⁰ 24 parameters, B⁺ 13; 27 of our c) | largest B⁰ D\*ℓν–D\*τν 40 %, B⁺ 33 % | partial | < 0.01 | +0.02–0.03 |
+| B(D_s → φπ) rescaling (8.9 %) inside PDG D(\*)D_s(\*) averages (common fraction e.g. 4.5 % S042.50, 5.5 % S042.49) | 11–13 % of the yield | full on that part | 0.39 / 0.82 | 1.36 / 1.47 / 1.70 |
+| D⁰, D⁺, D\*, D_s sub-decay normalizations (0.4–1.7 % each) | every D-based c | full per species | unchanged | 1.47 / 1.55 / 1.86 |
+| Υ(4S) f₀₀ / f₊₋ (measurements assuming equal production; +2.9 % / −2.2 %, B⁰ against B⁺) | all c | anti-correlated B⁰ / B⁺ (upper estimate: modern ones already rescaled) | 0.38 / 0.85 | +0.6–0.85 |
+| B⁰ / B⁺ D(\*)ℓν share inputs (HFLAV B⁰ D\*ℓν 4.90 % assumes isospin; same analyses in both) | 366/390, 367/391, 3998/4025, 3999/4026 | ρ 0.5–1 | 0.38 / 0.85–0.98 | WC 1.74 → 1.8–2.1 |
+| D\*\*ℓν B⁰ / B⁺ (same analyses: Meier 2023, BaBar 2009Y simultaneous fit, …) | 368–371, 4000–4003 (+ μ) | partial positive | not computed; expected a few 0.01 on CR → WC | – |
+
+Reading: correlations change the **absolute** yield uncertainty (1.3 → up to about 1.9 %) but hardly
+the **transfers** (CR → SR stays 0.38–0.40 %; CR → WC 0.81 → at most about 0.98 %), because a common
+component cancels between samples with a similar composition. The B⁰/B⁺ D(\*)ℓν, f₀₀/f₊₋ and BaBar
+common terms matter for CR → WC (the WC ℓ side is 70 % semileptonic, mostly B⁰ D\*ℓν).
+
+Abnormal findings (2026-11-24, to decide):
+- **The 0.72 "non-D₂\* part" of the three-body D_s Dπ externals** (exception of line 4189 and its
+  family): 1 − FF(D₂\*) = 1 − 0.222 = 0.778 (0.736 if the other small components of arXiv:2212.02717
+  Table 6 are removed as well); (0.80 ± 0.19)/(1.11 ± 0.24)·10⁻³ = 0.72 in 3.7 is not reproduced. If
+  0.778 is right, the c of the 8 three-body lines (16 rows, about 2.8 % of the yield) are 8 % too low
+  (about +0.2 % of the yield). To check against the 3.7 derivation.
+- BaBar 2011 normalized its D(\*)D̄(\*)K to the PDG 2008 D branching fractions; with PDG 2026 values
+  all 22 c would move together by an estimated −2 to −5 % (PDG 2008 values not verified).
+- S042.266 (B⁰ → D\*⁻D\*⁺K⁰) averages BaBar 2011 with BaBar 2006, a subset of the same data that 2011
+  supersedes: c(655) 0.969 ± 0.081 against 0.988 ± 0.099 with BaBar 2011 alone.
+- LHCb ratios between D(\*)D̄(\*)K modes (in the listings, not in the PDG averages) are about 2.3σ
+  from BaBar's own ratios (e.g. lines 646/648).
+- LHCb arXiv:2405.00098 prints R\* = 1.31 in the abstract and 1.32 ± 0.07 ± 0.14 in the body (we use
+  1.32).
+- The 3.2 refit of N₂, r_s held the externals fixed; through the D_s X constraint r_s is
+  anti-correlated with them (estimated σ(r_s) about 0.07 from this, ρ about −0.3; refit not re-run).
 
 ## 3. Discussion record
 
