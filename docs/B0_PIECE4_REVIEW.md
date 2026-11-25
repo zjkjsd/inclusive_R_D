@@ -21,7 +21,7 @@ in % of the decays of that B flavor.
 | 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | AGREED (2026-11-25), sections 2.3, 3.2 | option (b): each c is written as a sum of named sources and the toys draw the sources: construction correlations (one variable per physical BF for e/μ, conjugates, shared PDG entries, isospin copies; node remainders and LHCb externals recomputed from their drawn inputs) plus the documented common components (BaBar 2011 common ≈ 6 % per mode, LHCb component model, D_s0\* 20 %, φπ rescaling fractions, PDG fit matrices, D-species sub-decay normalizations, one f₀₀/f₊₋ term, B⁰/B⁺ semileptonic correlation with its value set in 4.6); r_s drawn together with the externals; sources also present in the SR fit shared with it at B9. Effect: transfer CR → SR about 0.38–0.40 %, CR → WC about 0.8–1.0 %; yield 1.3 → up to about 1.9 % |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | AGREED (2026-11-25), section 3.3 | option (a): one common ε for B⁰ and B⁺, Gaussian prior **ε = 0.2 ± 0.2** (start at 0.2); applies to PYTHIA hadronic decays with one charm hadron that is a D or D\* among the B daughters; w_same = 1 − ε (charm meson of the spectator's isospin), w_other = 1 + ε·R with R = N_same/N_other from generator truth (B⁰ 6.0, B⁺ 7.5), so the PYTHIA single-charm rate per flavor is kept; two separate ε (BaBar priors 0.40 ± 0.15, 0.13 ± 0.06, or 0.2 ± 0.2 each) as a validation cross-check |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
-| 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN | – |
+| 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN (2026-11-25), section 3.5 | – |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN | – |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
 | 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN | – |
@@ -450,3 +450,48 @@ that moves our transfers (CR → WC up to about 1.5 %). The four closure channel
 opposite directions (PYTHIA's b → cc̄s composition off by factors 2–3), so they are reported, not fitted;
 the unmeasured B⁰ ψ(3770)K\* lines (593–607) keep c = 1 ± 1 with a note. Implementation: with the tuning
 code (B4); the closure table in piece 7.
+
+### 3.5 The D₁(2420) decay table (opened 2026-11-25)
+
+*Context.* A c corrects how often a B decays to a given set of daughters; it cannot correct how a
+daughter resonance decays afterwards. The decay file's D₁(2420) table (lines 9621–9638) gives
+D₁ → D\*π 59.9 % and D₁ → Dππ 40.1 %; the measurements of 3.7 say Dππ/D\*π is 0.83 ± 0.11 of the file's
+ratio. This matters for us because D₁ → Dππ produces a D± directly, while D₁ → D\*π produces it only
+through D\*± → D±π⁰/γ. Two things follow: the D⁺ yield from D₁ decays is off, and the line c of the D₁
+lines, which were built from PDG products through D₁ → D\*π and D₁ → Dππ (piece 2), absorbed the
+inconsistency.
+
+*Facts (2026-11-25).*
+- Decay file, D₁(2420)⁰ (line 9632; D₁⁺ at 9621 by isospin): D\*⁺π⁻ 0.3994, D\*⁰π⁰ 0.1997, D⁰π⁺π⁻ 0.1719,
+  D⁰π⁰π⁰ 0.1145, D⁺π⁻π⁰ 0.1145 ("modes with neutral pions inferred assuming isospin", comment line 9617).
+- Measured (3.7): Dππ/D\*π = 0.83 ± 0.11 of the file's (Belle 2023 arXiv:2211.09833 B⁺ 0.98 ± 0.17, B⁰
+  0.77 ± 0.19; LHCb arXiv:1109.6831 0.68 ± 0.20). With the file's isospin pattern: B(D₁ → D\*π) = 0.643
+  (D\*⁺π⁻ 0.429 ± 0.019), B(D₁ → Dππ) = 0.357. Ratio to the file: **w_D\*π = 1.074 ± 0.046, w_Dππ =
+  0.889 ± 0.076** (one parameter: fully anti-correlated; total D₁ rate kept).
+- D± per D₁ decay (file): from D₁± (B⁰ lines) 0.286 directly (Dππ) + 0.065 through D\*±; from D₁⁰
+  (B⁺ lines) 0.115 directly + 0.129 through D\*±. With the weights: −7.7 % (D₁±) and −1.2 % (D₁⁰).
+- The PDG products and the line c (PDG 2026, decay-file BF × sub-BF; c before → after the sub-decay
+  correction):
+
+| Line | Product | c from it, now | after dividing by w |
+|---|---|---|---|
+| 368/392 B⁰ → D₁⁻ℓν (line c 0.959 ± 0.074, χ² 1.17) | S042.420 (→ D̄\*⁰π⁻) 2.85·10⁻³ | 1.014 | 0.945 |
+| | S042.623 (→ D⁻π⁺π⁻) 1.02·10⁻³ | 0.843 | 0.948 |
+| 4000/4027 B⁺ → D̄₁⁰ℓν (line c 0.909 ± 0.050, χ² 1.23) | S041.257 (→ D\*⁻π⁺) 2.84·10⁻³ | 0.939 | 0.875 |
+| | S041.783 (→ D̄⁰π⁺π⁻) 1.05·10⁻³ | 0.807 | 0.907 |
+| 736 B⁰ → D₁⁻π⁺ (only the Dππ product) | S042.331 0.99·10⁻⁴ | 0.621 | 0.698 |
+| 4318 B⁺ → D̄₁⁰π⁺ (exact, S041.214) | total, independent of the sub-decay | 0.783 | 0.783 |
+
+  The two products of each D₁ℓν line agree once the sub-decay is corrected (0.945 / 0.948; 0.875 /
+  0.907), which is the measured ratio seen from another side. The four D₁D_s externals of 3.4 already
+  divide by 0.429 instead of 0.399, so they assume the corrected sub-decay: without the event weight,
+  their D\*π branch is generated 7 % short. D₁τν (420, 4058) and D₁ρ (740, 4319) have no product; the
+  weight applies to them as to every D₁(2420).
+- In our samples (D-side and hadB tables, comb + hadB): B decays with a D₁(2420) among the daughters
+  carry about 1 % of the yield on the D side (largest D₁D_s\*, D₁ℓν); the event weight changes the comb +
+  hadB yield by about −0.07 % in every region. The ℓ-side D₁ℓν decays (1.5–4.5 % of the yield) are
+  unaffected, because the reconstructed D does not come from them. Larger is the effect on the
+  SR physics template D\*\*ℓν (B⁰ → D₁⁻ℓν, D₁⁻ → D⁻ππ: −11 % on that branch), which is outside the
+  BBbar model.
+- Truth needed: `D_genMotherPDG` = D₁(2420) (±10413, ±10423) for a D directly from D₁; `D_genMotherPDG`
+  = D\*± or D\*⁰ and `D_genGMPDG` = D₁(2420) for a D through D\*. Both are in the ntuples (B.6).
