@@ -50,6 +50,8 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 >   D(\*)ηℓν), to be replaced by the official Belle II gap-mode recommendation that I will provide.
 >
 > How I want to work:
+> - Before the options of each point, explain the context briefly: what problem the point solves and
+>   where it sits in the model (also as a short context paragraph in the review file).
 > - One point at a time. For each point, show me the facts (with decay-file line numbers and PDG
 >   ids, and the source papers when a number matters) and the options with your recommendation, and
 >   wait for my decision.

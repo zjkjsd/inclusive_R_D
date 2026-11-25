@@ -4,10 +4,11 @@ Review of how the corrections of pieces 2 and 3 (the per-line c, the classes N�
 semileptonic parameters) enter the BBbar background model (step B0, piece 4 of
 `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md`, section B.13; model parameters in B.6). Same conventions as
 `docs/B0_PIECE3_REVIEW.md`: every point has the facts, the options, a recommendation and a decision; a
-decision is entered only after it was discussed and agreed. Status labels: OPEN, AGREED (decided, not
-implemented), DONE (implemented, tables rerun).
+decision is entered only after it was discussed and agreed. Each point in section 3 opens with a short
+*context* paragraph: what problem the point solves and where it sits in the model (rule agreed
+2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-24 (file opened; order of the points agreed on 2026-11-22; 4.1 decided).
+Last updated: 2026-11-25 (4.2 decided; checks of two possible value errors in section 3.2).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -17,7 +18,7 @@ in % of the decays of that B flavor.
 | # | Point | Status | Decision and current values |
 |---|---|---|---|
 | 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | AGREED (2026-11-24), section 3.1 | (a1) every c is applied as a nominal event weight in all samples (CR, WC, SR); (b3) the σ_c are not free in the tuning: toys of all c (with the 4.2 correlations) are propagated through the linearized tuning into the SR prediction, and the resulting covariance enters the SR prior as a few eigen-NPs (to be shared with the SR physics templates at B9); a Fisher run with the leading ~20–50 BFs as constrained NPs is a diagnostic in step B3; (c1) no unitarity rescaling: N₁, N₂ are absolute rate scales, N₁ free; the fitted N₁ is compared with k = 1.11 (B⁰) / 1.14 (B⁺); (D) starting values = prior centres: N₂ = 0.93, r_s = 1.00, N₁ = 1, a = 0 |
-| 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | OPEN (2026-11-24), section 2.3 | – |
+| 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | AGREED (2026-11-25), sections 2.3, 3.2 | option (b): each c is written as a sum of named sources and the toys draw the sources: construction correlations (one variable per physical BF for e/μ, conjugates, shared PDG entries, isospin copies; node remainders and LHCb externals recomputed from their drawn inputs) plus the documented common components (BaBar 2011 common ≈ 6 % per mode, LHCb component model, D_s0\* 20 %, φπ rescaling fractions, PDG fit matrices, D-species sub-decay normalizations, one f₀₀/f₊₋ term, B⁰/B⁺ semileptonic correlation with its value set in 4.6); r_s drawn together with the externals; sources also present in the SR fit shared with it at B9. Effect: transfer CR → SR about 0.38–0.40 %, CR → WC about 0.8–1.0 %; yield 1.3 → up to about 1.9 % |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | OPEN | – |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN | – |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN | – |
@@ -169,6 +170,12 @@ Abnormal findings (2026-11-24, to decide):
 
 ### 3.1 How the corrections enter (opened 2026-11-24)
 
+*Context.* Pieces 2 and 3 produced a correction c ± σ_c for each exclusive decay-file line and
+parameters (N₁, N₂, r_s, …) for the decays without one. This point decides how they are used: whether
+the c change the MC (event weights) or only set allowed ranges, where their uncertainties go (into the
+tuning fit, or propagated separately into the SR prior), and how the total B decay rate is kept
+consistent once the measured lines are lowered.
+
 Facts: section 2.2.
 
 *Questions and options (presented 2026-11-24).*
@@ -202,3 +209,56 @@ can be shared with the SR physics templates; the N₂ prior was derived without 
 so c1 keeps it valid, and the fitted N₁ against k is a physics check; starting at the prior centres
 costs nothing. Nothing to implement now: (a1) is already how the c are meant to be used; (b3) belongs
 to the tuning code (B4) and the hand-over (B9); the Fisher diagnostic to step B3.
+
+### 3.2 Correlations between the corrections (opened 2026-11-24)
+
+*Context.* After 4.1 the uncertainties of the c are propagated by toys: in each toy every c is drawn
+from its uncertainty, the MC is reweighted, the tuning is redone (linearized) and the SR prediction
+recorded; the spread is the uncertainty that enters the SR prior. This point decides how the toys draw
+the c: which ones must move together because they share a source (one PDG number used for the e and
+the μ line; 20 LHCb-based lines built on one measured BF; 22 BaBar modes with a common systematic) or
+move oppositely (a remainder line computed as total − other lines). Independent draws get the
+uncertainty wrong: too small on an absolute yield (correlated errors add linearly), and possibly wrong
+in either direction on a ratio between two samples (a common shift cancels there). The tuning fits free
+normalizations in the comb CR, so what reaches the SR is mostly the CR → SR ratio ("transfer").
+
+Facts: section 2.3.
+
+*Options (presented 2026-11-24; context explained 2026-11-25 at the user's request).* (a) construction
+correlations only (bookkeeping of how c were built); (b) (a) plus the documented common components,
+each c a sum of named sources drawn in the toys; (c) (a) plus ρ = 1 inside each family (upper bound).
+
+**Decision (2026-11-25): option (b), AGREED.** Reasons: it gives the right absolute yield uncertainty
+and the right transfers; most of it already exists as the readers' scratch source model (reproduces
+every table σ_c within 3 %); sources that also act in the SR fit (f₀₀/f₊₋, D branching fractions,
+D(\*)ℓν) can share their nuisance parameters with it at B9. The value of the B⁰/B⁺ semileptonic
+correlation is set in 4.6. Implementation: a component file and the toy generator, with the tuning
+code (B4). Also agreed: the possible errors 1 and 2 of section 2.3 are checked now (below); 3 and 4
+stay flagged; 5 (r_s with the externals) is carried by the toys.
+
+*Check 1 (2026-11-25): the "non-D₂\* part" 0.72 of the three-body D_s Dπ externals.* The chain, from
+the exceptions file and the table: the D₂\* part of B⁺ → D⁻D_s⁺π⁺ is B(B⁺ → D̄₂\*⁰D_s⁺) after its
+external c (line 4186: 0.62·10⁻³) × B(D̄₂\*⁰ → D⁻π⁺) of the decay file (0.3998) = 2.48·10⁻⁴; divided
+by the D₂\* fit fraction 22.2 % (arXiv:2212.02717, Table 6) the total is 1.115·10⁻³. The phase-space
+line 4189 should carry everything except D₂\* (no other component of the amplitude fit has its own
+decay-file line; the virtual D\*⁰, the Dπ S-wave, interference and the small D\*\*/T_cs terms are all
+in the phase-space line): 1.115 × (1 − 0.222) = **0.868·10⁻³**, factor 0.778. The value used,
+0.80·10⁻³ (factor 0.72), is not reproduced by any reading of the paper (removing the small D\*\*/T_cs
+components as well gives 0.736; normalizing to the sum of fit fractions, 94.7 %, gives 0.766); the
+derivation script of 2026-11-20 is no longer available. **Proposed correction (not implemented):** all
+eight three-body externals (4189–4192, 629–632 and conjugates) are built from the 0.80·10⁻³ value
+(π⁰ lines × ½, D_s\* lines × 0.9, B⁰ ÷ 1.076), so they all scale by 0.778/0.72 = **1.081**: e.g. c(4189)
+0.222 ± 0.085 → 0.240 ± 0.092. Effect about +0.2 % on the comb + hadB yield (these lines are about
+2.8 % of it); the 3.2 prior is not affected beyond rounding (the lines are outside N₂).
+
+*Check 2 (2026-11-25): BaBar 2011 normalized to the PDG 2008 D branching fractions.* The paper
+(arXiv:1011.3929, ref. [17] = PDG 2008) reconstructs D⁰ → K⁻π⁺, K⁻π⁺π⁰, K⁻π⁺π⁻π⁺ and D⁺ → K⁻π⁺π⁺, and
+D\*⁰ → D⁰π⁰, D⁰γ. PDG 2008 (summary tables, pdg.lbl.gov/2008, checked 2026-11-25) against PDG 2026:
+K⁻π⁺ 3.89 → 3.936 % (+1.2 %), K⁻π⁺π⁰ 13.9 → 14.39 % (+3.5 %), K⁻π⁺π⁻π⁺ 8.10 → 8.205 % (+1.3 %),
+D⁺ → K⁻π⁺π⁺ 9.22 → 9.313 % (+1.0 %), D\*⁰ → D⁰π⁰ 61.9 → 64.67 % (+4.5 %), D\*⁰ → D⁰γ 38.1 → 35.3 %
+(−7.3 %), D\*⁺ → D⁰π⁺ 67.7 → 67.69 % (0). A measured BF scales inversely with these, so the BaBar values
+would move by about −1 to −5 % per mode (D⁰D̄⁰ modes most; D\*⁰ modes partly cancel between π⁰ and γ);
+the PDG 2026 entries equal the BaBar numbers (not rescaled). The exact factor per mode needs the paper's
+yield split over the D sub-modes, which is not published. **Proposal (not implemented):** no change of
+the nominal c; the shift is below the ≈ 6 % common BaBar component that the toys already carry
+(option b), and its size (about −0.4 % of the yield, transfers unchanged) is recorded here.
