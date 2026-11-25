@@ -20,7 +20,7 @@ in % of the decays of that B flavor.
 | 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | AGREED (2026-11-24), section 3.1 | (a1) every c is applied as a nominal event weight in all samples (CR, WC, SR); (b3) the σ_c are not free in the tuning: toys of all c (with the 4.2 correlations) are propagated through the linearized tuning into the SR prediction, and the resulting covariance enters the SR prior as a few eigen-NPs (to be shared with the SR physics templates at B9); a Fisher run with the leading ~20–50 BFs as constrained NPs is a diagnostic in step B3; (c1) no unitarity rescaling: N₁, N₂ are absolute rate scales, N₁ free; the fitted N₁ is compared with k = 1.11 (B⁰) / 1.14 (B⁺); (D) starting values = prior centres: N₂ = 0.93, r_s = 1.00, N₁ = 1, a = 0 |
 | 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | AGREED (2026-11-25), sections 2.3, 3.2 | option (b): each c is written as a sum of named sources and the toys draw the sources: construction correlations (one variable per physical BF for e/μ, conjugates, shared PDG entries, isospin copies; node remainders and LHCb externals recomputed from their drawn inputs) plus the documented common components (BaBar 2011 common ≈ 6 % per mode, LHCb component model, D_s0\* 20 %, φπ rescaling fractions, PDG fit matrices, D-species sub-decay normalizations, one f₀₀/f₊₋ term, B⁰/B⁺ semileptonic correlation with its value set in 4.6); r_s drawn together with the externals; sources also present in the SR fit shared with it at B9. Effect: transfer CR → SR about 0.38–0.40 %, CR → WC about 0.8–1.0 %; yield 1.3 → up to about 1.9 % |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | AGREED (2026-11-25), section 3.3 | option (a): one common ε for B⁰ and B⁺, Gaussian prior **ε = 0.2 ± 0.2** (start at 0.2); applies to PYTHIA hadronic decays with one charm hadron that is a D or D\* among the B daughters; w_same = 1 − ε (charm meson of the spectator's isospin), w_other = 1 + ε·R with R = N_same/N_other from generator truth (B⁰ 6.0, B⁺ 7.5), so the PYTHIA single-charm rate per flavor is kept; two separate ε (BaBar priors 0.40 ± 0.15, 0.13 ± 0.06, or 0.2 ± 0.2 each) as a validation cross-check |
-| 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN | – |
+| 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN (2026-11-25), section 3.4 | – |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN | – |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN | – |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
@@ -350,3 +350,89 @@ prior alone, because the free N₁ absorbs it in a D⁺ sample, while a common �
 sample (B⁺ → D⁻X, 7.5 % of WC) and applied consistently to both flavors; BaBar's 2σ flavor difference,
 partly BaBar's own (its D⁰ total is 1.6σ above Belle 2023), is not imposed as a prior. Implementation:
 with the tuning code (B4); the per-flavor fit is a validation cross-check (piece 7).
+
+### 3.4 The D(\*)D̄(\*)K\* lines and the S042.609 closure check (opened 2026-11-25)
+
+*Context.* The decay file has 12 D(\*)D̄(\*)K\* lines per B flavor (B⁰ 664–677, B⁺ 4221–4234; 2.75 % of B
+decays per flavor) with round BFs: 2.5·10⁻³ for DD, D\*D, DD\* and 5·10⁻³ for D\*D\* (pattern 1:1:1:2),
+one fifth of that for the colour-suppressed neutral-pair lines. Nothing is measured; in 3.4 they stayed
+in the N₂ class, so N₂ scales their total together with PYTHIA's double-charm decays. Two things can be
+wrong: their total (handled by N₂) and their internal composition, which N₂ cannot change. For a D⁺
+sample the composition matters because a line with a D± among the B daughters gives a D⁺ candidate
+directly, a line with only a D\*± gives it through D\*⁺ → D⁺π⁰/γ (32 %), and neutral pairs hardly at all.
+3.4 also named one measurement as a closure check: LHCb's B⁰ → D⁰D̄⁰K⁺π⁻ (S042.609), which contains the
+colour-suppressed line 674 and PYTHIA decays.
+
+*Facts (collected 2026-11-25 by three readers, each checked by a second; scripts in the session
+scratchpad `p44/`).*
+
+Symmetry estimate per line: B(K\* line) = R × B(measured D(\*)D̄(\*)K mode with the same D charges, PDG
+2026, isospin-averaged, B⁺ = 1.076 × B⁰) × phase-space factor, R = B(DDK\*)/B(DDK) = 0.8 ± 0.4.
+
+| | DD | D\*D, DD\* | D\*D\* | family total B⁰ / B⁺ |
+|---|---|---|---|---|
+| decay file | 2.5 | 2.5 | 5 | 2.75 / 2.75 % |
+| phase-space factor (constant matrix element) | 0.44 | 0.36–0.37 | 0.26–0.27 | |
+| estimate with the factor, c | 0.12–0.18 | 0.21–0.66 | 0.37–0.45 | 0.91 ± 0.45 / 0.98 ± 0.49 % (c 0.33 / 0.36) |
+| estimate without the factor, c | 0.24–0.50 | 0.5–2.0 | 1.3–1.9 | 2.93 / 3.25 % (c 1.07 / 1.18) |
+
+- The absolute level is not known to better than a factor 3: it depends on whether R is a ratio of
+  branching fractions (phase space already included, like two-body V/P ratios J/ψK\*/J/ψK 1.4, DK\*/DK
+  1.5–2.2, D_s\*/D_s 0.8–2.4) or of amplitudes. LHCb's m(K⁺π⁻) plot in arXiv:2007.04280 suggests a K\*⁰
+  fraction of 20–32 % in D⁰D̄⁰K⁺π⁻ (read by eye), i.e. R ≈ 1.3 ± 0.7 for that mode. No other measurement
+  or limit exists in PDG 2026; the LHCb thesis (Bernstein, Syracuse 2022, INSPIRE 2649734) could not be
+  read (the hosts were refused by the proxy).
+- The composition pattern is robust in every variant: the measured D(\*)D̄(\*)K modes are about 1:3:5:10
+  (DD : D\*D : DD\* : D\*D\*), so the DD lines are relatively over-produced in the file (c of DD lines about
+  half of the family average, D\*D\* lines about 1.3 times).
+- 3.7's per-line values (669: 0.28, 4221: 0.40) correspond to no phase-space factor; its family total of
+  2.1 / 2.3 % was not reproduced by either reading (2.9 % without, 0.9 % with the factor). 3.7's
+  per-table maxima (4221 49 %, 11.5 %) are shares of the exclusive part of a table (as in
+  `review_report`); of the full table they are at most about 6 % in large tables (29.5 % in a tiny WC
+  hadB table).
+
+In our samples (comb + hadB, comb counted on both sides, first order):
+
+| | CR | SR | WC |
+|---|---|---|---|
+| the 24 lines (+ conjugates) | 11.3 % | 11.6 % | 6.5 % |
+| of which lines with a direct D± | 8.0 % | 8.4 % | 4.5 % |
+| lines with a D\*± only / neutral only | 3.1 / 0.2 % | 3.0 / 0.2 % | 1.9 / 0.2 % |
+
+Per unit branching fraction a direct-D± line gives about 3 times the yield of a D\*±-only line and 28
+times that of a neutral-only line. Largest lines: 669 (D⁻D⁺K\*⁰, 1.8 % of the CR), 670, 672, 671, 4222,
+4221 (about 1 % each).
+
+Effect on the transfers (N₂ class total held at its prior, N₁ refitted in the CR):
+
+| change | CR → SR | CR → WC |
+|---|---|---|
+| family × 0.8 (normalization only) | +0.02 % | +0.31 % |
+| per-line symmetry composition (variants) | −0.3 to −0.4 % | +1.1 to +1.5 % |
+| 30 % of the rate moved from DD to D\*D\* lines | −0.10 % | +0.41 % |
+| 30 % of the direct-D± lines' rate moved to the other lines of the family | −0.12 % | +0.72 % |
+| for comparison: all σ_c of 4.2 | 0.38 % | 0.82 % |
+
+- The family normalization is nearly degenerate with N₂ (4.2 % of the CR yield per % of B decays against
+  3.8 for the N₂ class on average): no separate normalization is needed.
+- The one composition axis that matters for a D⁺ sample is the fraction of the family's rate in lines
+  with a direct D± (DD vs D\*D\* in the D⁻D⁺K\*⁰ block; which meson is the D\* in the blocks with one
+  charged meson). Neutral pairs and the colour-suppressed lines do not matter (0.2 %).
+
+S042.609 closure (B⁰ → D⁰D̄⁰K⁺π⁻, LHCb definition: whole K⁺π⁻ spectrum, only the D\*⁻ region vetoed, no
+D\*⁰ feed-down): PDG 2026 (3.51 ± 0.47)·10⁻⁴ (= LHCb ratio 0.142 × S042.262). MC (generator truth +
+decay file, piece-2 c, N₂ = 0.93): **(10.35 ± 0.30)·10⁻⁴, 2.95 ± 0.40 times the measurement.** Composition:
+PYTHIA direct D⁰D̄⁰K⁺π⁻ 47 % (272 truth decays), line 674 D⁰D̄⁰K\*⁰ 30 %, ψ(3770)K\*⁰ and ψ(3770)K⁺π⁻
+(lines 600, 602; unmeasured, c = 1) 23 %. A common scale on line 674 and PYTHIA would have to be
+0.13–0.41 (depending on the ψ(3770) lines), against N₂ = 0.93. The final state is about 0.09 % of B⁰
+decays (about 1 % of the N₂ class) and contains no D⁺: it tests PYTHIA's neutral double-charm content,
+not the axis that matters for us.
+
+Other measured double-charm final states that only PYTHIA produces (MC with N₂ / PDG 2026):
+B⁰ → Λ_c⁺Λ̄_c⁻K⁰ (S042.356) 0.61 ± 0.15; B⁺ → Λ_c⁺Λ̄_c⁻K⁺ (S041.463) 0.44 ± 0.08; B⁺ → D_s⁺D_s⁻K⁺
+(S041.789, D_s class) 3.3 ± 1.2. With S042.609 (2.95) they pull in opposite directions: PYTHIA's
+b → cc̄s composition is off by factors 2–3 channel by channel, which no single N₂ can fix.
+
+Side finding: the B⁰ ψ(3770)K\*, ψ(3770)Kπ lines (593–607) have c = 1 (unmeasured), while the B⁺
+ψ(3770)K⁺ line has c = 0.53 (measured); different final states, so no isospin rule applies, but
+S042.609 suggests they are high too.
