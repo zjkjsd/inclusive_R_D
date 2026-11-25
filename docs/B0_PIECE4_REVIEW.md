@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-25 (4.3 decided; 4.4 opened).
+Last updated: 2026-11-25 (4.4 decided; 4.5 opened).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -20,7 +20,7 @@ in % of the decays of that B flavor.
 | 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | AGREED (2026-11-24), section 3.1 | (a1) every c is applied as a nominal event weight in all samples (CR, WC, SR); (b3) the σ_c are not free in the tuning: toys of all c (with the 4.2 correlations) are propagated through the linearized tuning into the SR prediction, and the resulting covariance enters the SR prior as a few eigen-NPs (to be shared with the SR physics templates at B9); a Fisher run with the leading ~20–50 BFs as constrained NPs is a diagnostic in step B3; (c1) no unitarity rescaling: N₁, N₂ are absolute rate scales, N₁ free; the fitted N₁ is compared with k = 1.11 (B⁰) / 1.14 (B⁺); (D) starting values = prior centres: N₂ = 0.93, r_s = 1.00, N₁ = 1, a = 0 |
 | 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | AGREED (2026-11-25), sections 2.3, 3.2 | option (b): each c is written as a sum of named sources and the toys draw the sources: construction correlations (one variable per physical BF for e/μ, conjugates, shared PDG entries, isospin copies; node remainders and LHCb externals recomputed from their drawn inputs) plus the documented common components (BaBar 2011 common ≈ 6 % per mode, LHCb component model, D_s0\* 20 %, φπ rescaling fractions, PDG fit matrices, D-species sub-decay normalizations, one f₀₀/f₊₋ term, B⁰/B⁺ semileptonic correlation with its value set in 4.6); r_s drawn together with the externals; sources also present in the SR fit shared with it at B9. Effect: transfer CR → SR about 0.38–0.40 %, CR → WC about 0.8–1.0 %; yield 1.3 → up to about 1.9 % |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | AGREED (2026-11-25), section 3.3 | option (a): one common ε for B⁰ and B⁺, Gaussian prior **ε = 0.2 ± 0.2** (start at 0.2); applies to PYTHIA hadronic decays with one charm hadron that is a D or D\* among the B daughters; w_same = 1 − ε (charm meson of the spectator's isospin), w_other = 1 + ε·R with R = N_same/N_other from generator truth (B⁰ 6.0, B⁺ 7.5), so the PYTHIA single-charm rate per flavor is kept; two separate ε (BaBar priors 0.40 ± 0.15, 0.13 ± 0.06, or 0.2 ± 0.2 each) as a validation cross-check |
-| 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN (2026-11-25), section 3.4 | – |
+| 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN | – |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN | – |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
@@ -436,3 +436,17 @@ b → cc̄s composition is off by factors 2–3 channel by channel, which no sin
 Side finding: the B⁰ ψ(3770)K\*, ψ(3770)Kπ lines (593–607) have c = 1 (unmeasured), while the B⁺
 ψ(3770)K⁺ line has c = 0.53 (measured); different final states, so no isospin rule applies, but
 S042.609 suggests they are high too.
+
+*Options (presented 2026-11-25).* Composition: (a) no parameter, left to the transfer term u; (b) one
+rate-conserving nuisance θ on the direct-D± share, prior −0.35 ± 0.35; (c) as (b) centred on the decay
+file, 0 ± 0.35; (d) per-line symmetry estimates as c, out of N₂. Closure: (i) S042.609 and the three
+PYTHIA-only channels as closure checks in the validation; (ii) S042.609 as a constraint on a
+PYTHIA-composition parameter.
+
+**Decision (2026-11-25): (b) and (i), AGREED.** Reasons: the direction of the composition (DD lines
+over-produced relative to D\*D\* in the file) follows from the measured D(\*)D̄(\*)K modes in every
+variant, while the absolute level is uncertain by a factor 3 and stays with N₂; θ acts on the only axis
+that moves our transfers (CR → WC up to about 1.5 %). The four closure channels contain no D⁺ and pull in
+opposite directions (PYTHIA's b → cc̄s composition off by factors 2–3), so they are reported, not fitted;
+the unmeasured B⁰ ψ(3770)K\* lines (593–607) keep c = 1 ± 1 with a note. Implementation: with the tuning
+code (B4); the closure table in piece 7.
