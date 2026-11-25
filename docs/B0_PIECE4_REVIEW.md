@@ -19,7 +19,7 @@ in % of the decays of that B flavor.
 |---|---|---|---|
 | 4.1 | How the corrections enter: event weights, prior widths, or both; the total B rate (unitarity); starting values of N₂, r_s (open from 3.2) | AGREED (2026-11-24), section 3.1 | (a1) every c is applied as a nominal event weight in all samples (CR, WC, SR); (b3) the σ_c are not free in the tuning: toys of all c (with the 4.2 correlations) are propagated through the linearized tuning into the SR prediction, and the resulting covariance enters the SR prior as a few eigen-NPs (to be shared with the SR physics templates at B9); a Fisher run with the leading ~20–50 BFs as constrained NPs is a diagnostic in step B3; (c1) no unitarity rescaling: N₁, N₂ are absolute rate scales, N₁ free; the fitted N₁ is compared with k = 1.11 (B⁰) / 1.14 (B⁺); (D) starting values = prior centres: N₂ = 0.93, r_s = 1.00, N₁ = 1, a = 0 |
 | 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | AGREED (2026-11-25), sections 2.3, 3.2 | option (b): each c is written as a sum of named sources and the toys draw the sources: construction correlations (one variable per physical BF for e/μ, conjugates, shared PDG entries, isospin copies; node remainders and LHCb externals recomputed from their drawn inputs) plus the documented common components (BaBar 2011 common ≈ 6 % per mode, LHCb component model, D_s0\* 20 %, φπ rescaling fractions, PDG fit matrices, D-species sub-decay normalizations, one f₀₀/f₊₋ term, B⁰/B⁺ semileptonic correlation with its value set in 4.6); r_s drawn together with the externals; sources also present in the SR fit shared with it at B9. Effect: transfer CR → SR about 0.38–0.40 %, CR → WC about 0.8–1.0 %; yield 1.3 → up to about 1.9 % |
-| 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | OPEN | – |
+| 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | OPEN (2026-11-25), section 3.3 | – |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | OPEN | – |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN | – |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN | – |
@@ -285,3 +285,49 @@ the PDG 2026 entries equal the BaBar numbers (not rescaled). The exact factor pe
 yield split over the D sub-modes, which is not published. **Proposal (not implemented):** no change of
 the nominal c; the shift is below the ≈ 6 % common BaBar component that the toys already carry
 (option b), and its size (about −0.4 % of the yield, transfers unchanged) is recorded here.
+
+### 3.3 Isospin parameter for PYTHIA single-charm decays (opened 2026-11-25)
+
+*Context.* PYTHIA makes about 40 % (B⁰) / 36 % (B⁺) of all B decays as hadronic decays with one charm
+hadron. Because the decay file switches off PYTHIA's orbitally excited mesons (3.5), none of these
+decays produce a D\*\*; the charm meson at the lower vertex then almost always keeps the isospin of the
+spectator quark (B⁰ → D⁻, D\*⁻; B⁺ → D̄⁰, D̄\*⁰). In nature part of this charm comes through D\*\* → D⁽\*⁾π,
+which swaps the isospin in 2/3 of the decays. The result (3.5): too many D⁻ from B⁰ and too few D̄⁰,
+against BaBar 2007 (and D± X too high against CLEO 1997). Our analysis reconstructs D⁺, so these
+decays are 30–40 % of the comb D side. Point 3.5 agreed on one constrained parameter for this; this
+point fixes its definition, rate conservation and prior.
+
+*Facts (generator truth `truth_{mixed,charged}.root`, 5.2·10⁵ B⁰ and 4.1·10⁵ B⁺ decays; piece-2 c on the
+exclusive lines; scripts `scratchpad/p43/`).*
+
+| | B⁰ | B⁺ |
+|---|---|---|
+| PYTHIA hadronic single-charm decays, % of B decays | 40.3 | 36.2 |
+| first-generation charm meson of the spectator's isospin ("same": D⁻/D\*⁻ for B⁰, D̄⁰/D̄\*⁰ for B⁺), % of them | 75.1 (D 40.9, D\* 34.2) | 77.9 (D 42.1, D\* 35.8) |
+| of the other isospin ("other"), % | 12.5 | 10.4 |
+| D_s / charm baryon / D\*\* / none at the lower vertex, % | 2.2 / 7.6 / **0** / 2.6 | 1.9 / 7.3 / **0** / 2.5 |
+| R = N_same / N_other | 6.0 | 7.5 |
+| MC lower-vertex D± X / D⁰ X (multiplicity, %) | 45.3 / 38.9 | 7.4 / 76.7 |
+| BaBar 2007 (hep-ex/0606026) | 36.9 ± 3.3 / 47.4 ± 2.8 | 9.9 ± 1.2 / 79 ± 4 |
+| ε that matches it (definition below) | 0.40 ± 0.16 (D±), 0.40 ± 0.13 (D⁰) | 0.13 ± 0.06 (D±), −0.11 ± 0.19 (D⁰) |
+
+Each 0.1 of ε moves 2.1 (B⁰) / 1.9 (B⁺) points of lower-vertex D± X. The two flavors disagree by about
+2σ (3.5: 0.38 ± 0.14 against 0.08 ± 0.06); BaBar's D⁰ + D̄⁰ total is 1.6σ above Belle 2023's (3.5), so
+part of the B⁰ value may be BaBar's. Expectation if the missing D\*\* are the cause: ε ≈ 2/3 × the D\*\*
+share of the lower-vertex charm (about 15–25 % by analogy with semileptonic decays), i.e. 0.1–0.17.
+
+In our samples (mode tables, comb counted on both sides as in 4.1): PYTHIA single-charm B⁰ "same"
+decays are 52 / 37 / 49 % of the CR / SR / WC yield, B⁰ "other" 1.5 / 1.1 / 0.5 %, B⁺ "same" 2.0 / 1.3 /
+0.9 %, B⁺ "other" (B⁺ → D⁻X) 3.3 / 2.4 / **7.5 %**. Effect of ε (first order):
+
+| ε (B⁰, B⁺) | CR | SR | WC | after N₁ refit in the CR: SR | WC |
+|---|---|---|---|---|---|
+| 0.2, 0.2 | −4.2 % | −2.7 % | +1.9 % | +0.29 % | +5.9 % |
+| 0.4, 0.1 | −15.1 % | −10.5 % | −12.7 % | +0.27 % | +1.8 % |
+| 0.4, 0 | −17.3 % | −12.2 % | −18.2 % | +0.18 % | −1.5 % |
+| 0, 0.1 | +2.2 % | +1.7 % | +5.5 % | +0.10 % | +3.3 % |
+
+- ε_B⁰ is almost degenerate with the free N₁ (B⁰ "same" is most of the PYTHIA single-charm yield in a
+  D⁺ sample): after N₁ absorbs it, the SR moves by at most 0.3 %.
+- ε_B⁺ acts through B⁺ → D⁻X, 7.5 % of WC: about +3 % of the WC yield per 0.1 after N₁. The WC sample
+  is what constrains this parameter.
