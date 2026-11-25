@@ -1359,9 +1359,12 @@ def test_n1_convention_33():
 
 
 def test_lhcb_ds_lines_34():
-    """Point 3.4 (2026-11-20): the D** D_s(*) and three-body D_s(*) D pi lines take LHCb-based external c."""
-    exp = {(521, 'anti-D_2*0 D_s+'): 0.148, (521, 'D_s+ D- pi+'): 0.222, (521, 'anti-D_10 D_s+'): 2.058,
-           (511, 'D_2*- D_s+'): 0.136, (511, 'D_s*+ D- pi0'): 0.183, (-521, 'D_2*0 D_s-'): 0.148}
+    """Point 3.4 (2026-11-20): the D** D_s(*) and three-body D_s(*) D pi lines take LHCb-based external c.
+
+    Three-body values corrected on 2026-11-25 (piece 4, 3.2 check 1: non-D2* part 0.778, not 0.72).
+    """
+    exp = {(521, 'anti-D_2*0 D_s+'): 0.148, (521, 'D_s+ D- pi+'): 0.241, (521, 'anti-D_10 D_s+'): 2.058,
+           (511, 'D_2*- D_s+'): 0.136, (511, 'D_s*+ D- pi0'): 0.202, (-521, 'D_2*0 D_s-'): 0.148}
     for (m, names), c in exp.items():
         r = row(m, names)
         assert r['how'] == 'external' and r['pdg_class'] == 'measured' and abs(r['c'] - c) < 0.01, names

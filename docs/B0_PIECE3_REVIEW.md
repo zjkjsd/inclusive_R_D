@@ -484,7 +484,7 @@ lines assume the D\*\* composition of D\*⁻D_s\*⁺π⁺ equals that of D\*⁻D
 amplitude analyses of B⁰ → D̄⁰D_s⁺π⁻ and B⁺ → D⁻D_s⁺π⁺ (arXiv:2212.02717, PRD 108 012017; 2212.02716)
 give fit fractions only (D₂\* 22 %, virtual D\* 15 %, Dπ S-wave 40–53 %); bridged to the D\*⁻D_s⁺π⁺
 measurement through D₂\* (with B(D₂\* → Dπ)/B(D\*π) = 1.50 of the decay file): B(B⁺ → D⁻D_s⁺π⁺) =
-(1.11 ± 0.24)·10⁻³ in total, (0.80 ± 0.19)·10⁻³ without D₂\*. The decay file has 3.6·10⁻³ on line 4189
+(1.11 ± 0.24)·10⁻³ in total, (0.80 ± 0.19)·10⁻³ without D₂\*. *(Corrected 2026-11-25 in piece 4, `docs/B0_PIECE4_REVIEW.md` 3.2: without D₂\* is 1.115 × 0.778 = 0.87·10⁻³; the c of the eight three-body lines rose by about 8 %.)* The decay file has 3.6·10⁻³ on line 4189
 alone (5.3·10⁻³ with D₂\*). c ≈ 0.20–0.22 ± 0.05 (4189, 4190, 629, 630) and 0.18–0.20 ± 0.10 for the D_s\*
 lines (D_s\*/D_s = 0.9 ± 0.4 assumed). Max shares: 4189 18.9 %, 4191 11.1 %, 631 6.7 %. The phase-space shape
 is also wrong (S-wave and virtual D\* dominate in data).

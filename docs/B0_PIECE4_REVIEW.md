@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-25 (4.2 decided; checks of two possible value errors in section 3.2).
+Last updated: 2026-11-25 (4.2 decided; check 1 of section 3.2 implemented; 4.3 opened).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -248,8 +248,31 @@ components as well gives 0.736; normalizing to the sum of fit fractions, 94.7 %,
 derivation script of 2026-11-20 is no longer available. **Proposed correction (not implemented):** all
 eight three-body externals (4189–4192, 629–632 and conjugates) are built from the 0.80·10⁻³ value
 (π⁰ lines × ½, D_s\* lines × 0.9, B⁰ ÷ 1.076), so they all scale by 0.778/0.72 = **1.081**: e.g. c(4189)
-0.222 ± 0.085 → 0.240 ± 0.092. Effect about +0.2 % on the comb + hadB yield (these lines are about
-2.8 % of it); the 3.2 prior is not affected beyond rounding (the lines are outside N₂).
+0.222 ± 0.085 → 0.240 ± 0.092. (Corrected 2026-11-25: the effect is about +0.05 % on the comb + hadB yield, not +0.2 %: the lines are
+about 2.8 % of it but carry c ≈ 0.2, so the change is 2.8 % × 0.2 × 0.08.) The 3.2 prior is not
+affected beyond rounding (the lines are outside N₂).
+
+**Implemented (2026-11-25, approved by the user).** `Samples/dec/pdg_exceptions.json`: the 8 external
+entries rebuilt from the B⁺ → D⁻D_s⁺π⁺ non-D₂\* rate 1.115·10⁻³ × 0.778 = 0.8675·10⁻³ (π⁰ lines × ½,
+D_s\* lines × 0.9, B⁰ ÷ 1.076); value and error scaled by the same factor (1.083–1.099; the old B⁰
+values were rounded), note added to each reason. `python3 scripts/tools/pdg_match.py` rerun; exactly
+these 16 rows of `b_mode_pdg_table.csv` changed (16 lines of `b_mode_pdg_review.csv`, 8 of
+`b_mode_isospin_check.csv`; nodes file unchanged):
+
+| Lines (conjugates) | Final state | c before | c after |
+|---|---|---|---|
+| 4189 (5732) | B⁺ → D_s⁺D⁻π⁺ | 0.222 ± 0.085 | 0.241 ± 0.092 |
+| 4190 (5733) | B⁺ → D_s⁺D̄⁰π⁰ | 0.222 ± 0.083 | 0.241 ± 0.090 |
+| 4191 (5734) | B⁺ → D_s\*⁺D⁻π⁺ | 0.195 ± 0.113 | 0.211 ± 0.123 |
+| 4192 (5735) | B⁺ → D_s\*⁺D̄⁰π⁰ | 0.200 ± 0.117 | 0.217 ± 0.126 |
+| 630 (2440) | B⁰ → D_s⁺D̄⁰π⁻ | 0.200 ± 0.076 | 0.218 ± 0.082 |
+| 629 (2439) | B⁰ → D_s⁺D⁻π⁰ | 0.206 ± 0.079 | 0.224 ± 0.087 |
+| 632 (2442) | B⁰ → D_s\*⁺D̄⁰π⁻ | 0.181 ± 0.107 | 0.196 ± 0.116 |
+| 631 (2441) | B⁰ → D_s\*⁺D⁻π⁰ | 0.183 ± 0.109 | 0.202 ± 0.120 |
+
+Yield of comb + hadB (first order): CR +0.049 %, SR +0.047 %, WC +0.056 %. Class shares of the samples
+are unchanged (the class of these lines did not change). Tests: `test_lhcb_ds_lines_34` expected values
+updated (D_s⁺D⁻π⁺ 0.222 → 0.241, D_s\*⁺D⁻π⁰ 0.183 → 0.202); 37 and 15 tests pass.
 
 *Check 2 (2026-11-25): BaBar 2011 normalized to the PDG 2008 D branching fractions.* The paper
 (arXiv:1011.3929, ref. [17] = PDG 2008) reconstructs D⁰ → K⁻π⁺, K⁻π⁺π⁰, K⁻π⁺π⁻π⁺ and D⁺ → K⁻π⁺π⁺, and

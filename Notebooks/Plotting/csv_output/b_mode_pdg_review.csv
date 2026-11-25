@@ -3,7 +3,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 521,411 -423,anti-D*0 D+,measured,exact,S041.459,0.00063,0.00063,1,0.27309,0,,,,,,,,0.265588,run2_mu_wc_combCR:hadB:D:521,25,top95
 521,321 413 -413,D*+ D*- K+,measured,node,S041.339,0.00132,0.00132,0.881999,0.150213,-0.785556,0.10625,0.118001,,,,,,0.243656,run2_mu_wc_combCR:hadB:D:521,34,top95
 521,211 211 211 -211 -413,D*- pi+ pi+ pi+ pi-,measured,exact,S041.141,0.00256,0.00256,1,0.164109,0,,,,,,,,0.213349,run1_mu_wc_combCR:hadB:D:521,19,top95
-521,211 -411 431,D_s+ D- pi+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0036,0.0008,0.222222,0.0850278,-9.14734,,,,c_extreme;exception_applied;external,,,,0.189005,run1_mu_wc_combCR:hadB:D:521,35,top95;pull;flag
+521,211 -411 431,D_s+ D- pi+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0036,0.0008675,0.240972,0.0921944,-8.2329,,,,c_extreme;exception_applied;external,,,,0.189005,run1_mu_wc_combCR:hadB:D:521,35,top95;pull;flag
 511,-411 431,D- D_s+,measured,exact,S042.50,0.00723697,0.00813658,1.12431,0.0790951,1.57163,,,,,,,,0.151926,run1_mu_wc_combCR:hadB:D:511,35,top95
 511,-411 20213,a_1+ D-,measured,node,S042.88,0.0107143,0.00598327,1.06131,0.110981,0.552409,1,0.200239,,exception_applied,,,,0.149674,run2_mu_wc_combCR:hadB:D:511,28,top95;flag
 521,311 413 -423,anti-D*0 D*+ K0,measured,node,S041.331,0.00917,0.00917,0.944936,0.13476,-0.408612,0.0487552,0.0427481,,exception_applied,,,,0.147256,run2_mu_SR:comb:D:521,34,top95;flag
@@ -11,7 +11,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,-411 433,D_s*+ D-,measured,exact,S042.103,0.0074,0.00737857,0.997103,0.214465,-0.013506,,,,,,,,0.122652,run2_mu_SR:hadB:D:511,36,top95
 521,313 411 -423,anti-D*0 D+ K*0,none,,,0.0025,,1,1,,,,,,,,,0.120088,run1_mu_SR:comb:D:521,34,top95
 521,111 211 -411 433,D_s*+ D- pi+ pi0,none,,,0.0033,,1,1,,,,,,,,,0.113377,run1_e_wc_combCR:hadB:D:521,34,top95
-521,211 -411 433,D_s*+ D- pi+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0037,0.00072,0.194595,0.113459,-7.09862,,,,c_extreme;exception_applied;external,,,,0.111104,run1_mu_combCR:hadB:D:521,35,top95;pull;flag
+521,211 -411 433,D_s*+ D- pi+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0037,0.0007807,0.211,0.123027,-6.41322,,,,c_extreme;exception_applied;external,,,,0.111104,run1_mu_combCR:hadB:D:521,35,top95;pull;flag
 521,111 211 -411 431,D_s+ D- pi+ pi0,none,,,0.0033,,1,1,,,,,,,,,0.106554,run2_e_wc_combCR:hadB:D:521,34,top95
 521,311 411 -423,anti-D*0 D+ K0,measured,exact,S041.329,0.00206,0.00206,1,0.235024,0,,,,,,,,0.104532,run1_mu_wc_combCR:hadB:D:521,34,top95
 511,-411 10431,D_s0*+ D-,measured,product,S042.253,0.00737857,0.00105234,0.142622,0.0358135,-23.9401,,,0.142622,c_extreme;exception_applied,,,,0.100632,run2_mu_SR:hadB:D:511,35,top95;pull;flag
@@ -29,7 +29,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,321 -413 421,D*- D0 K+,measured,exact,S042.262,0.00247,0.00247,1,0.0833654,0,,,,,,,,0.0755206,run2_mu_wc_combCR:hadB:D:511,26,top95
 521,-13 14 -10423,anti-D_10 mu+ nu_mu,measured,product,S041.257;S041.783,0.00757,0.0028398,0.908627,0.0502809,-1.81725,0.873297,1.03563,0.908627,node_not_closed,,S041.419,,0.0698921,run1_mu_wc_combCR:comb:ell:521,0,flag
 511,-413 10431,D*- D_s0*+,measured,product,S042.97,0.0176872,0.0015,0.0848072,0.0380787,-24.0343,,,0.0848072,c_extreme;exception_applied,,,,0.0680202,run1_mu_SR:hadB:D:511,35,top95;pull;flag
-511,111 -411 433,D_s*+ D- pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.00033,0.183333,0.109278,-7.47331,,,,c_extreme;exception_applied;external,,,,0.0669209,run2_mu_wc_combCR:hadB:D:511,35,top95;pull;flag
+511,111 -411 433,D_s*+ D- pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.0003628,0.201556,0.120167,-6.64448,,,,c_extreme;exception_applied;external,,,,0.0669209,run2_mu_wc_combCR:hadB:D:511,35,top95;pull;flag
 521,-425 433,anti-D_2*0 D_s*+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.004,0.00082,0.205,0.0775,-10.2581,,,,c_extreme;exception_applied;external,,,,0.0660522,run2_mu_SR:hadB:D:521,33,top95;pull;flag
 511,-13 14 -10413,D_1- mu+ nu_mu,measured,product,S042.420;S042.623,0.00704,0.00285215,0.959125,0.0741457,-0.551285,0.874512,1.10398,0.959125,node_not_closed,,S042.312,,0.0654349,run2_mu_wc_combCR:comb:ell:511,0,flag
 521,311 411 -421,anti-D0 D+ K0,measured,exact,S041.328,0.00155,0.00155,1,0.138071,0,,,,,,,,0.0626598,run1_mu_SR:comb:D:521,34,top95
@@ -55,7 +55,7 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,323 -411 421,D- D0 K*+,none,,,0.0025,,1,1,,,,,,,,,0.0314372,run1_mu_wc_combCR:hadB:D:511,35,top95
 511,-415 433,D_2*- D_s*+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.004,0.00076,0.19,0.0725,-11.1724,,,,c_extreme;exception_applied;external,,,,0.0314203,run1_mu_wc_combCR:hadB:D:511,35,top95;pull;flag
 511,-13 14 -415,D_2*- mu+ nu_mu,measured,product,S042.419;S042.422,0.00347,0.00141122,0.842426,0.0933304,-1.68835,0.874512,1.10398,0.842426,node_not_closed,,S042.311;S042.312,,0.0306433,run1_mu_wc_combCR:comb:ell:511,0,flag
-511,111 -411 431,D_s+ D- pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.00037,0.205556,0.0793889,-10.007,,,,c_extreme;exception_applied;external,,,,0.0304941,run1_e_wc_combCR:hadB:D:511,34,top95;pull;flag
+511,111 -411 431,D_s+ D- pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.0004031,0.223944,0.0865,-8.97174,,,,c_extreme;exception_applied;external,,,,0.0304941,run1_e_wc_combCR:hadB:D:511,34,top95;pull;flag
 521,-11 12 -20423,anti-D'_10 e+ nu_e,measured,product,S041.502,0.00431,0.00170879,0.594677,0.198671,-2.04017,0.873297,1.03563,0.594677,node_not_closed,,S041.419,,0.0304815,run1_e_wc_combCR:comb:ell:521,0,flag
 511,-13 14 -20413,D'_1- mu+ nu_mu,measured,product,S042.421,0.00401,0.00249157,0.931963,0.207277,-0.328242,0.874512,1.10398,0.931963,node_not_closed,,S042.312,,0.0303176,run1_mu_wc_combCR:comb:ell:511,0,flag
 521,213 -10423,anti-D_10 rho+,limit,half_limit,S041.215,0.00372,0.0014,0.188172,0.188172,-4.31429,1,0,,above_limit;c_extreme;exception_applied,,,,0.0300138,run2_e_wc_combCR:hadB:D:521,20,top95;pull;flag
@@ -152,8 +152,8 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,211 -411,D- pi+,measured,exact,S042.30,0.00252113,0.00250609,0.994035,0.0308658,-0.193271,,,,,,,,0.00437687,run2_e_wc_combCR:comb:D:511,18,top95
 511,-313 321 -411,D- K+ anti-K*0,measured,node,S042.218,0.00058,0.000767299,0.345201,0.240964,-2.71741,0.479506,0,,,,,,0.0042775,run2_mu_wc_combCR:comb:D:511,11,top95
 521,-421 10433,anti-D0 D'_s1+,measured,product,S041.566,0.00045,0.000397,0.882222,0.226198,-0.520685,0.0557621,0.0603675,0.882222,exception_applied,,,,0.0037559,run1_mu_SR:comb:D:521,4,top95;flag
-511,-211 -421 431,D_s+ anti-D0 pi-,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0037,0.00074,0.2,0.0755676,-10.5866,,,,c_extreme;exception_applied;external,,,,0.00371729,run2_e_SR:comb:ell:511,12,top95;pull;flag
-511,-211 -421 433,D_s*+ anti-D0 pi-,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0037,0.00067,0.181081,0.106757,-7.67089,,,,c_extreme;exception_applied;external,,,,0.00361226,run2_e_combCR:comb:ell:511,12,top95;pull;flag
+511,-211 -421 431,D_s+ anti-D0 pi-,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0037,0.0008062,0.217892,0.0823243,-9.50033,,,,c_extreme;exception_applied;external,,,,0.00371729,run2_e_SR:comb:ell:511,12,top95;pull;flag
+511,-211 -421 433,D_s*+ anti-D0 pi-,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0037,0.0007256,0.196108,0.115622,-6.95278,,,,c_extreme;exception_applied;external,,,,0.00361226,run2_e_combCR:comb:ell:511,12,top95;pull;flag
 521,-421 20433,D_s1+ anti-D0,measured,exact,S041.322,0.00309132,0.00309132,0.999998,0.29814,-5.2758e-06,,,0.750397,,,,,0.00352052,run2_e_combCR:comb:ell:521,12,top95
 521,323 421 -423,anti-D*0 D0 K*+,none,,,0.0025,,1,1,,,,,,,,,0.00334939,run2_e_combCR:comb:ell:521,10,top95
 511,433 -20413,D'_1- D_s*+,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0012,0.00038,0.316667,0.166667,-4.1,,,,c_extreme;exception_applied;external,,,,0.00328194,run2_mu_combCR:hadB:D:511,11,top95;pull;flag
@@ -175,11 +175,11 @@ mother_pdg,key,names,pdg_class,how,pdgids,bf_mc,bf_pdg,c,sigma_c,pull,f_res_mc,f
 511,111 -211 -421 431,D_s+ anti-D0 pi- pi0,none,,,0.0022,,1,1,,,,,,,,,0.00260096,run1_e_combCR:comb:ell:511,11,top95
 511,211 -411 2212 -2212,D- p+ anti-p- pi+,measured,exact,S042.362,0.000332,0.000332,1,0.0923968,0,,,,,,,,0.00246201,run1_mu_wc_combCR:comb:D:511,2,top95
 511,111 -211 -421 433,D_s*+ anti-D0 pi- pi0,none,,,0.0022,,1,1,,,,,,,,,0.00242699,run1_e_combCR:comb:ell:511,12,top95
-521,111 -421 433,D_s*+ anti-D0 pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.00036,0.2,0.116611,-6.86041,,,,c_extreme;exception_applied;external,,,,0.00233837,run2_e_combCR:comb:ell:521,11,top95;pull;flag
+521,111 -421 433,D_s*+ anti-D0 pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.0003904,0.216889,0.126444,-6.19332,,,,c_extreme;exception_applied;external,,,,0.00233837,run2_e_combCR:comb:ell:521,11,top95;pull;flag
 511,211 -413,D*- pi+,measured,exact,S042.2,0.00274268,0.00266145,0.970382,0.0271651,-1.09031,,,,,,,,0.00218548,run2_e_combCR:comb:D:511,8,top95
 511,323 -411,K*+ D-,measured,exact,S042.209,0.00044578,0.000445777,0.999994,0.160765,-3.90412e-05,0.377297,0.605899,,,,,,0.0021818,run2_e_combCR:comb:D:511,9,top95
 521,211 -423,anti-D*0 pi+,measured,exact,S041.15,0.00490086,0.00517225,1.05538,0.0306822,1.8048,,,,,,,,0.00201342,run1_e_combCR:comb:ell:521,10,top95
-521,111 -421 431,D_s+ anti-D0 pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.0004,0.222222,0.0833333,-9.33333,,,,c_extreme;exception_applied;external,,,,0.00201196,run1_e_combCR:comb:ell:521,12,top95;pull;flag
+521,111 -421 431,D_s+ anti-D0 pi0,measured,external,external:LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017),0.0018,0.0004337,0.240944,0.0903333,-8.40283,,,,c_extreme;exception_applied;external,,,,0.00201196,run1_e_combCR:comb:ell:521,12,top95;pull;flag
 521,211 -421,anti-D0 pi+,measured,exact,S041.1,0.00467517,0.00461349,0.986808,0.0212244,-0.621564,,,,,,,,0.00187681,run2_mu_SR:comb:ell:521,9,top95
 511,-13 14 211 -211 -411,D- pi+ pi- mu+ nu_mu,measured,node,S042.556,0.00021,0.00145,1.37757,1.58823,0.237732,0.852131,0.703448,,remainder_unstable,,,,0.00177711,run2_mu_SR:comb:D:511,0,flag
 511,-313 321 -413,D*- K+ anti-K*0,measured,node,S042.219,0.000640292,0.00130868,1.03181,0.35652,0.08923,0.500697,0.495171,,,,,,0.00173988,run1_e_wc_combCR:hadB:D:511,4,top95

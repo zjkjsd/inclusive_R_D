@@ -762,10 +762,10 @@
    211
   ],
   "action": "external",
-  "value": 0.0008,
-  "error": 0.0003061,
+  "value": 0.0008675,
+  "error": 0.0003319,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. B(B+ -> D- Ds+ pi+) = (1.11 +- 0.24)e-3 from the D2* fit fraction of 2212.02717 bridged to 2405.00098, non-D2* part (the phase-space line) 0.72; extra 30 % for the bridge Error 0.00019 combined with 30 % of the value: 0.000306."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. B(B+ -> D- Ds+ pi+) = (1.11 +- 0.24)e-3 from the D2* fit fraction of 2212.02717 bridged to 2405.00098, non-D2* part (the phase-space line) 0.72; extra 30 % for the bridge Error 0.00019 combined with 30 % of the value: 0.000306. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.0008 / 0.0003061 by 1.0844."
  },
  {
   "mother": 521,
@@ -775,10 +775,10 @@
    111
   ],
   "action": "external",
-  "value": 0.0004,
-  "error": 0.00015,
+  "value": 0.0004337,
+  "error": 0.0001626,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4189, times 1/2 (isospin of the lower-vertex D pi); extra 30 % for the bridge Error 9e-05 combined with 30 % of the value: 0.00015."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4189, times 1/2 (isospin of the lower-vertex D pi); extra 30 % for the bridge Error 9e-05 combined with 30 % of the value: 0.00015. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.0004 / 0.00015 by 1.0842."
  },
  {
   "mother": 521,
@@ -788,10 +788,10 @@
    211
   ],
   "action": "external",
-  "value": 0.00072,
-  "error": 0.0004198,
+  "value": 0.0007807,
+  "error": 0.0004552,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4189, times D_s*/D_s = 0.9 +- 0.4 (assumed); extra 30 % for the bridge Error 0.00036 combined with 30 % of the value: 0.00042."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4189, times D_s*/D_s = 0.9 +- 0.4 (assumed); extra 30 % for the bridge Error 0.00036 combined with 30 % of the value: 0.00042. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00072 / 0.0004198 by 1.0843."
  },
  {
   "mother": 521,
@@ -801,10 +801,10 @@
    111
   ],
   "action": "external",
-  "value": 0.00036,
-  "error": 0.0002099,
+  "value": 0.0003904,
+  "error": 0.0002276,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4191, times 1/2; extra 30 % for the bridge Error 0.00018 combined with 30 % of the value: 0.00021."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. as 4191, times 1/2; extra 30 % for the bridge Error 0.00018 combined with 30 % of the value: 0.00021. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00036 / 0.0002099 by 1.0844."
  },
  {
   "mother": 511,
@@ -886,10 +886,10 @@
    -211
   ],
   "action": "external",
-  "value": 0.00074,
-  "error": 0.0002796,
+  "value": 0.0008062,
+  "error": 0.0003046,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4189 (B0 -> anti-D0 Ds+ pi- analysed by LHCb in 2212.02717); extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.00028."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4189 (B0 -> anti-D0 Ds+ pi- analysed by LHCb in 2212.02717); extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.00028. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00074 / 0.0002796 by 1.0895."
  },
  {
   "mother": 511,
@@ -899,10 +899,10 @@
    111
   ],
   "action": "external",
-  "value": 0.00037,
-  "error": 0.0001429,
+  "value": 0.0004031,
+  "error": 0.0001557,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 630 times 1/2; extra 30 % for the bridge Error 9e-05 combined with 30 % of the value: 0.000143."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 630 times 1/2; extra 30 % for the bridge Error 9e-05 combined with 30 % of the value: 0.000143. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00037 / 0.0001429 by 1.0895."
  },
  {
   "mother": 511,
@@ -912,10 +912,10 @@
    -211
   ],
   "action": "external",
-  "value": 0.00067,
-  "error": 0.000395,
+  "value": 0.0007256,
+  "error": 0.0004278,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4191; extra 30 % for the bridge Error 0.00034 combined with 30 % of the value: 0.000395."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. isospin of B+ line 4191; extra 30 % for the bridge Error 0.00034 combined with 30 % of the value: 0.000395. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00067 / 0.000395 by 1.0830."
  },
  {
   "mother": 511,
@@ -925,9 +925,9 @@
    111
   ],
   "action": "external",
-  "value": 0.00033,
-  "error": 0.0001967,
+  "value": 0.0003628,
+  "error": 0.0002163,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
-  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 632 times 1/2; extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.000197."
+  "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 632 times 1/2; extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.000197. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00033 / 0.0001967 by 1.0994."
  }
 ]
