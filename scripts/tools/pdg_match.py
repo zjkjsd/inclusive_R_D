@@ -103,6 +103,12 @@ table refuses to build, so that the exception is revisited (decision P5):
     {"mother": 511, "key": [...], "action": "external", "value": 2.78e-4, "error": 0.33e-4,
      "source": "BELLE2-PUB-PH-2025-024 v12", "reason": "..."}
 `force_class` is applied before the totals are split: a forced line takes no c from a total.
+`sub_decay` corrects the decay table of a resonance as the decay file gives it, for every product
+prediction (BF_line x BF_sub) and every fold: each line of the resonance's block with n daughters is
+multiplied by weights[n] and the block is normalised again (the same correction is applied as an
+event weight in the model, docs/B0_PIECE4_REVIEW.md 3.5):
+    {"action": "sub_decay", "particles": ["D_10", "anti-D_10", "D_1+", "D_1-"],
+     "weights": {"2": 1.073, "3": 0.891}, "reason": "..."}
 `extra_uncertainty` adds a relative uncertainty in quadrature to the sigma_c of a line with a c:
     {"mother": 511, "key": [...], "action": "extra_uncertainty", "relative": 0.2, "reason": "..."}
     (optional "flag": a flag added to the line, e.g. "measurement_conflict")
@@ -320,7 +326,7 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
     known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin', 'direct_line',
-             'extra_uncertainty', 'half_limit', 'veto', 'nonres_direct', 'external')
+             'extra_uncertainty', 'half_limit', 'veto', 'nonres_direct', 'external', 'sub_decay')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -345,6 +351,11 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
                 raise ValueError(f'{path}: external needs mother, key and source: {e}')
             if not float(e.get('value', 0)) > 0 or not float(e.get('error', -1)) >= 0:
                 raise ValueError(f'{path}: external needs value > 0 and error >= 0: {e}')
+        elif e['action'] == 'sub_decay':
+            w = e.get('weights')
+            if not e.get('particles') or not isinstance(w, dict) or not w \
+                    or not all(str(k).isdigit() and float(v) > 0 for k, v in w.items()):
+                raise ValueError(f'{path}: sub_decay needs particles and weights {{n_daughters: weight > 0}}: {e}')
         elif e['action'] == 'extra_uncertainty':
             if 'mother' not in e or 'key' not in e or not float(e.get('relative', 0)) > 0:
                 raise ValueError(f'{path}: extra_uncertainty needs mother, key and relative > 0: {e}')
@@ -599,6 +610,18 @@ class DecayGraph:
                 self.broad.add(n)
         self.broad_codes = frozenset(self.code[n] for n in self.broad)
         self._memo = {}
+
+    def reweight(self, name, weights):
+        """Multiply each line of the block of `name` with n daughters by weights[n] (missing n: 1)
+        and normalise the block again (exception `sub_decay`). Returns the new block."""
+        if name not in self.blocks:
+            raise ValueError(f'sub_decay: {name} has no decay table in the decay file')
+        w = {int(k): float(v) for k, v in weights.items()}
+        new = [(p * (w.get(len(n), 1.0) if n is not None else 1.0), n) for p, n in self.blocks[name]]
+        tot = sum(p for p, _ in new)
+        self.blocks[name] = [(p / tot, n) for p, n in new]
+        self._memo = {}
+        return self.blocks[name]
 
     def default_fold(self, content=()):
         """Codes that may be folded for a node whose text names the codes `content`."""
@@ -1425,6 +1448,10 @@ def build_mode_pdg_table(mode_table=None, pdg_table=None, exceptions=None, dec_a
     if exceptions is None:
         exceptions = load_exceptions()
     graph = DecayGraph(dec_all, pdl)
+    for e in exceptions:
+        if e['action'] == 'sub_decay':
+            for name in e['particles']:
+                graph.reweight(name, e['weights'])
     nodes = make_nodes(pdg_table, pdl, exceptions)
 
     dec_b = mode_table.dec

@@ -832,8 +832,10 @@ def test_real_semileptonic():
         assert r['how'] == 'product' and r['prod_pdgids'] == ids and close(r['c'], r['c_prod']), names
         assert 0.8 < r['c'] < 1.0 and r['n_prod'] == len(ids.split(';'))
     r = row(511, 'D_1- e+ nu_e')
-    c1, s1 = 0.002852150285313824 / (0.00704 * 0.3994), 0.0002532034593495046 / (0.00704 * 0.3994)
-    c2, s2 = 0.00102 / (0.00704 * 0.1719), 0.000158113883008419 / (0.00704 * 0.1719)
+    # sub-decay BFs of the corrected D_1(2420) table (4.5, sub_decay: D* pi x 1.0731, D pi pi x 0.8907)
+    b1, b2 = 0.3994 * 1.0731, 0.1719 * 0.8907
+    c1, s1 = 0.002852150285313824 / (0.00704 * b1), 0.0002532034593495046 / (0.00704 * b1)
+    c2, s2 = 0.00102 / (0.00704 * b2), 0.000158113883008419 / (0.00704 * b2)
     w1, w2 = 1 / s1 ** 2, 1 / s2 ** 2
     assert close(r['c'], (w1 * c1 + w2 * c2) / (w1 + w2), 1e-4)
     # the broad states in B+ are well above the PDG products
@@ -965,6 +967,10 @@ def a1_share():
 
 def d1_share():
     g = pm.DecayGraph(DEC_ALL, PDL)
+    for e in pm.load_exceptions():               # the corrected D_1(2420) table (4.5, sub_decay)
+        if e['action'] == 'sub_decay':
+            for name in e['particles']:
+                g.reweight(name, e['weights'])
     return g.expand(('D_1-', 'pi+'), g.default_fold()).get(pm.collapse_key(code('D- pi+ pi+ pi-')), 0.0)
 
 
@@ -1374,6 +1380,23 @@ def test_lhcb_ds_lines_34():
     assert r['pdg_class'] == 'none' and r['c'] == 1.0
     n = sum(1 for e in pm.load_exceptions() if e['action'] == 'external' and 'LHCb' in e.get('source', ''))
     assert n == 20
+
+
+def test_d1_sub_decay_45():
+    """Point 4.5 (2026-11-26): the D_1(2420) table is corrected (D* pi x 1.073, D pi pi x 0.891);
+    the two products of each D_1 l nu line then agree, and the D_1 pi line follows its D pi pi product."""
+    g = pm.DecayGraph(DEC_ALL, PDL)
+    before = dict((n, p) for p, n in g.blocks['D_10'])
+    e = [x for x in pm.load_exceptions() if x['action'] == 'sub_decay']
+    assert len(e) == 1 and set(e[0]['particles']) == {'D_10', 'anti-D_10', 'D_1+', 'D_1-'}
+    after = dict((n, p) for p, n in g.reweight('D_10', e[0]['weights']))
+    dstar = sum(p for n, p in after.items() if len(n) == 2)
+    assert close(dstar, 0.643, 2e-3) and close(after[('D*+', 'pi-')], 0.4286, 2e-3)
+    assert close(sum(after.values()), 1.0, 1e-9) and close(sum(before.values()), 1.0, 1e-9)
+    for m, names, c in ((511, 'D_1- e+ nu_e', 0.946), (521, 'anti-D_10 e+ nu_e', 0.881), (511, 'D_1- pi+', 0.697)):
+        r = row(m, names)
+        assert r['how'] == 'product' and abs(r['c'] - c) < 0.002, names
+    assert row(511, 'D_1- e+ nu_e')['chi2_prod'] < 0.1   # the two products agree after the correction
 
 
 def main():

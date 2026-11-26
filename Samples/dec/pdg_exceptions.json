@@ -929,5 +929,20 @@
   "error": 0.0002163,
   "source": "LHCb arXiv:2405.00098 (JHEP 08 (2024) 165) and arXiv:2212.02717 (PRD 108 012017)",
   "reason": "3.4 (docs/B0_PIECE3_REVIEW.md, section 3.7, decided 2026-11-20): line moved out of the N2 class and fixed by LHCb. 632 times 1/2; extra 30 % for the bridge Error 0.00017 combined with 30 % of the value: 0.000197. Correction 2026-11-25 (piece 4, docs/B0_PIECE4_REVIEW.md section 3.2, check 1): the non-D2* part is 1 - FF(D2*) = 0.778, not 0.72 (total 1.115e-3 = 2.48e-4 / 0.222); value and error scaled from 0.00033 / 0.0001967 by 1.0994."
+ },
+ {
+  "action": "sub_decay",
+  "particles": [
+   "D_10",
+   "anti-D_10",
+   "D_1+",
+   "D_1-"
+  ],
+  "weights": {
+   "2": 1.0731,
+   "3": 0.8907
+  },
+  "source": "Belle arXiv:2211.09833 (PRD 107 092003); LHCb arXiv:1109.6831 (PRD 84 092001)",
+  "reason": "4.5 (docs/B0_PIECE4_REVIEW.md section 3.5, decided 2026-11-25): the decay file's D_1(2420) table (D* pi 0.5991, D pi pi 0.4009, lines 9621-9638) has D pi pi / D* pi 0.83 +- 0.11 times the measured ratio (3.7 of docs/B0_PIECE3_REVIEW.md: Belle 2023 same-paper ratios B+ 0.42 +- 0.07, B0 0.33 +- 0.08; LHCb 2011 0.29 +- 0.09). With the file's isospin pattern kept: B(D_1 -> D* pi) = 0.6429 (D*+ pi- 0.429), B(D_1 -> D pi pi) = 0.3571; two-body lines x 1.0731, three-body lines x 0.8907 (uncertainty +-0.046 / +-0.076, fully anti-correlated; a nuisance of the model, carried by the toys, not added to sigma_c). The same correction is applied as an event weight on D_genMotherPDG / D_genGMPDG in the model; the products through D_1 (S042.420, S042.623, S041.257, S041.783, S042.331, ...) are compared with the corrected table."
  }
 ]

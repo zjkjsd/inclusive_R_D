@@ -24,7 +24,7 @@ Replace this file when the work moves on; the discussion records (`docs/B0_PIECE
 >
 > Code and data: `scripts/tools/decay_table.py` (decay-file parser, classification),
 > `scripts/tools/pdg_match.py` (PDG comparison; `python3 scripts/tools/pdg_match.py`),
-> `scripts/tools/pdg_review_cases.py`, `Samples/dec/pdg_exceptions.json` (99 hand corrections, each with
+> `scripts/tools/pdg_review_cases.py`, `Samples/dec/pdg_exceptions.json` (100 hand corrections, each with
 > its reason), `Samples/dec/pdg_bf_B_2026.json` (cached PDG values), outputs in
 > `Notebooks/Plotting/csv_output/` (`b_mode_pdg_table.csv` and the other `b_mode_*.csv`, the sample
 > tables `bbbar_modes_*.csv`, `truth_b_decays_summary.csv`). Generator truth of MC16rd B decays:

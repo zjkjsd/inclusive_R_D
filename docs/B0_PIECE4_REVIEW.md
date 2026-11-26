@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-25 (4.4 decided; 4.5 opened).
+Last updated: 2026-11-26 (4.5 decided and its line c implemented; follow-up on other excited states).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -21,7 +21,7 @@ in % of the decays of that B flavor.
 | 4.2 | Correlations between corrections (e/μ, isospin-derived c, BaBar 2011 D D̄ K, the LHCb D_s externals, shared sub-decay BFs, node remainders, D\* BFs) | AGREED (2026-11-25), sections 2.3, 3.2 | option (b): each c is written as a sum of named sources and the toys draw the sources: construction correlations (one variable per physical BF for e/μ, conjugates, shared PDG entries, isospin copies; node remainders and LHCb externals recomputed from their drawn inputs) plus the documented common components (BaBar 2011 common ≈ 6 % per mode, LHCb component model, D_s0\* 20 %, φπ rescaling fractions, PDG fit matrices, D-species sub-decay normalizations, one f₀₀/f₊₋ term, B⁰/B⁺ semileptonic correlation with its value set in 4.6); r_s drawn together with the externals; sources also present in the SR fit shared with it at B9. Effect: transfer CR → SR about 0.38–0.40 %, CR → WC about 0.8–1.0 %; yield 1.3 → up to about 1.9 % |
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | AGREED (2026-11-25), section 3.3 | option (a): one common ε for B⁰ and B⁺, Gaussian prior **ε = 0.2 ± 0.2** (start at 0.2); applies to PYTHIA hadronic decays with one charm hadron that is a D or D\* among the B daughters; w_same = 1 − ε (charm meson of the spectator's isospin), w_other = 1 + ε·R with R = N_same/N_other from generator truth (B⁰ 6.0, B⁺ 7.5), so the PYTHIA single-charm rate per flavor is kept; two separate ε (BaBar priors 0.40 ± 0.15, 0.13 ± 0.06, or 0.2 ± 0.2 each) as a validation cross-check |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
-| 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | OPEN (2026-11-25), section 3.5 | – |
+| 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN | – |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
 | 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN | – |
@@ -495,3 +495,61 @@ inconsistency.
   BBbar model.
 - Truth needed: `D_genMotherPDG` = D₁(2420) (±10413, ±10423) for a D directly from D₁; `D_genMotherPDG`
   = D\*± or D\*⁰ and `D_genGMPDG` = D₁(2420) for a D through D\*. Both are in the ntuples (B.6).
+
+*Options (presented 2026-11-25).* (a) event weight on every D₁(2420) decay (one nuisance) and the
+product c of the D₁ lines recomputed with the corrected table; (b) only the line c, no event weight;
+(c) no change.
+
+**Decision (2026-11-25): option (a), AGREED; the line c implemented on 2026-11-26.** Reasons: the only
+option consistent with the measured ratio, with the PDG products (the two products of each D₁ℓν line
+then agree) and with the 3.4 externals (which already divide by 0.429); one weight on two existing
+truth variables; the same weight belongs to the SR D\*\*ℓν template (B9).
+
+*Implemented (2026-11-26).* New exception action `sub_decay` in `scripts/tools/pdg_match.py` (validated
+in `load_exceptions`; `DecayGraph.reweight` multiplies the lines of a resonance's block with n daughters
+by weights[n] and normalises again; applied before any product prediction or fold), documented in the
+module docstring. One entry in `Samples/dec/pdg_exceptions.json` (99 → 100 entries): particles D_10,
+anti-D_10, D_1+, D_1−, weights {2: 1.0731, 3: 0.8907} (B(D₁ → D\*⁺π⁻) = 0.4286). `pdg_match.py` rerun.
+Changed rows of `b_mode_pdg_table.csv` (B⁰/B⁺ rows; anti-B rows follow):
+
+| Lines | Final state | c before | c after | note |
+|---|---|---|---|---|
+| 368, 392 | B⁰ → D₁⁻ℓν | 0.959 ± 0.074 (χ²_prod 1.17) | 0.946 ± 0.073 (χ²_prod 0.00) | the two products agree |
+| 4000, 4027 | B⁺ → D̄₁⁰ℓν | 0.909 ± 0.050 (χ²_prod 1.23) | 0.881 ± 0.049 (χ²_prod 0.06) | |
+| 736 | B⁰ → D₁⁻π⁺ | 0.621 ± 0.140 | 0.697 ± 0.157 | only the Dππ product |
+| 379, 403 | B⁰ → D⁻π⁺π⁻ℓν (direct line, remainder of S042.556) | 1.38 ± 1.59 | 2.05 ± 1.48 | less of the total goes through D₁ → Dππ |
+| 4011, 4038 | B⁺ → D̄⁰π⁺π⁻ℓν (remainder of S041.649) | 2.38 ± 1.35 | 3.08 ± 1.24 (now `c_extreme`) | same; gap lines, revisited in 4.7 |
+| 693 | B⁰ → D̄\*⁰π⁻π⁺ (clamped remainder) | 0 ± 0.735 | 0 ± 0.743 | |
+
+Node closures that moved (pull before → after): S042.312 B⁰ → D̄\*⁰π⁻ℓν +5.2 → +5.7σ and S041.419 B⁺ →
+D\*⁻π⁺ℓν +3.9 → +4.3σ (more D₁ → D\*π; these totals were already flagged above PDG, M2, and are 4.6/4.7
+matters); S042.239 +1.2 → +1.4σ; S041.2 −0.85 → −0.66σ; the others below 0.05σ. `b_mode_pdg_review.csv` 46
+lines, `b_mode_pdg_nodes.csv` 28 lines, `b_mode_isospin_check.csv` 8 lines changed. Tests: new
+`test_d1_sub_decay_45`; `test_real_semileptonic` and the D₁π share in `test_real_review_fixes` updated to
+the corrected table (the B⁰ → D⁻a₁⁺ remainder is unchanged, because c(736) × B(D₁ → Dππ) is); 38 and 15
+tests pass. The weight's uncertainty is not added to σ_c: it is one source in the toys (4.2), shared by
+the event weight and the c of these lines.
+
+*Follow-up questions (user, 2026-11-26).*
+1. *Other excited charm states.* Decay-file tables against PDG 2026 (pdg 2026.0 database):
+   - D₂\*(2460) (lines 9675–9694): Dπ/D\*π = 1.498 in the file against 1.52 ± 0.14 (M254R3): consistent.
+   - D₁′(2430), D₀\*(2300): one channel each (D\*π, Dπ), fixed by spin and parity; PDG only "seen"; no
+     table issue. Their problem is the lineshape (broad Breit–Wigner tails, R(X) and D(\*)ηℓν notes),
+     which is kinematic and belongs to 4.7/4.8.
+   - D_s1(2536) (D'_s1, line 9714): file D\*⁺K⁰ : D\*⁰K⁺ = 1 : 1; PDG 31 ± 7 % : 36 ± 6 % (ratio 1.18 ± 0.16),
+     plus D⁺π⁻K⁺ 1.0 ± 0.25 % and D_sππ "seen" not in the file. The D⁺ per D_s1(2536) decay changes
+     from 0.162 to about 0.16: negligible.
+   - D_s1(2460) (D_s1, line 9724): file D_s\*π⁰ 0.80, D_sγ 0.20; PDG 48 ± 11 %, 18 ± 4 %, D_sπ⁺π⁻ 4.3 %,
+     D_s0\*γ 3.7 %: within the errors, and no D± is produced. D_s0\*(2317) → D_sπ⁰ 100 % (the
+     sub-decay uncertainty is the 20 % of exception D2). D_s2\*(2573): DK 0.9, D\*K 0.1, PDG only limits.
+   - D\*(2010), D\*(2007): equal to PDG (the D(\*)ηℓν note, Table 4.1).
+   So D₁(2420) is the only excited state with a measured inconsistency in its decay table; it is
+   also the one whose two channels give the D⁺ in different ways (directly or through D\*).
+2. *Consequence for the PYTHIA isospin parameter (4.3).* No change of the definition. (i) No double
+   counting: PYTHIA decays contain no D\*\* in the truth, so the D₁ event weight never acts on them, and ε
+   never acts on the exclusive D\*\* lines. (ii) The physics expectation of ε changes a little: the 2/3
+   isospin swap holds for two-body D\*\* → D⁽\*⁾π decays; D₁ → Dππ swaps only in the D⁺π⁻π⁰ / D⁰π⁺π⁰
+   channels (29 % of Dππ in the file), so D₁ swaps in about 0.643 × 2/3 + 0.357 × 0.29 = 0.53 of its
+   decays. The expectation for ε moves from 0.10–0.17 to about 0.08–0.15, well inside the prior
+   0.2 ± 0.2. (iii) A D\*\* also adds a pion; for D₁ → Dππ two. ε does not add them (stated in 3.3);
+   the multiplicity slope a and the transfer term carry it.
