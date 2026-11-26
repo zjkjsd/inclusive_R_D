@@ -790,7 +790,9 @@ def test_real_coverage():
     assert (TABLE.loc[hl, 'pdg_class'] == 'limit').all() and (TABLE.loc[vt, 'pdg_class'] == 'none').all()
     assert (TABLE.loc[vt, 'c'] == 0).all() and vt.sum() == 6                  # B+ 4349, B0 806, 1002 (P7) and their conjugates
     assert (TABLE.loc[~meas, 'c'] == 1.0).all() and TABLE['c'].notna().all() and (TABLE['c'] >= 0).all()
-    zero = (TABLE['c'] == 0) & (TABLE['how'] != 'veto')            # only clamped remainders
+    # c = 0: clamped remainders, and lines masked by an override (4.7: non-resonant D(*) pi l nu; the B+
+    # D pi pi pi0 lines whose measured pi+ pi- line already fills the xwiki total)
+    zero = (TABLE['c'] == 0) & (TABLE['how'] != 'veto') & (TABLE['how'] != 'override')
     assert zero.any() and (pm.has_flag(TABLE, 'remainder_clamped') == zero).all()
     assert TABLE.loc[meas, 'sigma_c'].notna().all() and TABLE.loc[~meas, 'pull'].isna().all()
     incl = TABLE['pdg_class'] == 'inclusive'
@@ -812,7 +814,8 @@ def test_real_coverage():
                                                 'measured_ratio', 'measured_product'))
         assert lo < pdgish < hi, sh
         # none: about 8 % since 3.4 (2026-11-20) moved 2.5 % to measured (LHCb external c)
-        assert 0.02 < sh['measured_product'] < 0.04 and 0.07 < sh['none'] < 0.11 and sh['limit'] < 0.01
+        # none: about 7 % since 4.7 moved the gap lines (about 1.5 %) to override
+        assert 0.02 < sh['measured_product'] < 0.04 and 0.05 < sh['none'] < 0.11 and sh['limit'] < 0.01
         assert close(sum(sh.values()), MODES.exclusive_bf[m], 1e-9)
     # the conjugate blocks give the same shares
     for m in (511, 521):
@@ -835,8 +838,8 @@ def test_real_semileptonic():
     assert row(511, 'Xu- e+ nu_e')['pdg_class'] == 'inclusive'
     # D** l nu: HFLAV B- product / fraction of the full width, B0 = B- / 1.076
     for m, names, bf in ((521, 'anti-D_10 e+ nu_e', 0.270e-2 / 0.4286), (521, 'anti-D_2*0 mu+ nu_mu', 0.085e-2 / 0.2669),
-                         (521, "anti-D'_10 e+ nu_e", 0.185e-2 / 0.6667), (521, 'anti-D_0*0 e+ nu_e', 0.084e-2 / 0.6667),
-                         (511, 'D_1- e+ nu_e', 0.270e-2 / 0.4286 / 1.076), (511, 'D_0*- mu+ nu_mu', 0.084e-2 / 0.6667 / 1.076)):
+                         (521, "anti-D'_10 e+ nu_e", 0.185e-2 / 0.6667), (521, 'anti-D_0*0 e+ nu_e', 0.08e-2),
+                         (511, 'D_1- e+ nu_e', 0.270e-2 / 0.4286 / 1.076), (511, 'D_0*- mu+ nu_mu', 0.08e-2)):   # D0*: xwiki (4.7)
         r = row(m, names)
         assert r['how'] == 'override' and close(r['c'] * r['bf_mc'], bf, 2e-3), names
     # the products are still computed (with the 4.5 D_1 table) and kept for comparison
@@ -851,12 +854,25 @@ def test_real_semileptonic():
         assert 'bkg_model_only' in flags(row(m, names)), names
     assert 'bkg_model_only' not in flags(row(511, 'D*- tau+ nu_tau'))
     assert close(row(511, 'D- tau+ nu_tau')['sigma_c'], 0.15 * row(511, 'D- tau+ nu_tau')['c'])
-    # the non-resonant D(*) pi l nu lines are not measured (exception, M2): c = 1 +- 1
-    for m, names in ((511, 'anti-D0 pi- e+ nu_e'), (511, 'anti-D*0 pi- mu+ nu_mu'),
-                     (521, 'D*- pi+ e+ nu_e'), (521, 'D- pi+ mu+ nu_mu')):
+    # 4.7 (xwiki recommendation): non-resonant D(*) pi l nu masked (c = 0), the gap filled with D(*) eta l nu
+    for m, names in ((511, 'anti-D0 pi- e+ nu_e'), (511, 'D- pi0 mu+ nu_mu'), (521, 'D*- pi+ e+ nu_e'),
+                     (521, 'anti-D0 pi0 mu+ nu_mu')):
         d = row(m, names)
-        assert d['pdg_class'] == 'none' and d['how'] == '' and d['c'] == 1.0 and close(d['sigma_c'], 1.0), names
-        assert {'unmeasured', 'exception_applied'} <= flags(d) and 'remainder_unstable' not in flags(d)
+        assert d['how'] == 'override' and d['c'] == 0.0 and 'override' in flags(d), names
+    for m, names, tot in ((511, 'D- eta e+ nu_e', 0.88e-2), (511, 'D*- eta mu+ nu_mu', 0.88e-2),
+                          (521, 'anti-D0 eta e+ nu_e', 0.92e-2), (521, 'anti-D*0 eta mu+ nu_mu', 0.92e-2)):
+        d = row(m, names)
+        assert d['how'] == 'override' and close(d['c'] * d['bf_mc'], tot, 1e-6) and close(d['sigma_c'], d['c']), names
+    # D(*) pi pi: the PDG-measured pi+ pi- lines keep their c; the pi0 lines fill the xwiki total
+    meas = row(511, 'D*- pi+ pi- e+ nu_e')
+    assert meas['how'] == 'exact'
+    pi0 = [row(511, n) for n in ('anti-D*0 pi- pi0 e+ nu_e', 'D*- pi0 pi0 e+ nu_e')]
+    assert close(meas['c'] * meas['bf_mc'] + sum(r['c'] * r['bf_mc'] for r in pi0), 0.20e-2, 1e-3)
+    # the semileptonic b -> c sum closes at the xwiki inclusive values (10.27 / 11.05 %)
+    for m, incl in ((511, 0.1027), (521, 0.1105)):
+        x = TABLE[(TABLE['mother_pdg'] == m) & TABLE['is_sl'] & ~TABLE['tau'] & (TABLE['n_charm'] >= 1)
+                  & TABLE['names'].str.contains(r'e\+ nu_e')]
+        assert abs((x['bf_mc'] * x['c']).sum() - incl) < 0.0002, m
     # the D** lines keep their own c whatever the D(*) pi l nu totals say (override since 4.6)
     assert row(511, 'D_1- e+ nu_e')['how'] == 'override' and row(511, 'D_s0*+ D-')['how'] == 'product'
 

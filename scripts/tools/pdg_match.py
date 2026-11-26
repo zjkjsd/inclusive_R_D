@@ -103,7 +103,7 @@ table refuses to build, so that the exception is revisited (decision P5):
     {"mother": 511, "key": [...], "action": "external", "value": 2.78e-4, "error": 0.33e-4,
      "source": "BELLE2-PUB-PH-2025-024 v12", "reason": "..."}
 `force_class` is applied before the totals are split: a forced line takes no c from a total.
-`override` replaces the c of a line that has a PDG entry by an external target value (class
+`override` replaces the c of a line by an external target value (value 0 masks the line; class
 measured, how = 'override', flags `override`, `exception_applied`; the PDG result stays in the
 columns `c_prod` / `pdgids` for comparison; decision 4.6 of docs/B0_PIECE4_REVIEW.md: HFLAV isospin
 averages for B -> D(*) l nu and B -> D** l nu):
@@ -367,8 +367,8 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
         elif e['action'] == 'override':
             if 'mother' not in e or 'key' not in e or not e.get('source'):
                 raise ValueError(f'{path}: override needs mother, key and source: {e}')
-            if not float(e.get('value', 0)) > 0 or not float(e.get('error', -1)) >= 0:
-                raise ValueError(f'{path}: override needs value > 0 and error >= 0: {e}')
+            if not float(e.get('value', -1)) >= 0 or not float(e.get('error', -1)) >= 0:
+                raise ValueError(f'{path}: override needs value >= 0 and error >= 0: {e}')
         elif e['action'] == 'tau_ratio':
             if any(x not in e for x in ('mother', 'key', 'from_key', 'ratio', 'relative', 'source')):
                 raise ValueError(f'{path}: tau_ratio needs mother, key, from_key, ratio, relative and source: {e}')

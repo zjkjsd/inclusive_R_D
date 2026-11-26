@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-26 (4.6 decided and implemented; 4.7 open, xwiki recommendation received).
+Last updated: 2026-11-26 (4.7 decided, rates implemented; 4.8 next).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -23,7 +23,7 @@ in % of the decays of that B flavor.
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | AGREED (2026-11-26); (b)–(d) DONE (2026-11-26), section 3.6 | (a2) two semileptonic parameters: **r_SL** for D, D\*, narrow D\*\* ℓν (B⁰ and B⁺ common, prior 1.00 ± 0.05; Fisher in B3 decides prior or free) and **r_broad+gap** for broad D\*\* + gap ℓν (prior in 4.7); τ lines follow their light-lepton partner × R. (b1) D(\*)τν = **SM** R (0.296, 0.254) × the light-lepton c, 15 % prior; **B → Dτν correction for the background model only, never in the SR signal template or the signal fit** (flag `bkg_model_only`; at B9 decide whether its comb part follows the fitted R(D⁺)); (b4) D\*\*τν = R × D\*\*ℓν, R = LHCb-scaled theory for D₁ (0.144), D₂\* (0.101) ± 30 %, theory for D₀\* (0.08), D₁′ (0.05) ± 50 %; τ gap → 4.7. (c2) D\*\*ℓν = HFLAV 2023 isospin averages. (d2) D(\*)ℓν: B⁰ HFLAV isospin-combined (4.90, 2.11 %), B⁺ = 1.076 × B⁰ ± 2 % |
-| 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN (2026-11-26), section 3.7 (sub-points 4.7a–d) | – |
+| 4.7 | Semileptonic gap modes (Belle II recommendation) | AGREED (2026-11-26); (a) DONE (2026-11-26), section 3.7 | recommendation = Belle II xwiki HFLAV 2023 table (2026-11-17). (a) gap rates: Dη = D\*η 0.88 % (B⁰) / 0.92 % (B⁺) per light lepton (100 %), D(\*)ππ to the xwiki totals (0.07 / 0.20 %, B⁺ 0.07 / 0.22 %) keeping the PDG-measured π⁺π⁻ lines, non-resonant D(\*)πℓν masked (c = 0), D_s(\*)Kℓν at PDG c, D₀\*ℓν aligned to 0.08 % (± 0.10 % kept); (b) r_broad+gap prior 1.0 ± 0.86 lognormal; (c) rate-conserving nuisances D/D\* ± 50 %, non-resonant D(\*)π 0 ↔ measured remainder, η/ππ ± 50 %; no τ gap; (d) rates only, gap-model shape nuisance from a proxy reweighting; ask SLME for unskimmed MC16rd mdst of the dedicated samples; truth four-vectors at the next reprocessing; non-resonant D(\*)π issue reported to SLME by the user |
 | 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN | – |
 
 Order agreed on 2026-11-22: 4.1 first (every later point is written in its terms), then 4.2, the
@@ -830,3 +830,44 @@ decay files.*
   in principle for comb; MC16rd versions exist only FEI-skimmed (4.7 facts above).
 - Measured Dπℓν totals cannot be fed by the gap modes: D(\*)η final states contain the η decay products and do
   not appear in an exclusive B → D̄⁰π⁻ℓν measurement (missing mass ≈ 0, no extra particles).
+
+*Revised options after the new inputs (presented 2026-11-26).* (a) rates from the xwiki table (non-resonant
+D(\*)π = 0, D(\*)η 0.88 / 0.92 %, D(\*)ππ to the totals keeping the PDG-measured π⁺π⁻ lines), D₀\*ℓν aligned to
+0.08 %; (b) r_broad+gap prior 1.0 ± 0.86 lognormal; (c) composition nuisances D/D\*, non-resonant D(\*)π, η/ππ;
+no τ gap (the user: a minor effect, absorbed by the other parameters; the simplest treatment first);
+(d) rates only plus a shape nuisance, with the follow-ups.
+
+**Decision (2026-11-26): the revised proposal, AGREED.** Reasons: it follows the official Belle II
+recommendation; the one place where it conflicts with measurements (non-resonant D(\*)πℓν, see the new-inputs
+paragraph) is covered by a nuisance and raised with SLME by the user (a separate note was written for the
+working group, kept outside the repository); the r_broad+gap prior follows the 100 % the xwiki text assigns
+to the gap modes and costs nothing if the CR and WC constrain the parameter (to be checked by the Fisher
+run of B3); the τ gap is small and broad.
+
+*Implemented (2026-11-26).* `scripts/tools/pdg_match.py`: `override` accepts value 0 (masking a line).
+`Samples/dec/pdg_exceptions.json` 134 → 166 entries: +40 `override` (non-resonant D(\*)π 16 lines at 0,
+D(\*)η 8 lines, D(\*)ππ π⁰ lines 16), the 8 M2 `force_class` entries of the non-resonant lines removed, the two
+D₀\*ℓν overrides changed to 0.08 ± 0.10 %. Each reason names the xwiki table. Changed rows (e lines shown; μ
+lines and anti-B rows the same):
+
+| Lines | Final state | c before | c after |
+|---|---|---|---|
+| 374–377, 4006–4009 | non-resonant D(\*)πℓν | 1 (± 1 or none) | 0 (masked) |
+| 387, 388 | B⁰ → D⁻ηℓν, D\*⁻ηℓν | 1 | 4.055 ± 4.055 |
+| 4022, 4023 | B⁺ → D̄⁰ηℓν, D̄\*⁰ηℓν | 1 | 4.577 ± 4.577 |
+| 380, 381 | B⁰ → D̄⁰π⁻π⁰ℓν, D⁻π⁰π⁰ℓν | 1 | 0.523 ± 0.598 |
+| 384, 385 | B⁰ → D̄\*⁰π⁻π⁰ℓν, D\*⁻π⁰π⁰ℓν | 1 | 1.064 ± 0.532 |
+| 4012, 4013 | B⁺ → D⁻π⁺π⁰ℓν, D̄⁰π⁰π⁰ℓν | 1 | 0 ± 3.0 (the measured π⁺π⁻ line already fills 0.07 %) |
+| 4016, 4017 | B⁺ → D\*⁻π⁺π⁰ℓν, D̄\*⁰π⁰π⁰ℓν | 1 | 1.000 ± 0.455 |
+| 369, 4001 | D₀\*ℓν | 0.324 / 0.324 | 0.221 / 0.206 (± 0.276 / 0.257) |
+| 421, 4059 | D₀\*τν (ratio follows) | 0.072 / 0.078 | 0.049 / 0.049 |
+
+Semileptonic b → c sums per light lepton: B⁰ 10.26 %, B⁺ 11.04 % (xwiki 10.27, 11.05). Node closures: B⁰ →
+D̄⁰π⁻ℓν (S042.311) −3.7 → −9.4σ and B⁺ → D⁻π⁺ℓν (S041.418) −3.5 → −9.9σ (PDG errors only; the known tension of
+the recommendation), B⁰ → D̄\*⁰π⁻ℓν +1.8 → −1.5σ, B⁺ → D\*⁻π⁺ℓν +3.5 → −0.1σ. Comb + hadB yield, first order:
+CR +4.6 % (D(\*)η +6.0, non-resonant D(\*)π −1.2, D₀\* −0.2), SR +3.3 %, WC +7.5 %; transfers CR → SR −1.3 %,
+CR → WC +2.9 %. Tests: `test_real_semileptonic` (masked lines, D(\*)η, D(\*)ππ split, inclusive closure) and
+`test_real_coverage` (c = 0 from overrides, class shares) updated; 38 and 15 tests pass.
+
+Note for the toys (4.1, 4.2): the gap lines' rate uncertainty is carried by r_broad+gap and the composition
+nuisances; their σ_c is documented in the table but not drawn again in the toys.

@@ -36,3 +36,10 @@ Last updated: 2026-11-12.
 
 Background: `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md`, sections B.12 and "Notes: variables that may
 be needed later".
+
+## Added 2026-11-26 (piece 4, point 4.7)
+
+- True four-vectors (or at least p\*, M_X, q²) of the daughters of the ancestor B of the D candidate and of
+  the lepton candidate (comb included), and the daughter list of a D\*\* among them: needed to reweight the
+  phase-space gap modes of the generic MC to the D\*\*-mediated model (and for an MCAmbulance-type lineshape
+  correction of the broad D\*\*). `B0_mcMomTransfer2` is only the candidate's own B and is 0 for comb.

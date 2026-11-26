@@ -34,102 +34,6 @@
   "reason": "PDG text: 'B+ --> psi(2S) K_1(1270)+ , K_1(1270)+ --> K+ pi+ pi-' (3.30e-5) is listed next to '[ same ](P-wave)' S041.859 (3.26e-5) and '[ same ](D-wave)' S041.860 (2.96e-5), whose sum exceeds it: one component of the psi(2S) K+ pi+ pi- amplitude fit, not the total rate."
  },
  {
-  "mother": 511,
-  "key": [
-   -423,
-   -211,
-   -11,
-   12
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'anti-D*0 pi- e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.312 'B0 --> Dbar^*()0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 511,
-  "key": [
-   -423,
-   -211,
-   -13,
-   14
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'anti-D*0 pi- mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.312 'B0 --> Dbar^*()0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 511,
-  "key": [
-   -421,
-   -211,
-   -11,
-   12
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'anti-D0 pi- e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.311 'B0 --> Dbar0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 511,
-  "key": [
-   -421,
-   -211,
-   -13,
-   14
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'anti-D0 pi- mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S042.311 'B0 --> Dbar0 pi- lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 521,
-  "key": [
-   -413,
-   211,
-   -11,
-   12
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'D*- pi+ e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.419 'B+ --> D^*()- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 521,
-  "key": [
-   -413,
-   211,
-   -13,
-   14
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'D*- pi+ mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.419 'B+ --> D^*()- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 521,
-  "key": [
-   -411,
-   211,
-   -11,
-   12
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'D- pi+ e+ nu_e' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.418 'B+ --> D- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
-  "mother": 521,
-  "key": [
-   -411,
-   211,
-   -13,
-   14
-  ],
-  "action": "force_class",
-  "class": "none",
-  "reason": "M2 (2026-11-17). Decay-file line 'D- pi+ mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.418 'B+ --> D- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
- },
- {
   "pdgid": "S042.93",
   "action": "exclude_node",
   "reason": "D1 (2026-11-17). PDG text: 'B0 --> D- a_1(1260)+' = (0.60 +- 0.33) %, an old measurement with 54 % error. The decay-file line D- a_1+ (line 697, 1.071 %) carries the comment 'Interpreting D3pi BF as fully (D- a1(->3pi)) decay': its BF is the D- pi+ pi+ pi- total divided by B(a_1+ --> pi+ pi+ pi-). The total S042.88 (0.598 +- 0.061 %) is the measurement the line was built from and is five times more precise, so the line is compared with it (direct_line entry) and this entry is not used."
@@ -1181,10 +1085,10 @@
    -10421
   ],
   "action": "override",
-  "value": 0.0012599,
-  "error": 0.0010394,
+  "value": 0.0008,
+  "error": 0.001,
   "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
-  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)) = 0.1260 +- 0.1039 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)) = 0.1260 +- 0.1039 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Changed 2026-11-26 (4.7 a): central value aligned with the xwiki HFLAV 2023 table (0.08 %, Belle 2023 alone); our wider error (+-0.10 %, HFLAV chi2 scale 3.3) kept because of the D pi l nu conflict."
  },
  {
   "mother": 521,
@@ -1194,10 +1098,10 @@
    -10421
   ],
   "action": "override",
-  "value": 0.0012599,
-  "error": 0.0010394,
+  "value": 0.0008,
+  "error": 0.001,
   "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
-  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)) = 0.1260 +- 0.1039 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)) = 0.1260 +- 0.1039 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Changed 2026-11-26 (4.7 a): central value aligned with the xwiki HFLAV 2023 table (0.08 %, Belle 2023 alone); our wider error (+-0.10 %, HFLAV chi2 scale 3.3) kept because of the D pi l nu conflict."
  },
  {
   "mother": 511,
@@ -1207,10 +1111,10 @@
    -10411
   ],
   "action": "override",
-  "value": 0.0011709,
-  "error": 0.0009663,
+  "value": 0.0008,
+  "error": 0.001,
   "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
-  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)), B0 = B-/1.076 with 2 % for isospin breaking = 0.1171 +- 0.0966 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Replaces the M2 isospin exceptions of B0 -> D_0*- l nu."
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)), B0 = B-/1.076 with 2 % for isospin breaking = 0.1171 +- 0.0966 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Replaces the M2 isospin exceptions of B0 -> D_0*- l nu. Changed 2026-11-26 (4.7 a): central value aligned with the xwiki HFLAV 2023 table (0.08 %, Belle 2023 alone); our wider error (+-0.10 %, HFLAV chi2 scale 3.3) kept because of the D pi l nu conflict."
  },
  {
   "mother": 511,
@@ -1220,10 +1124,10 @@
    -10411
   ],
   "action": "override",
-  "value": 0.0011709,
-  "error": 0.0009663,
+  "value": 0.0008,
+  "error": 0.001,
   "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
-  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)), B0 = B-/1.076 with 2 % for isospin breaking = 0.1171 +- 0.0966 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Replaces the M2 isospin exceptions of B0 -> D_0*- l nu."
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)), B0 = B-/1.076 with 2 % for isospin breaking = 0.1171 +- 0.0966 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Replaces the M2 isospin exceptions of B0 -> D_0*- l nu. Changed 2026-11-26 (4.7 a): central value aligned with the xwiki HFLAV 2023 table (0.08 %, Belle 2023 alone); our wider error (+-0.10 %, HFLAV chi2 scale 3.3) kept because of the D pi l nu conflict."
  },
  {
   "mother": 511,
@@ -1442,5 +1346,581 @@
   "relative": 0.5,
   "source": "BLR 2018 (arXiv:1711.03110 eq. 38) R(D1')",
   "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 tau nu = R x B(B -> D'_1 l nu) after its own c (4.6 c/d), R = 0.05, 50 % prior. Broad D**: no measurement; theory with 50 %. "
+ },
+ {
+  "mother": 511,
+  "key": [
+   -423,
+   -211,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D*0 pi- l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -423,
+   -211,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D*0 pi- l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D*- pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D*- pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -421,
+   -211,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D0 pi- l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -421,
+   -211,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D0 pi- l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D- pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D- pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -413,
+   211,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D*- pi+ l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -413,
+   211,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D*- pi+ l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D*0 pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D*0 pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -411,
+   211,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D- pi+ l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -411,
+   211,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant D- pi+ l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D0 pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.0,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): non-resonant anti-D0 pi0 l nu masked (c = 0), as the xwiki recommends; its rate goes to the D(*) eta l nu gap modes. The level 0 <-> measured remainder is a model nuisance (4.7 c), not a sigma_c. Replaces the M2 force_class entry (c = 1 +- 1). Known tension: the measured B -> D pi l nu totals (S042.311, S041.418) then sit about 0.19 % above the MC (see 3.7)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   221,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0088,
+  "error": 0.0088,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> D- eta l nu = 0.88 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   221,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0088,
+  "error": 0.0088,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> D- eta l nu = 0.88 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   221,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0088,
+  "error": 0.0088,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> D*- eta l nu = 0.88 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   221,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0088,
+  "error": 0.0088,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> D*- eta l nu = 0.88 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   221,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0092,
+  "error": 0.0092,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> anti-D0 eta l nu = 0.92 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   221,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0092,
+  "error": 0.0092,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> anti-D0 eta l nu = 0.92 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   221,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0092,
+  "error": 0.0092,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> anti-D*0 eta l nu = 0.92 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   221,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0092,
+  "error": 0.0092,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): B -> anti-D*0 eta l nu = 0.92 % per light lepton (xwiki HFLAV 2023 table; 100 % uncertainty as the page text assigns to the gap modes). Rate only: our lines stay phase space, the xwiki and dedicated samples use D_0*/D'_1 -> D(*) eta (shape nuisance, 4.7 d). The rate uncertainty is carried by r_broad+gap, not drawn again from sigma_c in the toys."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -421,
+   -211,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 7.32e-05,
+  "error": 8.37e-05,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.08 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0554 %); the two pi0 lines share the rest (0.0146 %, 0.0073 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -421,
+   -211,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 7.32e-05,
+  "error": 8.37e-05,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.08 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0554 %); the two pi0 lines share the rest (0.0146 %, 0.0073 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   111,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 7.32e-05,
+  "error": 8.37e-05,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.08 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0554 %); the two pi0 lines share the rest (0.0146 %, 0.0073 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -411,
+   111,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 7.32e-05,
+  "error": 8.37e-05,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.08 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0554 %); the two pi0 lines share the rest (0.0146 %, 0.0073 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -423,
+   -211,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.000745,
+  "error": 0.0003725,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.20 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0510 %); the two pi0 lines share the rest (0.1490 %, 0.0745 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -423,
+   -211,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.000745,
+  "error": 0.0003725,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.20 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0510 %); the two pi0 lines share the rest (0.1490 %, 0.0745 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   111,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.000745,
+  "error": 0.0003725,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.20 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0510 %); the two pi0 lines share the rest (0.1490 %, 0.0745 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -413,
+   111,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.000745,
+  "error": 0.0003725,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.20 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0510 %); the two pi0 lines share the rest (0.1490 %, 0.0745 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -411,
+   211,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.00045,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.09 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0765 %); the two pi0 lines share the rest (0.0000 %, 0.0000 % each, decay-file 1:1 split); the measured line already exceeds the total, so the pi0 lines are 0 with half the total error."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -411,
+   211,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.00045,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.09 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0765 %); the two pi0 lines share the rest (0.0000 %, 0.0000 % each, decay-file 1:1 split); the measured line already exceeds the total, so the pi0 lines are 0 with half the total error."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   111,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.00045,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.09 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0765 %); the two pi0 lines share the rest (0.0000 %, 0.0000 % each, decay-file 1:1 split); the measured line already exceeds the total, so the pi0 lines are 0 with half the total error."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -421,
+   111,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.0,
+  "error": 0.00045,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D pi pi l nu total 0.07 +- 0.09 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0765 %); the two pi0 lines share the rest (0.0000 %, 0.0000 % each, decay-file 1:1 split); the measured line already exceeds the total, so the pi0 lines are 0 with half the total error."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -413,
+   211,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.00075,
+  "error": 0.0003409,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.22 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0700 %); the two pi0 lines share the rest (0.1500 %, 0.0750 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -413,
+   211,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.00075,
+  "error": 0.0003409,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.22 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0700 %); the two pi0 lines share the rest (0.1500 %, 0.0750 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   111,
+   111,
+   -11,
+   12
+  ],
+  "action": "override",
+  "value": 0.00075,
+  "error": 0.0003409,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.22 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0700 %); the two pi0 lines share the rest (0.1500 %, 0.0750 % each, decay-file 1:1 split)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -423,
+   111,
+   111,
+   -13,
+   14
+  ],
+  "action": "override",
+  "value": 0.00075,
+  "error": 0.0003409,
+  "source": "Belle II xwiki 'Correction of BF(B to Xc l nu) in generic MC', HFLAV 2023 table (M. Prim), version 2026-11-17",
+  "reason": "4.7 (a) (docs/B0_PIECE4_REVIEW.md section 3.7, decided 2026-11-26): D* pi pi l nu total 0.22 +- 0.10 % (xwiki). The PDG-measured pi+ pi- line keeps its own c (0.0700 %); the two pi0 lines share the rest (0.1500 %, 0.0750 % each, decay-file 1:1 split)."
  }
 ]
