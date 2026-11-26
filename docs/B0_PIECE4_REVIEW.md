@@ -839,8 +839,8 @@ no τ gap (the user: a minor effect, absorbed by the other parameters; the simpl
 
 **Decision (2026-11-26): the revised proposal, AGREED.** Reasons: it follows the official Belle II
 recommendation; the one place where it conflicts with measurements (non-resonant D(\*)πℓν, see the new-inputs
-paragraph) is covered by a nuisance and raised with SLME by the user (a separate note was written for the
-working group, kept outside the repository); the r_broad+gap prior follows the 100 % the xwiki text assigns
+paragraph) is covered by a nuisance and raised with SLME by the user (note for the working group:
+`docs/SLME_NONRESONANT_DPILNU_NOTE.md`, added to the repository on 2026-11-26; a PDF copy is with the user); the r_broad+gap prior follows the 100 % the xwiki text assigns
 to the gap modes and costs nothing if the CR and WC constrain the parameter (to be checked by the Fisher
 run of B3); the τ gap is small and broad.
 
