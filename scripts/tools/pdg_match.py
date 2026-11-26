@@ -103,6 +103,18 @@ table refuses to build, so that the exception is revisited (decision P5):
     {"mother": 511, "key": [...], "action": "external", "value": 2.78e-4, "error": 0.33e-4,
      "source": "BELLE2-PUB-PH-2025-024 v12", "reason": "..."}
 `force_class` is applied before the totals are split: a forced line takes no c from a total.
+`override` replaces the c of a line that has a PDG entry by an external target value (class
+measured, how = 'override', flags `override`, `exception_applied`; the PDG result stays in the
+columns `c_prod` / `pdgids` for comparison; decision 4.6 of docs/B0_PIECE4_REVIEW.md: HFLAV isospin
+averages for B -> D(*) l nu and B -> D** l nu):
+    {"mother": 521, "key": [...], "action": "override", "value": 5.27e-2, "error": 0.16e-2,
+     "source": "HFLAV 2023 ...", "reason": "..."}
+`tau_ratio` gives a semitauonic line the BF of its light-lepton partner line (same block, after its
+own c) times a ratio R: c = R x c_partner x BF_MC(partner) / BF_MC(line), sigma_c = relative x c
+(how = 'ratio', flags `ratio`, `exception_applied`, and an optional `flag`, e.g. `bkg_model_only`
+for B -> D tau nu, whose correction is for the background model only, never for the signal):
+    {"mother": 511, "key": [...], "action": "tau_ratio", "from_key": [...], "ratio": 0.296,
+     "relative": 0.15, "source": "...", "reason": "..."}
 `sub_decay` corrects the decay table of a resonance as the decay file gives it, for every product
 prediction (BF_line x BF_sub) and every fold: each line of the resonance's block with n daughters is
 multiplied by weights[n] and the block is normalised again (the same correction is applied as an
@@ -326,7 +338,8 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
     if not isinstance(exc, list):
         raise ValueError(f'{path}: the exceptions file must be a JSON list')
     known = ('exclude_node', 'fold', 'no_fold', 'force_class', 'rewrite', 'isospin', 'direct_line',
-             'extra_uncertainty', 'half_limit', 'veto', 'nonres_direct', 'external', 'sub_decay')
+             'extra_uncertainty', 'half_limit', 'veto', 'nonres_direct', 'external', 'sub_decay', 'override',
+             'tau_ratio')
     for e in exc:
         if e.get('action') not in known:
             raise ValueError(f'{path}: unknown action in {e}; known: {known}')
@@ -351,6 +364,16 @@ def load_exceptions(path=DEFAULT_EXCEPTIONS):
                 raise ValueError(f'{path}: external needs mother, key and source: {e}')
             if not float(e.get('value', 0)) > 0 or not float(e.get('error', -1)) >= 0:
                 raise ValueError(f'{path}: external needs value > 0 and error >= 0: {e}')
+        elif e['action'] == 'override':
+            if 'mother' not in e or 'key' not in e or not e.get('source'):
+                raise ValueError(f'{path}: override needs mother, key and source: {e}')
+            if not float(e.get('value', 0)) > 0 or not float(e.get('error', -1)) >= 0:
+                raise ValueError(f'{path}: override needs value > 0 and error >= 0: {e}')
+        elif e['action'] == 'tau_ratio':
+            if any(x not in e for x in ('mother', 'key', 'from_key', 'ratio', 'relative', 'source')):
+                raise ValueError(f'{path}: tau_ratio needs mother, key, from_key, ratio, relative and source: {e}')
+            if not float(e['ratio']) > 0 or not float(e['relative']) >= 0:
+                raise ValueError(f'{path}: tau_ratio needs ratio > 0 and relative >= 0: {e}')
         elif e['action'] == 'sub_decay':
             w = e.get('weights')
             if not e.get('particles') or not isinstance(w, dict) or not w \
@@ -906,6 +929,41 @@ def _match_block(mother, lines, nodes, graph, exceptions=(), preset=None):
         results[k].update(pdg_class='measured', how='external', pdgids=[f'external:{e["source"]}'],
                           bf_pdg=v, bf_pdg_err=err, c=v / cmode_bf[k], sigma_c=err / cmode_bf[k], p_node=1.0)
         results[k]['flags'].update(('external', 'exception_applied'))
+
+    # 'override': an external target replaces the PDG c of a line (4.6); the PDG nodes of the line
+    # are still recorded (exact: appended to pdgids; products: c_prod)
+    for e in exceptions:
+        if e['action'] != 'override' or int(e['mother']) != mother:
+            continue
+        k = collapse_key(e['key'])
+        if cmode_bf.get(k, 0.0) <= 0:
+            raise ValueError(f'exceptions: override on {e["key"]} of {mother}: no line with BF > 0')
+        if results[k]['how']:
+            raise ValueError(f'exceptions: override on {e["key"]} of {mother}, which has a c already ({results[k]["how"]})')
+        v, err = float(e['value']), float(e['error'])
+        results[k].update(pdg_class='measured', how='override', pdgids=[f'override:{e["source"]}'],
+                          bf_pdg=v, bf_pdg_err=err, c=v / cmode_bf[k], sigma_c=err / cmode_bf[k], p_node=1.0)
+        results[k]['flags'].update(('override', 'exception_applied'))
+
+    # 'tau_ratio': a semitauonic line = R x its light-lepton partner after the partner's c (4.6); the
+    # partner must have its c already (override or external)
+    for e in exceptions:
+        if e['action'] != 'tau_ratio' or int(e['mother']) != mother:
+            continue
+        k, kp = collapse_key(e['key']), collapse_key(e['from_key'])
+        if cmode_bf.get(k, 0.0) <= 0 or cmode_bf.get(kp, 0.0) <= 0:
+            raise ValueError(f'exceptions: tau_ratio {e["key"]} / {e["from_key"]} of {mother}: no line with BF > 0')
+        if results[kp]['how'] not in ('override', 'external'):
+            raise ValueError(f'exceptions: tau_ratio partner {e["from_key"]} of {mother} needs an override or external c')
+        if results[k]['how']:
+            raise ValueError(f'exceptions: tau_ratio on {e["key"]} of {mother}, which has a c already')
+        c = float(e['ratio']) * results[kp]['c'] * cmode_bf[kp] / cmode_bf[k]
+        results[k].update(pdg_class='measured', how='ratio', pdgids=[f'ratio:{e["source"]}'],
+                          bf_pdg=c * cmode_bf[k], bf_pdg_err=float(e['relative']) * c * cmode_bf[k],
+                          c=c, sigma_c=float(e['relative']) * c, p_node=1.0)
+        results[k]['flags'].update(('ratio', 'exception_applied'))
+        if e.get('flag'):
+            results[k]['flags'].add(str(e['flag']))
 
     # 1. exact nodes: one target, fed by the line of that final state alone
     exact = [n for n in measured if len(n['targets']) == 1 and set(feed[n['uid']]) == {n['targets'][0]}]
@@ -1666,7 +1724,7 @@ def _region(tag):
 
 # how -> summary class where they differ: a c from a non-resonant PDG entry or from a measurement
 # outside PDG measures the line's own final state, like an exact entry
-_SUMMARY_HOW = {'nonres': 'exact', 'external': 'exact'}
+_SUMMARY_HOW = {'nonres': 'exact', 'external': 'exact', 'override': 'exact', 'ratio': 'exact'}
 SUMMARY_CLASSES = ['excl_sl', 'had_exact', 'had_node', 'had_product', 'had_isospin', 'had_limit', 'had_none',
                    'inclusive', 'pythia_0c', 'pythia_1c', 'pythia_2c']
 

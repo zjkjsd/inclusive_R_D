@@ -456,7 +456,11 @@ charm); the same gap would bias the CR → SR transfer.
 | Parameter | Multiplies the weight of… | Treatment |
 |---|---|---|
 | r_meas | decays whose final state is in the measured list | prior (~15 %) |
-| r_SL | decays with a lepton daughter | prior |
+| r_SL | light-lepton D, D\*, narrow D\*\* ℓν (piece 4, 4.6); τ lines follow their partner × R | prior 1.00 ± 0.05 (B3 Fisher: prior or free) |
+| r_broad+gap | broad D\*\* (D₀\*, D₁′) ℓν and the gap modes (4.6) | prior from 4.7 |
+| ε | PYTHIA single-charm isospin: w_same = 1 − ε, w_other = 1 + ε·R (4.3) | prior 0.2 ± 0.2 |
+| θ | direct-D± share of the D(\*)D̄(\*)K\* family, rate-conserving (4.4) | prior −0.35 ± 0.35 |
+| w_D₁ | D₁(2420) decay table: D\*π × 1.073, Dππ × 0.891 (4.5), on `D_genMotherPDG` / `D_genGMPDG` | nuisance ±0.046 / ±0.076 |
 | N₁ | unmeasured b → c + light quarks: PYTHIA and unmeasured exclusive decays with a single charm quark (piece 3, 3.3); with an isospin parameter for its PYTHIA part (3.5) | free; isospin parameter with a prior (piece 4) |
 | N₂ | unmeasured b → cc̄s(d): PYTHIA and unmeasured exclusive decays with a cc̄ pair (two open-charm hadrons or charmonium) (3.1, 3.3); D_s class scaled by N₂·r_s | prior N₂ = 0.93 ± 0.13, r_s = 1.00 ± 0.25, correlation −0.6 (3.2, revised after 3.4) |
 | a | all PYTHIA decays, by exp(a · (n − n̄)) | free |

@@ -130,38 +130,6 @@
   "reason": "M2 (2026-11-17). Decay-file line 'D- pi+ mu+ nu_mu' is the non-resonant (Goity-Roberts) part. PDG has no measurement of it: S041.418 'B+ --> D- pi+ lepton+ nu_lepton' is the total and includes the D** states. A c from 'total minus D** products' only reflects inconsistencies between PDG entries, so the line is kept at c = 1 as not measured (gap mode). To be revisited with the Belle II gap-mode treatment."
  },
  {
-  "mother": 511,
-  "key": [
-   -10411,
-   -11,
-   12
-  ],
-  "action": "isospin",
-  "from_mother": 521,
-  "from_key": [
-   -10421,
-   -11,
-   12
-  ],
-  "reason": "M2 (2026-11-17). B0 --> D_0*- e+ nu has only an upper limit in PDG (S042.418, product with D_0*- --> Dbar0 pi- < 4.4e-4). The isospin partner B+ --> Dbar_0*0 l+ nu is measured as a product (S041.503). Semileptonic b --> c decays conserve isospin, so the B0 line takes the c of the B+ line. Accepted: the corrected B0 product stays above the limit, within the B+ error."
- },
- {
-  "mother": 511,
-  "key": [
-   -10411,
-   -13,
-   14
-  ],
-  "action": "isospin",
-  "from_mother": 521,
-  "from_key": [
-   -10421,
-   -13,
-   14
-  ],
-  "reason": "M2 (2026-11-17). B0 --> D_0*- mu+ nu has only an upper limit in PDG (S042.418, product with D_0*- --> Dbar0 pi- < 4.4e-4). The isospin partner B+ --> Dbar_0*0 l+ nu is measured as a product (S041.503). Semileptonic b --> c decays conserve isospin, so the B0 line takes the c of the B+ line. Accepted: the corrected B0 product stays above the limit, within the B+ error."
- },
- {
   "pdgid": "S042.93",
   "action": "exclude_node",
   "reason": "D1 (2026-11-17). PDG text: 'B0 --> D- a_1(1260)+' = (0.60 +- 0.33) %, an old measurement with 54 % error. The decay-file line D- a_1+ (line 697, 1.071 %) carries the comment 'Interpreting D3pi BF as fully (D- a1(->3pi)) decay': its BF is the D- pi+ pi+ pi- total divided by B(a_1+ --> pi+ pi+ pi-). The total S042.88 (0.598 +- 0.061 %) is the measurement the line was built from and is five times more precise, so the line is compared with it (direct_line entry) and this entry is not used."
@@ -944,5 +912,535 @@
   },
   "source": "Belle arXiv:2211.09833 (PRD 107 092003); LHCb arXiv:1109.6831 (PRD 84 092001)",
   "reason": "4.5 (docs/B0_PIECE4_REVIEW.md section 3.5, decided 2026-11-25): the decay file's D_1(2420) table (D* pi 0.5991, D pi pi 0.4009, lines 9621-9638) has D pi pi / D* pi 0.83 +- 0.11 times the measured ratio (3.7 of docs/B0_PIECE3_REVIEW.md: Belle 2023 same-paper ratios B+ 0.42 +- 0.07, B0 0.33 +- 0.08; LHCb 2011 0.29 +- 0.09). With the file's isospin pattern kept: B(D_1 -> D* pi) = 0.6429 (D*+ pi- 0.429), B(D_1 -> D pi pi) = 0.3571; two-body lines x 1.0731, three-body lines x 0.8907 (uncertainty +-0.046 / +-0.076, fully anti-correlated; a nuisance of the model, carried by the toys, not added to sigma_c). The same correction is applied as an event weight on D_genMotherPDG / D_genGMPDG in the model; the products through D_1 (S042.420, S042.623, S041.257, S041.783, S042.331, ...) are compared with the corrected table."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -11,
+   12,
+   -413
+  ],
+  "action": "override",
+  "value": 0.049,
+  "error": 0.0011,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 90",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B0 -> D*- l nu set to the HFLAV isospin-combined value 4.90 +- 0.11 % (eq. 90); same as PDG 2026 within 0.01 %; B+ partner by the lifetime ratio."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -13,
+   14,
+   -413
+  ],
+  "action": "override",
+  "value": 0.049,
+  "error": 0.0011,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 90",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B0 -> D*- l nu set to the HFLAV isospin-combined value 4.90 +- 0.11 % (eq. 90); same as PDG 2026 within 0.01 %; B+ partner by the lifetime ratio."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -11,
+   12,
+   -411
+  ],
+  "action": "override",
+  "value": 0.0211,
+  "error": 0.0005,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 97",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B0 -> D- l nu set to the HFLAV isospin-combined value 2.11 +- 0.05 % (eq. 97); same as PDG 2026 within 0.01 %; B+ partner by the lifetime ratio."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -13,
+   14,
+   -411
+  ],
+  "action": "override",
+  "value": 0.0211,
+  "error": 0.0005,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 97",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B0 -> D- l nu set to the HFLAV isospin-combined value 2.11 +- 0.05 % (eq. 97); same as PDG 2026 within 0.01 %; B+ partner by the lifetime ratio."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -11,
+   12,
+   -423
+  ],
+  "action": "override",
+  "value": 0.052724,
+  "error": 0.001585,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 90 x tau+/tau0",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B+ -> anti-D*0 l nu = 1.076 x the B0 isospin-combined value (eq. 90) = 5.272 +- 0.159 % (2 % added for isospin breaking, HFLAV's Coulomb allowance). Replaces PDG 2026 per flavor (D*0: 5.53 +- 0.22 %, CLEO and BaBar only, CL 3 %; D0: 2.21 +- 0.06 %)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -13,
+   14,
+   -423
+  ],
+  "action": "override",
+  "value": 0.052724,
+  "error": 0.001585,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 90 x tau+/tau0",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B+ -> anti-D*0 l nu = 1.076 x the B0 isospin-combined value (eq. 90) = 5.272 +- 0.159 % (2 % added for isospin breaking, HFLAV's Coulomb allowance). Replaces PDG 2026 per flavor (D*0: 5.53 +- 0.22 %, CLEO and BaBar only, CL 3 %; D0: 2.21 +- 0.06 %)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -11,
+   12,
+   -421
+  ],
+  "action": "override",
+  "value": 0.022704,
+  "error": 0.000704,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 97 x tau+/tau0",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B+ -> anti-D0 l nu = 1.076 x the B0 isospin-combined value (eq. 97) = 2.270 +- 0.070 % (2 % added for isospin breaking, HFLAV's Coulomb allowance). Replaces PDG 2026 per flavor (D*0: 5.53 +- 0.22 %, CLEO and BaBar only, CL 3 %; D0: 2.21 +- 0.06 %)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -13,
+   14,
+   -421
+  ],
+  "action": "override",
+  "value": 0.022704,
+  "error": 0.000704,
+  "source": "HFLAV 2023 (arXiv:2411.18639) eq. 97 x tau+/tau0",
+  "reason": "4.6 (d2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B+ -> anti-D0 l nu = 1.076 x the B0 isospin-combined value (eq. 97) = 2.270 +- 0.070 % (2 % added for isospin breaking, HFLAV's Coulomb allowance). Replaces PDG 2026 per flavor (D*0: 5.53 +- 0.22 %, CLEO and BaBar only, CL 3 %; D0: 2.21 +- 0.06 %)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -11,
+   12,
+   -10423
+  ],
+  "action": "override",
+  "value": 0.0062996,
+  "error": 0.0004464,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 34",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_1 l nu set to the HFLAV isospin average: B- product 0.27 +- 0.015 % (Table 34, D1 -> D*+ pi-, divided by 0.4286 (4.5 corrected table; 4.4 % for that fraction)) = 0.6300 +- 0.0446 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -13,
+   14,
+   -10423
+  ],
+  "action": "override",
+  "value": 0.0062996,
+  "error": 0.0004464,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 34",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_1 l nu set to the HFLAV isospin average: B- product 0.27 +- 0.015 % (Table 34, D1 -> D*+ pi-, divided by 0.4286 (4.5 corrected table; 4.4 % for that fraction)) = 0.6300 +- 0.0446 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -11,
+   12,
+   -10413
+  ],
+  "action": "override",
+  "value": 0.0058546,
+  "error": 0.0004311,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 34",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_1 l nu set to the HFLAV isospin average: B- product 0.27 +- 0.015 % (Table 34, D1 -> D*+ pi-, divided by 0.4286 (4.5 corrected table; 4.4 % for that fraction)), B0 = B-/1.076 with 2 % for isospin breaking = 0.5855 +- 0.0431 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -13,
+   14,
+   -10413
+  ],
+  "action": "override",
+  "value": 0.0058546,
+  "error": 0.0004311,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 34",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_1 l nu set to the HFLAV isospin average: B- product 0.27 +- 0.015 % (Table 34, D1 -> D*+ pi-, divided by 0.4286 (4.5 corrected table; 4.4 % for that fraction)), B0 = B-/1.076 with 2 % for isospin breaking = 0.5855 +- 0.0431 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -11,
+   12,
+   -425
+  ],
+  "action": "override",
+  "value": 0.0031847,
+  "error": 0.0002248,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 35",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_2* l nu set to the HFLAV isospin average: B- product 0.085 +- 0.006 % (Table 35, D2* -> D*+ pi-, divided by the decay file 0.2669 (D pi / D* pi 1.498, PDG 1.52 +- 0.14)) = 0.3185 +- 0.0225 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -13,
+   14,
+   -425
+  ],
+  "action": "override",
+  "value": 0.0031847,
+  "error": 0.0002248,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 35",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_2* l nu set to the HFLAV isospin average: B- product 0.085 +- 0.006 % (Table 35, D2* -> D*+ pi-, divided by the decay file 0.2669 (D pi / D* pi 1.498, PDG 1.52 +- 0.14)) = 0.3185 +- 0.0225 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -11,
+   12,
+   -415
+  ],
+  "action": "override",
+  "value": 0.0029598,
+  "error": 0.0002171,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 35",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_2* l nu set to the HFLAV isospin average: B- product 0.085 +- 0.006 % (Table 35, D2* -> D*+ pi-, divided by the decay file 0.2669 (D pi / D* pi 1.498, PDG 1.52 +- 0.14)), B0 = B-/1.076 with 2 % for isospin breaking = 0.2960 +- 0.0217 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -13,
+   14,
+   -415
+  ],
+  "action": "override",
+  "value": 0.0029598,
+  "error": 0.0002171,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 35",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_2* l nu set to the HFLAV isospin average: B- product 0.085 +- 0.006 % (Table 35, D2* -> D*+ pi-, divided by the decay file 0.2669 (D pi / D* pi 1.498, PDG 1.52 +- 0.14)), B0 = B-/1.076 with 2 % for isospin breaking = 0.2960 +- 0.0217 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -11,
+   12,
+   -20423
+  ],
+  "action": "override",
+  "value": 0.0027749,
+  "error": 0.000435,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 36",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 l nu set to the HFLAV isospin average: B- product 0.185 +- 0.029 % (Table 36, D1' -> D*+ pi-, divided by 2/3) = 0.2775 +- 0.0435 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -13,
+   14,
+   -20423
+  ],
+  "action": "override",
+  "value": 0.0027749,
+  "error": 0.000435,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 36",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 l nu set to the HFLAV isospin average: B- product 0.185 +- 0.029 % (Table 36, D1' -> D*+ pi-, divided by 2/3) = 0.2775 +- 0.0435 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -11,
+   12,
+   -20413
+  ],
+  "action": "override",
+  "value": 0.0025789,
+  "error": 0.0004075,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 36",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 l nu set to the HFLAV isospin average: B- product 0.185 +- 0.029 % (Table 36, D1' -> D*+ pi-, divided by 2/3), B0 = B-/1.076 with 2 % for isospin breaking = 0.2579 +- 0.0408 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -13,
+   14,
+   -20413
+  ],
+  "action": "override",
+  "value": 0.0025789,
+  "error": 0.0004075,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 36",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 l nu set to the HFLAV isospin average: B- product 0.185 +- 0.029 % (Table 36, D1' -> D*+ pi-, divided by 2/3), B0 = B-/1.076 with 2 % for isospin breaking = 0.2579 +- 0.0408 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -11,
+   12,
+   -10421
+  ],
+  "action": "override",
+  "value": 0.0012599,
+  "error": 0.0010394,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)) = 0.1260 +- 0.1039 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 521,
+  "key": [
+   -13,
+   14,
+   -10421
+  ],
+  "action": "override",
+  "value": 0.0012599,
+  "error": 0.0010394,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)) = 0.1260 +- 0.1039 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin)."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -11,
+   12,
+   -10411
+  ],
+  "action": "override",
+  "value": 0.0011709,
+  "error": 0.0009663,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)), B0 = B-/1.076 with 2 % for isospin breaking = 0.1171 +- 0.0966 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Replaces the M2 isospin exceptions of B0 -> D_0*- l nu."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -13,
+   14,
+   -10411
+  ],
+  "action": "override",
+  "value": 0.0011709,
+  "error": 0.0009663,
+  "source": "HFLAV 2023 (arXiv:2411.18639) Table 37",
+  "reason": "4.6 (c2) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* l nu set to the HFLAV isospin average: B- product 0.084 +- 0.069 % (Table 37, D0* -> D+ pi-, divided by 2/3; error x 3.3 (HFLAV chi2 11/1: Belle 2023 B0 limit against B+ and older measurements)), B0 = B-/1.076 with 2 % for isospin breaking = 0.1171 +- 0.0966 %. Replaces the PDG 2026 per-flavor products (they average overlapping Belle 2008 and 2023 data and break isospin). Replaces the M2 isospin exceptions of B0 -> D_0*- l nu."
+ },
+ {
+  "mother": 511,
+  "key": [
+   -15,
+   16,
+   -411
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -411
+  ],
+  "ratio": 0.296,
+  "relative": 0.15,
+  "source": "HFLAV 2023 SM R(D) = 0.296 +- 0.004",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D tau nu = R x B(B -> D l nu) after its own c (4.6 c/d), R = 0.296, 15 % prior. SM R, not the measured average: the measured R(D(*)) is what the analysis tests (circular). FOR THE BACKGROUND MODEL ONLY (flag bkg_model_only): B -> D tau nu is the signal (B0) and its isospin partner (B+); its rate in the signal region and in the signal fit is the POI, never this value. ",
+  "flag": "bkg_model_only"
+ },
+ {
+  "mother": 511,
+  "key": [
+   -15,
+   16,
+   -413
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -413
+  ],
+  "ratio": 0.254,
+  "relative": 0.15,
+  "source": "HFLAV 2023 SM R(D*) = 0.254 +- 0.005",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D* tau nu = R x B(B -> D* l nu) after its own c (4.6 c/d), R = 0.254, 15 % prior. SM R, not the measured average: the measured R(D(*)) is what the analysis tests (circular). "
+ },
+ {
+  "mother": 511,
+  "key": [
+   -15,
+   16,
+   -10413
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -10413
+  ],
+  "ratio": 0.144,
+  "relative": 0.3,
+  "source": "BLR 2018 R(D1) 0.10 x LHCb arXiv:2501.14943 R(D**0_{1,2})/SM 1.44",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_1 tau nu = R x B(B -> D_1 l nu) after its own c (4.6 c/d), R = 0.144, 30 % prior. Narrow D**: the only measurement, LHCb R(D**0_{1,2}) = 0.13 +- 0.04 = 1.44 x SM, applied to the BLR values. "
+ },
+ {
+  "mother": 511,
+  "key": [
+   -15,
+   16,
+   -415
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -415
+  ],
+  "ratio": 0.101,
+  "relative": 0.3,
+  "source": "BLR 2018 R(D2*) 0.07 x LHCb arXiv:2501.14943 1.44",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_2* tau nu = R x B(B -> D_2* l nu) after its own c (4.6 c/d), R = 0.101, 30 % prior. Narrow D**: the only measurement, LHCb R(D**0_{1,2}) = 0.13 +- 0.04 = 1.44 x SM, applied to the BLR values. "
+ },
+ {
+  "mother": 511,
+  "key": [
+   -15,
+   16,
+   -10411
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -10411
+  ],
+  "ratio": 0.08,
+  "relative": 0.5,
+  "source": "BLR 2018 (arXiv:1711.03110 eq. 38) R(D0*)",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* tau nu = R x B(B -> D_0* l nu) after its own c (4.6 c/d), R = 0.08, 50 % prior. Broad D**: no measurement; theory with 50 %. "
+ },
+ {
+  "mother": 511,
+  "key": [
+   -15,
+   16,
+   -20413
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -20413
+  ],
+  "ratio": 0.05,
+  "relative": 0.5,
+  "source": "BLR 2018 (arXiv:1711.03110 eq. 38) R(D1')",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 tau nu = R x B(B -> D'_1 l nu) after its own c (4.6 c/d), R = 0.05, 50 % prior. Broad D**: no measurement; theory with 50 %. "
+ },
+ {
+  "mother": 521,
+  "key": [
+   -15,
+   16,
+   -421
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -421
+  ],
+  "ratio": 0.296,
+  "relative": 0.15,
+  "source": "HFLAV 2023 SM R(D) = 0.296 +- 0.004",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D tau nu = R x B(B -> D l nu) after its own c (4.6 c/d), R = 0.296, 15 % prior. SM R, not the measured average: the measured R(D(*)) is what the analysis tests (circular). FOR THE BACKGROUND MODEL ONLY (flag bkg_model_only): B -> D tau nu is the signal (B0) and its isospin partner (B+); its rate in the signal region and in the signal fit is the POI, never this value. ",
+  "flag": "bkg_model_only"
+ },
+ {
+  "mother": 521,
+  "key": [
+   -15,
+   16,
+   -423
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -423
+  ],
+  "ratio": 0.254,
+  "relative": 0.15,
+  "source": "HFLAV 2023 SM R(D*) = 0.254 +- 0.005",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D* tau nu = R x B(B -> D* l nu) after its own c (4.6 c/d), R = 0.254, 15 % prior. SM R, not the measured average: the measured R(D(*)) is what the analysis tests (circular). "
+ },
+ {
+  "mother": 521,
+  "key": [
+   -15,
+   16,
+   -10423
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -10423
+  ],
+  "ratio": 0.144,
+  "relative": 0.3,
+  "source": "BLR 2018 R(D1) 0.10 x LHCb arXiv:2501.14943 R(D**0_{1,2})/SM 1.44",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_1 tau nu = R x B(B -> D_1 l nu) after its own c (4.6 c/d), R = 0.144, 30 % prior. Narrow D**: the only measurement, LHCb R(D**0_{1,2}) = 0.13 +- 0.04 = 1.44 x SM, applied to the BLR values. "
+ },
+ {
+  "mother": 521,
+  "key": [
+   -15,
+   16,
+   -425
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -425
+  ],
+  "ratio": 0.101,
+  "relative": 0.3,
+  "source": "BLR 2018 R(D2*) 0.07 x LHCb arXiv:2501.14943 1.44",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_2* tau nu = R x B(B -> D_2* l nu) after its own c (4.6 c/d), R = 0.101, 30 % prior. Narrow D**: the only measurement, LHCb R(D**0_{1,2}) = 0.13 +- 0.04 = 1.44 x SM, applied to the BLR values. "
+ },
+ {
+  "mother": 521,
+  "key": [
+   -15,
+   16,
+   -10421
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -10421
+  ],
+  "ratio": 0.08,
+  "relative": 0.5,
+  "source": "BLR 2018 (arXiv:1711.03110 eq. 38) R(D0*)",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D_0* tau nu = R x B(B -> D_0* l nu) after its own c (4.6 c/d), R = 0.08, 50 % prior. Broad D**: no measurement; theory with 50 %. "
+ },
+ {
+  "mother": 521,
+  "key": [
+   -15,
+   16,
+   -20423
+  ],
+  "action": "tau_ratio",
+  "from_key": [
+   -11,
+   12,
+   -20423
+  ],
+  "ratio": 0.05,
+  "relative": 0.5,
+  "source": "BLR 2018 (arXiv:1711.03110 eq. 38) R(D1')",
+  "reason": "4.6 (b) (docs/B0_PIECE4_REVIEW.md section 3.6, decided 2026-11-26): B -> D'_1 tau nu = R x B(B -> D'_1 l nu) after its own c (4.6 c/d), R = 0.05, 50 % prior. Broad D**: no measurement; theory with 50 %. "
  }
 ]

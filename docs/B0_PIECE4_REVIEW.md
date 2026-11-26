@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-26 (4.5 decided and its line c implemented; follow-up on other excited states).
+Last updated: 2026-11-26 (4.6 decided and its c implemented; 4.7 next).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -22,7 +22,7 @@ in % of the decays of that B flavor.
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | AGREED (2026-11-25), section 3.3 | option (a): one common ε for B⁰ and B⁺, Gaussian prior **ε = 0.2 ± 0.2** (start at 0.2); applies to PYTHIA hadronic decays with one charm hadron that is a D or D\* among the B daughters; w_same = 1 − ε (charm meson of the spectator's isospin), w_other = 1 + ε·R with R = N_same/N_other from generator truth (B⁰ 6.0, B⁺ 7.5), so the PYTHIA single-charm rate per flavor is kept; two separate ε (BaBar priors 0.40 ± 0.15, 0.13 ± 0.06, or 0.2 ± 0.2 each) as a validation cross-check |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
-| 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN (2026-11-26), section 3.6 (sub-points 4.6a–d) | – |
+| 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | AGREED (2026-11-26); (b)–(d) DONE (2026-11-26), section 3.6 | (a2) two semileptonic parameters: **r_SL** for D, D\*, narrow D\*\* ℓν (B⁰ and B⁺ common, prior 1.00 ± 0.05; Fisher in B3 decides prior or free) and **r_broad+gap** for broad D\*\* + gap ℓν (prior in 4.7); τ lines follow their light-lepton partner × R. (b1) D(\*)τν = **SM** R (0.296, 0.254) × the light-lepton c, 15 % prior; **B → Dτν correction for the background model only, never in the SR signal template or the signal fit** (flag `bkg_model_only`; at B9 decide whether its comb part follows the fitted R(D⁺)); (b4) D\*\*τν = R × D\*\*ℓν, R = LHCb-scaled theory for D₁ (0.144), D₂\* (0.101) ± 30 %, theory for D₀\* (0.08), D₁′ (0.05) ± 50 %; τ gap → 4.7. (c2) D\*\*ℓν = HFLAV 2023 isospin averages. (d2) D(\*)ℓν: B⁰ HFLAV isospin-combined (4.90, 2.11 %), B⁺ = 1.076 × B⁰ ± 2 % |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
 | 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN | – |
 
@@ -657,3 +657,66 @@ Semileptonic sums with our current c: B⁰ 9.45 %, B⁺ 10.28 % against PDG incl
 0.37 (HFLAV 10.63 ± 0.15 split by lifetime: 10.24 / 11.02). Room for the gap after D + D\* + D\*\*: 1.60
 (ours, PDG inclusive) to 2.00 % (HFLAV D\*\*, isospin normalization, HFLAV inclusive) for B⁰; 1.59–2.16 % for
 B⁺; the gap lines now hold 0.97 / 1.08 %.
+
+*Options (presented 2026-11-26).* (a) a1 one r_SL; a2 r_SL (D, D\*, narrow D\*\*) + r_broad+gap, τ tied to
+their partners; a3 one parameter per component. (b) D(\*)τν: b1 SM R × light-lepton c, 15 % prior; b2
+measured PDG values. D\*\*τν: b3 theory R per state, 50 %; b4 LHCb measurement for the narrow states
+(× 1.44, 30 %), theory for the broad states (50 %). (c) c1 PDG per flavor; c2 HFLAV isospin averages;
+c3 SLME recipe values. (d) d1 PDG per flavor; d2 isospin (B⁰ HFLAV, B⁺ = 1.076 × B⁰ ± 2 %).
+
+**Decision (2026-11-26): a2, b1 + b4, c2, d2, AGREED.** The user added, and confirmed the same day: the
+D(\*)τν correction uses the **SM** R(D), not the measured value; the correction of B → Dτν (B⁰ → D⁻τ⁺ν is
+the signal, B⁺ → D̄⁰τ⁺ν its isospin partner) is applied **only in this background study** (the BBbar
+model: comb and hadB), **never** to the signal in the signal region or in the final signal fit, whose
+rate is the quantity measured; at B9 decide whether the comb part of B⁰ → D⁻τν should instead follow
+the fitted R(D⁺). Reasons: (a) the only residual a single r_SL leaves is broad D\*\* + gap (same transfer
+as each other, different from D, D\*, narrow D\*\*); (b) measured τ rates would put the tested R(D)
+excess into the background (and partly count overlapping data twice); LHCb's R(D\*\*⁰₁,₂) is the only
+measurement and covers the narrow states; (c) PDG per flavor averages overlapping Belle data and breaks
+isospin, HFLAV is reproducible and is the basis of the Belle II recipes; (d) PDG's B⁺ D\*⁰ℓν rests on CLEO
+and BaBar only (CL 3 %); isospin makes B⁰ and B⁺ fully correlated, which settles the B⁰/B⁺ correlation
+left open in 4.2 (ρ = 1).
+
+*Implemented (2026-11-26).* `scripts/tools/pdg_match.py`: two new exception actions, documented in
+the module docstring and validated in `load_exceptions`: `override` (an external target replaces the
+PDG c of a line; the PDG result stays visible: exact entries appended to `pdgids`, products in
+`c_prod`) and `tau_ratio` (c = R × c_partner × BF_MC(partner) / BF_MC(line), σ_c = relative × c, optional
+flag). Both act inside the block match, before the node pass, so remainders and closures use them.
+`Samples/dec/pdg_exceptions.json`: 100 → 134 entries (+24 `override`, +12 `tau_ratio`; the two M2
+`isospin` entries of B⁰ → D₀\*⁻ℓν removed, replaced by overrides). Values (per light lepton): B⁰ D\*ℓν
+4.90 ± 0.11 %, Dℓν 2.11 ± 0.05 %; B⁺ D̄\*⁰ℓν 5.272 ± 0.159 %, D̄⁰ℓν 2.270 ± 0.070 %; D\*\*ℓν B⁺ (B⁰) D₁
+0.630 ± 0.045 (0.585 ± 0.043), D₂\* 0.318 ± 0.023 (0.296 ± 0.022), D₁′ 0.278 ± 0.044 (0.258 ± 0.041), D₀\*
+0.126 ± 0.104 (0.117 ± 0.097) % (D₂\* divided by the decay file's D\*⁺π⁻ fraction 0.2669; D₀\* error × 3.3).
+`python3 scripts/tools/pdg_match.py` rerun. Changed rows (B⁰/B⁺; anti-B rows follow):
+
+| Lines | Final state | c before | c after |
+|---|---|---|---|
+| 366/390 | B⁰ → D\*⁻ℓν | 0.959 ± 0.023 (exact) | 0.959 ± 0.022 (override) |
+| 367/391 | B⁰ → D⁻ℓν | 0.991 ± 0.028 | 0.986 ± 0.023 |
+| 3998/4025 | B⁺ → D̄\*⁰ℓν | 1.007 ± 0.040 | 0.960 ± 0.029 |
+| 3999/4026 | B⁺ → D̄⁰ℓν | 0.957 ± 0.026 | 0.983 ± 0.031 |
+| 368/392, 4000/4027 | D₁ℓν | 0.946 / 0.881 (product) | 0.832 / 0.832 |
+| 369/393, 4001/4028 | D₀\*ℓν | 0.346 / 0.346 (isospin / product) | 0.324 ± 0.267 / 0.324 ± 0.267 |
+| 370/394, 4002/4029 | D₁′ℓν | 0.932 / 0.595 | 0.643 / 0.644 |
+| 371/395, 4003/4030 | D₂\*ℓν | 0.842 / 1.066 | 0.853 / 0.854 |
+| 418, 4056 | B → Dτν (`bkg_model_only`) | 1.126 / 1.115 (PDG) | 0.976 ± 0.146 / 0.973 ± 0.146 |
+| 417, 4055 | B → D\*τν | 1.139 / 1.325 (PDG) | 0.944 ± 0.142 / 0.946 ± 0.142 |
+| 420/4058 | D₁τν | 1 (no c) | 0.649 ± 0.195 / 0.698 ± 0.209 |
+| 421/4059 | D₀\*τν | 1 | 0.072 / 0.078 (± 50 %) |
+| 422/4060 | D₁′τν | 1 | 0.065 / 0.069 (± 50 %) |
+| 423/4061 | D₂\*τν | 1 | 0.150 / 0.161 (± 30 %) |
+| 379/403, 4011/4038 | Dπ⁺π⁻ℓν remainder lines (gap, 4.7) | 2.05 / 3.08 | 2.64 / 3.33 |
+
+D\*\*τν total per flavor: 0.66 % → 0.135 % (B⁰), 0.144 % (B⁺). Node closures that moved: the PDG τ
+entries now pull −3.1σ (S042.390 B⁰ D\*τν) and −2.6σ (S041.499 B⁺), −0.65σ and −0.39σ for Dτν (expected:
+SM against measured); B⁰ → D̄\*⁰π⁻ℓν (S042.312) +5.7 → +1.8σ, B⁺ → D\*⁻π⁺ℓν (S041.419) +4.3 → +3.5σ, B⁺ →
+D⁻π⁺ℓν (S041.418) −1.6 → −3.5σ, B⁰ → D̄⁰π⁻ℓν (S042.311) −3.5 → −3.7σ (the D(\*)πℓν totals, M2, for 4.7);
+S041.145 +1.0σ, S041.146 −1.2σ (PDG per flavor against isospin). Comb + hadB yield, first order: CR
+−2.70 % (τ −1.86, D\*\*ℓν −0.67, D(\*)ℓν −0.23, gap remainders +0.05), SR −2.91 %, WC −4.06 %; transfers
+CR → SR −0.21 %, CR → WC −1.36 %. Light-lepton b → c semileptonic sums now B⁰ 9.25 %, B⁺ 9.98 % (gap room
+for 4.7). Tests: `test_real_semileptonic` rewritten for 4.6 (overrides, ratios, `bkg_model_only`);
+`test_real_coverage` (new `how` values and flags, class shares), `test_isospin`, `test_csv_round_trip`,
+`test_d1_sub_decay_45` and `test_real_review_fixes` updated; 38 and 15 tests pass.
+
+**Rule for the analysis code (2026-11-26):** rows flagged `bkg_model_only` (B → Dτν and conjugates)
+are corrected in the BBbar model only; the signal component of the SR fit never uses their c.

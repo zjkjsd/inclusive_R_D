@@ -781,7 +781,8 @@ def test_real_coverage():
     assert set(zip(TABLE['mother_pdg'], TABLE['key'])) == set(zip(modes['mother_pdg'], modes['key']))
     assert np.allclose(TABLE['bf_mc'], modes['bf_mc'])
     assert set(TABLE['pdg_class']) == {'measured', 'limit', 'none', 'inclusive'}
-    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', 'veto', 'nonres', 'external', ''}
+    assert set(TABLE['how']) == {'exact', 'node', 'product', 'isospin', 'half_limit', 'veto', 'nonres', 'external',
+                                 'override', 'ratio', ''}
     meas = TABLE['how'] != ''
     hl, vt = TABLE['how'] == 'half_limit', TABLE['how'] == 'veto'
     assert (TABLE.loc[meas & ~hl & ~vt, 'pdg_class'] == 'measured').all()
@@ -800,14 +801,18 @@ def test_real_coverage():
              'exception_applied', 'block_asymmetric', 'zero_bf', 'c_extreme', 'limit_capped',
              'node_ambiguous', 'node_not_closed', 'flavor_twin', 'unmeasured', 'isospin',
              'remainder_clamped', 'measurement_conflict', 'cp_transfer', 'order_dependent',
-             'nonres_source', 'external', ''}
+             'nonres_source', 'external', 'override', 'ratio', 'bkg_model_only', ''}
     assert set(f for fl in TABLE['flags'] for f in fl.split(';')) <= known
     # shares of all B decays (scouting, B.12: 34 / 38.5 % plain, 6-7 % product, ~10 % none)
-    for m, lo, hi in ((511, 0.33, 0.37), (521, 0.37, 0.41)):
+    # since 4.6 (2026-11-26) the semileptonic D(*), D** and tau lines are 'override' / 'ratio' (moved from
+    # exact and product): the sum of the PDG-based classes is compared
+    for m, lo, hi in ((511, 0.39, 0.43), (521, 0.44, 0.48)):
         sh = pm.class_shares(TABLE, m)
-        assert lo < sh['measured_exact'] + sh['measured_node'] < hi, sh
-            # none: about 8 % since 3.4 (2026-11-20) moved 2.5 % to measured (LHCb external c)
-        assert 0.05 < sh['measured_product'] < 0.08 and 0.07 < sh['none'] < 0.11 and sh['limit'] < 0.01
+        pdgish = sum(sh.get(k, 0.0) for k in ('measured_exact', 'measured_node', 'measured_override',
+                                                'measured_ratio', 'measured_product'))
+        assert lo < pdgish < hi, sh
+        # none: about 8 % since 3.4 (2026-11-20) moved 2.5 % to measured (LHCb external c)
+        assert 0.02 < sh['measured_product'] < 0.04 and 0.07 < sh['none'] < 0.11 and sh['limit'] < 0.01
         assert close(sum(sh.values()), MODES.exclusive_bf[m], 1e-9)
     # the conjugate blocks give the same shares
     for m in (511, 521):
@@ -816,49 +821,44 @@ def test_real_coverage():
 
 
 def test_real_semileptonic():
+    """B -> D(*) l nu and D** l nu are set to HFLAV isospin averages (4.6 c, d: 'override'); the PDG
+    result stays visible (pdgids of the exact node, c_prod of the products). The tau lines are R x their
+    light-lepton partner (4.6 b: 'tau_ratio'), SM R for D(*) tau nu, B -> D tau nu for the background
+    model only (flag bkg_model_only)."""
     r = row(511, 'D- e+ nu_e')
-    assert r['how'] == 'exact' and r['pdgids'] == 'S042.37' and close(r['c'], 0.0212 / 0.0214)
-    assert 0.985 < r['c'] < 0.995 and close(r['sigma_c'], 0.0006 / 0.0214) and flags(r) == set()
-    assert close(row(511, 'D- mu+ nu_mu')['c'], r['c'])
-    assert close(row(-511, 'D+ e- anti-nu_e')['c'], r['c'])
-    assert row(511, 'D*- e+ nu_e')['pdgids'] == 'S042.181'
-    tau = row(511, 'D- tau+ nu_tau')
-    assert tau['how'] == 'exact' and tau['tau'] and 'tau' in flags(tau)
+    assert r['how'] == 'override' and r['pdgids'] == 'override:HFLAV 2023 (arXiv:2411.18639) eq. 97;S042.37'
+    assert close(r['c'], 0.0211 / 0.0214) and close(r['sigma_c'], 0.0005 / 0.0214) and 'override' in flags(r)
+    assert close(row(511, 'D- mu+ nu_mu')['c'], r['c']) and close(row(-511, 'D+ e- anti-nu_e')['c'], r['c'])
+    bp = row(521, 'anti-D*0 e+ nu_e')                       # isospin: 1.076 x B0, 2 % added
+    assert bp['how'] == 'override' and close(bp['c'] * 0.0549, 1.076 * 0.049, 1e-4)
+    assert close(bp['sigma_c'] * 0.0549, math.hypot(1.076 * 0.0011, 0.02 * 1.076 * 0.049), 1e-3)
     assert row(511, 'Xu- e+ nu_e')['pdg_class'] == 'inclusive'
-    # D** l nu through the product nodes (D_1, D'_1, D_2*)
-    for names, ids in (('D_1- e+ nu_e', 'S042.420;S042.623'), ("D'_1- e+ nu_e", 'S042.421'),
-                       ('D_2*- mu+ nu_mu', 'S042.419;S042.422')):
-        r = row(511, names)
-        assert r['how'] == 'product' and r['prod_pdgids'] == ids and close(r['c'], r['c_prod']), names
-        assert 0.8 < r['c'] < 1.0 and r['n_prod'] == len(ids.split(';'))
+    # D** l nu: HFLAV B- product / fraction of the full width, B0 = B- / 1.076
+    for m, names, bf in ((521, 'anti-D_10 e+ nu_e', 0.270e-2 / 0.4286), (521, 'anti-D_2*0 mu+ nu_mu', 0.085e-2 / 0.2669),
+                         (521, "anti-D'_10 e+ nu_e", 0.185e-2 / 0.6667), (521, 'anti-D_0*0 e+ nu_e', 0.084e-2 / 0.6667),
+                         (511, 'D_1- e+ nu_e', 0.270e-2 / 0.4286 / 1.076), (511, 'D_0*- mu+ nu_mu', 0.084e-2 / 0.6667 / 1.076)):
+        r = row(m, names)
+        assert r['how'] == 'override' and close(r['c'] * r['bf_mc'], bf, 2e-3), names
+    # the products are still computed (with the 4.5 D_1 table) and kept for comparison
     r = row(511, 'D_1- e+ nu_e')
-    # sub-decay BFs of the corrected D_1(2420) table (4.5, sub_decay: D* pi x 1.0731, D pi pi x 0.8907)
-    b1, b2 = 0.3994 * 1.0731, 0.1719 * 0.8907
-    c1, s1 = 0.002852150285313824 / (0.00704 * b1), 0.0002532034593495046 / (0.00704 * b1)
-    c2, s2 = 0.00102 / (0.00704 * b2), 0.000158113883008419 / (0.00704 * b2)
-    w1, w2 = 1 / s1 ** 2, 1 / s2 ** 2
-    assert close(r['c'], (w1 * c1 + w2 * c2) / (w1 + w2), 1e-4)
-    # the broad states in B+ are well above the PDG products
-    assert row(521, 'anti-D_0*0 e+ nu_e')['c'] < 0.5 and row(521, "anti-D'_10 e+ nu_e")['c'] < 0.7
-    # B0 -> D_0*- l nu has only a product limit (S042.418 < 4.4e-4): by exception it takes the c of
-    # its isospin partner B+ -> anti-D_0*0 l nu (product S041.503); it stays above the limit
-    src = row(521, 'anti-D_0*0 e+ nu_e')
-    for names in ('D_0*- e+ nu_e', 'D_0*- mu+ nu_mu'):
-        r = row(511, names)
-        assert r['pdg_class'] == 'measured' and r['how'] == 'isospin' and r['pdgids'] == 'S041.503', names
-        scale = 0.00389 / 0.00362 / pm.TAU_RATIO                 # BF(B+) = TAU_RATIO x BF(B0)
-        assert close(r['c'], src['c'] * scale) and close(r['sigma_c'], src['sigma_c'] * scale) and 0.3 < r['c'] < 0.4
-        assert {'isospin', 'exception_applied', 'above_limit'} <= flags(r)
-        assert close(r['bf_pdg'], r['c'] * 0.00362)
-    assert close(row(-511, 'D_0*+ e- anti-nu_e')['c'], row(511, 'D_0*- e+ nu_e')['c'])
+    assert r['prod_pdgids'] == 'S042.420;S042.623' and abs(r['c_prod'] - 0.946) < 0.002
+    # tau: R x the light-lepton partner after its c
+    for m, l, t, R in ((511, 'D- e+ nu_e', 'D- tau+ nu_tau', 0.296), (511, 'D*- e+ nu_e', 'D*- tau+ nu_tau', 0.254),
+                       (521, 'anti-D_10 e+ nu_e', 'anti-D_10 tau+ nu_tau', 0.144), (511, "D'_1- e+ nu_e", "D'_1- tau+ nu_tau", 0.05)):
+        a, b = row(m, l), row(m, t)
+        assert b['how'] == 'ratio' and b['tau'] and close(b['c'] * b['bf_mc'], R * a['c'] * a['bf_mc'], 1e-6), t
+    for m, names in ((511, 'D- tau+ nu_tau'), (-511, 'D+ tau- anti-nu_tau'), (521, 'anti-D0 tau+ nu_tau')):
+        assert 'bkg_model_only' in flags(row(m, names)), names
+    assert 'bkg_model_only' not in flags(row(511, 'D*- tau+ nu_tau'))
+    assert close(row(511, 'D- tau+ nu_tau')['sigma_c'], 0.15 * row(511, 'D- tau+ nu_tau')['c'])
     # the non-resonant D(*) pi l nu lines are not measured (exception, M2): c = 1 +- 1
     for m, names in ((511, 'anti-D0 pi- e+ nu_e'), (511, 'anti-D*0 pi- mu+ nu_mu'),
                      (521, 'D*- pi+ e+ nu_e'), (521, 'D- pi+ mu+ nu_mu')):
         d = row(m, names)
         assert d['pdg_class'] == 'none' and d['how'] == '' and d['c'] == 1.0 and close(d['sigma_c'], 1.0), names
         assert {'unmeasured', 'exception_applied'} <= flags(d) and 'remainder_unstable' not in flags(d)
-    # the D** lines keep their product c whatever the D(*) pi l nu totals say
-    assert row(511, 'D_1- e+ nu_e')['how'] == 'product' and row(511, 'D_s0*+ D-')['how'] == 'product'
+    # the D** lines keep their own c whatever the D(*) pi l nu totals say (override since 4.6)
+    assert row(511, 'D_1- e+ nu_e')['how'] == 'override' and row(511, 'D_s0*+ D-')['how'] == 'product'
 
 
 def test_real_jpsi():
@@ -1086,14 +1086,15 @@ def test_isospin():
     iso = pm.isospin_report(TABLE, PDL)
     assert set(iso['kind']) == {'sl', 'ccs'} and set(iso['status']) == {'both', 'only_b0', 'only_bp', 'neither'}
     r = iso[iso['names_b0'] == 'D- e+ nu_e'].iloc[0]
-    assert r['names_bp'] == 'anti-D0 e+ nu_e' and r['status'] == 'both' and abs(r['r_mc'] - 1) < 0.01
-    assert abs(r['pull']) < 2 and 0.9 < r['r_pdg'] < 1.1
+    assert r['names_bp'] == 'anti-D0 e+ nu_e' and abs(r['r_mc'] - 1) < 0.01   # override since 4.6: no PDG pair
     assert not (iso['names_b0'] == 'D- pi+').any() and not (iso['names_b0'] == 'pi- e+ nu_e').any()
     both = iso[iso['status'] == 'both']
     assert len(both) > 40 and (both['pull'].abs() > 3).sum() == 0
     # the lines fixed by the isospin exception are not counted as measured twice
-    r = iso[iso['names_b0'] == 'D_0*- e+ nu_e'].iloc[0]
+    r = iso[iso['names_b0'] == 'psi(3770) K_S0'].iloc[0]
     assert r['status'] == 'only_bp' and r['how_b0'] == 'isospin' and close(r['c_b0'], r['c_other'])
+    # overridden pairs (4.6) are not compared with PDG
+    assert iso[iso['names_b0'] == 'D- e+ nu_e'].iloc[0]['status'] == 'neither'
     # toy: direct_line makes a resonance line the direct line of a node; extra_uncertainty widens a c
     exc = [dict(pdgid='T.4', action='direct_line', mother=511, key=code('J/psi K_2*0'), reason='test')]
     pdg = [x if x[0] != 'T.4' else ('T.4', x[1], 0.0020, 0.0001, False) for x in TOY_PDG]
@@ -1179,7 +1180,7 @@ def test_csv_round_trip():
     assert list(back['key']) == list(TABLE['key']) and list(back['flags']) == list(TABLE['flags'])
     assert list(back['how']) == list(TABLE['how']) and list(back['pdgids']) == list(TABLE['pdgids'])
     assert np.allclose(back['c'], TABLE['c'], rtol=1e-5)
-    assert close(pm.pdg_info(back, 511, code('D- e+ nu_e'))['c'], 0.0212 / 0.0214, 1e-5)
+    assert close(pm.pdg_info(back, 511, code('D- e+ nu_e'))['c'], 0.0211 / 0.0214, 1e-5)   # override (4.6 d)
     assert pm.pdg_info(TABLE, 511, [211, 211]) is None
     # the committed table is the one the code gives: a message, not a test (rerun main() to
     # refresh it); the behaviour is tested above
@@ -1393,9 +1394,11 @@ def test_d1_sub_decay_45():
     dstar = sum(p for n, p in after.items() if len(n) == 2)
     assert close(dstar, 0.643, 2e-3) and close(after[('D*+', 'pi-')], 0.4286, 2e-3)
     assert close(sum(after.values()), 1.0, 1e-9) and close(sum(before.values()), 1.0, 1e-9)
+    # the product c (kept in c_prod since the D_1 l nu lines are overridden by HFLAV in 4.6)
     for m, names, c in ((511, 'D_1- e+ nu_e', 0.946), (521, 'anti-D_10 e+ nu_e', 0.881), (511, 'D_1- pi+', 0.697)):
         r = row(m, names)
-        assert r['how'] == 'product' and abs(r['c'] - c) < 0.002, names
+        assert abs(r['c_prod'] - c) < 0.002, names
+    assert row(511, 'D_1- pi+')['how'] == 'product'
     assert row(511, 'D_1- e+ nu_e')['chi2_prod'] < 0.1   # the two products agree after the correction
 
 
