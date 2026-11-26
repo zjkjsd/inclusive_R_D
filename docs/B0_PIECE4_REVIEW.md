@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-26 (4.6 decided and its c implemented; 4.7 next).
+Last updated: 2026-11-26 (4.6 decided and implemented; 4.7 open, xwiki recommendation received).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -798,3 +798,35 @@ candidate's own B only, 0 for comb); a proxy reweighting in reconstructed p\*_�
 maps is possible now, a proper one needs the ancestor-B daughter four-vectors at the next reprocessing.
 Extra evidence on the size: the R(X) data pull the gap down by about 10 %; R(D(\*)) fits see little
 D(\*)ηℓν; the D(\*)ηℓν analysis expects limits of 7–8·10⁻⁴ per mode against the 0.86 % assumed.
+
+*New inputs (user, 2026-11-26): the Belle II xwiki page, its "Latest Update" slides, and the dedicated
+decay files.*
+
+- **xwiki "Correction of BF(B to Xc l ν) in generic MC"** (Physics SLMissing / MC Samples WG1; printed by
+  the user; last modified by R. van Tonder on 2026-11-17). Latest table "HFLAV 2023, computed by M. Prim",
+  per light lepton, B± / B⁰: D 2.27 / 2.11 %, D\* 5.27 / 4.90 %, D₁ 0.64 ± 0.10 / 0.59 ± 0.10, D₀\* 0.08 ± 0.04 /
+  0.08 ± 0.03, D₁′ 0.28 / 0.26 ± 0.04, D₂\* 0.32 / 0.30 ± 0.03, Dππ 0.07 ± 0.09 / 0.07 ± 0.08, D\*ππ 0.22 / 0.20 ±
+  0.10, D_sK 0.030 ± 0.013, D_s\*K 0.029 ± 0.019, **Dη = D\*η 0.92 ± 0.15 / 0.88 ± 0.14 %**, X_c 11.05 ± 0.16 /
+  10.27 ± 0.15 %. This equals the D(\*)ηℓν note's Table 4.4 (which quotes ±100 % on D(\*)η) and differs from the
+  R(D\*) note in D₀\* (0.08 against 0.12) and hence D(\*)η (0.88 against 0.86). The page text: non-resonant
+  D(\*)πℓν "not much space … it is recommended to mask these kinds of decays and instead fill the gap with
+  alternative possible candidate modes like D(\*)η … As this is purely a guess … these modes are assigned a
+  100 % uncertainty"; the room for non-resonant D(\*)π is quoted as B(D\*\*(→ Dπ)ℓν) − B(Dπℓν) = (0.03 ± 0.09) %
+  and (−0.11 ± 0.11) % for D\*π, computed with the HFLAV 2018/2021 D₀\* (0.42 / 0.39 %). With the HFLAV 2023 D₀\*
+  (0.08 %) the same subtraction leaves about 0.19 % (B⁰ → D̄⁰π⁻ℓν, charged-pion mode): the argument for zero
+  predates the D₀\* update, while the 2023 table keeps zero.
+- **"Update of b → c ℓν MC Branching Fractions & Gap Model"** (M. Prim, indico 12225, GapUpdate.pdf):
+  HFLAV 2021 → 2023 changes (B⁰ Dℓν 2.24 → 2.11, D\*ℓν 5.11 → 4.90; D₀\* product 0.280 → 0.084); plan for the
+  generic decay file: HFLAV 2023 values, Goity–Roberts D(\*)πℓν set to 0 ("compatible with zero, epsilon BR
+  absorbed into gap"), gap through intermediate resonances (`D_0*-gap → D⁻η`, `D'_1-gap → D\*⁻η` aliases,
+  LLSW), D(\*)ππ possibly via D(\*)(2S); a 25/75 split of Dη : D\*η (spin counting) was considered and taken out
+  "for easier comparison". Preliminary; not in our release 08.
+- **Dedicated decay files** (basf2 main, `decfiles/dec`, checked 2026-11-26, commit 7bae88bf): 1196700001/02
+  (B⁰ → D₁′⁻ℓν, D₁′ → Dππ / D\*ππ), 1196700003/04 (D₀\*), 1196708000 (D₁′ → D\*⁻η), 1196708001 (D₀\* → D⁻η),
+  B⁺ 12967000xx likewise: LLSW 0.68 −0.2 0.3 (as our broad D\*\* lines), e and μ 50/50, D(\*)ππ charge split
+  3 : 2 : 2 (D⁻π⁺π⁻ : D̄⁰π⁻π⁰ : D⁻π⁰π⁰, the same as our decay file), one B decays to the gap mode and the other
+  generically (VSS_BMIX "B0sig anti-B0sig B0 anti-B0", the Belle II signal convention; B⁺ 0.5 B⁻sig B⁺ + 0.5 B⁻
+  B⁺sig). τ-gap files 1196300001/04, 1196308000/01 the same with τ. So the samples are gap ⊗ generic, suitable
+  in principle for comb; MC16rd versions exist only FEI-skimmed (4.7 facts above).
+- Measured Dπℓν totals cannot be fed by the gap modes: D(\*)η final states contain the η decay products and do
+  not appear in an exclusive B → D̄⁰π⁻ℓν measurement (missing mass ≈ 0, no extra particles).
