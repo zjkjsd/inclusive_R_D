@@ -22,7 +22,7 @@ in % of the decays of that B flavor.
 | 4.3 | Isospin parameter for PYTHIA single-charm decays (3.5) | AGREED (2026-11-25), section 3.3 | option (a): one common ε for B⁰ and B⁺, Gaussian prior **ε = 0.2 ± 0.2** (start at 0.2); applies to PYTHIA hadronic decays with one charm hadron that is a D or D\* among the B daughters; w_same = 1 − ε (charm meson of the spectator's isospin), w_other = 1 + ε·R with R = N_same/N_other from generator truth (B⁰ 6.0, B⁺ 7.5), so the PYTHIA single-charm rate per flavor is kept; two separate ε (BaBar priors 0.40 ± 0.15, 0.13 ± 0.06, or 0.2 ± 0.2 each) as a validation cross-check |
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
-| 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN | – |
+| 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | OPEN (2026-11-26), section 3.6 (sub-points 4.6a–d) | – |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
 | 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN | – |
 
@@ -65,6 +65,9 @@ The semileptonic recipe the notes follow is one page, "Correction of BF(B → Xc
 - The 2025/26 values close the sum at 10.27 % (B⁰; 10.99 % B⁺), an inclusive value derived from HFLAV;
   Dη and D\*η take (10.27 − 8.23 − 0.07 − 0.20)/2 = 0.885 each. HFLAV 2023 (arXiv:2411.18639) itself
   quotes B(B → Xcℓν) = 10.63 ± 0.15 % (eq. 106) and has no D(\*)ππℓν or D(\*)ηℓν average.
+- *Update 2026-11-26:* the "ours now" column predates 4.5 (B⁰ D₁ now 0.666, Dππ 0.071; sum 9.45 %, B⁺
+  10.28 %); the D₁′ comparison below compares a B⁰ product with a B⁻ one (HFLAV in B⁰ units is
+  0.172 ± 0.027 %, so the difference is 0.077 %, +1.3σ). Details in 3.6.
 - **Abnormal:** with the current PDG-2026 c our B⁰ sum is 9.44 % (B⁺ 10.28 %), against PDG 2026
   B⁰ → X_c eν 10.08 ± 0.37 % (S042.375; B⁺ 10.79 ± 0.37, S041.473): the D\*\* lines are lowered to PDG
   while the gap lines keep their decay-file values. For 4.6/4.7.
@@ -553,3 +556,104 @@ the event weight and the c of these lines.
    decays. The expectation for ε moves from 0.10–0.17 to about 0.08–0.15, well inside the prior
    0.2 ± 0.2. (iii) A D\*\* also adds a pion; for D₁ → Dππ two. ε does not add them (stated in 3.3);
    the multiplicity slope a and the transfer term carry it.
+
+### 3.6 r_SL, τ modes, D\*\* targets and normalization modes (opened 2026-11-26)
+
+*Context.* Semileptonic B decays enter our samples mostly through the comb ℓ side: the lepton of one B
+is paired with a D from the other B. The model so far has one parameter r_SL for every decay with a
+lepton daughter (B.6). This point decides (a) whether one r_SL is enough or the semileptonic family
+must be split; (b) how the τ modes are corrected (their decay-file rates come from theory ratios, and
+correcting them with measured rates would feed the R(D) anomaly that our analysis tests into the
+background; the D\*\*τν lines are about 6 times too high, the user confirmed they must be corrected with
+R(D\*\*)); (c) which values the D\*\*ℓν lines are corrected to (PDG per flavor, our current c, or the
+HFLAV isospin averages that the Belle II recipe uses); (d) the same question for B → Dℓν, D\*ℓν. The gap
+modes are point 4.7; (a) and (c) set how much room is left for them.
+
+*Facts (2026-11-26; three readers, each checked by a second; scripts in the session scratchpad
+`p46/`, `p46code/`).*
+
+Sizes (share of the comb + hadB yield, comb counted on both sides, current c):
+
+| | CR | SR | WC |
+|---|---|---|---|
+| all semileptonic | 44.6 % | 42.6 % | 82.4 % |
+| of which on the comb ℓ side | 38.3 % | 33.6 % | 75.9 % |
+| B⁰ D ℓν / D\* ℓν | 6.5 / 14.8 % | 6.7 / 13.3 % | 11.0 / 32.8 % |
+| B⁺ D ℓν / D\* ℓν | 1.7 / 5.6 % | 1.6 / 5.9 % | 2.8 / 9.5 % |
+| narrow D\*\* (D₁, D₂\*), B⁰ + B⁺ | 4.4 % | 3.3 % | 8.5 % |
+| broad D\*\* (D₀\*, D₁′), B⁰ + B⁺ | 1.8 % | 1.3 % | 3.5 % |
+| gap lines (D(\*)π, D(\*)ππ, D(\*)η, D_sK), B⁰ + B⁺ | 4.4 % | 3.2 % | 8.0 % |
+| D τν + D\* τν (about half on the D side) | 4.4 % | 5.9 % | 4.9 % |
+| D\*\*τν: decay file / corrected with R(D\*\*) | 1.45 / 0.27 % | 1.63 / 0.30 % | 2.0 / 0.36 % |
+
+Transfer ratios (SR/CR, WC/CR per unit of each component): light-lepton b → c 0.90 (1.95); within it
+B⁰ narrow D\*\* 0.70, broad 0.63, gap 0.71 (WC 2.06, 2.06, 1.85); τ modes the other way: Dτν 1.40,
+D\*τν 1.31, D\*\*τν about 1.13; N₁ (PYTHIA single charm) 0.72 (0.97).
+
+(a) With one common r_SL refitted in the CR, +1σ on each component leaves in the SR: B⁰ gap at 100 %
+−0.80 %, B⁰ broad D\*\* at 50 % −0.22 %, Dτν and D\*τν at 10 % +0.10 % each, everything else ≤ 0.08 %
+(sum in quadrature 0.86 %, 0.27 % without the gap); CR → WC 0.39 % (largest Dτν −0.20, D\*τν −0.17,
+B⁰ D\*ℓν +0.16, B⁺ gap −0.15, B⁰ broad +0.14 %). With N₁ and one r_SL fitted to CR + WC together, the SR
+keeps 0.89 %: that part no N₁/r_SL combination absorbs. Light-lepton D, D\* and narrow D\*\* move together;
+broad D\*\* and gap have nearly the same transfer as each other (0.63, 0.71), different from the rest.
+
+(b) τ modes.
+- Decay file: D\*τν, Dτν (B⁰ 417, 418; B⁺ 4055, 4056) are set to R(D\*) = 0.258, R(D) = 0.299 of the
+  light-lepton lines (HFLAV 2016 theory, line comments); CLN/HQET3 form factors against BGL for the
+  light leptons. D\*\*τν (B⁰ 420–423, B⁺ 4058–4061) 0.13/0.13/0.20/0.20 % for D₁/D₀\*/D₁′/D₂\* (0.66 % per
+  flavor; implied R 0.17–0.58), inherited unchanged from MC14; their own LLSW parameters (Bernlochner–
+  Ligeti 2017 Approx. C) predict R ≈ 0.06–0.10. No τ gap lines.
+- Current table: PDG 2026 τ entries, c = 1.126 (B⁰ Dτν), 1.139 (B⁰ D\*τν), 1.115, 1.325 (B⁺); implied R
+  0.34/0.31/0.35/0.34. Line 418 is our own signal decay; in comb it is 1.7 % (CR) / 2.4 % (SR) of the
+  yield. Measured R in the background model = the R(D) excess put into the background, partly from
+  overlapping Belle (II) data.
+- SM: HFLAV 2023 R(D) = 0.296 ± 0.004, R(D\*) = 0.254 ± 0.005; measured 0.342 ± 0.026, 0.286 ± 0.012
+  (ρ −0.39; ratio to SM 1.155, 1.126). SM R × our light-lepton BFs: c = 0.981 ± 0.031 (418), 0.944 ± 0.030
+  (417), 0.947 ± 0.029 (4056), 0.992 ± 0.044 (4055).
+- R(D\*\*) theory (BLR 2018, arXiv:1711.03110 eq. 38; used by the R(D\*) note via BLPR 2023): D₀\* 0.08 ± 0.03,
+  D₁′ 0.05 ± 0.02, D₁ 0.10 ± 0.02, D₂\* 0.07 ± 0.01 (BL 2017, used by the R(X) note: 0.08 ± 0.04, 0.06 ± 0.02,
+  0.10 ± 0.02, 0.07 ± 0.01). **The only measurement:** LHCb arXiv:2501.14943 (PRL 135, 021802, 2025; 3.5σ),
+  B⁻ → D\*\*⁰τν for D₁ + D₂\* together: R(D\*\*⁰₁,₂) = 0.13 ± 0.04, against their SM 0.09 ± 0.02 (ratio
+  1.44 ± 0.52). Nothing for the broad states; no Belle or Belle II measurement. Belle II's published
+  R(D\*) assumes 0.085 ± 0.012 with 100 % on the BF; LHCb's R(D(\*)) analyses use the theory with 50 %.
+- D\*\*τν c with theory R × our D\*\*ℓν: B⁰ D₁ 0.51 ± 0.11, D₀\* 0.08 ± 0.05, D₁′ 0.09 ± 0.04, D₂\* 0.10 ± 0.02;
+  B⁺ 0.51, 0.08, 0.06, 0.14; total 0.116 % (B⁰), 0.118 % (B⁺) against 0.66 %. With LHCb's narrow R (× 1.44
+  on D₁, D₂\*) the total is about 0.155 %.
+- τ gap, top-down (R(X_c) = 0.223 ± 0.005 × inclusive − exclusive τ sum): B⁰ 0.26 ± 0.11 %, B⁺ 0.23 ± 0.12 %
+  (0.30, 0.28 with HFLAV's inclusive); bottom-up (R ≈ 0.05–0.10 × light gap, as the published Belle II
+  R(D\*)) 0.08–0.16 %. No lines to reweight: dedicated samples, or the D\*\*τν lines as carriers (4.7).
+- All τ changes together: comb + hadB yield −1.9 / −2.3 / −2.5 % (CR / SR / WC), transfers −0.38 % (CR →
+  SR), −0.58 % (CR → WC). Corrected B⁺ τ total 2.46 % with the gap, against PDG B⁺ → τνX 2.51 ± 0.44 %
+  (the current table gives 3.4 %).
+
+(c) D\*\*ℓν targets (per light lepton, %):
+
+| | B⁰ ours | B⁰ HFLAV | B⁰ SLME | B⁺ ours | B⁺ HFLAV | B⁺ SLME |
+|---|---|---|---|---|---|---|
+| D₁ | 0.666 ± 0.051 | 0.585 ± 0.041 | 0.59 | 0.667 ± 0.037 | 0.630 ± 0.044 | 0.64 |
+| D₂\* | 0.292 ± 0.032 | 0.299 ± 0.027 | 0.299 | 0.397 ± 0.024 | 0.321 ± 0.029 | 0.321 |
+| D₁′ | 0.374 ± 0.083 | 0.258 ± 0.040 | 0.26 | 0.256 ± 0.086 | 0.278 ± 0.044 | 0.28 |
+| D₀\* | 0.125 ± 0.075 | 0.117 ± 0.029 | 0.08 | 0.135 ± 0.081 | 0.126 ± 0.032 | 0.08 |
+| sum | 1.457 | 1.259 | 1.229 | 1.455 | 1.355 | 1.321 |
+
+HFLAV values: B⁻ products of Tables 34–37 × 3/2 ÷ the fraction of the full width (D₁ 0.4286 after 4.5,
+D₂\* × 2.52), B⁰ = B⁻/1.076. Why ours differ: PDG averages each flavor separately and includes Belle 2008
+(Liventsev, arXiv:0711.3252) together with Belle 2023 (Meier, arXiv:2211.09833) from overlapping data;
+HFLAV drops Belle 2008, rescales BaBar to current inputs, adds LEP/CLEO/D0 for the narrow states and
+combines B⁰ and B⁺ by isospin. Our per-flavor values break isospin (B⁺/B⁰ 1.00 for D₁, 1.36 for D₂\*, 0.69
+for D₁′; expected 1.076), and the PDG B⁰ products give D₂\* Dπ/D\*π = 2.13 ± 0.47 against 1.52 ± 0.14. D₀\*:
+the B⁰ limit (Meier 2023, S042.418 < 4.4·10⁻⁴ → < 0.066 % for the full D₀\*) conflicts with B⁺ and older
+B⁰ measurements (HFLAV χ² 11/1, scale factor 3.3); SLME's 0.08 is not reproducible from one source
+(the same note uses 0.12–0.13 in its App. C). Yield effect of HFLAV instead of ours: −0.66 / −0.46 / −1.31 %
+(CR / SR / WC); SLME −0.79 / −0.57 / −1.53 %.
+
+(d) Normalization modes: PDG 2026 B⁰ D\*ℓν 4.90 ± 0.12 and Dℓν 2.12 ± 0.06 are HFLAV's; B⁺ D̄\*⁰ℓν
+5.53 ± 0.22 rests on CLEO and two BaBar results only (χ² 7.0/2, CL 3 %, no Belle or Belle II); D̄⁰ℓν 2.21 ±
+0.06. Isospin (B⁺ = 1.076 × B⁰, with HFLAV's ±2 % Coulomb allowance): D\* 5.27, D 2.27 (c 0.960, 0.983
+instead of 1.007, 0.957). B⁺/B⁰ measured: D\* 1.129 ± 0.053, D 1.042 ± 0.042, inclusive 1.070 ± 0.052. Yield
+effect of the isospin values: −0.23 / −0.25 / −0.40 %.
+
+Semileptonic sums with our current c: B⁰ 9.45 %, B⁺ 10.28 % against PDG inclusive 10.08 ± 0.37 / 10.79 ±
+0.37 (HFLAV 10.63 ± 0.15 split by lifetime: 10.24 / 11.02). Room for the gap after D + D\* + D\*\*: 1.60
+(ours, PDG inclusive) to 2.00 % (HFLAV D\*\*, isospin normalization, HFLAV inclusive) for B⁰; 1.59–2.16 % for
+B⁺; the gap lines now hold 0.97 / 1.08 %.
