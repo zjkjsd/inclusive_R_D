@@ -23,7 +23,7 @@ in % of the decays of that B flavor.
 | 4.4 | Composition nuisance for D(\*)D̄(\*)K\* (3.4) and the S042.609 closure check | AGREED (2026-11-25), section 3.4 | (b): one rate-conserving nuisance θ on the share of the D(\*)D̄(\*)K\* family (B⁰ 664–677, B⁺ 4221–4234, conjugates) in lines with a D± among the B daughters (664, 666, 669, 670, 671, 4221, 4222, 4231, 4232, 4233): w_direct = 1 + θ, w_rest = 1 − θ·BF_direct/BF_rest per flavor (family total stays with N₂); common to B⁰ and B⁺; Gaussian prior **θ = −0.35 ± 0.35** (centred on the measured D(\*)D̄(\*)K pattern, decay file at 1σ). (i): S042.609, Λ_cΛ̄_cK⁰, Λ_cΛ̄_cK⁺ and D_s⁺D_s⁻K⁺ are closure checks in the validation (piece 7), not constraints; MC/measured now 2.95 ± 0.40, 0.61 ± 0.15, 0.44 ± 0.08, 3.3 ± 1.2 |
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | AGREED (2026-11-26); (b)–(d) DONE (2026-11-26), section 3.6 | (a2) two semileptonic parameters: **r_SL** for D, D\*, narrow D\*\* ℓν (B⁰ and B⁺ common, prior 1.00 ± 0.05; Fisher in B3 decides prior or free) and **r_broad+gap** for broad D\*\* + gap ℓν (prior in 4.7); τ lines follow their light-lepton partner × R. (b1) D(\*)τν = **SM** R (0.296, 0.254) × the light-lepton c, 15 % prior; **B → Dτν correction for the background model only, never in the SR signal template or the signal fit** (flag `bkg_model_only`; at B9 decide whether its comb part follows the fitted R(D⁺)); (b4) D\*\*τν = R × D\*\*ℓν, R = LHCb-scaled theory for D₁ (0.144), D₂\* (0.101) ± 30 %, theory for D₀\* (0.08), D₁′ (0.05) ± 50 %; τ gap → 4.7. (c2) D\*\*ℓν = HFLAV 2023 isospin averages. (d2) D(\*)ℓν: B⁰ HFLAV isospin-combined (4.90, 2.11 %), B⁺ = 1.076 × B⁰ ± 2 % |
-| 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN | – |
+| 4.7 | Semileptonic gap modes (Belle II recommendation) | OPEN (2026-11-26), section 3.7 (sub-points 4.7a–d) | – |
 | 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN | – |
 
 Order agreed on 2026-11-22: 4.1 first (every later point is written in its terms), then 4.2, the
@@ -63,7 +63,9 @@ The semileptonic recipe the notes follow is one page, "Correction of BF(B → Xc
 | sum | 10.07 | 10.10 | 10.27 | 10.27 | 9.44 |
 
 - The 2025/26 values close the sum at 10.27 % (B⁰; 10.99 % B⁺), an inclusive value derived from HFLAV;
-  Dη and D\*η take (10.27 − 8.23 − 0.07 − 0.20)/2 = 0.885 each. HFLAV 2023 (arXiv:2411.18639) itself
+  Dη and D\*η take (10.27 − 8.23 − 0.07 − 0.20)/2 = 0.885 each. *(Note 2026-11-26: 0.885 is the arithmetic of the
+  printed sum 8.23 and equals the 2026 SLME/MC16rd value 8.8·10⁻³; the R(D\*) note's own value, 0.86, follows
+  from the true sum of its Table 6 rows, 8.279.)* HFLAV 2023 (arXiv:2411.18639) itself
   quotes B(B → Xcℓν) = 10.63 ± 0.15 % (eq. 106) and has no D(\*)ππℓν or D(\*)ηℓν average.
 - *Update 2026-11-26:* the "ours now" column predates 4.5 (B⁰ D₁ now 0.666, Dππ 0.071; sum 9.45 %, B⁺
   10.28 %); the D₁′ comparison below compares a B⁰ product with a B⁻ one (HFLAV in B⁰ units is
@@ -720,3 +722,79 @@ for 4.7). Tests: `test_real_semileptonic` rewritten for 4.6 (overrides, ratios, 
 
 **Rule for the analysis code (2026-11-26):** rows flagged `bkg_model_only` (B → Dτν and conjugates)
 are corrected in the BBbar model only; the signal component of the SR fit never uses their c.
+
+### 3.7 Semileptonic gap modes (opened 2026-11-26)
+
+*Context.* The measured inclusive B → X_cℓν rate exceeds the sum of the measured exclusive modes (D, D\*,
+D\*\*) by about 2 % of B decays per flavor: the "gap". Generic MC fills it with unmeasured decays: in our
+decay file non-resonant D(\*)πℓν (Goity–Roberts), D(\*)ππℓν and D(\*)ηℓν (phase space). In our samples
+these lines are 4.5 % (CR), 3.3 % (SR), 8.1 % (WC) of the comb + hadB yield, 80 % of it on the comb ℓ side.
+Belle II analyses fill the gap with D(\*)ππℓν and D(\*)ηℓν produced through a broad D\*\* (D₁′ or D₀\*),
+with dedicated MC samples. Until the Belle II xwiki page is available, the user takes the R(D\*) note
+(BELLE2-NOTE-PH-2025-031 v4.2, Sec. 3.2.3, Tables 5–7) as the recommendation (decided 2026-11-26). 4.6
+left the prior of r_broad+gap (broad D\*\* + gap) to this point. Four questions: (a) the rates of the gap
+lines, (b) the r_broad+gap prior, (c) composition nuisances and the τ gap, (d) the kinematics (phase
+space against D\*\*-mediated).
+
+*Facts (2026-11-26; three readers, each checked by a second; scripts in the session scratchpad `p47/`).*
+
+The recommendation (R(D\*) note, per light lepton, %): B⁰ Dππ 0.07 ± 0.08, D\*ππ 0.20 ± 0.10, Dη 0.86 ± 0.19,
+D\*η 0.86 ± 0.19; B⁺ 0.07 ± 0.09, 0.22 ± 0.10, 0.90 ± 0.20, 0.90 ± 0.20; all through D₁′/D₀\* (D(\*)ππ 50/50,
+D\*η via D₁′, Dη via D₀\*). Non-resonant D(\*)πℓν is not mentioned; the note's budget (inclusive 10.27 /
+10.99 = D + D\* + D\*\* + gap) leaves it no room, so it implies 0 (the SLME MC16rd values set it to 0
+explicitly). D_s(\*)Kℓν is outside the gap (excluded from the inclusive) and keeps its PDG c. τ gap: R(X_c)
+× inclusive − exclusive τ = 0.322 ± 0.076 (B⁰), 0.334 ± 0.082 (B⁺), cocktail 1/8 Dππ, 3/8 D\*ππ, 3/8 D\*η,
+1/8 Dη (Table 7; its f and luminosity columns contradict each other, so the cocktail actually used is
+uncertain). Prior widths: Table 6 errors (22 % on D(\*)η); 50 % proposed by the authors (Q84); 100 % asked by
+the reviewer and used by the SLME for MC16rd (D(\*)ηℓν note: 0.88 ± 0.88, 0.92 ± 0.92). The note's D/D\*/D\*\*
+values equal our 4.6 HFLAV values within 0.015 % in total, so its gap applies on top of 4.6 unchanged.
+
+Per line (B⁰ / B⁺; decay-file BF → recommended, implied c; one c per category over the decay file's charge
+split):
+
+| Category | B⁰ lines | current BF | recommended | c | B⁺ lines | current BF | recommended | c |
+|---|---|---|---|---|---|---|---|---|
+| D(\*)π non-res. | 374–377 (398–401) | 0.276 | 0 | 0 | 4006–4009 (4033–4036) | 0.300 | 0 | 0 |
+| Dππ | 379–381 (403–405) | 0.083 | 0.07 | 1.43 | 4011–4013 (4038–4040) | 0.107 | 0.07 | 1.32 |
+| D\*ππ | 383–385 (407–409) | 0.191 | 0.20 | 0.82 | 4015–4017 (4042–4044) | 0.220 | 0.22 | 0.84 |
+| Dη | 387 (411) | 0.217 | 0.86 | 3.96 | 4022 (4049) | 0.201 | 0.90 | 4.48 |
+| D\*η | 388 (412) | 0.217 | 0.86 | 3.96 | 4023 (4050) | 0.201 | 0.90 | 4.48 |
+| gap total | | 0.984 | 1.99 | | | 1.088 (incl. D_sK) | 2.15 | |
+
+Variant A′: keep the PDG-measured π⁺π⁻ lines at their PDG c (379/403 2.64, 383/407 0.49, 4011/4038 3.33,
+4015/4042 0.62) and fill only the rest of each category; it changes the yields by ≤ 0.03 % and keeps every
+D(\*)ππℓν closure at 0σ (the common-c split gives −1.1 to +1.5σ, −2.4σ for B⁺ D̄⁰π⁺π⁻).
+
+Consistency: semileptonic b → c sum per lepton now 9.25 % (B⁰), 9.98 % (B⁺); with the recommendation 10.26 /
+10.98 % (PDG 2026 inclusive 10.08 ± 0.37, 10.79 ± 0.37: +0.5σ, +0.7σ). With D(\*)π non-resonant at 0 the
+measured Dπℓν totals pull: B⁰ → D̄⁰π⁻ℓν (S042.311, 0.364 ± 0.021 %) MC 0.196 % and B⁺ → D⁻π⁺ℓν (S041.418)
+0.211 %, −8σ with the PDG errors only, about −2.4σ with the D₀\* uncertainty (c 0.32 ± 0.27) included (now
+about −1.1σ); the D\*πℓν totals become −1.5σ and −0.1σ. Closing the Dπ totals through D₀\* would need 0.37 %,
+5.6 times the Belle B⁰ limit (S042.418); the missing Dπℓν (0.25 % over both charge modes) can only be
+non-resonant or broad Dπ, or part of the gap.
+
+Effect in our samples (first order, comb + hadB): the recommendation as c only: CR +4.9 %, SR +3.6 %, WC
++8.1 % (D(\*)η × 4: +6.2 / +4.6 / +10.7 %; D(\*)π → 0: −1.2 / −1.0 / −2.5 %); transfers CR → SR −1.3 %, CR → WC
++3.1 %. Gap leverage afterwards 8.9 / 6.6 / 14.9 %. With r_broad+gap refitted in the CR, a common change of
+the gap leaves 0 in the SR and ≤ 0.12 % in WC; left to its prior, each 25 % of gap uncertainty moves CR → SR
+by 0.57 %. The prior implied by the gap width: 0.22 (Table 6 errors), 0.43 (50 %), 0.86 (100 %).
+Composition changes that a common r_broad+gap does not absorb (SR residual / WC residual after the CR refit):
+D-type against D\*-type within the gap (50 %): −0.17 / +0.58 % (B⁰ Dη, D⁻ directly, against D\*η, D⁻ only
+through D\*⁻); D(\*)π non-resonant from 0 to the PDG remainder (about 0.3 %, rate-conserving): +0.14 / +0.41 %;
+η against ππ (50 % of η moved): −0.07 / +0.24 %. τ gap carried by the broad D\*\*τν lines (D₀\*τ 1/4, D₁′τ
+3/4: c 421 0.072 → 0.692, 422 0.064 → 1.272, 4059 0.078 → 0.719, 4060 0.069 → 1.320): yields +0.6 / +0.7 /
++0.9 %, transfers +0.09 / +0.26 %; leaving it out leaves 0.23 % in the SR. The carriers' D± content differs
+from the cocktail's (D side only).
+
+Kinematics: release 08 has only phase-space gap lines (the D₀\*, D₁′ tables have no η or ππ channel). The
+resonant model changes efficiencies by +40–80 % for D(\*)ππ and +11–19 % for D(\*)η at preselection (R(X)
+note Table 5.2), the q² > 4 GeV² loss 3 % against 15 % (D(\*)ηℓν note), M_X peak 2.1–2.2 against 2.6 GeV; the
+D(\*)η resonant model lives entirely in the broad Breit–Wigner tail (thresholds 2.41–2.56 GeV above the
+poles), so it depends on the lineshape treatment. The SLME MC16rd dedicated samples exist only as FEI-skimmed
+uDSTs (skim 11180500), not usable for this analysis without the unskimmed mdst; no MC16rd τ-gap samples
+exist. Our ntuples identify gap B decays by truth (ancestor-B daughter lists), so phase-space gap events can be
+removed, but they store no true kinematics of the comb B (B0_mcMomTransfer2 is the true q² of the
+candidate's own B only, 0 for comb); a proxy reweighting in reconstructed p\*_ℓ, p\*_D with generator-level
+maps is possible now, a proper one needs the ancestor-B daughter four-vectors at the next reprocessing.
+Extra evidence on the size: the R(X) data pull the gap down by about 10 %; R(D(\*)) fits see little
+D(\*)ηℓν; the D(\*)ηℓν analysis expects limits of 7–8·10⁻⁴ per mode against the 0.86 % assumed.
