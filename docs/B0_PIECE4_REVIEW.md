@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-26 (4.7 decided, rates implemented; 4.8 facts, section 3.8).
+Last updated: 2026-11-27 (4.8 revised after the user's inputs, section 3.8).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -24,7 +24,7 @@ in % of the decays of that B flavor.
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | AGREED (2026-11-26); (b)–(d) DONE (2026-11-26), section 3.6 | (a2) two semileptonic parameters: **r_SL** for D, D\*, narrow D\*\* ℓν (B⁰ and B⁺ common, prior 1.00 ± 0.05; Fisher in B3 decides prior or free) and **r_broad+gap** for broad D\*\* + gap ℓν (prior in 4.7); τ lines follow their light-lepton partner × R. (b1) D(\*)τν = **SM** R (0.296, 0.254) × the light-lepton c, 15 % prior; **B → Dτν correction for the background model only, never in the SR signal template or the signal fit** (flag `bkg_model_only`; at B9 decide whether its comb part follows the fitted R(D⁺)); (b4) D\*\*τν = R × D\*\*ℓν, R = LHCb-scaled theory for D₁ (0.144), D₂\* (0.101) ± 30 %, theory for D₀\* (0.08), D₁′ (0.05) ± 50 %; τ gap → 4.7. (c2) D\*\*ℓν = HFLAV 2023 isospin averages. (d2) D(\*)ℓν: B⁰ HFLAV isospin-combined (4.90, 2.11 %), B⁺ = 1.076 × B⁰ ± 2 % |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | AGREED (2026-11-26); (a) DONE (2026-11-26), section 3.7 | recommendation = Belle II xwiki HFLAV 2023 table (2026-11-17). (a) gap rates: Dη = D\*η 0.88 % (B⁰) / 0.92 % (B⁺) per light lepton (100 %), D(\*)ππ to the xwiki totals (0.07 / 0.20 %, B⁺ 0.07 / 0.22 %) keeping the PDG-measured π⁺π⁻ lines, non-resonant D(\*)πℓν masked (c = 0), D_s(\*)Kℓν at PDG c, D₀\*ℓν aligned to 0.08 % (± 0.10 % kept); (b) r_broad+gap prior 1.0 ± 0.86 lognormal; (c) rate-conserving nuisances D/D\* ± 50 %, non-resonant D(\*)π 0 ↔ measured remainder, η/ππ ± 50 %; no τ gap; (d) rates only, gap-model shape nuisance from a proxy reweighting; ask SLME for unskimmed MC16rd mdst of the dedicated samples; truth four-vectors at the next reprocessing; non-resonant D(\*)π issue reported to SLME by the user |
-| 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN (facts 2026-11-26), section 3.8 | – |
+| 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN (facts 2026-11-26, revised 2026-11-27), section 3.8 | – |
 
 Order agreed on 2026-11-22: 4.1 first (every later point is written in its terms), then 4.2, the
 hadronic points 4.3–4.5, then the semileptonic points 4.6–4.8 (they wait for the recommendation and
@@ -937,27 +937,76 @@ the same models and parameters; equal string for string to Table 4.6 of the D(\*
   < 0.1 %. Compare 4.6 (0.2–1.4 %) and 4.7 (1.3–2.9 %, and the phase-space gap kinematics, ε +11 to +80 %):
   **FF effects are subleading**, comparable to the 4.6 items.
 
-*Abnormal findings (raised, not fixed).*
+*Inputs from the user (2026-11-27) and the checks they led to.* The first version of this point
+(2026-11-26) listed four "abnormal findings" and options built on them. The user added: (1) HAMMER is
+usually applied to signal; the working group asks for it on the signal templates in the SR, after the
+BBbar/K_L study, which should hand over global weights (PDG corrections and other confident ones);
+(2) the pyhf workspace is preliminary, so a missing modifier is a to-do item, not an anomaly; (3) the
+MCAmbulance widths and the variables it needs (the working group recommends MCAmbulance for D\*\*ℓν);
+(4) whether `B0_mcDaughter_0_M` equals `mcDaughter(0, M)`. Three checks, each re-checked by a second
+reader (scratchpad `p48/`, `r08src/`):
 
-1. **Signal and normalization use different FF families.** Line 418 (B⁰ → D⁻τν, our signal) is CLN/HFLAV 2016,
-   lines 367/391 (D⁻ℓν, the normalization) are BGL/Glattauer; the BF ratio implies R(D) = 0.299 (BLPRXP 0.288).
-   Every Belle II analysis reweights both to BLPRXP. This concerns the SR signal and normalization templates
-   (B9), not only the BBbar model.
-2. **The SR fit fixes D\*\*ℓν and the gap to MC.** In `fitting.py` (180–198, 496, 584–591) the merged
-   D\*\*ℓν template and `Dlnu_gap` get no normfactor or normsys unless the gap weight is 0 (μ workspace: staterror
-   only); the e workspace excludes them. Any FF or BF systematic on these needs new modifiers (B9).
-3. **MCAmbulance defaults vs our pdl.** D₁′ width 314 MeV in MCAmbulance, 384 MeV in `Samples/dec/evt_rel08.pdl`
-   (D₀\* agree); must be overridden if MCAmbulance is used. Whether EvtGen applies max_Dm on both sides (the R(X)
-   note found unphysical high-mass tails) could not be checked (gitlab.cern.ch not reachable).
-4. **The 2026-11-26 next-reprocessing item is not enough for HAMMER.** "At least p\*, M_X, q²" covers D ℓν and
-   a lineshape correction, not D\*, D\*\* or τ: those need the four-vectors of the full chain (B, X_c and its
-   daughters, τ daughters) and signed PDGs; or, lighter, the ancestor-B genParticleID per candidate plus a
-   truth-file decay tree joined by (exp, run, event, ID), which also covers the tag side.
+- **HAMMER in practice.** (iii) Signal: standard. (i) Own-B normalization and backgrounds: every source
+  reweights them and gives them their own FF NPs: R(D\*) note Table 32 (D(\*)ℓν/τν → BLPRXP, all D\*\* → BLR;
+  "D(\*\*) FF", 4 NPs, 1.3 % on R(D\*), larger than the D(\*) FF 0.14 %); D(\*)ηℓν note (FF_BLR_broad_bkg and
+  FF_BLR_narrow_combined for the background D\*\*, decorrelated from the signal D\*\*); R(X) note Table 6.4;
+  Belle II 2401.02840 and 2504.11220; Belle 1507.03233 and 1904.08794 (ISGW → LLSW). (ii) The other B
+  (comb, tag side): no Belle II note or paper says it applies HAMMER there; the generic BBbar background is
+  handled with free normalizations from sidebands and empirical reweightings (R(X) "BB background
+  reweighting" in (p_ℓ, M_X); the R(D\*) note's sideband reweighting, later dropped). Two softer precedents:
+  Belle 1507.03233 applies its D\*\* and D(\*)ℓν FF weights to "the background MC", defined as the generic
+  b → c sample; the R(D\*) note's gap section notes that truth-level changes to one B also move the BBbar
+  template. So the user's view holds for comb; own-B backgrounds are reweighted like the signal.
+- **MCAmbulance** (github.com/Herren/MCAmbulance, HEAD 70dd2da of 2026-09-15; Herren and van Tonder,
+  arXiv:2602.18378). The README (line 9) says the masses and widths are the basf2 evt.pdl defaults and
+  links the file on `main`. The numbers in `defaults.py` are those of **release-09** (D₀\* 2349/221 and
+  2300/274 MeV, equal to our rel08; D₁′ 2427/314 MeV), not of `main` (D₀\* 2343/229, D₁′ 2412/314) and not of
+  rel08 (D₁′ 2427/**384** MeV; `Samples/dec/evt_rel08.pdl` is byte-identical to basf2 release-08-00-00).
+  For the two-body channels in our file (D₀\* → Dπ, D₁′ → D\*π) the lineshape cancels per event and the
+  configured mass and width enter only a global constant (`semileptonic.py` 110–122): the weight shape in
+  m is unchanged and the D₁′ℓν weights come out **0.960 (e, μ) / 0.981 (τ) times** the right ones (B⁰ and
+  B⁺); D₀\* is exact (ratio 1.00000). It vanishes if the D₁′ℓν weights are renormalized or `m_nom`/`g_nom` set
+  to the rel08 values. The correction itself is large: B⁰ D₁′eν ⟨m⟩ 2.567 → 2.447 GeV, fraction above
+  2.8 GeV 18 % → 5 %; weights 2.05 at m = 2.2 GeV to 0.07 at 3.5 GeV (D₁′μ). Per event it needs: the true
+  D\*\* mass (the MCParticle mass, not rebuilt from daughters, because of PHOTOS), the B charge, the D\*\* type
+  (D₀\* or D₁′) and the lepton flavor (τ itself for τ modes); no q², no FF parameters (its LLSW defaults
+  0.68 −0.2 0.3 equal our lines 369/370). Not covered: narrow D₁, D₂\* (paper: 2–5 % q² effects, 10–20 % at low
+  q² for τ), PHSP and Goity–Roberts lines; hadronic B → D\*\*X decays (lines 623–624, 737–742, 4182–4183,
+  4316–4321) must not be reweighted, so a lepton sibling is required. EvtGen mass range (from the
+  cms-externals EvtGen mirror, not the rel08 build): upper edge M + 15Γ, `max_Dm` sets only the lower edge,
+  so our broad lineshapes are not truncated (the earlier open question is closed).
+- **`B0_mcDaughter_0_M`** (basf2 release-08-00-00 and 08-02-06 sources, identical; user agreed 2026-11-27):
+  `daughterMCInvariantMass(0)` is the mass of the MC match of the reconstructed daughter 0 (the D⁻), while
+  `mcDaughter(0, M)` is the generator mass of the first MC daughter of the B's match (the D\*\* in D\*\*ℓν, a B
+  in comb). They agree for signal and D⁻ℓν, not for D\*\* or comb. The alias name suggests otherwise because
+  its siblings `mcDaughter_0_PDG`, `mcDaughter_1_PDG` do use the MC daughters. `mcDaughter(0, M)` and
+  `mcDaughter(0, InvM)` are the same (an MC-built particle has no daughters).
 
-*Options.* (a) No nominal FF reweighting in the BBbar model now; one shape-only nuisance per FF class in the
-BBbar prior (D(\*)ℓν/τν: generator → BLPRXP-proxy difference, width doubled for the factor 2–3; broad D\*\*: BLR
-±1.5σ), built with the 4.7 (d) proxy maps in reconstructed p\*_ℓ / p\*_D; full HAMMER on comb once truth
-four-vectors exist; the own-B components (signal, normalization, D\*, D\*\*) reweighted with HAMMER as a global
-correction of the SR templates at B9. (b) Nominal proxy reweighting of comb now (needs standalone EvtGen +
-HAMMER maps; not available here). (c) Nothing for the BBbar model; rely on the empirical kinematic tuning
-(`kinematic-2d-plus-roe`), which partly absorbs FF-shape mismodelling. Recommendation: (a).
+*Revised reading of the first-version findings.* (1) Signal (CLN, line 418) and normalization (BGL, 367/391)
+FF families differ: not an anomaly; it is what the planned HAMMER reweighting of the SR templates to BLPRXP
+removes (to-do below). (2) Workspace modifiers: to-do items (below). (3) MCAmbulance width: a constant −4 %
+(e, μ) / −2 % (τ) on D₁′ℓν weights only, removed by renormalizing; worth one question to the developer
+(release-09 numbers while the README links `main`), not a blocker. (4) The reprocessing list: still
+needed, now with the MCAmbulance inputs (`docs/NEXT_REPROCESSING.md`, 2026-11-27 item).
+
+*To-do for the SR fit (B9; development items, not anomalies).*
+- HAMMER on the signal and own-B templates: D⁻τν (signal), D⁻ℓν (normalization), D\*τν, D\*ℓν → BLPRXP
+  (9 eigen-NPs, one set for ℓ and τ); D\*\*ℓν/τν → BLR (narrow 4, broad 3 NPs); MCAmbulance on D₀\*/D₁′ℓν/τν. The
+  same weights on the own-B components in the CR and WC, so the BBbar tuning and the SR see one model.
+- Workspace: normfactor or prior for D\*\*ℓν and the gap (now staterror only in μ, absent in e), FF eigen-NPs
+  as histosys, the BBbar eigen-NPs of 4.1, the `bkg_model_only` rule for Dτν.
+- Truth needed for own-B HAMMER on D\*, D\*\* and τ modes (angles, τ daughters): see the reprocessing list.
+
+*Revised options (2026-11-27).* All three keep the split: HAMMER and MCAmbulance on own-B components are the
+global SR step (to-do above); this point only decides what the BBbar model does for comb.
+(a) No FF or lineshape weights for comb in the BBbar model. Comb FF effects (estimated 0.1–0.6 % on the
+transfers, broad D\*\* mostly inside r_broad+gap) are covered by r_SL, r_broad+gap and the kinematic tuning;
+the size estimate is recorded and checked in B3 (Fisher run). At the next reprocessing store the
+MCAmbulance inputs for both B mesons, so MCAmbulance (the working-group recommendation for D\*\*ℓν) can then
+also be applied to comb D\*\*ℓν, and a comb HAMMER cross-check becomes possible if the four-vectors are stored.
+(b) As (a), plus explicit shape-only nuisances for comb FF now (proxy maps in reconstructed p\*_ℓ, p\*_D).
+(c) As (a), but no truth for the other B at the next reprocessing (own-B inputs only).
+Recommendation: (a). Reasons: no precedent for HAMMER on the other B; the effect is subleading next to
+4.6/4.7; (b) adds parameters for an effect below the existing priors, against the "simplest first" rule of
+4.7; MCAmbulance's correction on broad D\*\* is large in m (above), so the cheap event-level inputs are worth
+storing for comb as well.
