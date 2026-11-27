@@ -25,7 +25,7 @@ starts only then. Appendix A lists the pieces and their status.
 | Part | Topic | Status |
 |---|---|---|
 | A | Signal-region (SR) BDT cut optimization | DONE: the final tight cut is the new `util.lgb_tight` |
-| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); B0 pieces 1 and 2 DONE, piece 3 next (B.13) |
+| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); B0 pieces 1–4 DONE or AGREED (piece 4 decided 2026-11-27; its model weights still to be coded), piece 5 AGREED (B.13) |
 | C | Global K_L check | AGREED as a separate track; not started |
 
 | File | Role | Status |
@@ -46,7 +46,7 @@ starts only then. Appendix A lists the pieces and their status.
 
 | Step | What | Purpose | Inputs | Notes |
 |---|---|---|---|---|
-| B0 | Decay-table parser + PDG matching | classify modes (exclusive measured / estimated / PYTHIA); BF_MC; priors c_k ± σ_k | decay table, PDG | no data; five pieces (B.13): pieces 1 and 2 DONE, pieces 3–5 to discuss |
+| B0 | Decay-table parser + PDG matching | classify modes (exclusive measured / estimated / PYTHIA); BF_MC; priors c_k ± σ_k | decay table, PDG | no data; five pieces (B.13): pieces 1–3 DONE, piece 4 AGREED (rates DONE, weights and toys to code), piece 5 AGREED |
 | B1 | Composition study | truth-class fractions in RS corner, RS band, WC (comb cut), WC (SR cut), SR comb | MC only | class codes stored at load time |
 | B2 | Fingerprints of H1–H3 | which generator weakness matches the observed data/MC patterns | MC + existing data/MC plots | looking only, no fit |
 | B3 | Fisher model design (Use A) | which parameters are measurable; free vs prior vs merged | MC only | first: predicted vs HESSE errors of the existing JSON |
@@ -457,10 +457,12 @@ charm); the same gap would bias the CR → SR transfer.
 |---|---|---|
 | r_meas | decays whose final state is in the measured list | prior (~15 %) |
 | r_SL | light-lepton D, D\*, narrow D\*\* ℓν (piece 4, 4.6); τ lines follow their partner × R | prior 1.00 ± 0.05 (B3 Fisher: prior or free) |
-| r_broad+gap | broad D\*\* (D₀\*, D₁′) ℓν and the gap modes (4.6) | prior from 4.7 |
+| r_broad+gap | broad D\*\* (D₀\*, D₁′) ℓν and the gap modes (4.6) | prior 1.0 ± 0.86 lognormal (4.7) |
+| gap composition | rate-conserving nuisances D/D\* (± 50 %), non-resonant D(\*)π (0 ↔ measured remainder), η/ππ (± 50 %); gap-model shape nuisance from a proxy reweighting (4.7) | nuisances |
 | ε | PYTHIA single-charm isospin: w_same = 1 − ε, w_other = 1 + ε·R (4.3) | prior 0.2 ± 0.2 |
 | θ | direct-D± share of the D(\*)D̄(\*)K\* family, rate-conserving (4.4) | prior −0.35 ± 0.35 |
 | w_D₁ | D₁(2420) decay table: D\*π × 1.073, Dππ × 0.891 (4.5), on `D_genMotherPDG` / `D_genGMPDG` | nuisance ±0.046 / ±0.076 |
+| (none) | form factors and broad-D\*\* lineshape (4.8): not a BBbar parameter; one global HAMMER + MCAmbulance weight set for every semileptonic decay of the event, set up with the SR step (B9) once the truth of both B is stored; comb FF effect for now inside r_SL, r_broad+gap and the tuning | – |
 | N₁ | unmeasured b → c + light quarks: PYTHIA and unmeasured exclusive decays with a single charm quark (piece 3, 3.3); with an isospin parameter for its PYTHIA part (3.5) | free; isospin parameter with a prior (piece 4) |
 | N₂ | unmeasured b → cc̄s(d): PYTHIA and unmeasured exclusive decays with a cc̄ pair (two open-charm hadrons or charmonium) (3.1, 3.3); D_s class scaled by N₂·r_s | prior N₂ = 0.93 ± 0.13, r_s = 1.00 ± 0.25, correlation −0.6 (3.2, revised after 3.4) |
 | a | all PYTHIA decays, by exp(a · (n − n̄)) | free |
@@ -685,7 +687,7 @@ independent script. Sample: the six CSVs (run1 e, `MC_e_comb`).
 | 1 | Generator classification: parser + lookup of the final state | AGREED and DONE |
 | 2 | PDG comparison: the unit (PDG final state, not decay-file line), the definition of "measured", product-of-BF modes, K⁰ vs K_S, upper limits | DONE (2026-11-17): all review points decided and implemented; record in `docs/B0_PIECE2_REVIEW.md`, cases in `docs/B0_PIECE2_CASES.md` |
 | 3 | Exclusive modes without a measurement: how they enter the model. | DONE (2026-11-20): classes N₁/N₂ by quark process with priors, LHCb-based c for the D\*\*D_s and D_s Dπ lines, c = 1 ± 1 for the rest, isospin parameter for PYTHIA single charm; record in `docs/B0_PIECE3_REVIEW.md` (section 4 is the summary) |
-| 4 | Priors: c_k applied as weights or only setting widths; correlations between modes; one r_SL or a split (D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a theory R(D\*), so a PDG correction would be circular) | OPEN; record in `docs/B0_PIECE4_REVIEW.md` (points 4.1–4.8; 4.1 AGREED 2026-11-24: c as nominal weights, σ_c by toys into the SR prior, no unitarity rescaling, N₂/r_s start at the prior centres) |
+| 4 | Priors: c_k applied as weights or only setting widths; correlations between modes; one r_SL or a split (D, D\*, narrow D\*\* vs broad D\*\* + gap); τ modes (their MC BF comes from a theory R(D\*), so a PDG correction would be circular) | AGREED (2026-11-27), all points 4.1–4.8; rate corrections of 4.5–4.7 DONE (166 exceptions); the event weights (ε, θ, D₁), r_SL/r_broad+gap, the composition nuisances and the toys of 4.1/4.2 are to be coded (B4). Record and summary in `docs/B0_PIECE4_REVIEW.md` (section 1 decisions, section 4 summary) |
 | 5 | Code layout and committed inputs | AGREED: develop and test in separate modules; merge into `utilities.py` at the end if it fits. `evt_rel08.pdl` is committed next to the decay file. Cached PDG table: with piece 2 |
 
 **Piece 1 (DONE): `scripts/tools/decay_table.py`.** Needs numpy and pandas only.

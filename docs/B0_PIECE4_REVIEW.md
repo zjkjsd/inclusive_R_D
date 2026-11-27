@@ -8,7 +8,7 @@ decision is entered only after it was discussed and agreed. Each point in sectio
 *context* paragraph: what problem the point solves and where it sits in the model (rule agreed
 2026-11-25). Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables rerun).
 
-Last updated: 2026-11-27 (4.8 revised after the user's inputs, section 3.8).
+Last updated: 2026-11-27 (piece 4 complete: 4.8 decided; summary in section 4).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC`. Semileptonic rates are per light lepton,
 in % of the decays of that B flavor.
@@ -24,7 +24,7 @@ in % of the decays of that B flavor.
 | 4.5 | The D₁(2420) decay table (3.7): event weight on `D_genMotherPDG` | AGREED (2026-11-25); line c DONE (2026-11-26), section 3.5 | (a): every D₁(2420) decay is reweighted, D\*π × **1.073**, Dππ × **0.891** (one nuisance, ±0.046 / ±0.076 anti-correlated; total D₁ rate kept), from `D_genMotherPDG` = D₁ (D from Dππ) or `D_genMotherPDG` = D\* and `D_genGMPDG` = D₁ (D through D\*π), in all samples and, at B9, in the D\*\*ℓν template; the product c through D₁ use the corrected table (`sub_decay` exception): D₁ℓν B⁰ 0.959 → 0.946, B⁺ 0.909 → 0.881, B⁰ D₁π 0.621 → 0.697 |
 | 4.6 | r_SL: one parameter or a split; τ modes; D\*\* targets; normalization-mode values | AGREED (2026-11-26); (b)–(d) DONE (2026-11-26), section 3.6 | (a2) two semileptonic parameters: **r_SL** for D, D\*, narrow D\*\* ℓν (B⁰ and B⁺ common, prior 1.00 ± 0.05; Fisher in B3 decides prior or free) and **r_broad+gap** for broad D\*\* + gap ℓν (prior in 4.7); τ lines follow their light-lepton partner × R. (b1) D(\*)τν = **SM** R (0.296, 0.254) × the light-lepton c, 15 % prior; **B → Dτν correction for the background model only, never in the SR signal template or the signal fit** (flag `bkg_model_only`; at B9 decide whether its comb part follows the fitted R(D⁺)); (b4) D\*\*τν = R × D\*\*ℓν, R = LHCb-scaled theory for D₁ (0.144), D₂\* (0.101) ± 30 %, theory for D₀\* (0.08), D₁′ (0.05) ± 50 %; τ gap → 4.7. (c2) D\*\*ℓν = HFLAV 2023 isospin averages. (d2) D(\*)ℓν: B⁰ HFLAV isospin-combined (4.90, 2.11 %), B⁺ = 1.076 × B⁰ ± 2 % |
 | 4.7 | Semileptonic gap modes (Belle II recommendation) | AGREED (2026-11-26); (a) DONE (2026-11-26), section 3.7 | recommendation = Belle II xwiki HFLAV 2023 table (2026-11-17). (a) gap rates: Dη = D\*η 0.88 % (B⁰) / 0.92 % (B⁺) per light lepton (100 %), D(\*)ππ to the xwiki totals (0.07 / 0.20 %, B⁺ 0.07 / 0.22 %) keeping the PDG-measured π⁺π⁻ lines, non-resonant D(\*)πℓν masked (c = 0), D_s(\*)Kℓν at PDG c, D₀\*ℓν aligned to 0.08 % (± 0.10 % kept); (b) r_broad+gap prior 1.0 ± 0.86 lognormal; (c) rate-conserving nuisances D/D\* ± 50 %, non-resonant D(\*)π 0 ↔ measured remainder, η/ππ ± 50 %; no τ gap; (d) rates only, gap-model shape nuisance from a proxy reweighting; ask SLME for unskimmed MC16rd mdst of the dedicated samples; truth four-vectors at the next reprocessing; non-resonant D(\*)π issue reported to SLME by the user |
-| 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | OPEN (facts 2026-11-26, revised 2026-11-27), section 3.8 | – |
+| 4.8 | Form-factor reweighting (HAMMER): in this model or a global correction | AGREED (2026-11-27), section 3.8 | (a), sharpened: FF (HAMMER: BLPRXP for D(\*)ℓν/τν, BLR for D\*\*) and lineshape (MCAmbulance: D₀\*, D₁′) weights attach to **decays, not to the candidate's role**: once the truth exists they apply to every semileptonic B decay of the event (event weight = product over the two B), in all regions, as one global correction set up with the SR HAMMER step (B9). Now: no comb FF weights in the BBbar model (truth missing; estimated 0.1–0.6 % on the transfers, possibly ×2–3) — covered by r_SL, r_broad+gap and the kinematic tuning, size checked in the B3 Fisher run. Next reprocessing: MCAmbulance inputs and four-vectors for both B (planned input, `docs/NEXT_REPROCESSING.md`). MCAmbulance D₁′ width: renormalize D₁′ℓν weights (or set rel08 `m_nom`/`g_nom`); question to the developer optional |
 
 Order agreed on 2026-11-22: 4.1 first (every later point is written in its terms), then 4.2, the
 hadronic points 4.3–4.5, then the semileptonic points 4.6–4.8 (they wait for the recommendation and
@@ -1010,3 +1010,62 @@ Recommendation: (a). Reasons: no precedent for HAMMER on the other B; the effect
 4.6/4.7; (b) adds parameters for an effect below the existing priors, against the "simplest first" rule of
 4.7; MCAmbulance's correction on broad D\*\* is large in m (above), so the cheap event-level inputs are worth
 storing for comb as well.
+
+*Question from the user (2026-11-27): why HAMMER on the signal B and not on the tag B, when both feed comb?*
+Analyses reweight the signal-side B because its templates (signal, normalization, own-B D\*\*ℓν) are
+separated by their FF-dependent shapes, so an FF error moves R(D) at first order. The other B is skipped for
+practical reasons, not physics: with hadronic FEI the tag B is hadronic (no FF); a semileptonic other B
+appears only in misreconstructed background, where its kinematics are diluted by random pairing and
+selection and absorbed by free normalizations or empirical reweightings; and its truth decay tree is
+rarely stored. In our untagged analysis argument 2 does not hold and 3 only partly: the comb lepton comes
+from the other B's semileptonic decay in 38 / 34 / 76 % of comb (CR / SR / WC) and |p\*_ℓ| enters p_D_l.
+What keeps the effect small now is its size (lepton fraction above 0.8–1.2 GeV moves by 0.5–1.4 % between
+realistic D\*ℓν FF sets). The consistent rule is therefore to weight every semileptonic decay of the event.
+
+**Decision (2026-11-27): option (a), sharpened as above, AGREED.** Reasons: an FF or lineshape weight is a
+property of the decay, so the target is one global set of weights for both B mesons; until the truth of
+the other B is stored the comb effect is subleading and inside the existing priors; adding comb FF
+nuisances now (b) would add parameters below the existing priors; storing the truth for both B (not
+only the own B, (c)) is cheap and lets the SR HAMMER step reweight comb consistently. Nothing to implement
+in piece 4. Follow-ups: the to-do list above (B9), the reprocessing items, the B3 size check.
+
+## 4. Piece 4: summary and what passes on (2026-11-27)
+
+All eight points are AGREED; the rate corrections of 4.5–4.7 are implemented in `pdg_match.py` and the
+exceptions file (166 entries; tests 38 + 15 pass). The model, as it now stands:
+
+- **How corrections enter (4.1).** Every c is a nominal event weight in all samples (CR, WC, SR). The σ_c are
+  not free parameters: toys of all c, drawn from the source model of 4.2, go through the linearized tuning
+  into the SR prediction and enter the SR prior as a few eigen-NPs (shared with the SR templates at B9). No
+  unitarity rescaling; N₁ free and compared with k = 1.11 (B⁰) / 1.14 (B⁺); N₂ = 0.93 ± 0.13 and r_s = 1.00 ±
+  0.25 (ρ = −0.6) start at their prior centres.
+- **Correlations (4.2).** Each c is a sum of named sources (construction correlations plus documented common
+  components). Transfers move by about 0.4 % (CR → SR) and 0.8–1.0 % (CR → WC).
+- **Hadronic parameters.** ε = 0.2 ± 0.2 for PYTHIA single charm (4.3, w_same = 1 − ε, w_other = 1 + εR,
+  R = 6.0 / 7.5); θ = −0.35 ± 0.35 for the D(\*)D̄(\*)K\* composition with closure checks S042.609 and the
+  ΛcΛ̄cK, D_sD_sK lines in piece 7 (4.4); D₁(2420) decay table D\*π × 1.073, Dππ × 0.891 (4.5, event weight on
+  `D_genMotherPDG`/`D_genGMPDG`, DONE in the c).
+- **Semileptonic parameters.** r_SL (D, D\*, narrow D\*\* ℓν; 1.00 ± 0.05) and r_broad+gap (1.0 ± 0.86
+  lognormal); D(\*)ℓν, D\*\*ℓν to HFLAV 2023 (B⁺ = 1.076 × B⁰); τ lines = SM R × the light-lepton c (D τν
+  `bkg_model_only`: never in the SR signal template or the signal fit); D\*\*τν with LHCb-scaled or theory R
+  (4.6); gap rates from the Belle II xwiki table, non-resonant D(\*)πℓν masked, composition nuisances
+  D/D\*, non-resonant D(\*)π, η/ππ, a gap-model shape nuisance from a proxy reweighting (4.7); no FF or
+  lineshape weights for comb now, one global HAMMER + MCAmbulance set for both B later (4.8).
+- **Semileptonic sums** per light lepton: B⁰ 10.26 %, B⁺ 11.04 % (xwiki 10.27, 11.05).
+
+What passes on:
+
+- **To the code (B4 tuning, and a module for the model weights):** the ε, θ and D₁ event weights; r_SL and
+  r_broad+gap as parameters with their priors; the 4.7 composition nuisances and the gap-shape proxy; the
+  toy machinery of 4.1/4.2; the `bkg_model_only` rule.
+- **To B3 (Fisher run):** r_SL, r_broad+gap, ε (prior or free); the comb FF size check (4.8).
+- **To piece 7 (validation):** the closure checks of 4.4; the D(\*)πℓν node tension of 4.7.
+- **To B9 (SR hand-over):** whether the comb part of B⁰ → D⁻τν follows the fitted R(D⁺); sharing of NPs with
+  the SR templates; the SR to-do list of 3.8 (HAMMER, MCAmbulance, workspace modifiers); carrying the global
+  weights (PDG c, D₁ table and the other confident corrections) into the SR templates.
+- **Outside the analysis:** the SLME question on non-resonant D(\*)πℓν (`docs/SLME_NONRESONANT_DPILNU_NOTE.md`,
+  raised by the user) and the request for unskimmed MC16rd gap samples; the MCAmbulance width question.
+- **Next reprocessing** (`docs/NEXT_REPROCESSING.md`): signed ancestor-B PDG, daughter count, 10 slots;
+  the true B-daughter four-vectors and MCAmbulance inputs for both B; `mcDaughter(0, M)`.
+- **Part C / H3:** the inclusive D-decay composition (raised 2026-11-23).
+
