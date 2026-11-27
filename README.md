@@ -40,12 +40,15 @@ Before that reprocessing, read `docs/NEXT_REPROCESSING.md` (variables to add to 
 | `scripts/tools/fitting.py` | Templates, `pyhf` workspaces, D-mass fit, pull linearity, `pyhf_utils`, `toy_utils` |
 | `scripts/tools/plotting.py` | Colormap, PID-weight heatmap, the `mpl` data/MC plotting class, fit-projection plots |
 | `scripts/tools/bdt_cut_optimization.py` | BDT working-point optimization (driven by `Notebooks/7_bdt_cut_optimization.ipynb`) |
+| `scripts/tools/decay_table.py`, `scripts/tools/pdg_match.py` | BBbar model step B0: decay-file parser and classification; PDG comparison and per-line corrections (`Samples/dec/pdg_exceptions.json`) |
+| `scripts/mc_truth/` | Generator truth of MC16rd B decays (basf2 steering and analysis) |
 | `scripts/tests/` | Standalone tests for the modules in `scripts/tools/` |
 | `Notebooks/` | Training-set preparation, PID studies, truth checks, fitting examples, and validation plots |
 | `Fit_toys/` | Toy-fit workflow and example workspaces |
 | `docs/ANALYSIS_CONTEXT.md` | Physics categories, fit model, control regions, open issues, and editing guardrails |
+| `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md` | Plan and status of the BDT optimization and the BBbar background model; the B0 review records are `docs/B0_PIECE*_REVIEW.md`, the next-session prompt `docs/NEXT_SESSION.md` |
 | `Old_scripts/` | Superseded implementations retained for reference; do not use as the default workflow |
-| `Samples/` | Local grid ntuples (never commit these; create/download locally) |
+| `Samples/` | Local grid ntuples (never commit these; create/download locally); exception: the committed inputs `Samples/dec/` (decay file, evt.pdl, PDG cache, exceptions) and `Samples/mc_truth/` (generator-truth files) |
 
 Run the scripts in `scripts/` from the repository root (for example
 `python scripts/4_LightGBM_Multiclass_Training.py`), because their input and

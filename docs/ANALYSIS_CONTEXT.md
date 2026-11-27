@@ -208,7 +208,8 @@ pending an updated MC16rd table (expected summer 2026).
 - **basf2 and offline Python are different environments:** steering scripts
   under `Recon_scripts/` require basf2. Do not treat failure to import basf2 in
   a plain Python environment as a steering-code defect.
-- **Protect analysis provenance:** do not commit `Samples/`, Optuna databases,
+- **Protect analysis provenance:** do not commit `Samples/` (except the committed
+  inputs in `Samples/dec/` and `Samples/mc_truth/`), Optuna databases,
   large ROOT files, or other regenerable outputs. Changes to selections, fit
   bins, fixed/floating parameters, or systematic assumptions must be called
   out explicitly because status material can quote results from the prior

@@ -21,7 +21,7 @@ the history.
 > - `docs/B0_PIECE4_REVIEW.md`: section 1 (decision table with current values) and section 4 (piece-4
 >   summary and what passes on). Read a dated section (3.1–3.8) when a point refers to it; each opens
 >   with a context paragraph.
-> - `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md`: the procedure table (B0–B9, C1–C2), B.6 (the reweighting
+> - `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md`: the procedure table (B0–B9, C1–C3), B.6 (the reweighting
 >   model and its parameter table) and B.13 (B0 in five pieces).
 > - `docs/B0_PIECE3_REVIEW.md` section 4 and `docs/B0_PIECE2_REVIEW.md` sections 1–4 for the earlier
 >   pieces; `docs/REFERENCES.md`; `docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`; `docs/NEXT_REPROCESSING.md`

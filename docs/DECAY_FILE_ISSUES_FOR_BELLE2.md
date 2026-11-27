@@ -1,6 +1,6 @@
 # Issues found in the Belle II B-meson decay file (release 08) by a comparison with PDG 2026
 
-Date: 2026-11-19
+Date: 2026-11-19 (item 5b.8 added 2026-11-20; section 6d added 2026-11-27)
 Contact: _(name, analysis group)_
 Context: inclusive tagged R(D⁺) analysis; background modeling of generic BB̄ MC (MC16rd)
 
@@ -128,8 +128,7 @@ lines, or to 0 where the resonances saturate the total.
 | 5b.5 | 633–638; 4193–4198: B → D_s(\*)Dππ | B⁰ and B⁺ totals equal, charge split not isospin-symmetric (e.g. B⁰ D_s⁺D⁻π⁰π⁰ 2.2·10⁻³ against B⁺ D_s⁺D̄⁰π⁰π⁰ 0.8·10⁻³) | no measurement | – |
 | 5b.6 | 664–677; 4221–4234: B → D(\*)D̄(\*)K\* | round values, DD : D\*D : DD\* : D\*D\* = 1:1:1:2 | no measurement (an LHCb thesis, Syracuse 2022, measured 11 of them in the K\*⁰ window, unpublished); the measured D(\*)D̄(\*)K modes have a different D\* pattern (two-pseudoscalar lines about 3 times too high by symmetry) | family total compatible |
 | 5b.7 | 674 and ψ(3770)K\*⁰ (597–600), plus PYTHIA | B⁰ → D⁰D̄⁰K⁺π⁻ about 10·10⁻⁴ in generic MC | LHCb arXiv:2007.04280: 3.51 ± 0.47·10⁻⁴ | about 3 times too high (PYTHIA alone 5.2·10⁻⁴) |
-
-| 5b.8 | D₁(2420) decay table (`Decay D_10`, lines 9632–9637, and its charged partner) | D\*π 60 %, Dππ 40 % (D⁰π⁺π⁻ 17.2 %, D⁰π⁰π⁰ 11.5 %, D⁺π⁻π⁰ 11.5 %) | same-paper ratios Dππ/D\*π: Belle 2023 (arXiv:2211.09833) B → D₁ℓν, B⁺ 0.42 ± 0.07, B⁰ 0.33 ± 0.08; LHCb 2011 (arXiv:1109.6831) B⁺ → D₁π⁺ 0.29 ± 0.09; decay file 0.43 | Dππ about 20 % too high relative to D\*π (B(D₁ → D\*⁺π⁻) 0.43 ± 0.02 instead of 0.40); affects the D⁺/D⁰ content of B → D₁ℓν |
+| 5b.8 | D₁(2420) decay table (`Decay D_10`, lines 9632–9638, and `Decay D_1+`, 9621–9627; unchanged in basf2 main of 2026-11-26, lines 9645 and 9634) | D\*π 60 %, Dππ 40 % (D⁰π⁺π⁻ 17.2 %, D⁰π⁰π⁰ 11.5 %, D⁺π⁻π⁰ 11.5 %) | same-paper ratios Dππ/D\*π: Belle 2023 (arXiv:2211.09833) B → D₁ℓν, B⁺ 0.42 ± 0.07, B⁰ 0.33 ± 0.08; LHCb 2011 (arXiv:1109.6831) B⁺ → D₁π⁺ 0.29 ± 0.09; decay file 0.43 | Dππ about 20 % too high relative to D\*π (B(D₁ → D\*⁺π⁻) 0.43 ± 0.02 instead of 0.40); affects the D⁺/D⁰ content of B → D₁ℓν |
 
 None of the lines in 5b.1–5b.6 carries a comment giving its source; the LHCb results of 5b.1–5b.4 are not
 yet in the PDG listings (2026 edition).
@@ -161,6 +160,22 @@ yet in the PDG listings (2026 edition).
 - The J/ψ X total is right (1.08 % against 1.094 ± 0.032 %), but ψ(2S) X (0.24 % against 0.307 ± 0.021 %),
   χ_c1 X (0.23 % against 0.355 ± 0.027 %) and χ_c2 X (0.06 % against 0.100 ± 0.017 %) are low, and direct J/ψ
   is high.
+
+## 6d. Semileptonic B → X_cℓν lines (added 2026-11-27)
+
+From the BBbar-model review (points 4.6–4.8). All lines below are present with the same BF and model in
+basf2 `main` of 2026-11-26 (commit 7bae88bf; line numbers + 8); light-2609-luna was not re-checked for this
+section. Values per light lepton, in % of B decays. "Recommendation" = Belle II xwiki "Correction of BF(B →
+Xc ℓν) in generic MC", HFLAV 2023 table (version of 2026-11-17).
+
+| # | Lines (release 08) | Decay file | Measurement / recommendation | Problem | Suggested fix |
+|---|---|---|---|---|---|
+| 6d.1 | B⁰ 366–371 (390–395), B⁺ 3998–4003 (4025–4030): D(\*)ℓν, D\*\*ℓν | B⁰ D\* 5.11, D 2.14, D₁ 0.704, D₀\* 0.362, D₁′ 0.401, D₂\* 0.347; B⁺ 5.49, 2.31, 0.757, 0.389, 0.431, 0.373 | HFLAV 2023 (arXiv:2411.18639) / xwiki: B⁰ 4.90, 2.11, 0.59, 0.08, 0.26, 0.30; B⁺ 5.27, 2.27, 0.64, 0.08, 0.28, 0.32 | the file has the earlier HFLAV inputs; D₀\*ℓν is 4.5 times the 2023 value (B⁰ PDG limit S042.418: B(D₀\*⁻ℓν) × B(D₀\*⁻ → D̄⁰π⁻) < 0.044 %); D\*\* sum 1.81 % against 1.23 % (B⁰) | the xwiki HFLAV 2023 values |
+| 6d.2 | B⁰ 420–423, B⁺ 4058–4061 (and conjugates): D\*\*τν | D₁, D₀\*, D₁′, D₂\* 0.13, 0.13, 0.20, 0.20 (0.66 % per flavor; implied R(D\*\*) 0.17–0.58) | theory R(D\*\*) (Bernlochner, Ligeti, Robinson, arXiv:1711.03110 eq. 38): D₀\* 0.08, D₁′ 0.05, D₁ 0.10, D₂\* 0.07; LHCb arXiv:2501.14943: R(D\*\*⁰ for D₁ + D₂\*) = 0.13 ± 0.04 | about 5 times too high: R(D\*\*) × the corrected D\*\*ℓν gives 0.135 % (B⁰), 0.144 % (B⁺) | R(D\*\*) × the corrected D\*\*ℓν rates |
+| 6d.3 | B⁰ 374–377 (398–401), B⁺ 4006–4009 (4033–4036): non-resonant D(\*)πℓν, GOITY_ROBERTS | 0.276 % (B⁰), 0.300 % (B⁺) | recommendation: masked (0); HFLAV 2023 Table 33 with the 2023 D₀\* leaves about 0.19 % per charged-pion Dπ mode (our note to the SL/ME group) | the file does not follow the recommendation; the recommendation itself is in tension with the measured Dπℓν totals (S042.311, S041.418) | follow the working group's answer (masking, or a Dπ component of about 0.19 % per charged mode with D(\*)η reduced) |
+| 6d.4 | B⁰ 379–388 (403–412), B⁺ 4011–4023 (4038–4050): D(\*)ππℓν, D(\*)ηℓν | PHSP; Dη = D\*η 0.217 (B⁰), 0.201 (B⁺) | recommendation: Dη = D\*η 0.88 ± 0.88 (B⁰), 0.92 ± 0.92 (B⁺), produced through D₀\* → Dη, D₁′ → D\*η (dedicated decay files 1196708000/01, 1296708000/01); D(\*)ππ through D₁′/D₀\* | the gap is about 4 times smaller than recommended and generated with phase space: preselection efficiencies differ by +11 to +19 % (D(\*)η) and +40 to +80 % (D(\*)ππ), M_X peaks at 2.6 instead of 2.1–2.2 GeV (BELLE2-NOTE-PH-2023-037 Table 5.2) | the resonance-mediated gap model of the dedicated decay files, at the xwiki rates |
+| 6d.5 | B⁰ 417, 418 (B⁺ 4055, 4056): D\*τν, Dτν | HQET3 (CLN) with HFLAV 2016 parameters; BF = R(D) 0.299, R(D\*) 0.258 × the light-lepton BF | the light-lepton partners 366/367 (3998/3999) use BGL (arXiv:2008.09341, 1510.03657); Belle II analyses reweight both to BLPRXP (arXiv:2206.11281: R(D) = 0.288, R(D\*) = 0.249) | τ and light-lepton modes of the same transition use different form-factor families (EvtBGLFF cannot generate D\*τν) | one FF family for ℓ and τ, e.g. BLPRXP |
+| 6d.6 | `evt.pdl` D₁′(2430) (D'_1±, D'_10) | 2427 MeV / 384 MeV (release 08) | release-09 evt.pdl 314 MeV (basf2 main 2412 / 314 MeV) | already changed after release 08. MC16rd broad-D\*\* lineshapes use 384 MeV; MCAmbulance (defaults 314 MeV, release-09) scales D₁′ℓν weights by 0.960 (e, μ) / 0.981 (τ) | none for the file; a note for MC16rd users |
 
 ## 7. Related PDG listing issues (for information)
 

@@ -7,7 +7,12 @@ has the facts, the options, a recommendation and a decision; a decision is enter
 discussed and agreed. Status labels: OPEN, AGREED (decided, not implemented), DONE (implemented, tables
 rerun).
 
-Last updated: 2026-11-20 (piece 3 complete: 3.1–3.6 and P7 decided and implemented where needed; 3.7 passed to piece 4).
+Last updated: 2026-11-27 (piece 3 complete 2026-11-20: 3.1–3.6 and P7 decided and implemented where needed; 3.7 passed to piece 4).
+
+*Update 2026-11-27:* the items passed to piece 4 are decided there (`docs/B0_PIECE4_REVIEW.md` section 1):
+starting values 4.1 (D); isospin parameter 4.3 (one common ε = 0.2 ± 0.2; the BaBar per-flavor values only
+as a validation cross-check); D(\*)D̄(\*)K\* composition 4.4 (θ = −0.35 ± 0.35); D₁(2420) table 4.5;
+correction of the three-body D_s Dπ externals (non-D₂\* part 0.72 → 0.778) on 2026-11-25 (3.7, piece-4 3.2).
 
 Line numbers refer to `Samples/dec/DECAY_BELLE2_rel08.DEC` (B⁰ block 360–2160, PYTHIA lines 2134–2158;
 B⁺ block 3992–5525, PYTHIA lines 5503–5523). "Unmeasured" means class none or limit in
@@ -24,7 +29,7 @@ inclusive rates are multiplicities (mean number per B decay), as in the measurem
 | 3.4 | Checks of the large unmeasured double-charm lines (symmetry, measurements) | DONE (2026-11-20), section 3.7 | option (a): the 12 D\*\*D_s(\*) and 8 three-body D_s(\*)Dπ lines leave N₂ and take LHCb-based c (`external`, 20 entries; B⁰ by isospin; extra 40 % on the D₁(2420) lines, 30 % on the three-body lines); D(\*)D̄(\*)K\* stays in N₂ with a composition nuisance (piece 4) and S042.609 as a closure check including PYTHIA; D_s Dππ stays in N₂·r_s; 3.2 prior to be re-derived (proposal in 3.7) |
 | 3.5 | D⁺ / D⁰ composition of the MC: D± over-produced against the inclusive measurements (outside N₂, r_s) | AGREED (2026-11-20), section 3.5 | option (c): the model gets a constrained isospin parameter for PYTHIA single-charm decays (rate moved between lower-vertex charm of the spectator's isospin and the other one, sum kept); definition and prior in piece 4, from BaBar 2007 per flavor, with a width that reflects the weak evidence (single measurement; Belle 2023 D⁰ X agrees with the MC); reported to Belle II (PYTHIA without L = 1 mesons) |
 | 3.6 | Upper-vertex Λ_c⁺ (baryonic b → cc̄s) almost absent in the MC; ψ(2S), χ_c too low | AGREED (2026-11-20), section 3.8 | option (a): no new parameter; known MC deficiencies, their effect on the D rates is inside N₂ (prior from the D and D_s rates) and the transfer term; reported to Belle II. Yields: charmonium among the B daughters ≤ 0.24 % (ℓ side only), charmed baryons ≤ 1.3 % (ℓ side, mostly lower-vertex Λ̄_c) |
-| 3.7 | The decay file's D₁(2420) decay table: D₁ → Dππ too high relative to D\*π (affects D₁ℓν, D₁π, D₁D_s) | OPEN for piece 4 (2026-11-20), section 3.7 | measured Dππ/D\*π = 0.83 ± 0.11 of the decay file's; B(D₁ → D\*⁺π⁻) = 0.429 ± 0.019 against 0.399; used for the D₁D_s externals; the D⁺ composition of D₁ℓν (D⁺ directly from D₁) to be handled by an event weight on `D_genMotherPDG` in piece 4; reported to Belle II |
+| 3.7 | The decay file's D₁(2420) decay table: D₁ → Dππ too high relative to D\*π (affects D₁ℓν, D₁π, D₁D_s) | OPEN for piece 4 (2026-11-20), section 3.7; decided in piece 4, point 4.5 (AGREED 2026-11-25, line c DONE 2026-11-26: D\*π × 1.073, Dππ × 0.891) | measured Dππ/D\*π = 0.83 ± 0.11 of the decay file's; B(D₁ → D\*⁺π⁻) = 0.429 ± 0.019 against 0.399; used for the D₁D_s externals; the D⁺ composition of D₁ℓν (D⁺ directly from D₁) to be handled by an event weight on `D_genMotherPDG` in piece 4; reported to Belle II |
 | P7 | Lines written with the wrong charm flavor: 806 / 2616 (B⁰ → D\*⁰π⁺π⁺π⁻π⁻) and 1002 / 2812 (B⁰ → Λ̄ΛD⁰) (piece-2 follow-up) | DONE (2026-11-19), section 3.2 | option (c): veto both lines (conjugates inherit), rewrite S042.195 and S042.457 to the anti-charm form, report to Belle II (`docs/DECAY_FILE_ISSUES_FOR_BELLE2.md`) |
 
 ## 2. Facts (2026-11-19)

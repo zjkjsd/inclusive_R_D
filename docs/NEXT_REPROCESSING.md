@@ -24,7 +24,7 @@ Last updated: 2026-11-27.
 | K_L ancestry (mother and grandmother PDG) | C1 shows that K_L matters | attribute each K_L to its source and correct the right decay step |
 | K_L momentum and polar angle | C1 shows that K_L matters | K_L spectrum and detector response |
 | calorimeter cluster from the K_L entering the ROE (flag, energy) | C1 shows that K_L matters; if feasible | K_L detector response |
-| daughter list of the tag-side (ROE) B ancestor | the tag-side check (piece 7) matches the H1 fingerprint | apply B-decay parameters to the tag side of all components |
+| daughter list of the tag-side (ROE) B ancestor | superseded 2026-11-27: the event-level truth of both B (section "Added 2026-11-27", decision 4.8) covers the tag side | apply B-decay parameters to the tag side of all components |
 
 ## To check while there
 
@@ -39,6 +39,8 @@ be needed later".
 
 ## Added 2026-11-26 (piece 4, point 4.7)
 
+Status: to add unconditionally (decisions 4.7, 4.8). For HAMMER the table of 2026-11-27 below replaces this item.
+
 - True four-vectors (or at least p\*, M_X, q²) of the daughters of the ancestor B of the D candidate and of
   the lepton candidate (comb included), and the daughter list of a D\*\* among them: needed to reweight the
   phase-space gap modes of the generic MC to the D\*\*-mediated model (and for an MCAmbulance-type lineshape
@@ -47,7 +49,9 @@ be needed later".
 ## Added 2026-11-27 (piece 4, point 4.8): MCAmbulance and HAMMER inputs
 
 The working group recommends MCAmbulance (github.com/Herren/MCAmbulance) for B → D\*\*ℓν and HAMMER for the
-signal and own-B semileptonic templates. Their per-event inputs are not in the current ntuples.
+signal and own-B semileptonic templates; decision 4.8 (2026-11-27) applies both to every semileptonic B decay of
+the event (own B and other B, event weight = product over the two B). Status: to add unconditionally. Their
+per-event inputs are not in the current ntuples.
 
 | Variable | For which particles | Suggested basf2 expression (check the name in the release used) | Why |
 |---|---|---|---|

@@ -4,7 +4,7 @@ Working document for the inclusive tagged R(D+) analysis. It records what was do
 signal-region BDT cut optimization, and the plan and decisions so far for the combinatorial control
 region, the BBbar background model and a global K_L check.
 
-Last updated: 2026-11-16.
+Last updated: 2026-11-27 (B0 piece 4 decided: overview, B.6, B.13; status labels aligned with Appendix A).
 
 **Status labels**
 
@@ -25,7 +25,7 @@ starts only then. Appendix A lists the pieces and their status.
 | Part | Topic | Status |
 |---|---|---|
 | A | Signal-region (SR) BDT cut optimization | DONE: the final tight cut is the new `util.lgb_tight` |
-| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1–7); B0 pieces 1–4 DONE or AGREED (piece 4 decided 2026-11-27; its model weights still to be coded), piece 5 AGREED (B.13) |
+| B | Combinatorial control region (comb CR) and BBbar background model | design AGREED (pieces 1, 3–7; piece 2 discussed, revisit if needed; Appendix A); B0 pieces 1–4 DONE or AGREED (piece 4 decided 2026-11-27; its model weights still to be coded), piece 5 AGREED (B.13) |
 | C | Global K_L check | AGREED as a separate track; not started |
 
 | File | Role | Status |
@@ -321,7 +321,7 @@ run2, as in the tuning.
 | Dτν, D\*τν | 15 % |
 | D\*\*τν | 30 % |
 | fakeL, fakeTracks | 20 % |
-| BBbar_semileptonic (target sample; fixed at 1 in the current tuning) | 10 % (5 % in the first-model proposal; to settle in piece 3) |
+| BBbar_semileptonic (target sample; fixed at 1 in the current tuning) | 10 % (5 % in the first-model proposal); settled in design piece 3 as a yield-weighted combination; since B0 piece 4 (4.6/4.7) the semileptonic rates enter the model as r_SL (1.00 ± 0.05) and r_broad+gap (1.0 ± 0.86 lognormal), B.6 |
 
 **Priors in the tuning (PROPOSED).**
 
@@ -382,14 +382,14 @@ e channel):
 similar shapes are traded against each other, and parameters end at the limits. The weights are not
 physics and don't transfer between samples.
 
-**Two physical readings (PROPOSED, piece 4):**
+**Two physical readings (AGREED, design piece 4; B.10):**
 
 - PYTHIA's unmeasured decays produce too many, too soft particles.
 - Data have more D's from double-charm decays (b → cc̄s) than MC.
 
 **Measured list (STATED).** It was built from the daughter-PDG products of the ancestor B of the D
 and of the lepton in comb + hadB. The top ~150 by yield were compared with PDG by hand, so coverage is
-incomplete. Improving it is piece 3 (OPEN).
+incomplete. Improving it was design piece 3 (AGREED): replaced by the automatic B0 PDG matching (B.13).
 
 ### B.5 The wrong-charge (WC, same-sign) sample
 
@@ -451,11 +451,11 @@ charm); the same gap would bias the CR → SR transfer.
   - For other components the tag-side truth is not saved, so B-decay parameters can't be applied to
     their tag side. Event-level quantities such as `nMC_K_L` can.
 
-**First-model proposal (PROPOSED; pieces 2–4).**
+**Model parameters (first-model proposal of design pieces 2–4; rows updated with the B0 decisions of pieces 3 and 4, AGREED; event weights, r_SL / r_broad+gap, nuisances and toys still to be coded, B4).**
 
 | Parameter | Multiplies the weight of… | Treatment |
 |---|---|---|
-| r_meas | decays whose final state is in the measured list | prior (~15 %) |
+| (r_meas, first proposal) | replaced by B0 piece 4 (4.1, 4.2): every measured c is a nominal event weight; the σ_c go through toys with the 4.2 source model into SR eigen-NPs | not a free parameter |
 | r_SL | light-lepton D, D\*, narrow D\*\* ℓν (piece 4, 4.6); τ lines follow their partner × R | prior 1.00 ± 0.05 (B3 Fisher: prior or free) |
 | r_broad+gap | broad D\*\* (D₀\*, D₁′) ℓν and the gap modes (4.6) | prior 1.0 ± 0.86 lognormal (4.7) |
 | gap composition | rate-conserving nuisances D/D\* (± 50 %), non-resonant D(\*)π (0 ↔ measured remainder), η/ππ (± 50 %); gap-model shape nuisance from a proxy reweighting (4.7) | nuisances |
@@ -475,12 +475,13 @@ The truth information needed is already read: the daughter lists, `D_mcPDG`, `D_
 **OPEN:**
 
 - whether single- and double-charm decays share one slope a;
-- regularization vs smooth functions (piece 2);
-- priors and the measured list (piece 3);
-- which hypotheses to test, and how (piece 4);
-- which parameters the data can determine, via the Fisher matrix (piece 5).
+- regularization vs smooth functions (design piece 2; discussed, revisit if needed);
+- which parameters the data can determine: the Fisher run of step B3 (method agreed in design piece 5).
 
-### B.7 Workflow (PROPOSED; the order is piece 6)
+(Design pieces 3 and 4 are AGREED, Appendix A: the priors and the measured list came from the B0 PDG
+matching, B.13; the hypotheses are B.10.)
+
+### B.7 Workflow (AGREED, design piece 6)
 
 1. **MC only.**
    - Store truth-based class codes when loading.
@@ -508,7 +509,7 @@ run separately:
 The shared model definition lives in `utilities.py` (where the former `bbbar_reweighting.py` code
 now is).
 
-### B.8 Validation (PROPOSED; piece 7)
+### B.8 Validation (AGREED, design piece 7)
 
 - **Cross-predictions:** RS pure corner ↔ RS band, and RS ↔ WC. The final blind check is WC with the
   SR cut.
@@ -519,7 +520,7 @@ now is).
 
 ### B.9 Still to discuss
 
-- Pieces 2–7 (Appendix A).
+- Design piece 2 only, if needed (pieces 1, 3–7 AGREED, Appendix A).
 - Reconciling the BDT sideband definitions (B.4).
 - The BBbar_semileptonic prior: settled in piece 3 (derived as a yield-weighted combination, not
   chosen by hand).
@@ -810,7 +811,7 @@ the numbered cases are in `docs/B0_PIECE2_CASES.md` (regenerated by
 | Function | What it does |
 |---|---|
 | `build_pdg_table` | writes `Samples/dec/pdg_bf_B_2026.json`: all 1273 BF entries of B⁰ (584) and B⁺ (689), every level. The only place that imports `pdg` |
-| `load_pdg_table`, `load_exceptions` | read the cached table and `Samples/dec/pdg_exceptions.json` (75 entries since 2026-11-18, each with its reason) |
+| `load_pdg_table`, `load_exceptions` | read the cached table and `Samples/dec/pdg_exceptions.json` (75 entries on 2026-11-18; 166 since B0 piece 4, 2026-11-26; each with its reason) |
 | `parse_description`, `make_nodes` | PDG text → entry kind (plain, product, sum, nonres, unkeyed) and daughters as evt.pdl codes |
 | `DecayGraph` | sub-decay tables of the decay file; folds broad resonances |
 | `build_mode_pdg_table` | one row per (B flavor, final state): class, how, c, σ_c, pull, flags, PDG ids, decay-file lines, the PDG totals the line feeds (`fed_nodes`, `node_info`); optional node table |
@@ -819,8 +820,9 @@ the numbered cases are in `docs/B0_PIECE2_CASES.md` (regenerated by
 | `review_report` | modes to check by hand, and the yield by class per region |
 
 Run `python3 scripts/tools/pdg_match.py`: writes `b_mode_pdg_table.csv` (5017 rows),
-`b_mode_pdg_review.csv` (462), `b_mode_pdg_nodes.csv` (591), `b_mode_isospin_check.csv` (154) in
-`Notebooks/Plotting/csv_output`. Tests: `scripts/tests/test_pdg_match.py` (32 tests, no `pdg`
+`b_mode_pdg_review.csv` (601), `b_mode_pdg_nodes.csv` (574), `b_mode_isospin_check.csv` (154) in
+`Notebooks/Plotting/csv_output` (sizes of 2026-11-27; 462 and 591 at the end of piece 2). Tests:
+`scripts/tests/test_pdg_match.py` (38 tests on 2026-11-27, 32 at the end of piece 2; no `pdg`
 package, no network).
 
 Rules (details and reasons: review file):
@@ -836,7 +838,9 @@ Rules (details and reasons: review file):
 - **Exceptions** (actions rewrite, exclude_node, force_class, isospin, direct_line,
   extra_uncertainty, half_limit, veto): misprints of the listing; D\*±D∓ and D\*∓K⁰π± read as charge
   sums (D3, G6); non-resonant D(\*)πℓν kept at 1 ± 1 as gap modes (M2); B⁰ → D₀\*⁻ℓν and
-  ψ(3770)K⁰ from their B⁺ partners by isospin; D⁻a₁⁺ from the D⁻3π total (D1); 20 % extra on the
+  ψ(3770)K⁰ from their B⁺ partners by isospin (piece-2 state; since B0 piece 4, 4.6/4.7, the non-resonant
+  D(\*)πℓν lines are masked, c = 0, and D₀\*ℓν is an `override` to HFLAV 2023; new actions `external`,
+  `sub_decay`, `override`, `tau_ratio`); D⁻a₁⁺ from the D⁻3π total (D1); 20 % extra on the
   D_s0\* products (D2); ψ(3770)K⁺ from the per-channel products, widened for the LHCb tension (P1);
   D̄₁⁰ρ⁺ at limit/2 (G3); two wrong-flavor B± lines vetoed (G6).
 - **anti-B rows** take the result of the B⁰/B⁺ conjugate; where the two blocks have different BFs,
@@ -861,10 +865,11 @@ Headline numbers (exclusive lines, share of all B decays):
 - All c applied, the exclusive lines lose 3.6 % (B⁰) and 4.3 % (B⁺) of all B decays (semileptonic
   about 1.0 % and 0.6 %). Belle II's tag-mode study gave such a loss back to PYTHIA; here the free
   PYTHIA normalizations of the model absorb it (piece 4). *Update 2026-11-24:* with the piece-3
-  externals the loss is 5.5 % (B⁰) and 6.0 % (B⁺); piece 4 (4.1) keeps no rescaling, N₁ free
-  (`docs/B0_PIECE4_REVIEW.md`).
+  externals the loss is 5.5 % (B⁰) and 6.0 % (B⁺); *update 2026-11-27:* after the semileptonic
+  corrections of 4.6/4.7 it is 4.75 % (B⁰) and 5.59 % (B⁺) (semileptonic 0.23 / 0.18 %), k = 1.10 / 1.13;
+  piece 4 (4.1) keeps no rescaling, N₁ free (`docs/B0_PIECE4_REVIEW.md`).
 - Largest corrections with a visible share: D(\*)D_s0\*(2317) 0.05–0.14 (D2); D⁺D⁻K⁺ 0.43 ± 0.48 and
-  ψ(3770)K⁺ 0.53 ± 0.37 (P1); D̄₁⁰ρ⁺ 0.19 ± 0.19; B⁺ D̄₀\*⁰ℓν 0.35 ± 0.21 and B⁰ D₀\*⁻ℓν by isospin.
+  ψ(3770)K⁺ 0.53 ± 0.37 (P1); D̄₁⁰ρ⁺ 0.19 ± 0.19; B⁺ D̄₀\*⁰ℓν 0.35 ± 0.21 and B⁰ D₀\*⁻ℓν by isospin (piece-2 values; since 4.6/4.7 both by `override` to HFLAV 2023, c = 0.206 and 0.221).
 
 Yield by class, percent of the PID-weighted yield (e and μ, run1 and run2, charged and neutral B):
 
@@ -883,7 +888,9 @@ Yield by class, percent of the PID-weighted yield (e and μ, run1 and run2, char
 - "had. none" (hadronic exclusive lines without a PDG measurement) is 14–32 % of the yield and is
   the subject of piece 3, together with the PYTHIA columns.
 
-Still open from piece 2, to be taken up later:
+Still open from piece 2, to be taken up later (*update 2026-11-27:* the first two items are settled: the
+gap modes by B0 piece 4, 4.7 (non-resonant D(\*)πℓν masked, D(\*)ηℓν and D(\*)ππℓν to the Belle II xwiki
+table, the M2 entries removed); N1 by piece 3, 3.3 (c = 1 ± 1); `docs/B0_PIECE4_REVIEW.md`):
 
 - Semileptonic gap modes (non-resonant D(\*)πℓν, D(\*)ππℓν, D(\*)ηℓν): the Belle II recommendation
   will replace M2 and the remainder values of the Dππℓν lines.
@@ -894,7 +901,7 @@ Still open from piece 2, to be taken up later:
 - Shapes: the decay file's phase-space lines do not describe the measured resonance content
   (amplitude analyses of D̄⁰π⁺π⁻, D⁻π⁺π⁺, D⁺D⁻K⁺, ψ(2S)K⁺π⁺π⁻); c corrects rates only.
 
-**Piece 3 (PROPOSED, 2026-11-18; to discuss): exclusive modes without a measurement.**
+**Piece 3 (proposal of 2026-11-18; DONE 2026-11-20, decisions and summary in `docs/B0_PIECE3_REVIEW.md`): exclusive modes without a measurement.**
 
 Facts (from `b_mode_pdg_table.csv` and `b_mode_pdg_review.csv`):
 
@@ -1072,7 +1079,8 @@ effect seen on-resonance but not off-resonance would point to the last row.
 | calorimeter cluster from the K_L entering the ROE (flag, energy) | K_L detector response | only if C1 shows K_L matters; if feasible |
 | number of daughters of the ancestor B, and 10 daughter slots instead of 7 | detect truncated daughter lists (7 non-photon daughters in 3.5–6.5 % of comb candidates); a hidden 8th daughter could be a second charm hadron | with the next reprocessing |
 | signed PDG code of the ancestor B | B flavor (unknown for 0.3–1.9 % of neutral-B candidates; 34 final states differ between the B⁰ and B̄⁰ blocks) | with the next reprocessing |
-| daughter list of the ROE's (tag-side) B ancestor | apply B-decay parameters to the tag side of all components | only if the tag-side check (piece 7) matches the H1 fingerprint |
+| daughter list of the ROE's (tag-side) B ancestor | apply B-decay parameters to the tag side of all components | with the next reprocessing: covered by the event-level truth of both B (decision 4.8; `docs/NEXT_REPROCESSING.md`) |
+| true four-vectors of both B and their daughters; MCAmbulance and HAMMER inputs; `mcDaughter(0, M)` | gap-mode reweighting (4.7), form-factor and lineshape weights for every semileptonic B decay (4.8) | with the next reprocessing (`docs/NEXT_REPROCESSING.md`) |
 
 New reconstruction variables are requested together, in one reprocessing, because reprocessing is
 the expensive part.

@@ -231,7 +231,10 @@ if __name__ == "__main__":
 
     # ============================================================================================
     # TODO BEFORE THE NEXT REPROCESSING: add the variables listed in docs/NEXT_REPROCESSING.md
-    # (signed PDG code and number of daughters of the ancestor B, 10 daughter slots instead of 7).
+    # (signed PDG code and number of daughters of the ancestor B, 10 daughter slots instead of 7;
+    #  true four-vectors and MCAmbulance/HAMMER inputs for both B mesons; mcDaughter(0, M), keeping the
+    #  present mcDaughter_0_M = daughterMCInvariantMass(0), the matched reco-D mass, under a new name:
+    #  decisions 4.7, 4.8 of docs/B0_PIECE4_REVIEW.md).
     # ============================================================================================
     Ancestor_info = []
     B_types = ['511','521']

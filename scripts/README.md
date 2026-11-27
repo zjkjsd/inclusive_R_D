@@ -13,9 +13,15 @@ scripts/
 │   ├── utilities.py
 │   ├── fitting.py
 │   ├── plotting.py
-│   └── bdt_cut_optimization.py
+│   ├── bdt_cut_optimization.py
+│   ├── decay_table.py                  # BBbar model B0 piece 1: decay-file parser and classification
+│   ├── pdg_match.py                    # B0 pieces 2–4: PDG comparison, per-line correction c
+│   └── pdg_review_cases.py             # writes docs/B0_PIECE2_CASES.md
+├── mc_truth/                           # generator truth of MC16rd B decays (basf2 steering + analysis)
 └── tests/
-    └── test_bdt_cut_optimization.py
+    ├── test_bdt_cut_optimization.py
+    ├── test_decay_table.py
+    └── test_pdg_match.py
 ```
 
 ## Running the scripts
@@ -99,7 +105,12 @@ attribute ...`, which tells you which name to move.
 
 ```bash
 python3 scripts/tests/test_bdt_cut_optimization.py
+python3 scripts/tests/test_decay_table.py
+python3 scripts/tests/test_pdg_match.py
 ```
+
+`test_decay_table.py` and `test_pdg_match.py` use the committed decay file, PDG cache and exceptions in
+`Samples/dec/` (no network). See `docs/BDT_OPTIMIZATION_AND_BBBAR_PLAN.md`, B.13.
 
 Builds synthetic multi-candidate events (no ntuples needed) and checks
 `bdt_cut_optimization` against a direct pandas implementation.
